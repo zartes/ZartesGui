@@ -49,7 +49,7 @@ classdef PXI_Acquisition_card
         end % End of Fucntion Constructor
         
         function obj = Initialize(obj)            
-            addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\PXI\'); 
+%             addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\PXI\'); 
             obj = PXI_init_updated(obj);                   
         end
                 

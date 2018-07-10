@@ -17,7 +17,7 @@ classdef SpectrumAnalyzer
         end
         
         function [obj, status] = Initialize(obj)            
-            addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\'); 
+%             addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\'); 
             [obj, status] = hp_init_updated(obj);  
         end
         function Calibration(obj)
@@ -72,7 +72,7 @@ classdef SpectrumAnalyzer
             catch
             end
             delete(obj.ObjHandle);
-            rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\');
+%             rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\');
         end
     end
     

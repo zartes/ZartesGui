@@ -16,7 +16,7 @@ classdef Multimeter
         end
         
         function [obj, status] = Initialize(obj)            
-            addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Multimetro_HP3458A_Matlab\'); 
+%             addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Multimetro_HP3458A_Matlab\'); 
             [obj, status] = multi_init_updated(obj);                   
         end
         
@@ -32,7 +32,7 @@ classdef Multimeter
             catch
             end
             delete(obj.ObjHandle);
-            rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Multimetro_HP3458A_Matlab\');
+%             rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Multimetro_HP3458A_Matlab\');
         end
     end
     

@@ -22,7 +22,7 @@ function varargout = Test1(varargin)
 
 % Edit the above text to modify the response to help Test1
 
-% Last Modified by GUIDE v2.5 03-Jul-2018 12:25:39
+% Last Modified by GUIDE v2.5 10-Jul-2018 12:52:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -60,6 +60,17 @@ set(handles.figure1,'Color',[0.95 0.95 0.95],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
+% Set correct paths (addition)
+handles.CurrentPath = pwd;
+handles.MainDir = handles.CurrentPath(1:find(handles.CurrentPath == filesep, 1, 'last' ));
+handles.d = dir(handles.MainDir);
+for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
+    if handles.d(i).isdir
+        addpath([handles.MainDir handles.d(i).name])
+    end
+end
+
+
 % Initialization of setting parameters
 handles.TempFileDir = [];
 handles.TempFileName = [];
@@ -76,7 +87,6 @@ for i = 1:size(handles.HndlStr,1)
     eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Constructor;']);    
     eval(['handles.Devices.' handles.HndlStr{i,1} ' = 0;']); % By default all are deactivated
 end
-
 
 
 handles.EnableStr = {'off';'on'};
@@ -146,16 +156,30 @@ function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
 
 try
     if eventdata.Key == 'escape'
-        delete(handles.figure1);
+        % Remove paths
+        figure1_DeleteFcn(handles.figure1,eventdata,handles);              
+       
     elseif eventdata.Key == 'return'
-        if strcmp(get(handles.save,'Enable'),'on')
+        if strcmp(get(handles.Start,'Enable'),'on')
             Start_Callback(handles.Start,eventdata,handles);
         end
     end
 catch
 end
 
+% --- Executes during object deletion, before destroying properties.
+function figure1_DeleteFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
+for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
+    if handles.d(i).isdir
+        rmpath([handles.MainDir handles.d(i).name])
+    end
+end
+delete(handles.figure1);
+         
 % --- Executes on button press in TempBrowse.
 function TempBrowse_Callback(hObject, eventdata, handles)
 % hObject    handle to TempBrowse (see GCBO)
@@ -287,3 +311,5 @@ for i = 1:size(handles.HndlStr,1)
 end
 set([handles.IVs handles.ZN handles.Pulses...
     handles.TempBrowse handles.FieldBrowse handles.Start],'Enable','on');
+
+

@@ -47,7 +47,7 @@ classdef ElectronicMagnicon
         end
         
         function obj = Initialize(obj)
-            addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Magnicon_Matlab\');
+%             addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Magnicon_Matlab\');
             obj = mag_init_updated(obj);
         end
         
@@ -99,7 +99,7 @@ classdef ElectronicMagnicon
             catch
             end
             delete(obj.ObjHandle);
-            rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Magnicon_Matlab\');
+%             rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Magnicon_Matlab\');
         end
        
     end

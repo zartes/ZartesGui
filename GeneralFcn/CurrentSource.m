@@ -24,7 +24,7 @@ classdef CurrentSource
         end
         
         function [obj, status] = Initialize(obj)            
-            addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\K220\'); 
+%             addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\K220\'); 
             [obj, status] = k220_init_updated(obj);   
         end
         
@@ -52,7 +52,7 @@ classdef CurrentSource
             catch
             end
             delete(obj.ObjHandle);
-            rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\K220\');
+%             rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\K220\');
         end
     end
     
