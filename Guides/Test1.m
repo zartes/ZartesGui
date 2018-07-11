@@ -286,11 +286,11 @@ end
 
 % Initialize connection of devices
 
-for i = 1:size(handles.HndlStr,1)
-    if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
-        eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Initialize;']); 
-    end    
-end
+% for i = 1:size(handles.HndlStr,1)
+%     if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
+%         eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Initialize;']); 
+%     end    
+% end
 
 % Seleccionar los Ibvalues que se van a usar
 
@@ -298,12 +298,10 @@ end
 % - Opcion 2: con un guide
 % - Opcion 3: desde una gráfica
 
+IbvaluesConf;
 
 
 
-
-
-waitfor(figure);
 for i = 1:size(handles.HndlStr,1)
     if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
         eval(['handles.' handles.HndlStr{i,1} '.Destructor;']); 

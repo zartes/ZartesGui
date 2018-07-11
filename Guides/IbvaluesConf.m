@@ -53,15 +53,15 @@ function IbvaluesConf_OpeningFcn(hObject, eventdata, handles, varargin)
 % varargin   command line arguments to IbvaluesConf (see VARARGIN)
 
 % Choose default command line output for IbvaluesConf
-handles.output = hObject;
-
+handles.output = [];
+handles.Ibvalues = [];
 position = get(handles.figure1,'Position');
 set(handles.figure1,'Color',[0.95 0.95 0.95],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
 % Initializing Table values
-handles.RangeTable.Data = num2cell([500 0.1 0]);
+handles.RangeTable.Data = num2cell([500 -10 0]);
 uibuttongroup1_SelectionChangedFcn(handles.Manual,[],handles);
 
 % Update handles structure
@@ -79,9 +79,10 @@ function varargout = IbvaluesConf_OutputFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Get default command line output from handles structure
-varargout{1} = handles.output;
+
 set(handles.figure1,'Visible','on');
-guidata(hObject,handles);
+varargout{1} = handles.output;
+% guidata(hObject,handles);
 
 % --- Executes on button press in Accept.
 function Accept_Callback(hObject, eventdata, handles)
@@ -100,7 +101,8 @@ Ibvalues = eval(['repmat(Data,1,' handles.NRepeat.String ');']);
 if handles.Negative.Value
     Ibvalues = [Ibvalues -Ibvalues];
 end
-
+handles.output = Ibvalues;
+guidata(hObject,handles)
 figure1_DeleteFcn(handles.figure1,eventdata,handles);   
 
 % --- Executes on button press in Cancel.
