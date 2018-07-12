@@ -14,7 +14,7 @@ function pxi_SetRecordLength_updated(pxi)
 set(get(pxi.ObjHandle,'horizontal'),'min_number_of_points',pxi.ConfStructs.Horizontal.RL)
 actualRL = get(get(pxi.ObjHandle,'horizontal'),'actual_record_length');
 
-if actualRL ~= RL
+if actualRL ~= pxi.ConfStructs.Horizontal.RL
     warning(['Ojo: Actual Record Length fijado en: ' num2str(actualRL)]);
     %%%Ojo, este warning parece que no funciona. Si meto RL=333333, en el
     %%%SFP aparece 300000 en rojo para el Record Length, pero al leer el

@@ -33,7 +33,7 @@ if isempty(multi.ObjHandle)
     catch
         status = 1; % Connection not available
         delete(multi.ObjHandle);
-        rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Multimetro_HP3458A_Matlab\');
+%         rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Multimetro_HP3458A_Matlab\');
         disp('Error connecting Multimeter HP3458A, please check connectivity');         
         return;
     end
@@ -65,6 +65,6 @@ end
 % - Clears the status register except the Power-on SRQ bit (bit 3).
 % - Clears reading memory.
 
-command = 'RESET; END 1; FUNC DCV, 10.3e; NPLC 10'; %%% NPLC 10 -> 1.
+command = 'RESET; END 1; FUNC DCV, 10; NPLC 10'; %%% NPLC 10 -> 1.
 
 query(multi.ObjHandle,command);

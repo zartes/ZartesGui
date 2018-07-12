@@ -14,6 +14,6 @@ function actualSR = pxi_SetSamplingRate_updated(pxi)
 set(get(pxi.ObjHandle,'horizontal'),'min_sample_rate',pxi.ConfStructs.Horizontal.SR)
 actualSR = get(get(pxi.ObjHandle,'horizontal'),'Actual_Sample_Rate');
 
-if actualSR ~= SR
+if actualSR ~= pxi.ConfStructs.Horizontal.SR
     warning(['Ojo: Sampling Rate fijado en: ' num2str(actualSR)]);
 end

@@ -48,7 +48,7 @@ classdef PXI_Acquisition_card
             end            
         end % End of Fucntion Constructor
         
-        function obj = Initialize(obj)            
+        function obj = Initialize(obj)
 %             addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\PXI\'); 
             obj = PXI_init_updated(obj);                   
         end
@@ -58,13 +58,13 @@ classdef PXI_Acquisition_card
             obj.Options.channelList = '0,1';
             
             obj.ConfStructs.Horizontal.RL = 2e6;
-            obj = pxi_ConfigureHorizontal_updated(obj);    % ConfStructs.Horizontal
+            pxi_ConfigureHorizontal_updated(obj);    % ConfStructs.Horizontal
             
             obj.ConfStructs.Vertical.channelList = '0,1';
             obj = pxi_ConfigureChannels_updated(obj);      % ConfStructs.Vertical
             
             obj.ConfStructs.Trigger.Type = 6;
-            obj = pxi_ConfigureTrigger_updated(obj);       % ConfStructs.Trigger
+            pxi_ConfigureTrigger_updated(obj);       % ConfStructs.Trigger
         end
         
         function obj = Noise_Configuration(obj)
@@ -72,13 +72,13 @@ classdef PXI_Acquisition_card
             obj.Options.channelList = '1';
             
             obj.ConfStructs.Horizontal.RL = 2e5;%%%2e5 para fi=1Hz, RL=2e4 para fi=10Hz.
-            pxi_ConfigureHorizontal_updated(pxi)
+            pxi_ConfigureHorizontal_updated(obj)
             
-            pxi_ConfigureChannels_updated(pxi)
+            pxi_ConfigureChannels_updated(obj)
             
             obj.ConfStructs.Trigger.Type = 6;
             obj.ConfStructs.Trigger.Source = 'NISCOPE_VAL_IMMEDIATE';
-            pxi_ConfigureTrigger_updated(pxi)
+            pxi_ConfigureTrigger_updated(obj)
         end
         
         function obj = Pulses_Configuration(obj,Level)
