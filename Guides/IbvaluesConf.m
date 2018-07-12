@@ -54,7 +54,10 @@ function IbvaluesConf_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for IbvaluesConf
 handles.output = [];
-handles.Name_Temp = varargin{1}{2};
+try
+    handles.Name_Temp = varargin{1}{2};
+catch
+end
 handles.Name = [];
 handles.Dir = [];
 
@@ -184,28 +187,39 @@ switch Tag
         handles.RangeTable.Enable = 'off';
         [Name, Dir] = uigetfile({'*.txt','Example file (*.txt)'},...
             'Select file','tmp\*.txt');
+        if ~isempty(Name)&&~isequal(Name,0)
+            handles.Dir = Dir;
+            handles.Name = Name;
+            set(handles.IbiasFileStr,'String',[Dir Name],...
+                'TooltipString',[Dir Name]);
+            [suc,msg,msgid] = copyfile([handles.Dir handles.Name],handles.Name_Temp);
+            if ~suc
+                warndlg(msg,msgid);
+            end
+        else
+            set(handles.IbiasFileStr,'String','No file selected');
+            return;
+        end
         
     case 'FromGraph'
         handles.RangeTable.Enable = 'off';
         [Name, Dir] = uigetfile({'*.fig','Example file (*.fig)'},...
             'Select graph file','tmp\*.fig');
+        
+        if ~isempty(Name)&&~isequal(Name,0)
+            uiopen([Dir Name],1)
+        else
+            disp('No Graph File selected');
+            return;
+        end
+        FigHandle = gcf;
+        FigHandle.WindowButtonDownFcn = {@Fig_XRange};        
+        
         % En esta parte hay que añadir más cosas
         
 end
 
-if ~isempty(Name)&&~isequal(Name,0)
-    handles.Dir = Dir;
-    handles.Name = Name;
-    set(handles.IbiasFileStr,'String',[Dir Name],...
-        'TooltipString',[Dir Name]);
-    [suc,msg,msgid] = copyfile([handles.Dir handles.Name],handles.Name_Temp);
-    if ~suc
-        warndlg(msg,msgid);
-    end
-else    
-    set(handles.IbiasFileStr,'String','No file selected');
-    return;
-end
+
 
 
 % --- Executes on button press in Add.
@@ -251,4 +265,35 @@ function NRepeat_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
+
+
+function Fig_XRange(src,evnt)
+
+sel_typ = get(gcbf,'SelectionType');
+switch sel_typ
+    case 'normal'   %Right button
+%         waitforbuttonpress;
+        point1 = get(gca,'CurrentPoint');    % button down detected
+        finalRect = rbbox;                   % return figure units
+        point2 = get(gca,'CurrentPoint');    % button up detected
+        point1 = point1(1,1:2);              % extract x and y
+        point2 = point2(1,1:2);
+    case 'extend'   %Middle button
+        set(src,'Selected','on')
+        set(src,'Selected','on')
+        
+    case 'alt'      %Left button
+%         
+%         set(src,'Selected','on')
+%         set(src,'SelectionHighlight','off')
+%         
+%         waitforbuttonpress;
+%         point1 = get(gca,'CurrentPoint');    % button down detected
+%         finalRect = rbbox;                   % return figure units
+%         point2 = get(gca,'CurrentPoint');    % button up detected
+%         point1 = point1(1,1:2);              % extract x and y
+%         point2 = point2(1,1:2);
+%         
+%         [point1 point2]
 end
