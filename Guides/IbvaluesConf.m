@@ -54,7 +54,10 @@ function IbvaluesConf_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for IbvaluesConf
 handles.output = [];
-handles.Ibvalues = [];
+handles.Name_Temp = varargin{1}{2};
+handles.Name = [];
+handles.Dir = [];
+
 position = get(handles.figure1,'Position');
 set(handles.figure1,'Color',[0.95 0.95 0.95],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
@@ -81,7 +84,8 @@ function varargout = IbvaluesConf_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 
 set(handles.figure1,'Visible','on');
-varargout{1} = handles.output;
+% waitfor(handles.figure1);
+varargout{1} = handles.figure1;
 % guidata(hObject,handles);
 
 % --- Executes on button press in Accept.
@@ -101,8 +105,9 @@ Ibvalues = eval(['repmat(Data,1,' handles.NRepeat.String ');']);
 if handles.Negative.Value
     Ibvalues = [Ibvalues -Ibvalues];
 end
-handles.output = Ibvalues;
-guidata(hObject,handles)
+
+dlmwrite(handles.Name_Temp,Ibvalues');
+
 figure1_DeleteFcn(handles.figure1,eventdata,handles);   
 
 % --- Executes on button press in Cancel.
@@ -184,6 +189,7 @@ switch Tag
         handles.RangeTable.Enable = 'off';
         [Name, Dir] = uigetfile({'*.fig','Example file (*.fig)'},...
             'Select graph file','tmp\*.fig');
+        % En esta parte hay que añadir más cosas
         
 end
 
@@ -192,6 +198,10 @@ if ~isempty(Name)&&~isequal(Name,0)
     handles.Name = Name;
     set(handles.IbiasFileStr,'String',[Dir Name],...
         'TooltipString',[Dir Name]);
+    [suc,msg,msgid] = copyfile([handles.Dir handles.Name],handles.Name_Temp);
+    if ~suc
+        warndlg(msg,msgid);
+    end
 else    
     set(handles.IbiasFileStr,'String','No file selected');
     return;

@@ -298,7 +298,15 @@ end
 % - Opcion 2: con un guide
 % - Opcion 3: desde una gráfica
 
-IbvaluesConf;
+Name_Temp = ['Ibvalues_' datestr(now) '.txt'];
+Name_Temp(Name_Temp == ':') = '-';
+IbvaluesHandle = IbvaluesConf({[],Name_Temp});
+waitfor(IbvaluesHandle,'Visible','off');
+Ibvalues = dlmread(Name_Temp);
+
+
+
+
 
 
 
