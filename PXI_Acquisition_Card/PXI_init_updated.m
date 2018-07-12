@@ -1,4 +1,4 @@
-function pxi = PXI_init_updated()
+function pxi = PXI_init_updated(pxi)
 % Function to initialize the mode Sine Sweept in the DSA HP3562A device
 %
 % Output:

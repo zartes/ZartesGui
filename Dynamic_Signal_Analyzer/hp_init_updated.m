@@ -39,7 +39,7 @@ if isempty(dsa.ObjHandle)
     catch
         status = 1; % Connection not available
         delete(dsa.ObjHandle);
-        rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\');
+%         rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\');
         disp('Error connecting Spectral Analyzer HP3562A, please check connectivity');         
         return;
     end

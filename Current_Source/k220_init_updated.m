@@ -25,11 +25,11 @@ if isempty(k220.ObjHandle)
     catch
         status = 1; % Connection not available
         delete(k220.ObjHandle);
-        rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\K220\');
+%         rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\K220\');
         disp('Error connecting Current Source K220, please check connectivity');         
         return;
     end    
-elseif strcmp(k220(1).Status,'closed')
+elseif strcmp(k220(1).ObjHandle.Status,'closed')
     try
         fopen(k220(1).ObjHandle);   % Important line, it is mandatory to use fclose(multi) at the end of the session.
     catch
@@ -42,7 +42,7 @@ elseif strcmp(k220(1).Status,'closed')
 end
 
 device = query(k220.ObjHandle,'*IDN?');%esta instruccion es más directa.
-if ~strcmpi(multi.ID,device(1:7))
+if ~strcmpi(k220.ID,device(1:7))
     status = 1; % Connection not available
     return;
 end
