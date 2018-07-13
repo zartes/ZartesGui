@@ -78,19 +78,25 @@ handles.FieldFileDir = [];
 handles.FieldFileName = [];
 
 % Initialization of classes 
-handles.circuit = Circuit;
+handles.Circuit = Circuit;
+handles.Circuit = handles.Circuit.Constructor;
+handles.menu(1) = uimenu('Parent',handles.figure1,'Label',...
+    'Circuit');
+handles.Menu_Circuit = uimenu('Parent',handles.menu(1),'Label',...
+    'Circuit Properties','Callback',{@Obj_Properties},'UserData',handles.Circuit);
+
 handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
 handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
 
 % Menu is generated here
-handles.menu(1) = uimenu('Parent',handles.figure1,'Label',...
+handles.menu(2) = uimenu('Parent',handles.figure1,'Label',...
         'Devices');
 
 for i = 1:size(handles.HndlStr,1)
     eval(['handles.' handles.HndlStr{i,1} '=' handles.HndlStr{i,2} ';']);
     eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Constructor;']);    
     eval(['handles.Devices.' handles.HndlStr{i,1} ' = 0;']); % By default all are deactivated
-    eval(['handles.Menu_' handles.HndlStr{i,1} ' = uimenu(''Parent'',handles.menu(1),''Label'','...
+    eval(['handles.Menu_' handles.HndlStr{i,1} ' = uimenu(''Parent'',handles.menu(2),''Label'','...
         '[''&' handles.HndlStr{i,2} ''']);']);
     eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
     for j = 1:size(Mthds,1)
@@ -99,6 +105,8 @@ for i = 1:size(handles.HndlStr,1)
         '''' Mthds{j} ''',''Callback'',''handles.' handles.HndlStr{i,1} '.' Mthds{j} ''');']);
         end
     end
+    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(j) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+    '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Obj_Properties},''UserData'',handles.' handles.HndlStr{i,1} ');']);
     
 end
 
