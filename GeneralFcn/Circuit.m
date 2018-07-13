@@ -15,11 +15,11 @@ classdef Circuit
         function obj = Constructor(obj)
             obj.Rf = PhysicalMeasurement;            
             obj.Rf.Value = 10000;
-            obj.Rf.Units = '';
+            obj.Rf.Units = 'Ohm';
             
             obj.Rpar = PhysicalMeasurement;            
             obj.Rpar.Value = 2.035e-05;
-            obj.Rpar.Units = '';
+            obj.Rpar.Units = 'Ohm';
             
             obj.Rn = PhysicalMeasurement;
             obj.Rn.Value = 0.0232;
