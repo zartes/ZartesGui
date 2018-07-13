@@ -139,11 +139,11 @@ function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 try
-    if eventdata.Key == 'escape'
+    if strcmp(eventdata.Key,'escape')
         % Remove paths
         figure1_DeleteFcn(handles.figure1,eventdata,handles);            
        
-    elseif eventdata.Key == 'return'
+    elseif strcmp(eventdata.Key,'return')
         if strcmp(get(handles.Accept,'Enable'),'on')
             Accept_Callback(handles.Start,eventdata,handles);
         end

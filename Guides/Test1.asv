@@ -79,14 +79,32 @@ handles.FieldFileName = [];
 
 % Initialization of classes 
 handles.circuit = Circuit;
-handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'SpecAnal';'PXI'};
+handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
 handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
+
+% Menu is generated here
+handles.menu(1) = uimenu('Parent',handles.figure1,'Label',...
+        'Devices');
 
 for i = 1:size(handles.HndlStr,1)
     eval(['handles.' handles.HndlStr{i,1} '=' handles.HndlStr{i,2} ';']);
     eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Constructor;']);    
     eval(['handles.Devices.' handles.HndlStr{i,1} ' = 0;']); % By default all are deactivated
+    eval(['handles.Menu_' handles.HndlStr{i,1} ' = uimenu(''Parent'',handles.menu(1),''Label'','...
+        '[''&' handles.HndlStr{i,2} ''']);']);
+    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
+    for j = 1:size(Mthds,1)
+        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds(j))))
+            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(j) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+        Mthds{j} ',''Callback'',''{@handles.' handles.HndlStr{i,1} '.' Mthds{j} '}'');']);
+        end
+    end
+    
 end
+
+
+    
+
 
 
 handles.EnableStr = {'off';'on'};
@@ -173,10 +191,13 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
-    if handles.d(i).isdir
-        rmpath([handles.MainDir handles.d(i).name])
+try
+    for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
+        if handles.d(i).isdir
+            rmpath([handles.MainDir handles.d(i).name])
+        end
     end
+catch
 end
 delete(handles.figure1);
          
@@ -303,6 +324,7 @@ Name_Temp(Name_Temp == ':') = '-';
 IbvaluesHandle = IbvaluesConf({[],Name_Temp});
 waitfor(IbvaluesHandle,'Visible','off');
 Ibvalues = dlmread(Name_Temp);
+
 
 
 
