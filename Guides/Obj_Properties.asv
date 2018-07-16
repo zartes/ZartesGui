@@ -87,11 +87,18 @@ for i = 1:length(content.ParametersStr)
     if strcmp(eval(['class(handles.Obj.UserData.' content.ParametersStr{i} ')']),'PhysicalMeasurement')
         eval(['data{i,2} = handles.Obj.UserData.' content.ParametersStr{i} '.Value;']);
         eval(['data{i,3} = handles.Obj.UserData.' content.ParametersStr{i} '.Units;']);
-    elseif ~iscell(eval(['class(handles.Obj.UserData.' content.ParametersStr{i} ')']))        
+    elseif ~strcmp(eval(['class(handles.Obj.UserData.' content.ParametersStr{i} ')']),'cell')        
         eval(['data{i,2} = handles.Obj.UserData.' content.ParametersStr{i} ';']);
         data{i,3} = '';
     else
-        
+        for j = 1:length(eval(['handles.Obj.UserData.' content.ParametersStr{i}]))
+            % Casos en los que el dato es un cell 
+            if j ~= length(eval(['handles.Obj.UserData.' content.ParametersStr{i}]))
+            data{i,2} = ['{' eval(['handles.Obj.UserData.' content.ParametersStr{i} '{j}']) ';'];
+            else
+                data{i,2} = [data{i,2} eval(['handles.Obj.UserData.' content.ParametersStr{i} '{j}']) '}'];
+            end
+        end
     end
 end
 set(handles.tabla,'Data',data);
@@ -186,9 +193,35 @@ function save_Callback(hObject, eventdata, handles)
 global data_conf
 
 data = get(handles.tabla,'Data');
+OrigParameters = properties(handles.Obj.UserData);
+ParametersStr = data(:,1);
+
+
+for i = 1:size(OrigParameters,1)
+    aux = strfind(ParametersStr,OrigParameters{i});
+    indx = find(cellfun(@length, aux)==1);
+    
+    switch class(eval(['handles.Obj.UserData.' OrigParameters{i} ]))
+        case 'PhysicalMeasurement'
+            eval(['handles.Obj.UserData.' OrigParameters{i} '.Value = ' num2str(data{indx,2}) ';'])
+            eval(['handles.Obj.UserData.' OrigParameters{i} '.Units = ''' data{indx,3} ''';'])
+        case 'char'
+            eval(['handles.Obj.UserData.' OrigParameters{i} ' = ''' data{indx,2} ''';'])
+        case 'double'
+            eval(['handles.Obj.UserData.' OrigParameters{i} ' = ' num2str(data{indx,2}) ';'])
+        otherwise 
+    end
+end
+
+
 if ~isequal(data_conf,data)  
-    for i = 1:length(data)
-        eval([data{i,1} '= ' num2str(data{i,2}) ';']);
+    for i = 1:size(ParametersStr,1)
+        
+        if ~ischar(data{i,2})
+            eval([data{i,1} '= ' num2str(data{i,2}) ';']);
+        else
+            eval([data{i,1} '= ''' data{i,2} ''';']);
+        end
     end
     units = data(:,3);
     ParametersStr = data(:,1);

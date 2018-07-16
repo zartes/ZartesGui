@@ -87,12 +87,17 @@ for i = 1:length(content.ParametersStr)
     if strcmp(eval(['class(handles.Obj.UserData.' content.ParametersStr{i} ')']),'PhysicalMeasurement')
         eval(['data{i,2} = handles.Obj.UserData.' content.ParametersStr{i} '.Value;']);
         eval(['data{i,3} = handles.Obj.UserData.' content.ParametersStr{i} '.Units;']);
-    elseif ~iscell(eval(['class(handles.Obj.UserData.' content.ParametersStr{i} ')']))        
+    elseif ~strcmp(eval(['class(handles.Obj.UserData.' content.ParametersStr{i} ')']),'cell')        
         eval(['data{i,2} = handles.Obj.UserData.' content.ParametersStr{i} ';']);
         data{i,3} = '';
     else
         for j = 1:length(eval(['handles.Obj.UserData.' content.ParametersStr{i}]))
             % Casos en los que el dato es un cell 
+            if j ~= length(eval(['handles.Obj.UserData.' content.ParametersStr{i}]))
+            data{i,2} = ['{' eval(['handles.Obj.UserData.' content.ParametersStr{i} '{j}']) ';'];
+            else
+                data{i,2} = [data{i,2} eval(['handles.Obj.UserData.' content.ParametersStr{i} '{j}']) '}'];
+            end
         end
     end
 end
@@ -123,56 +128,9 @@ set(handles.tabla,'Data',data);
 
 guidata(hObject,handles);
 
-% --- Executes on selection change in Conf_File.
-function Conf_File_Callback(hObject, eventdata, handles)
-% hObject    handle to Conf_File (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns Conf_File contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from Conf_File
 
 
 
-
-guidata(hObject,handles)
-% --- Executes during object creation, after setting all properties.
-function Conf_File_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Conf_File (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in Browse.
-function Browse_Callback(hObject, eventdata, handles)
-% hObject    handle to Browse (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% global prmSetup
-name = handles.ConfFile{handles.ConfFileNum};
-
-[ecgannot, anotdir] = uigetfile({['*' name '*.mat'],'Mat file (*.mat)';
-    '*.mat','All files (*.*)'},...
-    'Select one annotation file','*.mat');
-
-if ~isempty(ecgannot)&&~isequal(ecgannot,0)
-    handles.ConfFileDir{end+1} = anotdir;
-    handles.ConfFile{end+1} = ecgannot(1:strfind(ecgannot,'.mat')-1);
-    handles.ConfFileNum = handles.ConfFileNum +1;
-    
-    set(handles.Conf_File,'String',handles.ConfFile,'Value',handles.ConfFileNum);
-    Conf_File_Callback(handles.Conf_File,[],handles);
-%     prmSetup.wavedet.Conf_File = handles.ConfFile;
-%     prmSetup.wavedet.Conf_File_Dir = handles.ConfFileDir;
-%     prmSetup.wavedet.Conf_File_Num = handles.ConfFileNum;
-end
-guidata(hObject,handles);
 % --- Executes on button press in cancel.
 function cancel_Callback(hObject, eventdata, handles)
 % hObject    handle to cancel (see GCBO)
@@ -185,19 +143,33 @@ function save_Callback(hObject, eventdata, handles)
 % hObject    handle to save (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global data_conf
+
 
 data = get(handles.tabla,'Data');
-if ~isequal(data_conf,data)  
-    for i = 1:length(data)
-        eval([data{i,1} '= ' num2str(data{i,2}) ';']);
+OrigParameters = properties(handles.Obj.UserData);
+ParametersStr = data(:,1);
+
+
+for i = 1:size(OrigParameters,1)
+    aux = strfind(ParametersStr,OrigParameters{i});
+    indx = find(cellfun(@length, aux)==1);
+    auxStr = num2str(data{indx,2});
+    if isempty(auxStr)
+        auxStr = '[]';
     end
-    units = data(:,3);
-    ParametersStr = data(:,1);
-    
-    uiwait(tickbox('New Properties were saved successfully!','ZarTES v.1'));
-    return;
+    switch class(eval(['handles.Obj.UserData.' OrigParameters{i} ]))
+        case 'PhysicalMeasurement'
+            eval(['handles.Obj.UserData.' OrigParameters{i} '.Value = ' auxStr ';'])
+            eval(['handles.Obj.UserData.' OrigParameters{i} '.Units = ''' data{indx,3} ''';'])
+        case 'char'
+            eval(['handles.Obj.UserData.' OrigParameters{i} ' = ''' data{indx,2} ''';'])
+        case 'double'
+            eval(['handles.Obj.UserData.' OrigParameters{i} ' = ' auxStr ';'])
+        otherwise 
+    end
 end
+
+uiwait(msgbox('Properties were successfully saved!','ZarTES v.1'));
 
 delete(handles.figure1);
 

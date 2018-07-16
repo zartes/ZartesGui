@@ -106,7 +106,7 @@ for i = 1:size(handles.HndlStr,1)
         end
     end
     eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(j) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
-    '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Obj_Properties},''UserData'',handles.' handles.HndlStr{i,1} ');']);
+    '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Obj_Properties},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
     
 end
 
@@ -282,8 +282,8 @@ if isempty(handles.FieldFileName)
     end
 end
 
-set([handles.IVs handles.ZN handles.Pulses...
-    handles.TempBrowse handles.FieldBrowse handles.Start],'Enable','inactive');
+% set([handles.IVs handles.ZN handles.Pulses...
+%     handles.TempBrowse handles.FieldBrowse handles.Start],'Enable','inactive');
 
 Set.IVs.on = handles.IVs.Value; % Multimeter, Squid, and Opt (DC Current Source)
 if Set.IVs.on
@@ -309,12 +309,14 @@ if Set.Pulses.on
     end
 end
 
-% Initialize connection of devices
 
+
+% Initialize connection of devices
 for i = 1:size(handles.HndlStr,1)
-    if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
-        eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Initialize;']); 
-    end    
+    eval(['handles.' handles.HndlStr{i,1} ' = handles.Menu_' handles.HndlStr{i,1} '_sub(end).UserData;'])
+%     if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
+%         eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Initialize;']); 
+%     end    
 end
 
 % Seleccionar los Ibvalues que se van a usar
