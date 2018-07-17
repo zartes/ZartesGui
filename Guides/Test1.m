@@ -79,6 +79,8 @@ handles.FieldFileName = [];
 
 handles = Menu_Generation(handles);
 handles.EnableStr = {'off';'on'};
+handles.DevStr = {'Multi';'Squid';'SpecAnal';'PXI';'CurSour'};
+handles.DevStrOn = [0 0 0 0 0];
 % Update handles structure
 guidata(hObject, handles);
 
@@ -100,10 +102,6 @@ set(handles.figure1,'Visible','on');
 % waitfor(handles.figure1);
 guidata(hObject,handles);
 
-function ActivateStartButton(handles)
-Value = (handles.IVs.Value||handles.ZN.Value||handles.Pulses.Value);
-handles.Start.Enable = handles.EnableStr{Value+1};
-
 
 % --- Executes on button press in IVs.
 function IVs_Callback(hObject, eventdata, handles)
@@ -112,7 +110,10 @@ function IVs_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of IVs
-ActivateStartButton(handles);
+
+handles.DevStrOn = [1 1 0 0 0];
+handles.Start.Enable = handles.EnableStr{(hObject.Value||handles.ZN.Value||handles.Pulses.Value)+1};
+guidata(hObject,handles);
 
 % --- Executes on button press in ZN.
 function ZN_Callback(hObject, eventdata, handles)
@@ -121,7 +122,10 @@ function ZN_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of ZN
-ActivateStartButton(handles)
+
+handles.DevStrOn = [1 1 1 1 1];
+handles.Start.Enable = handles.EnableStr{(hObject.Value||handles.IVs.Value||handles.Pulses.Value)+1};
+guidata(hObject,handles);
 
 % --- Executes on button press in Pulses.
 function Pulses_Callback(hObject, eventdata, handles)
@@ -130,7 +134,10 @@ function Pulses_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of Pulses
-ActivateStartButton(handles)
+
+handles.DevStrOn = [1 1 0 1 1];
+handles.Start.Enable = handles.EnableStr{(hObject.Value||handles.ZN.Value||handles.IVs.Value)+1};
+guidata(hObject,handles);
 
 
 % --- Executes on key press with focus on figure1 or any of its controls.
@@ -160,8 +167,8 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 % hObject    handle to figure1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-for i = 1:size(handles.HndlStr,1)
-    if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
+for i = 1:length(handles.DevStrOn)
+    if handles.DevStrOn(i)
         eval(['handles.' handles.HndlStr{i,1} '.Destructor;']); 
     end    
 end
@@ -253,33 +260,14 @@ if isempty(handles.FieldFileName)
     end
 end
 
+%%% Inactivate buttons %%%%%%%%%
+
 % set([handles.IVs handles.ZN handles.Pulses...
 %     handles.TempBrowse handles.FieldBrowse handles.Start],'Enable','inactive');
 
-Set.IVs.on = handles.IVs.Value; % Multimeter, Squid, and Opt (DC Current Source)
-if Set.IVs.on
-    DevStr = {'Multi';'Squid';'CurSour'};
-    for i = 1:size(DevStr,1)
-        eval(['handles.Devices.' DevStr{i} ' = 1;']);
-    end
+for i = 1:size(handles.DevStr,1)
+    eval(['handles.Devices.' handles.DevStr{i} ' = ' num2str(handles.DevStrOn(i)) ';']);
 end
-
-Set.ZN.on = handles.ZN.Value; % Multimeter, Squid, SpectrumAnalyzer, PXI and Opt (DC Current Source)
-if Set.ZN.on
-    DevStr = {'Multi';'Squid';'SpecAnal';'PXI';'CurSour'};
-    for i = 1:size(DevStr,1)
-        eval(['handles.Devices.' DevStr{i} ' = 1;']);
-    end
-end
-
-Set.Pulses.on = handles.Pulses.Value; % Multimeter(pxi), Squid, PXI and Opt (DC Current Source)
-if Set.Pulses.on
-    DevStr = {'Multi';'Squid';'PXI';'CurSour'};
-    for i = 1:size(DevStr,1)
-        eval(['handles.Devices.' DevStr{i} ' = 1;']);
-    end
-end
-
 
 
 % Initialize connection of devices
@@ -289,7 +277,7 @@ for i = 1:size(handles.HndlStr,1)
         eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Initialize;']); 
     end    
 end
-handles = Menu_Update([],handles);
+handles = Menu_Update(handles.DevStrOn,handles);  % Input handles.DevStrOn (activation or deactivation of menus)
 
 % Seleccionar los Ibvalues que se van a usar
 
@@ -321,7 +309,9 @@ guidata(hObject,handles);
 
 
 function handles = Menu_Generation(handles)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialization of classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 handles.Circuit = Circuit;
 handles.Circuit = handles.Circuit.Constructor;
 handles.menu(1) = uimenu('Parent',handles.figure1,'Label',...
@@ -361,20 +351,22 @@ for i = 1:size(handles.HndlStr,1)
     
 end
 
-function handles = Menu_Update(device,handles)
 
-if isempty(device)
-    indx = 1:size(handles.HndlStr,1);
-else    
-    indx = find(cellfun(@length, strfind(handles.HndlStr(:,2),device))==1);
-end
-for i = indx        
+
+function handles = Menu_Update(DevicesOn,handles)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for i = 1:length(DevicesOn)
     eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
     jj = 2;
     for j = 1:size(Mthds,1) %#ok<USENS>
         if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
             eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
-            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''on'';']);
+            if DevicesOn(i)
+                eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''on'';']);
+            else
+                eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''off'';']);
+            end
             jj = jj + 1;
         end
     end
@@ -390,43 +382,46 @@ if ~isempty(strfind(src.Label,'Initialize')) % Device are checked if they are in
         case 'Multimeter'
             if ~isempty(handles.Multi.ObjHandle)
                 return;
+            else
+                handles.Multi = handles.Multi.Initialize;
+                handles.DevStrOn(1) = 1;                
             end
         case 'ElectronicMagnicon'
             if ~isempty(handles.Squid.ObjHandle)
                 return;
-            end
-        case 'CurrentSource'
-            if ~isempty(handles.CurSour.ObjHandle)
-                return;
+            else
+                handles.Squid = handles.Squid.Initialize;
+                handles.DevStrOn(2) = 1;
             end
         case 'SpectrumAnalyzer'
             if ~isempty(handles.DS.ObjHandle)
                 return;
+            else
+                handles.DSA = handles.DSA.Initialize;
+                handles.DevStrOn(3) = 1;
             end
         case 'PXI_Acquisition_card'
             if ~isempty(handles.PXI.ObjHandle)
                 return;
+            else
+                handles.PXI = handles.PXI.Initialize;
+                handles.DevStrOn(4) = 1;
             end
+        case 'CurrentSource'
+            if ~isempty(handles.CurSour.ObjHandle)
+                return;
+            else
+                handles.CurSour = handles.CurSour.Initialize;
+                handles.DevStrOn(5) = 1;
+            end
+        
         otherwise
     end
+    handles = Menu_Update(handles.DevStrOn,handles);  % Sub_menus are now available.
+else
+    eval(['[a, b] = src.UserData.' src.Label]);
 end
 
-eval(['[a, b] = src.UserData.' src.Label]);
-switch class(a)
-    case 'Multimeter'
-        handles.Multi = a;
-    case 'ElectronicMagnicon'
-        handles.Squid = a;        
-    case 'CurrentSource'
-        handles.CurSour = a;
-    case 'SpectrumAnalyzer'
-        handles.DSA = a;
-    case 'PXI_Acquisition_card'
-        handles.PXI = a;
-    otherwise
-end
-if ~isempty(strfind(src.Label,'Initialize'))
-    handles = Menu_Update(class(a),handles);  % Sub_menus are now available.
-end
+
 guidata(src,handles);
 
