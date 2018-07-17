@@ -32,17 +32,17 @@ classdef CurrentSource
             obj = k220_setVlimit_updated(obj);
         end
         
-        function SetIntensity(obj,Ivalue)
+        function obj = SetIntensity(obj,Ivalue)
             if strcmpi(Ivalue.Units, 'A')
                 k220_setI_updated(obj,Ivalue)
             else
                 error('Ivalue units must be A');
             end
         end
-        function CurrentSource_Start(obj)
+        function obj = CurrentSource_Start(obj)
             k220_Start_updated(obj);
         end
-        function CurrentSource_Stop(obj)
+        function obj = CurrentSource_Stop(obj)
             k220_Stop_updated(obj);
         end
         
