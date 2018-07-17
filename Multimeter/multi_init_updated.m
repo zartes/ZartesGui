@@ -38,6 +38,17 @@ if isempty(multi.ObjHandle)
         return;
     end
 end
+command = 'RESET; END 1; FUNC DCV, 10; NPLC 10'; %%% NPLC 10 -> 1.
+% FUNC DCV, 10    %% Devuelve las medidas en Voltios Sólo afecta al
+% display.  Las medidas las da en Voltios siempre.
+% FUNC DCV, 0.1   %% Devuelve las medidas en mV. 
+% Esto tiene implicaciones en la resolución de las medidas.
+
+
+query(multi.ObjHandle,command);
+fclose(multi.ObjHandle);
+pause(1);
+fopen(multi.ObjHandle);
 
 % Checking the correct connection with the device
 device = query(multi.ObjHandle,'ID?');
