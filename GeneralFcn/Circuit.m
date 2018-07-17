@@ -1,6 +1,9 @@
 classdef Circuit
-    properties
-        Rf;             % Impedance of FLL
+    
+    properties (Access = private)
+        Rf;             % Impedance of FLL (linked to Squid Rf magnitude)
+    end
+    properties              
         Rpar;           % Parasitic Impedance (TES branch)
         Rn;             % Impedance of TES in Normal state
         Rsh;            % Impedance of the resistive divisor
@@ -14,7 +17,7 @@ classdef Circuit
     methods        
         function obj = Constructor(obj)
             obj.Rf = PhysicalMeasurement;            
-            obj.Rf.Value = 10000;
+            obj.Rf.Value = [];
             obj.Rf.Units = 'Ohm';
             
             obj.Rpar = PhysicalMeasurement;            

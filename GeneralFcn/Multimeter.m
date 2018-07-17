@@ -20,10 +20,10 @@ classdef Multimeter
             [obj, status] = multi_init_updated(obj);                   
         end
         
-        function Vdc = Read(obj)
+        function [obj, Vdc] = Read(obj)
             Vdc = PhysicalMeasurement;
             Vdc.Value = multi_read_updated(obj);
-            Vdc.Units = 'mV';
+            Vdc.Units = 'V';
         end
         
         function Destructor(obj)

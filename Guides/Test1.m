@@ -70,49 +70,15 @@ for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
     end
 end
 
-
 % Initialization of setting parameters
 handles.TempFileDir = [];
 handles.TempFileName = [];
 handles.FieldFileDir = [];
 handles.FieldFileName = [];
 
-% Initialization of classes 
-handles.Circuit = Circuit;
-handles.Circuit = handles.Circuit.Constructor;
-handles.menu(1) = uimenu('Parent',handles.figure1,'Label',...
-    'Circuit');
-handles.Menu_Circuit = uimenu('Parent',handles.menu(1),'Label',...
-    'Circuit Properties','Callback',{@Obj_Properties},'UserData',handles.Circuit);
 
-handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
-handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
-
-% Menu is generated here
-handles.menu(2) = uimenu('Parent',handles.figure1,'Label',...
-        'Devices');
-
-for i = 1:size(handles.HndlStr,1)
-    eval(['handles.' handles.HndlStr{i,1} '=' handles.HndlStr{i,2} ';']);
-    eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Constructor;']);    
-    eval(['handles.Devices.' handles.HndlStr{i,1} ' = 0;']); % By default all are deactivated
-    eval(['handles.Menu_' handles.HndlStr{i,1} ' = uimenu(''Parent'',handles.menu(2),''Label'','...
-        '[''&' handles.HndlStr{i,2} ''']);']);
-    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
-    for j = 1:size(Mthds,1)
-        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds(j))))
-            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(j) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
-        '''' Mthds{j} ''',''Callback'',''handles.' handles.HndlStr{i,1} '.' Mthds{j} ''');']);
-        end
-    end
-    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(j) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
-    '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Obj_Properties},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
-    
-end
-
+handles = Menu_Generation(handles);
 handles.EnableStr = {'off';'on'};
-
-
 % Update handles structure
 guidata(hObject, handles);
 
@@ -194,7 +160,11 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 % hObject    handle to figure1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+for i = 1:size(handles.HndlStr,1)
+    if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
+        eval(['handles.' handles.HndlStr{i,1} '.Destructor;']); 
+    end    
+end
 try
     for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
         if handles.d(i).isdir
@@ -203,6 +173,7 @@ try
     end
 catch
 end
+
 delete(handles.figure1);
          
 % --- Executes on button press in TempBrowse.
@@ -314,10 +285,11 @@ end
 % Initialize connection of devices
 for i = 1:size(handles.HndlStr,1)
     eval(['handles.' handles.HndlStr{i,1} ' = handles.Menu_' handles.HndlStr{i,1} '_sub(end).UserData;'])
-%     if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
-%         eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Initialize;']); 
-%     end    
+    if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
+        eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Initialize;']); 
+    end    
 end
+handles = Menu_Update([],handles);
 
 % Seleccionar los Ibvalues que se van a usar
 
@@ -337,13 +309,124 @@ Ibvalues = dlmread(Name_Temp);
 
 
 
-
-for i = 1:size(handles.HndlStr,1)
-    if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
-        eval(['handles.' handles.HndlStr{i,1} '.Destructor;']); 
-    end    
-end
 set([handles.IVs handles.ZN handles.Pulses...
     handles.TempBrowse handles.FieldBrowse handles.Start],'Enable','on');
+disp('Acquisition is over');
+guidata(hObject,handles);
 
+
+
+
+
+
+
+function handles = Menu_Generation(handles)
+% Initialization of classes
+handles.Circuit = Circuit;
+handles.Circuit = handles.Circuit.Constructor;
+handles.menu(1) = uimenu('Parent',handles.figure1,'Label',...
+    'Circuit');
+handles.Menu_Circuit = uimenu('Parent',handles.menu(1),'Label',...
+    'Circuit Properties','Callback',{@Obj_Properties},'UserData',handles.Circuit);
+
+handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
+handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
+
+% Menu is generated here
+handles.menu(2) = uimenu('Parent',handles.figure1,'Label',...
+    'Devices');
+
+for i = 1:size(handles.HndlStr,1)
+    eval(['handles.' handles.HndlStr{i,1} '=' handles.HndlStr{i,2} ';']);
+    eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Constructor;']);
+    eval(['handles.Devices.' handles.HndlStr{i,1} ' = 0;']); % By default all are deactivated
+    eval(['handles.Menu_' handles.HndlStr{i,1} ' = uimenu(''Parent'',handles.menu(2),''Label'','...
+        '[''&' handles.HndlStr{i,2} ''']);']);
+    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
+    jj = 1;
+    % The firts menu is the one uses for initialize the device
+    % connection
+    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+        ''' Initialize '',''Callback'',{@Obj_Actions},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
+    jj = jj + 1;
+    for j = 1:size(Mthds,1) %#ok<USENS>                                
+        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
+            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+                '''' Mthds{j} ''',''Callback'',{@Obj_Actions},''UserData'',handles.' handles.HndlStr{i,1} ',''Enable'',''off'');']);
+            jj = jj + 1;
+        end
+    end
+    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+        '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Obj_Properties},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
+    
+end
+
+function handles = Menu_Update(device,handles)
+
+if isempty(device)
+    indx = 1:size(handles.HndlStr,1);
+else    
+    indx = find(cellfun(@length, strfind(handles.HndlStr(:,2),device))==1);
+end
+for i = indx        
+    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
+    jj = 2;
+    for j = 1:size(Mthds,1) %#ok<USENS>
+        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
+            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
+            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''on'';']);
+            jj = jj + 1;
+        end
+    end
+    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);    
+end
+
+
+function Obj_Actions(src,evnt)
+handles  = guidata(src);
+if ~isempty(strfind(src.Label,'Initialize')) % Device are checked if they are initialize.  If so, they are not initialize again. 
+    Parent = evnt.Source.Parent.Label(2:end); % First character is reserved for &
+    switch Parent
+        case 'Multimeter'
+            if ~isempty(handles.Multi.ObjHandle)
+                return;
+            end
+        case 'ElectronicMagnicon'
+            if ~isempty(handles.Squid.ObjHandle)
+                return;
+            end
+        case 'CurrentSource'
+            if ~isempty(handles.CurSour.ObjHandle)
+                return;
+            end
+        case 'SpectrumAnalyzer'
+            if ~isempty(handles.DS.ObjHandle)
+                return;
+            end
+        case 'PXI_Acquisition_card'
+            if ~isempty(handles.PXI.ObjHandle)
+                return;
+            end
+        otherwise
+    end
+end
+
+eval(['[a, b] = src.UserData.' src.Label]);
+switch class(a)
+    case 'Multimeter'
+        handles.Multi = a;
+    case 'ElectronicMagnicon'
+        handles.Squid = a;        
+    case 'CurrentSource'
+        handles.CurSour = a;
+    case 'SpectrumAnalyzer'
+        handles.DSA = a;
+    case 'PXI_Acquisition_card'
+        handles.PXI = a;
+    otherwise
+end
+if ~isempty(strfind(src.Label,'Initialize'))
+    handles = Menu_Update(class(a),handles);  % Sub_menus are now available.
+end
+guidata(src,handles);
 
