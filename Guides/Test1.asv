@@ -292,6 +292,22 @@ waitfor(IbvaluesHandle,'Visible','off');
 Ibvalues = dlmread(Name_Temp);
 
 
+if handles.IVs.Value
+    
+    % Calibration of Squid
+    handles.Squid.Calibration;
+    handles.Squid.TES2NormalState;
+    handles.Squid.ResetClossedLoop;
+    
+    
+    % For bucle
+    % For each Ibvalue
+    for i = 1:length(Ibvalues)
+    handles.Squid.Set_Current_Value(handles.Squid,Ibvalues();
+    [handles.Multi, Vdc(i)] = handles.Multi.Read;
+    Ireal(i) = handles.Squid.Read_Current_Value;
+    
+   
 
 
 
@@ -309,7 +325,9 @@ guidata(hObject,handles);
 
 
 function handles = Menu_Generation(handles)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialization of classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 handles.Circuit = Circuit;
 handles.Circuit = handles.Circuit.Constructor;
 handles.menu(1) = uimenu('Parent',handles.figure1,'Label',...
@@ -349,16 +367,11 @@ for i = 1:size(handles.HndlStr,1)
     
 end
 
-function handles = Menu_Update(DevicesOn,handles)
 
-% indx = find(deviceOn == 1);
-% if isempty(indx)
-%     indx
-% if isempty(device)
-%     indx = 1:size(handles.HndlStr,1);
-% else    
-%     indx = find(cellfun(@length, strfind(handles.HndlStr(:,2),device))==1);
-% end
+
+function handles = Menu_Update(DevicesOn,handles)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i = 1:length(DevicesOn)
     eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
     jj = 2;
@@ -406,38 +419,25 @@ if ~isempty(strfind(src.Label,'Initialize')) % Device are checked if they are in
         case 'PXI_Acquisition_card'
             if ~isempty(handles.PXI.ObjHandle)
                 return;
-                e
+            else
                 handles.PXI = handles.PXI.Initialize;
                 handles.DevStrOn(4) = 1;
-                return;
             end
         case 'CurrentSource'
             if ~isempty(handles.CurSour.ObjHandle)
+                return;
+            else
                 handles.CurSour = handles.CurSour.Initialize;
                 handles.DevStrOn(5) = 1;
-                return;
             end
         
         otherwise
     end
-end
-eval(['[a, b] = src.UserData.' src.Label]);
-switch class(a)
-    case 'Multimeter'
-        handles.DevStrOn(1) = 1;
-    case 'ElectronicMagnicon'
-        handles.DevStrOn(2) = 1;
-    case 'SpectrumAnalyzer'
-        handles.DevStrOn(3) = 1;
-    case 'PXI_Acquisition_card'
-        handles.DevStrOn(4) = 1;
-    case 'CurrentSource'
-        handles.DevStrOn(5) = 1;
-    otherwise
-end
-if ~isempty(strfind(src.Label,'Initialize'))
     handles = Menu_Update(handles.DevStrOn,handles);  % Sub_menus are now available.
+else
+    eval(['[a, b] = src.UserData.' src.Label]);
 end
+
 
 guidata(src,handles);
 

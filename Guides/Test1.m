@@ -292,6 +292,66 @@ waitfor(IbvaluesHandle,'Visible','off');
 Ibvalues = dlmread(Name_Temp);
 
 
+if handles.IVs.Value
+    
+    % Calibration of Squid
+    handles.Squid.Calibration;
+    handles.Squid.TES2NormalState;
+    handles.Squid.ResetClossedLoop;    
+    
+    % For bucle
+    % For each Ibvalue
+    for i = 1:length(Ibvalues)
+        handles.Squid.Set_Current_Value(handles.Squid,Ibvalues(i));
+        [handles.Multi, Vdc(i)] = handles.Multi.Read;
+        Ireal_IV(i) = handles.Squid.Read_Current_Value;
+    end
+    
+    % Storing the data lines
+    
+end
+
+if handles.ZN.Value
+    
+    handles.DSA.Calibration;
+    handles.Squid.TES2NormalState;
+    
+    % For bucle
+    % For each Ibvalue
+    for i = 1:length(Ibvalues)
+        handles.Squid.ResetClossedLoop;  
+        handles.Squid.Set_Current_Value(handles.Squid,Ibvalues(i));
+        Ireal_ZN(i) = handles.Squid.Read_Current_Value;
+        
+        % TF measurement
+        handles.DSA.SineSweeptMode;
+        handles.DSA.LauchMeasurement;
+        datos_TF = handles.DSA.Read;
+        
+        % Noise measurement
+        % Falta definir Amp;
+        handles.DSA.NoiseMode(handles.DSA,Amp);
+        handles.DSA.LauchMeasurement;
+        datos_N = handles.DSA.Read;
+        
+    end    
+    
+end
+
+if handles.Pulses.Value
+    
+    handles.Squid.TES2NormalState;
+    handles.Squid.Pulse_Configuration;
+    handles.Squid.ResetClossedLoop;  
+    handles.Squid.Cal_Pulse_ON;
+    [handles.Multi, Vdc(i)] = handles.Multi.Read;
+    
+    handles.PXI.Pulses_Configuration;
+    [data, WfmI] = handles.PXI.Get_Wave_Form;
+    handles.Squid.Cal_Pulse_OFF;
+    
+
+   
 
 
 
