@@ -33,7 +33,7 @@ classdef SpectrumAnalyzer
             close(h);            
         end
         
-        function obj = SineSweeptMode(obj,Amp,freq)
+        function obj = SineSweeptMode(obj,Amp)
             obj = hp_ss_config_updated(obj); % Measurement of Sine Sweept    
             if nargin == 1
                 str = strcat('SRLV 20mV');
@@ -41,6 +41,9 @@ classdef SpectrumAnalyzer
                 str = strcat('SRLV ',' ',num2str(Amp),'mV'); % amplitud de excitación (mV!!)
             end
             fprintf(obj.ObjHandle,str);
+        end
+        
+        function obj = FixedSine(obj,freq)            
             hp_sin_config_updated(obj,freq);  % Fixed sine
         end
         
