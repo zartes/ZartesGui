@@ -25,7 +25,8 @@ classdef CurrentSource
         
         function [obj, status] = Initialize(obj)            
 %             addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\K220\'); 
-            [obj, status] = k220_init_updated(obj);   
+            [obj, status] = k220_init_updated(obj);  
+            obj = k220_setVlimit_updated(obj);
         end
         
         function obj = Calibration(obj)

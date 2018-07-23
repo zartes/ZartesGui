@@ -1,9 +1,9 @@
 function hp_WhiteNoise_updated(dsa,AMP)
-% Function to initialize the multimeter HP3458A device in White Noise
+% Function to initialize the DSA HP3562A device in White Noise
 % output
 %
 % Input:
-% - dsa: Object class Multimetro
+% - dsa: Object class DSA
 % - AMP: Amplitude value in mV
 %
 % Example:

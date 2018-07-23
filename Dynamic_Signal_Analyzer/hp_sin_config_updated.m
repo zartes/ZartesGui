@@ -3,7 +3,7 @@ function hp_sin_config_updated(dsa,freq)
 % output
 %
 % Input:
-% - dsa: Object class Multimetro
+% - dsa: Object class Digital Signal Analyzer
 % - freq: frequency value in Hz
 %
 % Example:

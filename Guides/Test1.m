@@ -350,7 +350,7 @@ if handles.Pulses.Value
     [data, WfmI] = handles.PXI.Get_Wave_Form;
     handles.Squid.Cal_Pulse_OFF;
     
-
+end
    
 
 
