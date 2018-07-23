@@ -22,7 +22,7 @@ function varargout = SetupTEScontrolers(varargin)
 
 % Edit the above text to modify the response to help SetupTEScontrolers
 
-% Last Modified by GUIDE v2.5 20-Jul-2018 13:30:56
+% Last Modified by GUIDE v2.5 23-Jul-2018 11:52:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,15 +54,78 @@ function SetupTEScontrolers_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for SetupTEScontrolers
 handles.output = hObject;
-position = get(handles.figure1,'Position');
-set(handles.figure1,'Color',[0 150 220]/255,'Position',...
+position = get(handles.SetupTES,'Position');
+set(handles.SetupTES,'Color',[0 150 220]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
+
+% Set correct paths (addition)
+handles.CurrentPath = pwd;
+handles.MainDir = handles.CurrentPath(1:find(handles.CurrentPath == filesep, 1, 'last' ));
+handles.d = dir(handles.MainDir);
+for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
+    if handles.d(i).isdir
+        addpath([handles.MainDir handles.d(i).name])
+    end
+end
+
+% Initialization of setting parameters
+handles.TempFileDir = [];
+handles.TempFileName = [];
+handles.FieldFileDir = [];
+handles.FieldFileName = [];
+
+
+handles = Menu_Generation(handles);  % Here, the constructor is applied
+
+% After Constructor, all the values have to be defined in the guide
+
+% Electronic Magnicon
+handles.SQ_Source.Value = handles.Squid.SourceCH;
+a = cellstr(handles.SQ_Rf.String);
+for i = 1:length(a)
+a{i} = strtrim(a{i});
+end
+handles.SQ_Rf.Value = find(contains(a,num2str(handles.Squid.Rf.Value)) == 1,1);
+
+handles.SQ_Pulse_Amp.String = num2str(handles.Squid.PulseAmp.Value);
+handles.SQ_Pulse_Amp_Units.Value = find(contains(cellstr(handles.SQ_Pulse_Amp_Units.String),handles.Squid.PulseAmp.Units)==1,1);
+
+handles.SQ_Pulse_DT.String = num2str(handles.Squid.PulseDT.Value);
+handles.SQ_Pulse_DT_Units.Value = find(contains(cellstr(handles.SQ_Pulse_DT_Units.String),handles.Squid.PulseDT.Units)==1,1);
+
+handles.SQ_Pulse_Duration.String = num2str(handles.Squid.PulseDuration.Value);
+handles.SQ_Pulse_Duration_Units.Value = find(contains(cellstr(handles.SQ_Pulse_Duration_Units.String),handles.Squid.PulseDuration.Units)==1,1);
+
+% DSA
+
+
+
+% PXI
+
+% Field Source
+
+handles.CurSource_Vmax.String = num2str(handles.CurSour.Vmax.Value);
+handles.CurSource_Vmax_Units.Value = find(contains(cellstr(handles.CurSource_Vmax_Units.String),handles.CurSour.Vmax.Units)==1,1);
+
+
+
+handles.EnableStr = {'off';'on'};
+handles.DevStr = {'Multi';'Squid';'SpecAnal';'PXI';'CurSour'};
+handles.DevStrOn = [1 1 1 1 1];
+
+% Initialize connection of devices
+for i = 1:size(handles.HndlStr,1)
+    eval(['handles.' handles.HndlStr{i,1} ' = handles.Menu_' handles.HndlStr{i,1} '_sub(end).UserData;'])
+    if eval(['handles.Devices.' handles.HndlStr{i,1} ' == 1;'])
+        eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Initialize;']); 
+    end    
+end
 % Update handles structure
 guidata(hObject, handles);
 
 % UIWAIT makes SetupTEScontrolers wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
+% uiwait(handles.SetupTES);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -74,7 +137,7 @@ function varargout = SetupTEScontrolers_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-set(handles.figure1,'Visible','on');
+set(handles.SetupTES,'Visible','on');
 
 % --- Executes on button press in radiobutton1.
 function radiobutton1_Callback(hObject, eventdata, handles)
@@ -975,7 +1038,15 @@ function TF_Mode_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of TF_Mode
-
+Ch_TF = handles.TF_Panel.Children;
+Ch_Noise = handles.Noise_Panel.Children;
+if hObject.Value
+    set(Ch_TF,'Enable','on');
+    set(Ch_Noise,'Enable','off');
+else
+    set(Ch_TF,'Enable','off');
+    set(Ch_Noise,'Enable','on');
+end
 
 % --- Executes on button press in Noise_Mode.
 function Noise_Mode_Callback(hObject, eventdata, handles)
@@ -984,7 +1055,15 @@ function Noise_Mode_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of Noise_Mode
-
+Ch_TF = handles.TF_Panel.Children;
+Ch_Noise = handles.Noise_Panel.Children;
+if hObject.Value
+    set(Ch_TF,'Enable','off');
+    set(Ch_Noise,'Enable','on');
+else
+    set(Ch_TF,'Enable','on');
+    set(Ch_Noise,'Enable','off');
+end
 
 
 function Sine_Amp_Callback(hObject, eventdata, handles)
@@ -1358,9 +1437,198 @@ function DSA_TF_Conf_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+waitfor(Conf_Setup(hObject,handles.TF_Menu.Value,handles));
+
 
 % --- Executes on button press in DSA_Noise_Conf.
 function DSA_Noise_Conf_Callback(hObject, eventdata, handles)
 % hObject    handle to DSA_Noise_Conf (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+Conf_Setup(hObject,handles.Noise_Menu.Value,handles);
+
+% --- Executes on selection change in TF_Menu.
+function TF_Menu_Callback(hObject, eventdata, handles)
+% hObject    handle to TF_Menu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns TF_Menu contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from TF_Menu
+
+
+% --- Executes during object creation, after setting all properties.
+function TF_Menu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to TF_Menu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Noise_Menu.
+function Noise_Menu_Callback(hObject, eventdata, handles)
+% hObject    handle to Noise_Menu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Noise_Menu contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Noise_Menu
+
+
+% --- Executes during object creation, after setting all properties.
+function Noise_Menu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Noise_Menu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes during object deletion, before destroying properties.
+function SetupTES_DeleteFcn(hObject, eventdata, handles)
+% hObject    handle to SetupTES (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+for i = 1:length(handles.DevStrOn)
+    if handles.DevStrOn(i)
+        try
+            eval(['handles.' handles.HndlStr{i,1} '.Destructor;']); 
+        catch
+        end
+    end    
+end
+try
+    for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
+        if handles.d(i).isdir
+            rmpath([handles.MainDir handles.d(i).name])
+        end
+    end
+catch
+end
+
+function handles = Menu_Generation(handles)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Initialization of classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+handles.Circuit = Circuit;
+handles.Circuit = handles.Circuit.Constructor;
+handles.menu(1) = uimenu('Parent',handles.SetupTES,'Label',...
+    'Circuit');
+handles.Menu_Circuit = uimenu('Parent',handles.menu(1),'Label',...
+    'Circuit Properties','Callback',{@Obj_Properties},'UserData',handles.Circuit);
+
+handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
+handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
+
+% Menu is generated here
+handles.menu(2) = uimenu('Parent',handles.SetupTES,'Label',...
+    'Devices');
+
+for i = 1:size(handles.HndlStr,1)
+    eval(['handles.' handles.HndlStr{i,1} '=' handles.HndlStr{i,2} ';']);
+    eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Constructor;']);
+    eval(['handles.Devices.' handles.HndlStr{i,1} ' = 0;']); % By default all are deactivated
+    eval(['handles.Menu_' handles.HndlStr{i,1} ' = uimenu(''Parent'',handles.menu(2),''Label'','...
+        '[''&' handles.HndlStr{i,2} ''']);']);
+    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
+    jj = 1;
+    % The firts menu is the one uses for initialize the device
+    % connection
+    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+        ''' Initialize '',''Callback'',{@Obj_Actions},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
+    jj = jj + 1;
+    for j = 1:size(Mthds,1) %#ok<USENS>                                
+        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
+            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+                '''' Mthds{j} ''',''Callback'',{@Obj_Actions},''UserData'',handles.' handles.HndlStr{i,1} ',''Enable'',''off'');']);
+            jj = jj + 1;
+        end
+    end
+    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+        '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Obj_Properties},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
+    
+end
+
+
+
+function handles = Menu_Update(DevicesOn,handles)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for i = 1:length(DevicesOn)
+    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
+    jj = 2;
+    for j = 1:size(Mthds,1) %#ok<USENS>
+        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
+            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
+            if DevicesOn(i)
+                eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''on'';']);
+            else
+                eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''off'';']);
+            end
+            jj = jj + 1;
+        end
+    end
+    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);    
+end
+
+
+function Obj_Actions(src,evnt)
+handles  = guidata(src);
+if ~isempty(strfind(src.Label,'Initialize')) % Device are checked if they are initialize.  If so, they are not initialize again. 
+    Parent = evnt.Source.Parent.Label(2:end); % First character is reserved for &
+    switch Parent
+        case 'Multimeter'
+            if ~isempty(handles.Multi.ObjHandle)
+                return;
+            else
+                handles.Multi = handles.Multi.Initialize;
+                handles.DevStrOn(1) = 1;                
+            end
+        case 'ElectronicMagnicon'
+            if ~isempty(handles.Squid.ObjHandle)
+                return;
+            else
+                handles.Squid = handles.Squid.Initialize;
+                handles.DevStrOn(2) = 1;
+            end
+        case 'SpectrumAnalyzer'
+            if ~isempty(handles.DS.ObjHandle)
+                return;
+            else
+                handles.DSA = handles.DSA.Initialize;
+                handles.DevStrOn(3) = 1;
+            end
+        case 'PXI_Acquisition_card'
+            if ~isempty(handles.PXI.ObjHandle)
+                return;
+            else
+                handles.PXI = handles.PXI.Initialize;
+                handles.DevStrOn(4) = 1;
+            end
+        case 'CurrentSource'
+            if ~isempty(handles.CurSour.ObjHandle)
+                return;
+            else
+                handles.CurSour = handles.CurSour.Initialize;
+                handles.DevStrOn(5) = 1;
+            end
+        
+        otherwise
+    end
+    handles = Menu_Update(handles.DevStrOn,handles);  % Sub_menus are now available.
+else
+    eval(['[a, b] = src.UserData.' src.Label]);
+end
+
+
+guidata(src,handles);
