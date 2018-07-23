@@ -1,4 +1,4 @@
-function out = mag_setRf_FLL_CH_updated(s)
+function [s, out] = mag_setRf_FLL_CH_updated(s)
 % Function that sets a fixed Rf value in FLL (Frequency-locked loop). The value finally taken is
 % rounded to the closest one on the following table:
 % table=[0 0.7 0.75 0.91 1 2.14 2.31 2.73 3.0 7.0 7.5 9.1 10 23.1 30 100]*1e3;
@@ -39,3 +39,5 @@ else
 end
 RF = mag_readRf_FLL_CH_updated(s);
 sprintf('Rf set to: %d Ohm',RF)  % Should it be recorded somewhere?? a Log file for example?
+s.Rf.Value = RF;
+s.Rf.Units = 'Ohm';

@@ -19,10 +19,18 @@ classdef SpectrumAnalyzer
         function [obj, status] = Initialize(obj)            
 %             addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\'); 
             [obj, status] = hp_init_updated(obj);  
+            Calibration(obj)
         end
         function Calibration(obj)
             fprintf(obj.ObjHandle,'SNGC');%%%Calibramos el HP.
-            pause(20);
+            h = waitbar(0,'Digital Signal Analyzer Calibrating...','WindowStyle','Modal','Name','ZarTES v1.0');
+            tic;
+            t = toc;
+            while t < 20                
+                waitbar(t/20,h);
+                t = toc;
+            end
+            close(h);            
         end
         
         function obj = SineSweeptMode(obj,Amp,freq)
@@ -33,7 +41,7 @@ classdef SpectrumAnalyzer
                 str = strcat('SRLV ',' ',num2str(Amp),'mV'); % amplitud de excitación (mV!!)
             end
             fprintf(obj.ObjHandle,str);
-            hp_sin_config_updated(obj,freq)
+            hp_sin_config_updated(obj,freq);  % Fixed sine
         end
         
         function obj = NoiseMode(obj,Amp)  % Amplitud de excitación (mV!!)

@@ -30,6 +30,7 @@ classdef ElectronicMagnicon
             obj.Rf = PhysicalMeasurement;            
             obj.Rf.Value = 1e4;
             obj.Rf.Units = 'Ohm';
+            
             obj.PulseAmp = PhysicalMeasurement;            
             obj.PulseAmp.Value = 40;
             obj.PulseAmp.Units = 'uA';
@@ -51,8 +52,8 @@ classdef ElectronicMagnicon
             obj = mag_init_updated(obj);
         end
         
-        function Calibration(obj)
-            out = mag_setRf_FLL_CH_updated(obj);
+        function obj = Calibration(obj)
+            [obj, out] = mag_setRf_FLL_CH_updated(obj);
             if out == 'OK'
                 disp('Initialization completed');
             else
