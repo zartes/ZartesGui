@@ -84,7 +84,7 @@ handles = Menu_Generation(handles);  % Here, the constructor is applied
 handles.SQ_Source.Value = handles.Squid.SourceCH;
 a = cellstr(handles.SQ_Rf.String);
 for i = 1:length(a)
-a{i} = strtrim(a{i});
+    a{i} = strtrim(a{i});
 end
 handles.SQ_Rf.Value = find(contains(a,num2str(handles.Squid.Rf.Value)) == 1,1);
 
