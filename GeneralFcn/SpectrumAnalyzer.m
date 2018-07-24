@@ -71,7 +71,7 @@ classdef SpectrumAnalyzer
             end
         end
         
-        function [datos, obj] = Read(obj)
+        function [obj, datos] = Read(obj)
             [freq, data, header] = hp_read_updated(obj);
             datos = [freq' data'];
             obj.Header = header;

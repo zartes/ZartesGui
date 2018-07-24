@@ -22,7 +22,7 @@ function varargout = SetupTEScontrolers(varargin)
 
 % Edit the above text to modify the response to help SetupTEScontrolers
 
-% Last Modified by GUIDE v2.5 23-Jul-2018 11:52:34
+% Last Modified by GUIDE v2.5 24-Jul-2018 10:20:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -102,6 +102,10 @@ handles.SQ_Pulse_Duration_Units.Value = find(contains(cellstr(handles.SQ_Pulse_D
 
 
 % PXI
+handles.PXI.ConfStructs;
+handles.PXI.WaveFormInfo;
+handles.PXI.Options;
+
 
 % Field Source
 
@@ -139,14 +143,7 @@ function varargout = SetupTEScontrolers_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 set(handles.SetupTES,'Visible','on');
 
-% --- Executes on button press in radiobutton1.
-function radiobutton1_Callback(hObject, eventdata, handles)
-% hObject    handle to radiobutton1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of radiobutton1
-
+%%%%%%%%%%%%%%%%%%  SQUID FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Executes on button press in SQ_Pulse_Mode.
 function SQ_Pulse_Mode_Callback(hObject, eventdata, handles)
@@ -159,14 +156,35 @@ function SQ_Pulse_Mode_Callback(hObject, eventdata, handles)
 if hObject.Value    
     hObject.BackgroundColor = [120 170 50]/255;
     handles.SQ_Pulse_Mode_Str.String = 'Pulse Mode ON';
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Action of the device (including line)
     % Pulse Configuration Mode
     % Pulse On
+    handles.Squid.PulseAmp.Value = str2double(handles.SQ_Pulse_Amp.String);
+    contents = cellstr(get(handles.SQ_Pulse_Amp_Units,'String'));       
+    handles.Squid.PulseAmp.Units = contents{get(handles.SQ_Pulse_Amp_Units,'Value')};
+    
+    handles.Squid.PulseDT.Value = str2double(handles.SQ_Pulse_DT.String);
+    contents = cellstr(get(handles.SQ_Pulse_DT_Units,'String'));  
+    handles.Squid.PulseDT.Units = contents{get(handles.SQ_Pulse_DT_Units,'Value')};
+    
+    handles.Squid.PulseDuration.Value = str2double(handles.SQ_Pulse_Duration.String);
+    contents = cellstr(get(handles.SQ_Pulse_Duration_Units,'String'));  
+    handles.Squid.PulseDuration.Units = contents{get(handles.SQ_Pulse_Duration_Units,'Value')};
+    
+    handles.Squid.Cal_Pulse_ON;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
 else
     hObject.BackgroundColor = [240 240 240]/255;
     handles.SQ_Pulse_Mode_Str.String = 'Pulse Mode OFF';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Action of the device (including line)
     % Pulse Off
+    handles.Squid.Cal_Pulse_OFF;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
-
 
 % --- Executes on button press in SQ_TES2NormalState.
 function SQ_TES2NormalState_Callback(hObject, eventdata, handles)
@@ -179,13 +197,31 @@ function SQ_TES2NormalState_Callback(hObject, eventdata, handles)
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
+    
+    ButtonName = questdlg('What range of I bias?', ...
+        'Current Sign Question', ...
+        'Positive', 'Negative', 'Positive');
+    switch ButtonName
+        case 'Positive'
+            Ibias_sign = 1;
+        case 'Negative'
+            Ibias_sign = -1;
+        otherwise
+            hObject.BackgroundColor = [240 240 240]/255;
+            hObject.Value = 0;
+            hObject.Enable = 'on';
+            return;
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
+    handles.Squid.TES2NormalState(Ibias_sign)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
     hObject.Enable = 'on';
 end        
-
 
 % --- Executes on button press in SQ_Reset_Closed_Loop.
 function SQ_Reset_Closed_Loop_Callback(hObject, eventdata, handles)
@@ -198,13 +234,17 @@ function SQ_Reset_Closed_Loop_Callback(hObject, eventdata, handles)
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
+    handles.Squid.ResetClossedLoop;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
     hObject.Enable = 'on';
 end
-
 
 % --- Executes on button press in SQ_Calibration.
 function SQ_Calibration_Callback(hObject, eventdata, handles)
@@ -216,7 +256,12 @@ function SQ_Calibration_Callback(hObject, eventdata, handles)
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
+    handles.Squid = handles.Squid.Calibration;
+    handles.SQ_Rf_real.String = num2str(handles.Squid.Rf.Value);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
@@ -246,7 +291,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
 % --- Executes on selection change in SQ_Pulse_Amp_Units.
 function SQ_Pulse_Amp_Units_Callback(hObject, eventdata, handles)
 % hObject    handle to SQ_Pulse_Amp_Units (see GCBO)
@@ -275,9 +319,6 @@ end
 handles.SQ_Pulse_Amp.String = num2str(PulseAmp);
 hObject.UserData = NewValue;
 
-
-
-
 % --- Executes during object creation, after setting all properties.
 function SQ_Pulse_Amp_Units_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to SQ_Pulse_Amp_Units (see GCBO)
@@ -289,7 +330,6 @@ function SQ_Pulse_Amp_Units_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function SQ_Pulse_DT_Callback(hObject, eventdata, handles)
@@ -312,7 +352,6 @@ function SQ_Pulse_DT_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 % --- Executes on selection change in SQ_Pulse_DT_Units.
 function SQ_Pulse_DT_Units_Callback(hObject, eventdata, handles)
@@ -354,7 +393,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function SQ_Pulse_Duration_Callback(hObject, eventdata, handles)
 % hObject    handle to SQ_Pulse_Duration (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -375,7 +413,6 @@ function SQ_Pulse_Duration_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 % --- Executes on selection change in SQ_Pulse_Duration_Units.
 function SQ_Pulse_Duration_Units_Callback(hObject, eventdata, handles)
@@ -416,7 +453,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
 % --- Executes on button press in SQ_Set_I.
 function SQ_Set_I_Callback(hObject, eventdata, handles)
 % hObject    handle to SQ_Set_I (see GCBO)
@@ -427,7 +463,16 @@ function SQ_Set_I_Callback(hObject, eventdata, handles)
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
+    % Change to uA to ensure the correct units
+    handles.SQ_Ibias_Units.Value = 3;
+    SQ_Ibias_Units_Callback(handles.SQ_Ibias_Units,[],handles); 
+    Ibvalue = str2double(handles.SQ_Ibias.String);
+    
+    handles.Squid.Set_Current_Value(Ibvalue)  % uA.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
@@ -444,13 +489,19 @@ function SQ_Read_I_Callback(hObject, eventdata, handles)
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
+    Ireal = handles.Squid.Read_Current_Value;
+    handles.SQ_realIbias.String = num2str(Ireal.Value);
+    handles.SQ_realIbias_Units.Value = 3; % uA    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
     hObject.Enable = 'on';
 end
-
 
 
 function SQ_Ibias_Callback(hObject, eventdata, handles)
@@ -473,7 +524,6 @@ function SQ_Ibias_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 % --- Executes on selection change in SQ_Ibias_Units.
 function SQ_Ibias_Units_Callback(hObject, eventdata, handles)
@@ -502,7 +552,6 @@ end
 handles.SQ_Ibias.String = num2str(Ibias);
 hObject.UserData = NewValue;
 
-
 % --- Executes during object creation, after setting all properties.
 function SQ_Ibias_Units_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to SQ_Ibias_Units (see GCBO)
@@ -514,7 +563,6 @@ function SQ_Ibias_Units_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function SQ_realIbias_Callback(hObject, eventdata, handles)
@@ -537,7 +585,6 @@ function SQ_realIbias_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 % --- Executes on selection change in SQ_realIbias_Units.
 function SQ_realIbias_Units_Callback(hObject, eventdata, handles)
@@ -583,7 +630,6 @@ function SQ_Rf_Callback(hObject, eventdata, handles)
 % hObject    handle to SQ_Rf (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 % Hints: get(hObject,'String') returns contents of SQ_Rf as text
 %        str2double(get(hObject,'String')) returns contents of SQ_Rf as a double
 % Edit_Protect(hObject)
@@ -629,7 +675,6 @@ end
 handles.SQ_Rf.String = num2str(Rf);
 hObject.UserData = NewValue;
 
-
 % --- Executes during object creation, after setting all properties.
 function SQ_Rf_Units_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to SQ_Rf_Units (see GCBO)
@@ -643,18 +688,12 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
-
-
-
 function SQ_Rf_real_Callback(hObject, eventdata, handles)
 % hObject    handle to SQ_Rf_real (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 % Hints: get(hObject,'String') returns contents of SQ_Rf_real as text
 %        str2double(get(hObject,'String')) returns contents of SQ_Rf_real as a double
-
 
 % --- Executes during object creation, after setting all properties.
 function SQ_Rf_real_CreateFcn(hObject, eventdata, handles)
@@ -667,7 +706,6 @@ function SQ_Rf_real_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 % --- Executes on selection change in SQ_Rf_real_Units.
 function SQ_Rf_real_Units_Callback(hObject, eventdata, handles)
@@ -709,6 +747,9 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
+%%%%%%%%%%%%%%%%%%  FIELD SETUP FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 % --- Executes on button press in CurSource_OnOff.
 function CurSource_OnOff_Callback(hObject, eventdata, handles)
 % hObject    handle to CurSource_OnOff (see GCBO)
@@ -719,14 +760,22 @@ function CurSource_OnOff_Callback(hObject, eventdata, handles)
 if hObject.Value    
     hObject.BackgroundColor = [120 170 50]/255;
     handles.CurSource_OnOff_Str.String = 'Source ON';
-    % Pulse Configuration Mode
-    % Pulse On
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Action of the device (including line)
+    handles.CurSource.CurrentSource_Start;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
 else
     hObject.BackgroundColor = [240 240 240]/255;
     handles.CurSource_OnOff_Str.String = 'Source OFF';
-    % Pulse Off
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Action of the device (including line)
+    handles.CurSource.CurrentSource_Stop;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
 end
-
 
 % --- Executes on button press in CurSource_Set_I.
 function CurSource_Set_I_Callback(hObject, eventdata, handles)
@@ -738,13 +787,22 @@ function CurSource_Set_I_Callback(hObject, eventdata, handles)
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
+    handles.CurSource_I_Units.Value = 1;  % Data is given in Amp
+    CurSource_I_Units_Callback(handles.CurSource_I_Units,[],handles);
+    I.Value = str2double(handles.CurSource_I.String);
+    I.Units = 'A';
+    
+    handles.CurSour = handles.CurSour.SetIntensity(I);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
     hObject.Enable = 'on';
 end
-
 
 
 function CurSource_I_Callback(hObject, eventdata, handles)
@@ -785,7 +843,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
 % --- Executes on selection change in CurSource_I_Units.
 function CurSource_I_Units_Callback(hObject, eventdata, handles)
 % hObject    handle to CurSource_I_Units (see GCBO)
@@ -825,10 +882,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
-
-
-
 % --- Executes on button press in CurSource_Cal.
 function CurSource_Cal_Callback(hObject, eventdata, handles)
 % hObject    handle to CurSource_Cal (see GCBO)
@@ -839,13 +892,22 @@ function CurSource_Cal_Callback(hObject, eventdata, handles)
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
+    handles.CurSource_Vmax_Units.Value = 1;
+    CurSource_Vmax_Units_Callback(handles.CurSource_Vmax_Units,[],handles); 
+    handles.CurSour.Vmax.Value = str2double(handles.CurSource_Vmax.String);
+    handles.CurSour.Vmax.Units = 'V';
+    
+    handles.CurSour.Calibration;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
     hObject.Enable = 'on';
 end
-
 
 
 function CurSource_Vmax_Callback(hObject, eventdata, handles)
@@ -879,7 +941,6 @@ function CurSource_Vmax_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 % --- Executes on selection change in CurSource_Vmax_Units.
 function CurSource_Vmax_Units_Callback(hObject, eventdata, handles)
@@ -921,36 +982,54 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
+%%%%%%%%%%%%%%%%%%  MULTIMETER FUNCTIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function Edit_Protect(hObject)
-value = str2double(get(hObject,'String'));
-if ~isempty(value)&&~isnan(value)
-    if value <= 0
-        set(hObject,'String','1');
-    end    
-else
-    set(hObject,'String','1');
-end
-
-
-% --- Executes on button press in DSA_Cal.
-function DSA_Cal_Callback(hObject, eventdata, handles)
-% hObject    handle to DSA_Cal (see GCBO)
+% --- Executes on button press in Multi_Read.
+function Multi_Read_Callback(hObject, eventdata, handles)
+% hObject    handle to Multi_Read (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of DSA_Cal
+% Hint: get(hObject,'Value') returns toggle state of Multi_Read
 
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
     % Action of the device (including line)
+    [handles.Multi, Vdc] = handles.Multi.Read;  % The output is in Volts.
+    handles.Multi_Value.String = num2str(Vdc);    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+    
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
     hObject.Enable = 'on';
 end
 
+
+function Multi_Value_Callback(hObject, eventdata, handles)
+% hObject    handle to Multi_Value (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hints: get(hObject,'String') returns contents of Multi_Value as text
+%        str2double(get(hObject,'String')) returns contents of Multi_Value as a double
+
+% --- Executes during object creation, after setting all properties.
+function Multi_Value_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Multi_Value (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+%%%%%%%%%%%%%%%%%%  RESPONSE SYSTEM SETUP  %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Executes on button press in DSA_OnOff.
 function DSA_OnOff_Callback(hObject, eventdata, handles)
@@ -962,14 +1041,21 @@ function DSA_OnOff_Callback(hObject, eventdata, handles)
 if hObject.Value    
     hObject.BackgroundColor = [120 170 50]/255;
     handles.DSA_OnOff_Str.String = 'Source ON';
-    % Pulse Configuration Mode
-    % Pulse On
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    handles.DSA.SourceOn;
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
     hObject.BackgroundColor = [240 240 240]/255;
     handles.DSA_OnOff_Str.String = 'Source OFF';
-    % Pulse Off
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    handles.DSA.SourceOff;
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
-
 
 % --- Executes on button press in DSA_Read.
 function DSA_Read_Callback(hObject, eventdata, handles)
@@ -981,7 +1067,18 @@ function DSA_Read_Callback(hObject, eventdata, handles)
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
-    % Action of the device (including line)
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Action of the device (including line) 
+    if handles.DSA_On.Value
+        [handles.DSA, datos] = handles.DSA.Read;   % Ver qué hacemos con esta variable!!
+    end
+    if handles.PXI_On.Value
+        [data, WfmI] = handles.PXI.Get_Wave_Form;  % Ver qué hacemos con estas variables!!
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
@@ -1013,6 +1110,11 @@ if (hObject.Value||handles.DSA_On.Value)
 else
     handles.DSA_Read.Enable = 'off';
 end
+if hObject.Value
+    set([handles.PXI_Mode handles.PXI_Conf_Mode],'Enable','on');
+else
+    set([handles.PXI_Mode handles.PXI_Conf_Mode],'Enable','off');
+end
 
 % --- Executes on button press in PXI_Pulses_Read.
 function PXI_Pulses_Read_Callback(hObject, eventdata, handles)
@@ -1024,7 +1126,15 @@ function PXI_Pulses_Read_Callback(hObject, eventdata, handles)
 if hObject.Value
     hObject.BackgroundColor = [120 170 50]/255;  % Green Color
     hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     % Action of the device (including line)
+    
+    warndlg('Change ''Pulses Configuration'' before READ (PXI) button.','ZarTES v1.0');
+    handles.PXI.Pulses_Configuration;
+    [data, WfmI] = handles.PXI.Get_Wave_Form;   % Decidir qué se hace con estas variables!!
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     pause(1);
     hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
@@ -1043,9 +1153,11 @@ Ch_Noise = handles.Noise_Panel.Children;
 if hObject.Value
     set(Ch_TF,'Enable','on');
     set(Ch_Noise,'Enable','off');
+    handles.PXI_Mode.Value = 1;
 else
     set(Ch_TF,'Enable','off');
     set(Ch_Noise,'Enable','on');
+    handles.PXI_Mode.Value = 2;
 end
 
 % --- Executes on button press in Noise_Mode.
@@ -1060,9 +1172,11 @@ Ch_Noise = handles.Noise_Panel.Children;
 if hObject.Value
     set(Ch_TF,'Enable','off');
     set(Ch_Noise,'Enable','on');
+    handles.PXI_Mode.Value = 2;
 else
     set(Ch_TF,'Enable','on');
     set(Ch_Noise,'Enable','off');
+    handles.PXI_Mode.Value = 1;
 end
 
 
@@ -1086,8 +1200,6 @@ else
     Sine_Amp_Callback(hObject, [], handles)
 end
 
-
-
 % --- Executes during object creation, after setting all properties.
 function Sine_Amp_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to Sine_Amp (see GCBO)
@@ -1099,7 +1211,6 @@ function Sine_Amp_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 % --- Executes on selection change in Sine_Amp_Units.
 function Sine_Amp_Units_Callback(hObject, eventdata, handles)
@@ -1142,7 +1253,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function Sine_Freq_Callback(hObject, eventdata, handles)
 % hObject    handle to Sine_Freq (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1175,7 +1285,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
 % --- Executes on selection change in Sine_Freq_Units.
 function Sine_Freq_Units_Callback(hObject, eventdata, handles)
 % hObject    handle to Sine_Freq_Units (see GCBO)
@@ -1204,7 +1313,6 @@ end
 handles.Sine_Freq.String = num2str(Freq);
 hObject.UserData = NewValue;
 
-
 % --- Executes during object creation, after setting all properties.
 function Sine_Freq_Units_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to Sine_Freq_Units (see GCBO)
@@ -1216,7 +1324,6 @@ function Sine_Freq_Units_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function Noise_Amp_Callback(hObject, eventdata, handles)
@@ -1250,7 +1357,6 @@ function Noise_Amp_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 % --- Executes on selection change in Noise_Amp_Units.
 function Noise_Amp_Units_Callback(hObject, eventdata, handles)
@@ -1293,7 +1399,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function Noise_Freq_Callback(hObject, eventdata, handles)
 % hObject    handle to Noise_Freq (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1325,7 +1430,6 @@ function Noise_Freq_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 % --- Executes on selection change in Noise_Freq_Units.
 function Noise_Freq_Units_Callback(hObject, eventdata, handles)
@@ -1367,7 +1471,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
 % --- Executes on selection change in SQ_Source.
 function SQ_Source_Callback(hObject, eventdata, handles)
 % hObject    handle to SQ_Source (see GCBO)
@@ -1376,7 +1479,9 @@ function SQ_Source_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns SQ_Source contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from SQ_Source
-
+warndlg('Change this parameter consistently with the SQUID Device!','ZarTES v1.0');
+handles.Squid.SourceCH = hObject.Value;
+guidata(hObject,handles);
 
 % --- Executes during object creation, after setting all properties.
 function SQ_Source_CreateFcn(hObject, eventdata, handles)
@@ -1389,47 +1494,6 @@ function SQ_Source_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-% --- Executes on button press in Multi_Read.
-function Multi_Read_Callback(hObject, eventdata, handles)
-% hObject    handle to Multi_Read (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of Multi_Read
-
-if hObject.Value
-    hObject.BackgroundColor = [120 170 50]/255;  % Green Color
-    hObject.Enable = 'off';
-    % Action of the device (including line)
-    pause(1);
-    hObject.BackgroundColor = [240 240 240]/255;
-    hObject.Value = 0;
-    hObject.Enable = 'on';
-end
-
-function Multi_Value_Callback(hObject, eventdata, handles)
-% hObject    handle to Multi_Value (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of Multi_Value as text
-%        str2double(get(hObject,'String')) returns contents of Multi_Value as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function Multi_Value_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Multi_Value (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 % --- Executes on button press in DSA_TF_Conf.
 function DSA_TF_Conf_Callback(hObject, eventdata, handles)
@@ -1445,17 +1509,16 @@ function DSA_Noise_Conf_Callback(hObject, eventdata, handles)
 % hObject    handle to DSA_Noise_Conf (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-Conf_Setup(hObject,handles.Noise_Menu.Value,handles);
+
+waitfor(Conf_Setup(hObject,handles.Noise_Menu.Value,handles));
 
 % --- Executes on selection change in TF_Menu.
 function TF_Menu_Callback(hObject, eventdata, handles)
 % hObject    handle to TF_Menu (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 % Hints: contents = cellstr(get(hObject,'String')) returns TF_Menu contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from TF_Menu
-
 
 % --- Executes during object creation, after setting all properties.
 function TF_Menu_CreateFcn(hObject, eventdata, handles)
@@ -1469,16 +1532,13 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
 % --- Executes on selection change in Noise_Menu.
 function Noise_Menu_Callback(hObject, eventdata, handles)
 % hObject    handle to Noise_Menu (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 % Hints: contents = cellstr(get(hObject,'String')) returns Noise_Menu contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Noise_Menu
-
 
 % --- Executes during object creation, after setting all properties.
 function Noise_Menu_CreateFcn(hObject, eventdata, handles)
@@ -1492,6 +1552,40 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+% --- Executes on button press in PXI_Conf_Mode.
+function PXI_Conf_Mode_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_Conf_Mode (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+waitfor(Conf_Setup_PXI(hObject,handles.PXI_Mode.Value,handles));
+handles.PXI.ConfStructs = hObject.UserData;
+guidata(hObject,handles);
+
+% --- Executes on selection change in PXI_Mode.
+function PXI_Mode_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_Mode (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hints: contents = cellstr(get(hObject,'String')) returns PXI_Mode contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from PXI_Mode
+
+% --- Executes during object creation, after setting all properties.
+function PXI_Mode_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PXI_Mode (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on button press in PXI_Pulses_Conf.
+function PXI_Pulses_Conf_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_Pulses_Conf (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
 % --- Executes during object deletion, before destroying properties.
 function SetupTES_DeleteFcn(hObject, eventdata, handles)
@@ -1515,6 +1609,9 @@ try
     end
 catch
 end
+
+
+%%%%%%%%%%%%%%%%%%%%%% OTHER FUNCTIONALITIES  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function handles = Menu_Generation(handles)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1559,8 +1656,6 @@ for i = 1:size(handles.HndlStr,1)
     
 end
 
-
-
 function handles = Menu_Update(DevicesOn,handles)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1580,7 +1675,6 @@ for i = 1:length(DevicesOn)
     end
     eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);    
 end
-
 
 function Obj_Actions(src,evnt)
 handles  = guidata(src);
@@ -1632,3 +1726,15 @@ end
 
 
 guidata(src,handles);
+
+function Edit_Protect(hObject)
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value <= 0
+        set(hObject,'String','1');
+    end    
+else
+    set(hObject,'String','1');
+end
+
+
