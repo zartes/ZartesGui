@@ -1,4 +1,4 @@
-classdef SpectrumAnalyzer 
+classdef SpectrumAnalyzer
     % Class defining a Spectrum Analyzer (Dynamic Signal Analyzer)
     
     properties
@@ -16,25 +16,25 @@ classdef SpectrumAnalyzer
             obj.ID = 'HP3562A';
         end
         
-        function [obj, status] = Initialize(obj)            
-%             addpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\'); 
-            [obj, status] = hp_init_updated(obj);  
+        function [obj, status] = Initialize(obj)
+            [obj, status] = hp_init_updated(obj);
             Calibration(obj)
         end
+        
         function Calibration(obj)
             fprintf(obj.ObjHandle,'SNGC');%%%Calibramos el HP.
             h = waitbar(0,'Digital Signal Analyzer Calibrating...','WindowStyle','Modal','Name','ZarTES v1.0');
             tic;
             t = toc;
-            while t < 20                
+            while t < 20
                 waitbar(t/20,h);
                 t = toc;
             end
-            close(h);            
+            close(h);
         end
         
         function obj = SineSweeptMode(obj,Amp)
-            obj = hp_ss_config_updated(obj); % Measurement of Sine Sweept    
+            obj = hp_ss_config_updated(obj); % Measurement of Sine Sweept
             if nargin == 1
                 str = strcat('SRLV 20mV');
             else
@@ -43,13 +43,13 @@ classdef SpectrumAnalyzer
             fprintf(obj.ObjHandle,str);
         end
         
-        function obj = FixedSine(obj,freq)            
+        function obj = FixedSine(obj,freq)
             hp_sin_config_updated(obj,freq);  % Fixed sine
         end
         
         function obj = NoiseMode(obj,Amp)  % Amplitud de excitación (mV!!)
-            obj = hp_noise_config_updated(obj);   
-            hp_WhiteNoise_updated(obj,Amp);            
+            obj = hp_noise_config_updated(obj);
+            hp_WhiteNoise_updated(obj,Amp);
         end
         
         function obj = SourceOn(obj)
@@ -60,10 +60,10 @@ classdef SpectrumAnalyzer
             hp_Source_OFF_updated(obj);
         end
         
-        function LauchMeasurement(obj)            
+        function LauchMeasurement(obj)
             fprintf(obj.ObjHandle,'STRT');             % Measurement is launched
             fprintf(obj.ObjHandle,'SMSD');             % Query measure finish?
-                                                       % Bucle waiting for the measurement
+            % Bucle waiting for the measurement
             while(~str2double(fscanf(obj.ObjHandle)))
                 pause(10);
                 fprintf(obj.ObjHandle,'SMSD');
@@ -83,7 +83,7 @@ classdef SpectrumAnalyzer
             catch
             end
             delete(obj.ObjHandle);
-%             rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\');
+            %             rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Analyzer_HP3562A\');
         end
     end
     
