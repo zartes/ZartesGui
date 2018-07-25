@@ -12,7 +12,7 @@ classdef SpectrumAnalyzer
     methods
         function obj = Constructor(obj)
             obj.PrimaryAddress = 11;
-            obj.BoardIndex = 1;
+            obj.BoardIndex = 0;
             obj.ID = 'HP3562A';
         end
         

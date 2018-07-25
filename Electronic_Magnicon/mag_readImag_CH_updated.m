@@ -23,13 +23,14 @@ str = ['<0' num2str(s.SourceCH) 'q8'];
 chk = mod(sum(double(str)),256);
 str = sprintf('%s%02X\r',str,chk);
 out = query(s.ObjHandle,str,'%s','%s');
+
+
+dac = hex2dec(out(2:5));
 if strcmp(out,'|0AC')
     out = 'OK';
 else
     out = 'FAIL';
 end
-
-dac = hex2dec(out(2:5));
 
 if mag_getBitrange_CH_updated(s)
     R = 10895; %R para rango 500uA (bit:1)
