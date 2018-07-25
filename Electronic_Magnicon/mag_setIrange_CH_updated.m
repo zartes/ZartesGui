@@ -26,11 +26,14 @@ chk = mod(sum(double(str)),256);
 str = sprintf('%s%02X\r',str,chk);
 out = query(s.ObjHandle,str,'%s','%s');
 
-if contains(rango,'125')
+
+%%
+if ~isempty(strfind(rango,'125'))
     out(6) = '0';
-elseif contains(rango,'500')
+elseif ~isempty(strfind(rango,'500'))
     out(6) = '1';
 end
+%%
 
 str = ['<0' num2str(s.SourceCH) 'q0' out(2:6)];
 chk = mod(sum(double(str)),256);

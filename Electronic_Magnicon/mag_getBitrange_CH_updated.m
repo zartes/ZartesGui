@@ -22,9 +22,10 @@ str = ['<0' num2str(s.SourceCH) 'q8'];
 chk = mod(sum(double(str)),256);
 str = sprintf('%s%02X\r',str,chk);
 out = query(s.ObjHandle,str,'%s','%s');
-if strcmp(out,'|0AC')
-    out = 'OK';
-else
-    out = 'FAIL';
-end
+
 range = str2double(out(6));
+% if strcmp(out,'|0AC')
+%     out = 'OK';
+% else
+%     out = 'FAIL';
+% end
