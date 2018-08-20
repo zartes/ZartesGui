@@ -22,7 +22,7 @@ function varargout = SetupTEScontrolers(varargin)
 
 % Edit the above text to modify the response to help SetupTEScontrolers
 
-% Last Modified by GUIDE v2.5 25-Jul-2018 14:06:37
+% Last Modified by GUIDE v2.5 20-Aug-2018 13:04:38
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -56,7 +56,7 @@ function SetupTEScontrolers_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 position = get(handles.SetupTES,'Position');
 set(handles.SetupTES,'Color',[0 120 180]/255,'Position',...
-    [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
+    [0.05 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
 % Set correct paths (addition)
@@ -75,7 +75,11 @@ handles.TempFileName = [];
 handles.FieldFileDir = [];
 handles.FieldFileName = [];
 
+% For graphical representation purposes
+handles.FileName = [];
+handles.FileDir = [];
 
+handles.Datos = [];
 
 handles = Menu_Generation(handles);  % Here, the constructor is applied
 % After Constructor, all the values have to be defined in the guide
@@ -88,7 +92,7 @@ for i = 1:length(a)
 end
 
 IndexC = strfind(a, num2str(handles.Squid.Rf.Value));
-handles.SQ_Rf.Value = find(not(cellfun('isempty', IndexC)),1);
+handles.SQ_Rf.Value = find(not(cellfun('isempty', IndexC)),1); %#ok<STRCL1>
 % handles.SQ_Rf.Value = find(contains(a,num2str(handles.Squid.Rf.Value)) == 1,1);
 
 
@@ -1756,8 +1760,9 @@ function PXI_Pulses_Conf_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 function Actions_Str_Callback(hObject, eventdata, handles)
-
+warning off;
 fprintf(handles.LogFID,[hObject.String '\n']);
+warning on;
 
 % --- Executes during object deletion, before destroying properties.
 function SetupTES_DeleteFcn(hObject, eventdata, handles)
@@ -1771,7 +1776,7 @@ try
     fclose(handles.LogFID);
     buttonquest = questdlg('Do you want to erase Log File?','ZarTES v1.0','Yes','No','No');
     switch buttonquest
-        case Yes
+        case 'Yes'
             delete(handles.LogName);
     end
 catch
@@ -1930,20 +1935,34 @@ function Check_Plot_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of Check_Plot
-if hObject.Value
-    set([handles.Elec_Panel handles.Charac_Panel handles.Field_Panel handles.Actions_Panel],'Units','Character')
-    Position_old = handles.SetupTES.Position;
-    handles.SetupTES.UserData = Position_old;
+if ~isempty(handles.FileName)
+    if hObject.Value
+        set([handles.Elect_Mag_Panel handles.Charac_Panel...
+            handles.Field_Panel handles.Actions_Panel...
+            handles.Graph_Panel],'Units','Character')
+        Position_old = handles.SetupTES.Position;
+        handles.SetupTES.UserData = Position_old;
         
-    handles.SetupTES.Position = [Position_old(1) Position_old(2) 0.89 Position_old(1)]
-    Axes = [156 6 85 30] % Char
-    PopUp = [156 43 16 1.2] % Char
+        handles.SetupTES.Position = [Position_old(1) Position_old(2) 0.89 Position_old(4)];
+        pause(0.2)
+        handles.Result_Axes.Position = [0.65 0.15 0.30 0.50]; %  Normalized
+        handles.Draw_Select.Position = [0.75 0.66 0.1 0.1]; % Normalized
+        handles.Result_Axes.Visible = 'on';
+        handles.Draw_Select.Visible = 'on';
         
-    Wind_Exp = [x y 0.89 x]; % Normalized
-else
-    
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
+        
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    else
+        handles.Result_Axes.Visible = 'off';
+        handles.Draw_Select.Visible = 'off';
+        handles.SetupTES.Position = handles.SetupTES.UserData;
+        
+    end
 end
-    
+guidata(hObject,handles);    
 
 % --- Executes on selection change in Draw_Select.
 function Draw_Select_Callback(hObject, eventdata, handles)
@@ -1966,3 +1985,203 @@ function Draw_Select_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in FilePlot.
+function FilePlot_Callback(hObject, eventdata, handles)
+% hObject    handle to FilePlot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of FilePlot
+if (hObject.Value||handles.GraphPlot.Value)
+    handles.Browse_File.Enable = 'on';
+else
+    handles.Browse_File.Enable = 'off';
+end           
+guidata(hObject,handles);
+
+% --- Executes on button press in GraphPlot.
+function GraphPlot_Callback(hObject, eventdata, handles)
+% hObject    handle to GraphPlot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of GraphPlot
+if (hObject.Value||handles.FilePlot.Value)
+    handles.Browse_File.Enable = 'on';
+else
+    handles.Browse_File.Enable = 'off';
+end
+guidata(hObject,handles);
+
+
+% --- Executes on button press in Hold_Plot.
+function Hold_Plot_Callback(hObject, eventdata, handles)
+% hObject    handle to Hold_Plot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Hold_Plot
+if hObject.Value
+    hold(handles.Result_Axes,'on');
+else
+    hold(handles.Result_Axes,'off');
+end
+guidata(hObject,handles);
+
+% --- Executes on button press in Zoom_Plot.
+function Zoom_Plot_Callback(hObject, eventdata, handles)
+% hObject    handle to Zoom_Plot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Zoom_Plot
+if hObject.Value
+    zoom(handles.Result_Axes,'on');
+else
+    zoom(handles.Result_Axes,'off');
+end
+guidata(hObject,handles);
+
+function ManagingData2Plot(Data,handles)
+
+switch size(Data,2)
+    case 2  % Noise        
+        plot(handles.Result_Axes,Data(:,1),Data(:,2));
+        xlabel(handles.Result_Axes,'Freq (Hz)');
+        ylabel(handles.Result_Axes,'PSD'); 
+        handles.Result_Axes.XScale = 'log';
+        handles.Result_Axes.YScale = 'log';   
+    case 3  % TF        
+        plot(handles.Result_Axes,Data(:,1),sqrt(Data(:,2).^2+Data(:,3).^2));
+        xlabel(handles.Result_Axes,'Freq (Hz)');
+        ylabel(handles.Result_Axes,'PSD');
+        handles.Result_Axes.XScale = 'log';
+        handles.Result_Axes.YScale = 'log';   
+    case 4  % I-Vs        
+        plot(handles.Result_Axes,Data(:,2),Data(:,4));
+        xlabel(handles.Result_Axes,'Ibias (\mu A)');
+        ylabel(handles.Result_Axes,'Vdc(V)');    
+        handles.Result_Axes.XScale = 'linear';
+        handles.Result_Axes.YScale = 'linear';
+    otherwise % R(T)
+        
+end
+
+
+% --- Executes on button press in Browse_File.
+function Browse_File_Callback(hObject, eventdata, handles)
+% hObject    handle to Browse_File (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if handles.FilePlot.Value
+    [FileName, FileDir] = uigetfile({'*.txt','Example file (*.txt)'},...
+        'Select file','tmp\*.txt','MultiSelect','on');
+    if ~isempty(FileName)&&~isequal(FileName,0)
+        handles.FileDir = FileDir;
+        handles.FileName = FileName;
+        if iscell(FileName)
+            handles.Actions_Str.String = 'Graphical Representation: MultiSelection';
+        else
+            handles.Actions_Str.String = ['Graphical Representation: ' FileDir FileName ];
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+        end
+        if handles.Check_Plot.Value
+            if handles.TestPlot.Value  % Current values acquired
+            
+            
+        elseif handles.FilePlot.Value
+            if iscell(handles.FileName)
+                for i = 1:length(handles.FileName)
+                    fid = fopen([handles.FileDir handles.FileName{i}]);
+                    Data = importdata([handles.FileDir handles.FileName{i}]);
+                    fclose(fid);
+                    ManagingData2Plot(Data,handles);
+                    handles.Datos{i} = Data;
+                end
+            else
+                fid = fopen([handles.FileDir handles.FileName]);
+                Data = importdata([handles.FileDir handles.FileName]);
+                fclose(fid);
+                ManagingData2Plot(Data,handles);
+                handles.Datos = Data;
+            end
+            
+            
+        elseif handles.GraphPlot.Value
+            
+        end
+            Check_Plot_Callback(handles.Check_Plot,[],handles);
+        end
+    else
+        handles.FileDir = [];
+        handles.FileName = [];
+        handles.Actions_Str.String = 'Graphical Representation: No file selected';
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
+    end
+    
+    
+end
+
+if handles.GraphPlot.Value
+    [FileName, FileDir] = uigetfile({'*.fig','Example file (*.fig)'},...
+        'Select graph file','tmp\*.fig');
+    
+    if ~isempty(FileName)&&~isequal(FileName,0)
+        uiopen([FileDir FileName],1)
+        handles.Actions_Str.String = ['Graphical Representation: ' FileDir FileName ]';
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
+    else
+        handles.FileDir = [];
+        handles.FileName = [];
+        handles.Actions_Str.String = 'Graphical Representation: No file selected';
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
+    end
+end
+
+guidata(hObject, handles);
+
+
+% --- Executes on button press in TestPlot.
+function TestPlot_Callback(hObject, eventdata, handles)
+% hObject    handle to TestPlot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of TestPlot
+if (handles.FilePlot.Value||handles.GraphPlot.Value)
+    handles.Browse_File.Enable = 'on';
+else
+    handles.Browse_File.Enable = 'off';
+end  
+guidata(hObject,handles);
+
+% --- Executes on button press in Area_Plot.
+function Area_Plot_Callback(hObject, eventdata, handles)
+% hObject    handle to Area_Plot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Area_Plot
+
+RECT = getrect(handles.Result_Axes);
+cmenu = uicontextmenu;
+dat.Rect = RECT;
+dat.Data = handles.Datos;
+h = uimenu(cmenu,'Label','Linear Fitting','UserData',dat);
+set(h,'Callback',{@Data2Fitting},'Checked','on');
+set(handles.Result_Axes,'uicontextmenu',cmenu);
+set(handles.SetupTES,'uicontextmenu',cmenu);
+
+% Simulate a right-click with the mouse
+import java.awt.*;
+import java.awt.event.*;
+mouse = Robot;
+mouse.mousePress(InputEvent.BUTTON3_DOWN_MASK);
+pause(0.2);
+mouse.mouseRelease(InputEvent.BUTTON3_DOWN_MASK);
+
+
+
