@@ -4,7 +4,7 @@ Xdata = src.UserData.Xdata;
 Ydata = src.UserData.Ydata;
 Name = src.UserData.Name;
 warning off
-handles = guidata(src);
+
 for i = 1:length(Xdata)
     if isnan(Xdata{i})
         p{i} = [NaN NaN];
@@ -16,25 +16,24 @@ for i = 1:length(Xdata)
         switch ButtonName
             case 'mN'
                 handles.Circuit.mN.Value = p{i}(1)*1e06;
-                handles.Circuit.mN.Units = 'Ohm';
-                handles.mN.fit = 'linear';
-                handles.mN.Data = [Xdata{i} Ydata{i}];
-                handles.mN.FileName = Name;
-                handles.Menu_Circuit.UserData = handles.Circuit;
-            case 'mS'
-                handles.Circuit.mS.Value = p{i}(1)*1e06;
-                handles.Circuit.mS.Units = 'Ohm';
-                handles.mS.fit = 'linear';
-                handles.mS.Data = [Xdata{i} Ydata{i}];
-                handles.mS.FileName = Name;
-                handles.Menu_Circuit.UserData = handles.Circuit;
-            case 'Cancel'
-                
-        end % switch        
-    end        
+                handles.Circuit.mN.Units = 'Ohm
+            case 'Blue'
+                disp('Your favorite color is Blue.')
+            case 'Green'
+                disp('Your favorite color is Green.');
+        end % switch
+        waitfor(msgbox(['Slope value for ' Name{i} ': ' num2str(p{i}(1)*1e06) ' Ohm'],'SetupTES v1.0'));
+    end
+    
+    try
+        slope{i} = p{i}(1);
+    catch
+        slope{i} = NaN;
+    end    
 end
 
-
+handles = guidata(src);
+handles.IVSlope = slope;
 guidata(src,handles);
 % La idea es acotar los datos que hay dentro del rectangulo para hacer un
 % fitting lineal y obtener la pendiente de la recta. Si es mN es la

@@ -22,7 +22,7 @@ function varargout = IbvaluesConf(varargin)
 
 % Edit the above text to modify the response to help IbvaluesConf
 
-% Last Modified by GUIDE v2.5 10-Jul-2018 14:02:30
+% Last Modified by GUIDE v2.5 28-Aug-2018 13:51:42
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -58,11 +58,15 @@ try
     handles.Name_Temp = varargin{1}{2};
 catch
 end
+try 
+    handles.src = varargin{1};
+catch
+end
 handles.Name = [];
 handles.Dir = [];
 
 position = get(handles.figure1,'Position');
-set(handles.figure1,'Color',[0.95 0.95 0.95],'Position',...
+set(handles.figure1,'Color',[0 100 160]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
@@ -109,7 +113,8 @@ if handles.Negative.Value
     Ibvalues = [Ibvalues -Ibvalues];
 end
 
-dlmwrite(handles.Name_Temp,Ibvalues');
+handles.src.UserData = Ibvalues;
+guidata(handles.src)
 
 figure1_DeleteFcn(handles.figure1,eventdata,handles);   
 
@@ -297,3 +302,24 @@ switch sel_typ
 %         
 %         [point1 point2]
 end
+
+
+% --- Executes on button press in Temp_Browse.
+function Temp_Browse_Callback(hObject, eventdata, handles)
+% hObject    handle to Temp_Browse (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in Temp_Add.
+function Temp_Add_Callback(hObject, eventdata, handles)
+% hObject    handle to Temp_Add (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in Temp_Remove.
+function Temp_Remove_Callback(hObject, eventdata, handles)
+% hObject    handle to Temp_Remove (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
