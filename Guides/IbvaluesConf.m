@@ -22,7 +22,7 @@ function varargout = IbvaluesConf(varargin)
 
 % Edit the above text to modify the response to help IbvaluesConf
 
-% Last Modified by GUIDE v2.5 28-Aug-2018 13:51:42
+% Last Modified by GUIDE v2.5 29-Aug-2018 13:56:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -62,17 +62,23 @@ try
     handles.src = varargin{1};
 catch
 end
-handles.Name = [];
-handles.Dir = [];
+
+handles.TempDir = [];
+handles.TempName = [];
+
+handles.IbiasDir = [];
+handles.IbiasName = [];
+
 
 position = get(handles.figure1,'Position');
 set(handles.figure1,'Color',[0 100 160]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
+
 % Initializing Table values
-handles.RangeTable.Data = num2cell([500 -10 0]);
-uibuttongroup1_SelectionChangedFcn(handles.Manual,[],handles);
+handles.Ibias_Table.Data = num2cell([500 -10 0]);
+Ibias_Panel_SelectionChangedFcn(handles.Manual,[],handles);
 
 % Update handles structure
 guidata(hObject, handles);
@@ -100,20 +106,65 @@ function Accept_Callback(hObject, eventdata, handles)
 % hObject    handle to Accept (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+%%%% Bath Temperature Range Setting
 Data = [];
-for i = 1:size(handles.RangeTable.Data,1)
-    Data = [Data eval([num2str(handles.RangeTable.Data{i,1}) ':' ...
-        num2str(handles.RangeTable.Data{i,2}) ':' ...
-        num2str(handles.RangeTable.Data{i,3}) ])];
+for i = 1:size(handles.Temp_Table.Data,1)
+    if ~isempty(handles.Temp_Table.Data{i,1})
+        if isempty(handles.Temp_Table.Data{i,2})
+            Data = [Data str2double(handles.Temp_Table.Data{i,1})];
+        elseif ~isempty(handles.Temp_Table.Data{i,3})
+            Data = [Data eval([num2str(handles.Temp_Table.Data{i,1}) ':' ...
+                num2str(handles.Temp_Table.Data{i,2}) ':' ...
+                num2str(handles.Temp_Table.Data{i,3}) ])];
+        end
+    end
 end
+Data = unique(sort(Data));
+% Remove possible 0 values
+Data(Data == 0) = [];
+Temps = Data;
 
-Ibvalues = eval(['repmat(Data,1,' handles.NRepeat.String ');']);
+%%%% I bias Range Setting
+Data = [];
+for i = 1:size(handles.Ibias_Table.Data,1)
+    if ~isempty(handles.Ibias_Table.Data{i,1})
+        if isempty(handles.Ibias_Table.Data{i,2})
+            Data = [Data str2double(handles.Ibias_Table.Data{i,1})];
+        elseif ~isempty(handles.Ibias_Table.Data{i,3})
+            Data = [Data eval([num2str(handles.Ibias_Table.Data{i,1}) ':' ...
+                num2str(handles.Ibias_Table.Data{i,2}) ':' ...
+                num2str(handles.Ibias_Table.Data{i,3}) ])];
+        end
+    end
+end
+Ibvalues = eval(['repmat(Data,1,' handles.Ibias_NRepeat.String ');']);
 
-if handles.Negative.Value
+if handles.Ibias_Negative.Value
     Ibvalues = [Ibvalues -Ibvalues];
 end
 
-handles.src.UserData = Ibvalues;
+%%%% Field values Setting
+Data = [];
+for i = 1:size(handles.Field_Table.Data,1)
+    if ~isempty(handles.Field_Table.Data{i,1})
+        if isempty(handles.Field_Table.Data{i,2})
+            Data = [Data str2double(handles.Field_Table.Data{i,1})];
+        elseif ~isempty(handles.Field_Table.Data{i,3})
+            Data = [Data eval([num2str(handles.Field_Table.Data{i,1}) ':' ...
+                num2str(handles.Field_Table.Data{i,2}) ':' ...
+                num2str(handles.Field_Table.Data{i,3}) ])];
+        end
+    end
+end
+Field = Data;
+
+%%% Configuration data is parsed to an structure
+Conf.Ibvalues = Ibvalues;
+Conf.Temps = Temps;
+Conf.Field = Field;
+handles.src.UserData = Conf;
+
 guidata(handles.src)
 
 figure1_DeleteFcn(handles.figure1,eventdata,handles);   
@@ -125,13 +176,13 @@ function Cancel_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 figure1_DeleteFcn(handles.figure1,eventdata,handles);   
 
-% --- Executes on button press in Negative.
-function Negative_Callback(hObject, eventdata, handles)
-% hObject    handle to Negative (see GCBO)
+% --- Executes on button press in Ibias_Negative.
+function Ibias_Negative_Callback(hObject, eventdata, handles)
+% hObject    handle to Ibias_Negative (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of Negative
+% Hint: get(hObject,'Value') returns toggle state of Ibias_Negative
 
 
 % --- Executes on key press with focus on figure1 or any of its controls.
@@ -145,7 +196,7 @@ function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
 
 try
     if strcmp(eventdata.Key,'escape')
-        % Remove paths
+        % Ibias_Remove paths
         figure1_DeleteFcn(handles.figure1,eventdata,handles);            
        
     elseif strcmp(eventdata.Key,'return')
@@ -165,49 +216,45 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 delete(handles.figure1);
 
 
-% --- Executes when selected object is changed in uibuttongroup1.
-function Tag = uibuttongroup1_SelectionChangedFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uibuttongroup1 
+% --- Executes when selected object is changed in Ibias_Panel.
+function Tag = Ibias_Panel_SelectionChangedFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in Ibias_Panel 
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 Tag = hObject.Tag;
 switch Tag
     case 'Manual'
-        handles.RangeTable.Enable = 'on';
-        handles.Browse.Enable = 'off';
+        handles.Ibias_Table.Enable = 'on';
+        handles.Ibias_Browse.Enable = 'off';
     otherwise
-        handles.RangeTable.Enable = 'off';
-        handles.Browse.Enable = 'on';
+        handles.Ibias_Table.Enable = 'off';
+        handles.Ibias_Browse.Enable = 'on';
 end    
 
-% --- Executes on button press in Browse.
-function Browse_Callback(hObject, eventdata, handles)
-% hObject    handle to Browse (see GCBO)
+% --- Executes on button press in Ibias_Browse.
+function Ibias_Browse_Callback(hObject, eventdata, handles)
+% hObject    handle to Ibias_Browse (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-Tag = handles.uibuttongroup1.SelectedObject.Tag;
+Tag = handles.Ibias_Panel.SelectedObject.Tag;
 
 switch Tag
     case 'FromFile'
-        handles.RangeTable.Enable = 'off';
+        handles.Ibias_Table.Enable = 'off';
         [Name, Dir] = uigetfile({'*.txt','Example file (*.txt)'},...
             'Select file','tmp\*.txt');
         if ~isempty(Name)&&~isequal(Name,0)
-            handles.Dir = Dir;
-            handles.Name = Name;
-            set(handles.IbiasFileStr,'String',[Dir Name],...
-                'TooltipString',[Dir Name]);
-            [suc,msg,msgid] = copyfile([handles.Dir handles.Name],handles.Name_Temp);
-            if ~suc
-                warndlg(msg,msgid);
-            end
+            handles.IbiasDir = Dir;
+            handles.IbiasName = Name;
+            set(handles.Ibias_File_Str,'String',[Dir Name],...
+                'TooltipString',[Dir Name]);            
         else
-            set(handles.IbiasFileStr,'String','No file selected');
+            set(handles.Ibias_File_Str,'String','No file selected');
             return;
         end
         
     case 'FromGraph'
-        handles.RangeTable.Enable = 'off';
+        handles.Ibias_Table.Enable = 'off';
         [Name, Dir] = uigetfile({'*.fig','Example file (*.fig)'},...
             'Select graph file','tmp\*.fig');
         
@@ -227,30 +274,30 @@ end
 
 
 
-% --- Executes on button press in Add.
-function Add_Callback(hObject, eventdata, handles)
-% hObject    handle to Add (see GCBO)
+% --- Executes on button press in Ibias_Add.
+function Ibias_Add_Callback(hObject, eventdata, handles)
+% hObject    handle to Ibias_Add (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.RangeTable.Data = [handles.RangeTable.Data; cell(1,3)];
+handles.Ibias_Table.Data = [handles.Ibias_Table.Data; cell(1,3)];
 
-% --- Executes on button press in Remove.
-function Remove_Callback(hObject, eventdata, handles)
-% hObject    handle to Remove (see GCBO)
+% --- Executes on button press in Ibias_Remove.
+function Ibias_Remove_Callback(hObject, eventdata, handles)
+% hObject    handle to Ibias_Remove (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if size(handles.RangeTable.Data,1) > 1
-    handles.RangeTable.Data(end,:) = [];
+if size(handles.Ibias_Table.Data,1) > 1
+    handles.Ibias_Table.Data(end,:) = [];
 end
 
 
-function NRepeat_Callback(hObject, eventdata, handles)
-% hObject    handle to NRepeat (see GCBO)
+function Ibias_NRepeat_Callback(hObject, eventdata, handles)
+% hObject    handle to Ibias_NRepeat (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of NRepeat as text
-%        str2double(get(hObject,'String')) returns contents of NRepeat as a double
+% Hints: get(hObject,'String') returns contents of Ibias_NRepeat as text
+%        str2double(get(hObject,'String')) returns contents of Ibias_NRepeat as a double
 value = str2double(get(hObject,'String'));
 if ~isempty(value)&&~isnan(value)
     if value <= 0
@@ -261,8 +308,8 @@ else
 end
 
 % --- Executes during object creation, after setting all properties.
-function NRepeat_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to NRepeat (see GCBO)
+function Ibias_NRepeat_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Ibias_NRepeat (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -309,17 +356,581 @@ function Temp_Browse_Callback(hObject, eventdata, handles)
 % hObject    handle to Temp_Browse (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+Tag = handles.Temp_Panel.SelectedObject.Tag;
 
+switch Tag
+    case 'Temp_FromFile'
+        handles.Temp_Table.Enable = 'off';
+        [Name, Dir] = uigetfile({'*.txt','Example file (*.txt)'},...
+            'Select file','tmp\*.txt');
+        if ~isempty(Name)&&~isequal(Name,0)
+            handles.TempDir = Dir;
+            handles.TempName = Name;
+            set(handles.Temp_File_Str,'String',[Dir Name],...
+                'TooltipString',[Dir Name]);     
+            fid = fopen([Dir Name]);
+            Data = fscanf(fid,'%f');
+            fclose(fid);
+            handles.Temp_Table.Data = {[]};
+            %%% Updating the Temp Table values
+            handles.Temp_Table.Data{size(Data,1),3} = []; 
+            handles.Temp_Table.Data(:,size(Data,2)) = cellstr(num2str(Data));
+            handles.Temp_Table.Enable = 'on';
+        else
+            handles.TempDir = [];
+            handles.TempName = [];
+            set(handles.Temp_File_Str,'String','No file selected');
+            return;
+        end
+end
+guidata(hObject,handles);
 
 % --- Executes on button press in Temp_Add.
 function Temp_Add_Callback(hObject, eventdata, handles)
 % hObject    handle to Temp_Add (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+handles.Temp_Table.Data = [handles.Temp_Table.Data; cell(1,3)];
 
 % --- Executes on button press in Temp_Remove.
 function Temp_Remove_Callback(hObject, eventdata, handles)
 % hObject    handle to Temp_Remove (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+if size(handles.Temp_Table.Data,1) > 1
+    handles.Temp_Table.Data(end,:) = [];
+end
+
+% --- Executes when selected object is changed in Temp_Panel.
+function Temp_Panel_SelectionChangedFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in Temp_Panel 
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+switch hObject.Tag
+    case 'Temp_Manual'
+        handles.Temp_Table.Enable = 'on';
+        handles.Temp_Browse.Enable = 'off';
+        
+    otherwise
+        handles.Temp_Table.Enable = 'off';
+        handles.Temp_Browse.Enable = 'on';
+end    
+guidata(hObject,handles);
+
+
+% --- Executes on button press in Temp_Save.
+function Temp_Save_Callback(hObject, eventdata, handles)
+% hObject    handle to Temp_Save (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+[Temp_Name, Temp_Dir] = uiputfile( ...
+       {'\tmp\temps.txt'}, ...
+        'Save as');
+ if ~isempty(Temp_Name)
+     Data = [];
+     for i = 1:size(handles.Temp_Table.Data,1)
+         if ~isempty(handles.Temp_Table.Data{i,1})
+             if isempty(handles.Temp_Table.Data{i,2})
+                 Data = [Data str2double(handles.Temp_Table.Data{i,1})];
+             elseif ~isempty(handles.Temp_Table.Data{i,3})
+                 Data = [Data eval([num2str(handles.Temp_Table.Data{i,1}) ':' ...
+                     num2str(handles.Temp_Table.Data{i,2}) ':' ...
+                     num2str(handles.Temp_Table.Data{i,3}) ])];
+             end
+         end
+     end
+     Data = unique(sort(Data));
+     % Remove possible 0 values
+     Data(Data == 0) = [];
+     Temps = Data;
+     
+     fid = fopen([Temp_Dir filesep Temp_Name],'a+');
+     fprintf(fid,'%f \n',Temps');
+     fclose(fid);
+     
+     handles.Temp_Save_Str.String = [Temp_Dir filesep Temp_Name];
+     handles.TempDir = Temp_Dir;
+     handles.TempName = Temp_Name;
+ else
+     warndlg('Temp file was not saved','ZarTES v1.0');
+     handles.Temp_Save_Str.String = 'Temp file was not saved';
+     handles.TempDir = [];
+     handles.TempName = [];
+ end
+guidata(hObject,handles);    
+
+
+% --- Executes on selection change in Noise_Method.
+function Noise_Method_Callback(hObject, eventdata, handles)
+% hObject    handle to Noise_Method (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Noise_Method contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Noise_Method
+
+
+% --- Executes during object creation, after setting all properties.
+function Noise_Method_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Noise_Method (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in DSA_Noise_Conf.
+function DSA_Noise_Conf_Callback(hObject, eventdata, handles)
+% hObject    handle to DSA_Noise_Conf (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+waitfor(Conf_Setup(hObject,handles.Noise_Method.Value,handles));
+
+
+function Noise_Amp_Callback(hObject, eventdata, handles)
+% hObject    handle to Noise_Amp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Noise_Amp as text
+%        str2double(get(hObject,'String')) returns contents of Noise_Amp as a double
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value <= 0
+        set(hObject,'String','100');
+        handles.Noise_Amp_Units.Value = 2;
+        Noise_Amp_Callback(hObject, [], handles)
+    end
+else
+    set(hObject,'String','100');
+    handles.Noise_Amp_Units.Value = 2;
+    Noise_Amp_Callback(hObject, [], handles)
+end
+
+% --- Executes during object creation, after setting all properties.
+function Noise_Amp_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Noise_Amp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Noise_Amp_Units.
+function Noise_Amp_Units_Callback(hObject, eventdata, handles)
+% hObject    handle to Noise_Amp_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Noise_Amp_Units contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Noise_Amp_Units
+Amp = str2double(handles.Noise_Amp.String);
+OldValue = hObject.UserData;
+NewValue = hObject.Value;
+
+switch OldValue-NewValue
+    case -2
+        Amp = Amp/1e-06;
+    case -1
+        Amp = Amp/1e-03;
+    case 0
+        Amp = Amp/1;
+    case 1
+        Amp = Amp/1e03;
+    case 2
+        Amp = Amp/1e06;
+end
+handles.Noise_Amp.String = num2str(Amp);
+hObject.UserData = NewValue;
+
+% --- Executes during object creation, after setting all properties.
+function Noise_Amp_Units_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Noise_Amp_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Z_Method.
+function Z_Method_Callback(hObject, eventdata, handles)
+% hObject    handle to Z_Method (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Z_Method contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Z_Method
+
+
+% --- Executes during object creation, after setting all properties.
+function Z_Method_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Z_Method (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in DSA_TF_Conf.
+function DSA_TF_Conf_Callback(hObject, eventdata, handles)
+% hObject    handle to DSA_TF_Conf (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+waitfor(Conf_Setup(hObject,handles.Z_Method.Value,handles));
+
+function Sine_Amp_Callback(hObject, eventdata, handles)
+% hObject    handle to Sine_Amp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Sine_Amp as text
+%        str2double(get(hObject,'String')) returns contents of Sine_Amp as a double
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value <= 0
+        set(hObject,'String','50');
+        handles.Sine_Amp_Units.Value = 2;
+        Z_Amp_Callback(hObject, [], handles)
+    end
+else
+    set(hObject,'String','50');
+    handles.Sine_Amp_Units.Value = 2;
+    Z_Amp_Callback(hObject, [], handles)
+end
+
+% --- Executes during object creation, after setting all properties.
+function Sine_Amp_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Sine_Amp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Sine_Amp_Units.
+function Sine_Amp_Units_Callback(hObject, eventdata, handles)
+% hObject    handle to Sine_Amp_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Sine_Amp_Units contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Sine_Amp_Units
+Amp = str2double(handles.Sine_Amp.String);
+OldValue = hObject.UserData;
+NewValue = hObject.Value;
+
+switch OldValue-NewValue
+    case -2
+        Amp = Amp/1e-06;
+    case -1
+        Amp = Amp/1e-03;
+    case 0
+        Amp = Amp/1;
+    case 1
+        Amp = Amp/1e03;
+    case 2
+        Amp = Amp/1e06;
+end
+handles.Sine_Amp.String = num2str(Amp);
+hObject.UserData = NewValue;
+
+% --- Executes during object creation, after setting all properties.
+function Sine_Amp_Units_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Sine_Amp_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Sine_Freq_Callback(hObject, eventdata, handles)
+% hObject    handle to Sine_Freq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Sine_Freq as text
+%        str2double(get(hObject,'String')) returns contents of Sine_Freq as a double
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value <= 0
+        set(hObject,'String','1');
+        handles.Sine_Freq_Units.Value = 1;
+        Z_Freq_Callback(hObject, [], handles)
+    end
+else
+    set(hObject,'String','1');
+    handles.Sine_Freq_Units.Value = 1;
+    Z_Freq_Callback(hObject, [], handles)
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function Sine_Freq_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Sine_Freq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Sine_Freq_Units.
+function Sine_Freq_Units_Callback(hObject, eventdata, handles)
+% hObject    handle to Sine_Freq_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Sine_Freq_Units contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Sine_Freq_Units
+Freq = str2double(handles.Sine_Freq.String);
+OldValue = hObject.UserData;
+NewValue = hObject.Value;
+
+switch OldValue-NewValue
+    case -2
+        Freq = Freq/1e-06;
+    case -1
+        Freq = Freq/1e-03;
+    case 0
+        Freq = Freq/1;
+    case 1
+        Freq = Freq/1e03;
+    case 2
+        Freq = Freq/1e06;
+end
+handles.Sine_Freq.String = num2str(Freq);
+hObject.UserData = NewValue;
+
+% --- Executes during object creation, after setting all properties.
+function Sine_Freq_Units_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Sine_Freq_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in AQ_DSA.
+function AQ_DSA_Callback(hObject, eventdata, handles)
+% hObject    handle to AQ_DSA (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of AQ_DSA
+if hObject.Value == 0 && handles.AQ_PXI.Value == 0
+    hObject.Value = 1;
+end
+
+% --- Executes on button press in AQ_PXI.
+function AQ_PXI_Callback(hObject, eventdata, handles)
+% hObject    handle to AQ_PXI (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of AQ_PXI
+if hObject == 0 && handles.AQ_DSA.Value == 0
+    hObject.Value = 1;
+end
+
+
+function Pulse_Amp_Callback(hObject, eventdata, handles)
+% hObject    handle to Pulse_Amp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Pulse_Amp as text
+%        str2double(get(hObject,'String')) returns contents of Pulse_Amp as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Pulse_Amp_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Pulse_Amp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Pulse_Amp_Units.
+function Pulse_Amp_Units_Callback(hObject, eventdata, handles)
+% hObject    handle to Pulse_Amp_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Pulse_Amp_Units contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Pulse_Amp_Units
+
+
+% --- Executes during object creation, after setting all properties.
+function Pulse_Amp_Units_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Pulse_Amp_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Pulse_Range_Callback(hObject, eventdata, handles)
+% hObject    handle to Pulse_Range (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Pulse_Range as text
+%        str2double(get(hObject,'String')) returns contents of Pulse_Range as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Pulse_Range_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Pulse_Range (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Pulse_Range_Units.
+function Pulse_Range_Units_Callback(hObject, eventdata, handles)
+% hObject    handle to Pulse_Range_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Pulse_Range_Units contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Pulse_Range_Units
+
+
+% --- Executes during object creation, after setting all properties.
+function Pulse_Range_Units_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Pulse_Range_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Pulse_Duration_Callback(hObject, eventdata, handles)
+% hObject    handle to Pulse_Duration (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Pulse_Duration as text
+%        str2double(get(hObject,'String')) returns contents of Pulse_Duration as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Pulse_Duration_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Pulse_Duration (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in Pulse_Duration_Units.
+function Pulse_Duration_Units_Callback(hObject, eventdata, handles)
+% hObject    handle to Pulse_Duration_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns Pulse_Duration_Units contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Pulse_Duration_Units
+
+
+% --- Executes during object creation, after setting all properties.
+function Pulse_Duration_Units_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Pulse_Duration_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Pulse_Conf.
+function Pulse_Conf_Callback(hObject, eventdata, handles)
+% hObject    handle to Pulse_Conf (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in AQ_mode.
+function AQ_mode_Callback(hObject, eventdata, handles)
+% hObject    handle to AQ_mode (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of AQ_mode
+
+if ~hObject.Value
+    set([handles.AQ_DSA handles.AQ_PXI ...
+        handles.Z_Method handles.DSA_TF_Conf ...
+        handles.Sine_Amp handles.Sine_Amp_Units ...
+        handles.Sine_Freq handles.Sine_Freq_Units ...
+        handles.Noise_Method handles.DSA_Noise_Conf ...
+        handles.Noise_Amp handles.Noise_Amp_Units],'Enable','off');
+else
+    set([handles.AQ_DSA handles.AQ_PXI ...
+        handles.Z_Method handles.DSA_TF_Conf ...
+        handles.Sine_Amp handles.Sine_Amp_Units ...
+        handles.Sine_Freq handles.Sine_Freq_Units ...
+        handles.Noise_Method handles.DSA_Noise_Conf ...
+        handles.Noise_Amp handles.Noise_Amp_Units],'Enable','on');
+end
