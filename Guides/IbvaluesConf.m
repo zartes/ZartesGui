@@ -22,7 +22,7 @@ function varargout = IbvaluesConf(varargin)
 
 % Edit the above text to modify the response to help IbvaluesConf
 
-% Last Modified by GUIDE v2.5 29-Aug-2018 13:56:24
+% Last Modified by GUIDE v2.5 31-Aug-2018 12:18:48
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -60,6 +60,7 @@ catch
 end
 try 
     handles.src = varargin{1};
+    handles.SetupTES = guidata(handles.src);
 catch
 end
 
@@ -74,6 +75,11 @@ position = get(handles.figure1,'Position');
 set(handles.figure1,'Color',[0 100 160]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
+
+handles.menu(1) = uimenu('Parent',handles.figure1,'Label',...
+    'Configuration File');
+handles.Menu_Conf = uimenu('Parent',handles.menu(1),'Label',...
+    'Open','Callback',{@OpenConfFile});
 
 
 % Initializing Table values
@@ -101,9 +107,78 @@ set(handles.figure1,'Visible','on');
 varargout{1} = handles.figure1;
 % guidata(hObject,handles);
 
-% --- Executes on button press in Accept.
-function Accept_Callback(hObject, eventdata, handles)
-% hObject    handle to Accept (see GCBO)
+function OpenConfFile(src,evnt)
+handles = guidata(src);
+[Name, Dir] = uigetfile({'*.xml','Example file (*.xml)'},...
+    'Select file','tmp\*.xml');
+if ~isempty(Name)&&~isequal(Name,0)
+    handles.ConfDir = Dir;
+    handles.ConfName = Name;
+else
+    warndlg('No Configuration File Selected!','ZarTES v1.0')
+    return;
+end
+
+S = xml2struct([handles.ConfDir handles.ConfName]);
+
+Conf.Temps.Values = str2double(split(S.Conf.Temps.Values.Text,' '));
+Conf.Temps.File = S.Conf.Temps.File.Text;
+Conf.Ibvalues.Mode = str2double(S.Conf.Ibvalues.Mode.Text);
+Conf.Ibvalues.Values = str2double(split(S.Conf.Ibvalues.Values.Text,' '));
+Conf.Field.Mode = str2double(S.Conf.Field.Mode.Text);
+Conf.Field.Values = str2double(split(S.Conf.Field.Values.Text,' '));
+Conf.ZwNoise.Mode = str2double(S.Conf.ZwNoise.Mode.Text);
+Conf.ZwNoise.Parameters = [];
+Conf.Pulses.Mode = str2double(S.Conf.Pulses.Mode.Text);
+Conf.Pulses.Parameters = [];
+
+Update_Setup(Conf,handles);
+
+
+function Update_Setup(Conf,handles)
+
+if isempty(Conf.Temps.File)
+    handles.Temp_Manual.Value = 1;
+    Temp_Panel_SelectionChangedFcn(handles.Temp_Panel, [], handles)
+else
+    handles.Temp_FromFile.Value = 1;
+    Temp_Panel_SelectionChangedFcn(handles.Temp_Panel, [], handles)
+    handles.Temp_Save_Str.String = Conf.Temps.File;
+    
+    handles.TempName = Conf.Temps.File(max(strfind(Conf.Temps.File,filesep))+1:end);
+    handles.TempDir = Conf.Temps.File(1:max(strfind(Conf.Temps.File,filesep)));
+end
+handles.Temp_Table.Data = [];
+handles.Temp_Table.Data{size(Conf.Temps.Values,1),3} = []; 
+handles.Temp_Table.Data(1:size(Conf.Temps.Values,1),size(Conf.Temps.Values,2)) = cellstr(num2str(Conf.Temps.Values));
+   
+handles.AQ_IVs.Value = Conf.Ibvalues.Mode;
+AQ_IVs_Callback(handles.AQ_IVs, [], handles);
+if handles.AQ_IVs.Value
+    handles.Ibias_Table.Data = [];
+    handles.Ibias_Table.Data{size(Conf.Ibvalues.Values,1),3} = [];
+    handles.Ibias_Table.Data(1:size(Conf.Ibvalues.Values,1),size(Conf.Ibvalues.Values,2)) = cellstr(num2str(Conf.Ibvalues.Values));
+end
+
+handles.BField_Mode.Value = Conf.Field.Mode;
+BField_Mode_Callback(handles.BField_Mode, [], handles);
+if handles.BField_Mode.Value
+    handles.Field_Table.Data = [];
+    handles.Field_Table.Data{size(Conf.Field.Values,1),3} = [];
+    handles.Field_Table.Data(1:size(Conf.Field.Values,1),size(Conf.Field.Values,2)) = cellstr(num2str(Conf.Field.Values));
+end
+
+handles.AQ_mode.Value = Conf.ZwNoise.Mode;
+AQ_mode_Callback(handles.AQ_mode, [], handles);
+
+handles.AQ_Pulse.Value = Conf.Pulses.Mode;
+AQ_Pulse_Callback(handles.AQ_Pulse, [], handles);
+guidata(handles.figure1,handles);
+
+
+% --- Executes on button press in Start_AQ.
+function Start_AQ_Callback(hObject, eventdata, handles)
+% hObject    handle to Start_AQ (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -160,14 +235,41 @@ end
 Field = Data;
 
 %%% Configuration data is parsed to an structure
-Conf.Ibvalues = Ibvalues;
-Conf.Temps = Temps;
-Conf.Field = Field;
+
+if isempty(handles.TempName)
+    warndlg('Temperature values must be stored in a txt file','ZarTES v1.0');
+    Temp_Save_Callback(handles.Temp_Save,[],handles);
+    if isempty(handles.TempName)
+       warndlg('Error generating the Configuration file!','ZarTES v1.0');  
+    end
+end
+Conf.Temps.Values = Temps;
+Conf.Temps.File = [handles.TempDir handles.TempName];
+
+Conf.Ibvalues.Mode = handles.AQ_IVs.Value; % 0 (off), 1 (on) 
+Conf.Ibvalues.Values = Ibvalues;
+
+Conf.Field.Mode = handles.BField_Mode.Value;  % 0 (off), 1 (on)
+Conf.Field.Values = Field;
+
+Conf.ZwNoise.Mode = handles.AQ_mode.Value; % 0 (off), 1 (on)
+Conf.ZwNoise.Zw.Parameters = [];
+Conf.ZwNoise.Noise.Parameters = [];
+
+Conf.Pulses.Mode = handles.AQ_Pulse.Value; % 0 (off), 1 (on)
+Conf.Pulses.Parameters = [];
+
+
+Start_Automatic_Acquisition(handles,Conf);
+
+
 handles.src.UserData = Conf;
 
-guidata(handles.src)
+guidata(hObject,handles);
 
-figure1_DeleteFcn(handles.figure1,eventdata,handles);   
+
+
+% figure1_DeleteFcn(handles.figure1,eventdata,handles);   
 
 % --- Executes on button press in Cancel.
 function Cancel_Callback(hObject, eventdata, handles)
@@ -200,7 +302,7 @@ try
         figure1_DeleteFcn(handles.figure1,eventdata,handles);            
        
     elseif strcmp(eventdata.Key,'return')
-        if strcmp(get(handles.Accept,'Enable'),'on')
+        if strcmp(get(handles.Start_AQ,'Enable'),'on')
             Accept_Callback(handles.Start,eventdata,handles);
         end
     end
@@ -409,11 +511,11 @@ function Temp_Panel_SelectionChangedFcn(hObject, eventdata, handles)
 
 switch hObject.Tag
     case 'Temp_Manual'
-        handles.Temp_Table.Enable = 'on';
+%         handles.Temp_Table.Enable = 'on';
         handles.Temp_Browse.Enable = 'off';
         
     otherwise
-        handles.Temp_Table.Enable = 'off';
+%         handles.Temp_Table.Enable = 'on';
         handles.Temp_Browse.Enable = 'on';
 end    
 guidata(hObject,handles);
@@ -595,7 +697,7 @@ function DSA_TF_Conf_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 waitfor(Conf_Setup(hObject,handles.Z_Method.Value,handles));
-
+pause();
 function Sine_Amp_Callback(hObject, eventdata, handles)
 % hObject    handle to Sine_Amp (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -774,7 +876,7 @@ function Pulse_Amp_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of Pulse_Amp as text
 %        str2double(get(hObject,'String')) returns contents of Pulse_Amp as a double
-
+Edit_Protect(hObject)
 
 % --- Executes during object creation, after setting all properties.
 function Pulse_Amp_CreateFcn(hObject, eventdata, handles)
@@ -797,7 +899,24 @@ function Pulse_Amp_Units_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns Pulse_Amp_Units contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Pulse_Amp_Units
+PulseAmp = str2double(handles.Pulse_Amp.String);
+OldValue = hObject.UserData;
+NewValue = hObject.Value;
 
+switch OldValue-NewValue
+    case -2
+        PulseAmp = PulseAmp/1e-06;
+    case -1
+        PulseAmp = PulseAmp/1e-03;
+    case 0
+        PulseAmp = PulseAmp/1;
+    case 1
+        PulseAmp = PulseAmp/1e03;
+    case 2
+        PulseAmp = PulseAmp/1e06;
+end
+handles.Pulse_Amp.String = num2str(PulseAmp);
+hObject.UserData = NewValue;
 
 % --- Executes during object creation, after setting all properties.
 function Pulse_Amp_Units_CreateFcn(hObject, eventdata, handles)
@@ -820,7 +939,7 @@ function Pulse_Range_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of Pulse_Range as text
 %        str2double(get(hObject,'String')) returns contents of Pulse_Range as a double
-
+Edit_Protect(hObject)
 
 % --- Executes during object creation, after setting all properties.
 function Pulse_Range_CreateFcn(hObject, eventdata, handles)
@@ -843,7 +962,24 @@ function Pulse_Range_Units_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns Pulse_Range_Units contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Pulse_Range_Units
+PulseDT = str2double(handles.Pulse_Range.String);
+OldValue = hObject.UserData;
+NewValue = hObject.Value;
 
+switch OldValue-NewValue
+    case -2
+        PulseDT = PulseDT/1e-06;
+    case -1
+        PulseDT = PulseDT/1e-03;
+    case 0
+        PulseDT = PulseDT/1;
+    case 1
+        PulseDT = PulseDT/1e03;
+    case 2
+        PulseDT = PulseDT/1e06;
+end
+handles.Pulse_Range.String = num2str(PulseDT);
+hObject.UserData = NewValue;
 
 % --- Executes during object creation, after setting all properties.
 function Pulse_Range_Units_CreateFcn(hObject, eventdata, handles)
@@ -866,6 +1002,7 @@ function Pulse_Duration_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of Pulse_Duration as text
 %        str2double(get(hObject,'String')) returns contents of Pulse_Duration as a double
+Edit_Protect(hObject)
 
 
 % --- Executes during object creation, after setting all properties.
@@ -889,7 +1026,24 @@ function Pulse_Duration_Units_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns Pulse_Duration_Units contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Pulse_Duration_Units
+PulseDur = str2double(handles.Pulse_Duration.String);
+OldValue = hObject.UserData;
+NewValue = hObject.Value;
 
+switch OldValue-NewValue
+    case -2
+        PulseDur = PulseDur/1e-06;
+    case -1
+        PulseDur = PulseDur/1e-03;
+    case 0
+        PulseDur = PulseDur/1;
+    case 1
+        PulseDur = PulseDur/1e03;
+    case 2
+        PulseDur = PulseDur/1e06;
+end
+handles.Pulse_Duration.String = num2str(PulseDur);
+hObject.UserData = NewValue;
 
 % --- Executes during object creation, after setting all properties.
 function Pulse_Duration_Units_CreateFcn(hObject, eventdata, handles)
@@ -933,4 +1087,89 @@ else
         handles.Sine_Freq handles.Sine_Freq_Units ...
         handles.Noise_Method handles.DSA_Noise_Conf ...
         handles.Noise_Amp handles.Noise_Amp_Units],'Enable','on');
+end
+
+
+% --- Executes on button press in AQ_Pulse.
+function AQ_Pulse_Callback(hObject, eventdata, handles)
+% hObject    handle to AQ_Pulse (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of AQ_Pulse
+
+if hObject.Value
+    set([handles.Pulse_Conf handles.Pulse_Amp handles.Pulse_Amp_Units ...
+        handles.Pulse_Range handles.Pulse_Range_Units ...
+        handles.Pulse_Duration handles.Pulse_Duration_Units],'Enable','on');
+else
+    set([handles.Pulse_Conf handles.Pulse_Amp handles.Pulse_Amp_Units ...
+        handles.Pulse_Range handles.Pulse_Range_Units ...
+        handles.Pulse_Duration handles.Pulse_Duration_Units],'Enable','off');
+end
+
+function Edit_Protect(hObject)
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value <= 0
+        set(hObject,'String','1');
+    end
+else
+    set(hObject,'String','1');
+end
+
+
+% --- Executes on button press in AQ_IVs.
+function AQ_IVs_Callback(hObject, eventdata, handles)
+% hObject    handle to AQ_IVs (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of AQ_IVs
+
+if hObject.Value
+    set([handles.Ibias_Table handles.Manual handles.FromFile handles.FromGraph ...
+        handles.Ibias_Browse handles.Ibias_File_Str ...
+        handles.Ibias_Add handles.Ibias_Remove handles.Ibias_NRepeat_Str handles.Ibias_NRepeat ...
+        handles.Ibias_Negative handles.Ibias_Table_Units],'Enable','on')
+else
+    set([handles.Ibias_Table handles.Manual handles.FromFile handles.FromGraph ...
+        handles.Ibias_Browse handles.Ibias_File_Str ...
+        handles.Ibias_Add handles.Ibias_Remove handles.Ibias_NRepeat_Str handles.Ibias_NRepeat ...
+        handles.Ibias_Negative handles.Ibias_Table_Units],'Enable','off')
+end
+    
+    
+    
+
+
+% --- Executes on button press in BField_Mode.
+function BField_Mode_Callback(hObject, eventdata, handles)
+% hObject    handle to BField_Mode (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of BField_Mode
+if hObject.Value
+    set([handles.Field_Table handles.Field_Table_Str],'Enable','on');
+else
+    set([handles.Field_Table handles.Field_Table_Str],'Enable','off');
+end
+
+
+% --- Executes on button press in Field_Add.
+function Field_Add_Callback(hObject, eventdata, handles)
+% hObject    handle to Field_Add (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.Field_Table.Data = [handles.Field_Table.Data; cell(1,3)];
+
+% --- Executes on button press in Field_Remove.
+function Field_Remove_Callback(hObject, eventdata, handles)
+% hObject    handle to Field_Remove (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if size(handles.Field_Table.Data,1) > 1
+    handles.Field_Table.Data(end,:) = [];
 end

@@ -1253,6 +1253,7 @@ if hObject.Value
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
     if handles.DSA_On.Value        
+        %% Falta añadir la configuración de la medida de Z(w) y Noise
         [handles.DSA, datos] = handles.DSA.Read;   
     end
     if handles.PXI_On.Value
@@ -1826,6 +1827,7 @@ function PXI_Pulses_Conf_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+
 function Actions_Str_Callback(hObject, eventdata, handles)
 warning off;
 fprintf(handles.LogFID,[hObject.String '\n']);
@@ -1924,6 +1926,8 @@ handles.Menu_Temp = uimenu('Parent',handles.menu(3),'Label',...
 %%%%%%% Start Acquisition 
 handles.menu(4) = uimenu('Parent',handles.SetupTES,'Label',...
     'Acquisition');
+handles.Menu_ACQ_Conf = uimenu('Parent',handles.menu(4),'Label',...
+    'Configuration Panel','Callback',{@IbvaluesConf},'Separator','on');
 handles.Menu_ACQ_Start = uimenu('Parent',handles.menu(4),'Label',...
     'Start','Callback',{@ACQ_Start},'Separator','on');
 handles.Menu_ACQ_Temp = uimenu('Parent',handles.menu(4),'Label',...
