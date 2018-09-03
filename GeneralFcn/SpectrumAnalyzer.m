@@ -47,10 +47,13 @@ classdef SpectrumAnalyzer
             hp_sin_config_updated(obj,freq);  % Fixed sine
         end
         
-        function obj = NoiseMode(obj,Amp)  % Amplitud de excitación (mV!!)
+        function obj = NoiseMode(obj)  % Amplitud de excitación (mV!!)
             obj = hp_noise_config_updated(obj);
-            hp_WhiteNoise_updated(obj,Amp);
         end
+        
+        function obj = NoiseMode2(obj,Amp)  % Amplitud de excitación (mV!!)
+            hp_WhiteNoise_updated(obj,Amp);
+        end%             
         
         function obj = SourceOn(obj)
             hp_Source_ON_updated(obj);
@@ -72,6 +75,7 @@ classdef SpectrumAnalyzer
         end
         
         function [obj, datos] = Read(obj)
+            LauchMeasurement(obj)
             [freq, data, header] = hp_read_updated(obj);
             datos = [freq' data'];
             obj.Header = header;

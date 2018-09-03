@@ -1,11 +1,35 @@
 function Start_Automatic_Acquisition(handles, SetupTES, Conf)
 
+
+AQ_dir = uigetdir(pwd, 'Select a path for storing acquisition data');
+
+[SUCCESS,MESSAGE,MESSAGEID] = mkdir(AQ_dir,'tmp'); %#ok<ASGLU>
+if ~SUCCESS
+    warndlg(MESSAGE,'ZarTES v1.0');
+    msgbox('Acquisition Aborted','ZarTES v1.0');
+end
+[SUCCESS,MESSAGE,MESSAGEID] = mkdir(AQ_dir,'IVs'); %#ok<ASGLU>
+if ~SUCCESS
+    warndlg(MESSAGE,'ZarTES v1.0');
+    msgbox('Acquisition Aborted','ZarTES v1.0');
+end
+[SUCCESS,MESSAGE,MESSAGEID] = mkdir(AQ_dir,'Z(w)-Ruido'); %#ok<ASGLU>
+if ~SUCCESS
+    warndlg(MESSAGE,'ZarTES v1.0');
+    msgbox('Acquisition Aborted','ZarTES v1.0');
+end
+
 % handles perteneciente a los setups
 % Conf estructura de configuración de la adquisición automática
 
 temps = Conf.Temps.Values*1e3;  % Now temps array is in milliKelvin
-TempName = Conf.Temps.File(max(strfind(Conf.Temps.File,filesep))+1:end);
-TempDir = Conf.Temps.File(1:max(strfind(Conf.Temps.File,filesep)));
+
+fid = fopen([AQ_dir filesep 'tmp\temps.txt'],'a+');
+     fprintf(fid,'%f \n',temps');
+     fclose(fid);
+     
+TempName = 'temps.txt';
+TempDir = [AQ_dir filesep 'tmp\'];
 
 Bvalues = Conf.Field.Values;
 
@@ -23,25 +47,25 @@ for i = 1:length(temps)
     SETstr = [TempDir 'T' Tstring '.stb'];
     
     %% Waiting for Tbath set file
-    h = waitbar(0,['Please wait... Acquisition will start at Tbath ' Tstring]);
-    h1.hi = 0;
-    h1.Nsteps = 50;
-    
-    while(~exist(SETstr,'file'))
-        if ishandle(h)
-            waitbar(h1.hi/h1.Nsteps,h)
-            h1.hi = h1.hi+1;
-            if h1.hi > h1.Nsteps
-                h1.hi = 0;
-            end
-            
-        end        
-        pause(0.1);
-    end
-    if ishandle(h)
-        delete(h)
-        clear h1;
-    end
+%     h = waitbar(0,['Please wait... Acquisition will start at Tbath ' Tstring]);
+%     h1.hi = 0;
+%     h1.Nsteps = 50;
+%     
+%     while(~exist(SETstr,'file'))
+%         if ishandle(h)
+%             waitbar(h1.hi/h1.Nsteps,h)
+%             h1.hi = h1.hi+1;
+%             if h1.hi > h1.Nsteps
+%                 h1.hi = 0;
+%             end
+%             
+%         end        
+%         pause(0.1);
+%     end
+%     if ishandle(h)
+%         delete(h)
+%         clear h1;
+%     end
     %%
     
     % (repeated for each B Field value)
@@ -58,76 +82,183 @@ for i = 1:length(temps)
         %% Acquisition block, once bath temperature and field were set
         
         if Conf.Ibvalues.Mode % If 1, then IV curves are acquired
-            % Calibration
-            SetupTEScontrolers('SQ_Calibration_Callback',SetupTES.SQ_Calibration,[],guidata(SetupTES.SQ_Calibration));
-            Rf = str2double(SetupTES.SQ_Rf_real.String);
-            % Configuration to be stored
-            [signo,pol,dire] = IbvaluesExtraction(Conf.Ibvalues.Values);
             
-            % Set TES to Normal State
-            SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,[],guidata(SetupTES.SQ_TES2NormalState));
-            
-            % Reset Closed Loop
-            SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
-            
-            data = [];
-            slope = 0;
-            state = 0;
-            averages = 1;
-            jj = 1;
-            for k = 1:length(Conf.Ibvalues.Values)  % (Repeated for each Ibvalue)
+            Ibvalues_Str = {'p';'n'};
+            for k1 = 1:2  % Positive and negative Ibvalues
+                Ibvalues = eval(['Conf.Ibvalues.Values.' Ibvalues_Str{k1} ';']);
+                % Calibration
+                SetupTEScontrolers('SQ_Calibration_Callback',SetupTES.SQ_Calibration,[],guidata(SetupTES.SQ_Calibration));
+                Rf = str2double(SetupTES.SQ_Rf_real.String);
+                handles.SetupTES.Circuit.Rf = Rf;
                 
-                %% Adapting Ibvalues resolution (under construction) 
-                disp(['Ibias: ' num2str(Conf.Ibvalues.Values(k)) ' uA'])                
-                if slope > 3000  % State variable changes from 0 (normal) to 1 (superconductor)
-                    state = 1;
-                end %%% state = 1 -> superconductor. Be aware! slope value of 3000 is just for Rf = 3Kohm.
+                % Configuration to be stored
+                [signo,pol,dire] = IbvaluesExtraction(Ibvalues);
                 
-                if state && mod(Conf.Ibvalues.Values(k),5) %%% When the state is superconductor then the resolution is changed
-                    continue;
-                end
+                % Set TES to Normal State            
+                SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,signo,guidata(SetupTES.SQ_TES2NormalState));
                 
-                % Set Ibvalue
-                SetupTES.SQ_Ibias.String = num2str(Conf.Ibvalues.Values(k));
-                SetupTES.SQ_Ibias_Units.Value = 3;
-                SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
-                if k == 1
-                    pause(2);
-                end
-                for i_av = 1:averages
-                    SetupTEScontrolers('Multi_Read_Callback',SetupTES.Multi_Read,[],guidata(SetupTES.Multi_Read));
-                    aux1{i_av} = str2double(SetupTES.Multi_Value.String);
-                    if i_av == averages
-                        Vdc = mean(cell2mat(aux1));
+                % Reset Closed Loop
+                SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
+                
+                data = [];
+                slope = 0;
+                state = 0;
+                averages = 1;
+                jj = 1;
+                for k = 1:length(Ibvalues)  % (Repeated for each Ibvalue)
+                    
+                    %% Adapting Ibvalues resolution (under construction)
+                    disp(['Ibias: ' num2str(Ibvalues(k)) ' uA'])
+                    if slope > 3000  % State variable changes from 0 (normal) to 1 (superconductor)
+                        state = 1;
+                    end %%% state = 1 -> superconductor. Be aware! slope value of 3000 is just for Rf = 3Kohm.
+                    
+                    if state && mod(Ibvalues(k),5) %%% When the state is superconductor then the resolution is changed
+                        continue;
                     end
+                    
+                    % Set Ibvalue
+                    SetupTES.SQ_Ibias.String = num2str(Ibvalues(k));
+                    SetupTES.SQ_Ibias_Units.Value = 3;
+                    SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
+                    if k == 1
+                        pause(2);
+                    end
+                    for i_av = 1:averages
+                        SetupTEScontrolers('Multi_Read_Callback',SetupTES.Multi_Read,[],guidata(SetupTES.Multi_Read));
+                        aux1{i_av} = str2double(SetupTES.Multi_Value.String);
+                        if i_av == averages
+                            Vdc = mean(cell2mat(aux1));
+                        end
+                    end
+                    
+                    % Read I real value
+                    SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
+                    Ireal = str2double(SetupTES.SQ_realIbias.String);
+                    
+                    data(jj,1) = now;
+                    data(jj,2) = Ireal; %*1e-6;
+                    data(jj,3) = 0; %%%Vout
+                    data(jj,4) = Vdc;
+                    jj = jj+1;
+                    
+                    if k > 1 && ~state
+                        slope = (data(i,4)-data(i-1,4))/((data(i,2)-data(i-1,2))*1e-6);
+                    end                                                            
                 end
-                
-                % Read I real value
-                SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));                
-                Ireal = str2double(SetupTES.SQ_realIbias.String);
-                
-                data(jj,1) = now;
-                data(jj,2) = Ireal; %*1e-6;
-                data(jj,3) = 0; %%%Vout
-                data(jj,4) = Vdc;
-                jj = jj+1;
-                
-                if k > 1 && ~state
-                    slope = (data(i,4)-data(i-1,4))/((data(i,2)-data(i-1,2))*1e-6);
-                end
-                
                 IV = corregir1rama(data);
                 IV.Tbath = temps(i);
                 
                 file = strcat(temps(i),'_Rf',num2str(Rf),'K_',dire,'_',pol,'_matlab.txt');
-%                 save(file,'data','-ascii');
+                save([AQ_dir filesep 'IVs' filesep file],'data','-ascii');
+                            
+                %%%%%%%%%%%%%%%%%%%%%%%%% Impedancia compleja
+                if Conf.ZwNoise.Mode % If 1, then Z(w) + Noise are acquired
+                    if k1 == 1
+                        succ = mkdir([AQ_dir filesep 'Z(w)-Ruido' filesep 'Negative Bias' filesep], Tstring);
+                        ZwNoise_Dir = [AQ_dir filesep 'Z(w)-Ruido' filesep 'Negative Bias' filesep Tstring filesep];
+                    else
+                        succ = mkdir([AQ_dir filesep 'Z(w)-Ruido' filesep], Tstring);
+                        ZwNoise_Dir = [AQ_dir filesep 'Z(w)-Ruido' filesep Tstring filesep];
+                    end
+%                     succ = mkdir([AQ_dir filesep 'Z(w)-Ruido' filesep], Tstring);
+                    if succ == 0
+                        disp(['Error creating the ' Tstring ' folder!']);
+                        QuestButton = questdlg('Do you want to continue?', ...
+                            'Warning', ...
+                            'Yes', 'No', 'No');
+                        switch QuestButton
+                            case 'No'
+                                return;
+                            case 'Yes'
+                            otherwise
+                                return;
+                        end
+                    end             
+                    
+                    
+                    IVset = GetIVTES(handles.SetupTES.circuit,IV);
+                    rpp = (0.95:-0.05:0.01); %%%Vector con los puntos donde tomar Z(w).
+                    if temps(i) == 0.050 || temps(i) == 0.07
+                        rpp = [0.9:-0.05:0.2 0.19:-0.01:0.1];
+                    end
+                    rpn = (0.90:-0.1:0.1);
+                    
+                    if k1 == 1
+                        IZvalues = BuildIbiasFromRp(IVset,rpp); 
+                    else
+                        IZvalues = BuildIbiasFromRp(IVset,rpn); 
+                    end
+                    
+                    
+                    % Set TES to Normal State
+                    SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,signo,guidata(SetupTES.SQ_TES2NormalState));
+                    
+                    for iz = 1:length(IZvalues)
+                        
+                        % Reset Closed Loop
+                        SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
+                        
+                        % Set Ibvalue
+                        SetupTES.SQ_Ibias.String = num2str(IZvalues(iz));
+                        SetupTES.SQ_Ibias_Units.Value = 3;
+                        SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
+                        
+                        % Read I real value
+                        SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
+                        Itxt = str2double(SetupTES.SQ_realIbias.String);
+                        
+                        %%% Esta parte hay que protegerla de que no
+                        %%% funcione correctamente la conexion
+                        
+                        SetupTEScontrolers('DSA_OnOff_Callback',SetupTES.DSA_OnOff, [], guidata(SetupTES.DSA_OnOff));
+                        setupTES.DSA.SineSweeptMode(setupTES.DSA,IZvalues(iz)*1e-6*0.02);
+                        try
+                            [setupTES.DSA, datos] = setupTES.DSA.Read(setupTES.DSA);
+                            file = strcat('TF_',Itxt,'uA','.txt');
+                            save([ZwNoise_Dir file],'datos','-ascii');%salva los datos a fichero.
+                            clear datos
+                        catch
+                            %% Añadir una parte que haga referencia a que estos datos no se han adquirido
+                        end
+                        
+                        
+                        
+                        obj = TF_Configuration(obj);
+                        file = strcat('PXI_TF_',Itxt,'uA','.txt');
+                        save([ZwNoise_Dir file],'TF','-ascii'); %salva los datos a fichero.
+                        
+                        
+                        try
+                            setupTES.DSA = NoiseMode(setupTES.DSA);
+                            setupTES.DSA.LauchMeasurement(setupTES.DSA);
+                            [setupTES.DSA, datos] = setupTES.DSA.Read(setupTES.DSA);
+                            file = strcat('HP_noise_',Itxt,'uA','.txt');
+                            save([ZwNoise_Dir file],'datos','-ascii'); %salva los datos a fichero.
+                            clear datos
+                        catch
+                            
+                        end
+                        
+                        obj = Noise_Configuration(setupTES.pxi);
+                        aux=pxi_AcquirePSD(pxi);
+                        datos=aux;
+                        n_avg=5;
+                        for jj=1:n_avg-1%%%Ya hemos adquirido una.
+                            aux=pxi_AcquirePSD(pxi);
+                            datos(:,2)=datos(:,2)+aux(:,2);
+                        end
+                        datos(:,2)=datos(:,2)/n_avg;
+                        file = strcat('PXI_noise_',Itxt,'uA','.txt');
+                        save([ZwNoise_Dir file],'datos','-ascii'); %salva los datos a fichero.
+                        
+                        
+                    end  % end for IZ_values
+                    
+                end % end if ZwNoiseMode
                 
-            end
-        end
-        
-        if Conf.ZwNoise.Mode % If 1, then Z(w) + Noise are acquired
-            
-        end        
+            end % end For positive and negative
+        end   % enf if IV Mode 
         
         if Conf.Pulses.Mode % If 1, then Pulses are acquired
             

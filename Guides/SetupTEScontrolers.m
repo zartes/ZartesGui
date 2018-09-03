@@ -262,23 +262,27 @@ else
         hObject.BackgroundColor = [120 170 50]/255;  % Green Color
         hObject.Enable = 'off';
         
-        ButtonName = questdlg('What range of I bias?', ...
-            'Current Sign Question', ...
-            'Positive', 'Negative', 'Positive');
-        switch ButtonName
-            case 'Positive'
-                Ibias_sign = 1;
-            case 'Negative'
-                Ibias_sign = -1;
-            otherwise
-                hObject.BackgroundColor = [240 240 240]/255;
-                hObject.Value = 0;
-                hObject.Enable = 'on';
-                return;
+        if ~isempty(eventdata)
+            Ibias_sign = eventdata;
+        else            
+            ButtonName = questdlg('What range of I bias?', ...
+                'Current Sign Question', ...
+                'Positive', 'Negative', 'Positive');
+            switch ButtonName
+                case 'Positive'
+                    Ibias_sign = 1;
+                case 'Negative'
+                    Ibias_sign = -1;
+                otherwise
+                    hObject.BackgroundColor = [240 240 240]/255;
+                    hObject.Value = 0;
+                    hObject.Enable = 'on';
+                    return;
+            end
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
-        handles.Squid.TES2NormalState(Ibias_sign)
+        handles.Squid.TES2NormalState(Ibias_sign);
         handles.Actions_Str.String = ['Electronic Magnicon: TES in Normal State (' ButtonName ' values)'];
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1215,12 +1219,33 @@ else
         handles.DSA_OnOff_Str.String = 'Source ON';
         handles.DSA_Read.Enable = 'on';
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if handles.TF_Mode.Value
-            handles.DSA = handles.DSA.TF_Configuration;
+        if handles.TF_Mode.Value            
+            switch TF_Menu.Value 
+                case 1 % Sweept sine
+                    handles.Sine_Amp_Units.Value = 2;  % mV
+                    Sine_Amp_Callback(handles.Sine_Amp,[],handles);                    
+                    Amp = str2double(handles.Sine_Amp.String);
+                    handles.DSA = SineSweeptMode(handles.DSA,Amp);
+                case 2 % Fixed sine
+                    handles.Sine_Freq_Units.Value = 1;  % Hz
+                    Sine_Freq_Callback(handles.Sine_Freq,[],handles);                    
+                    freq = str2double(handles.Sine_Freq.String);
+                    handles.DSA = FixedSine(handles.DSA,freq);
+            end                        
             handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: TF Mode ON';
             Actions_Str_Callback(handles.Actions_Str,[],handles);
-        else
-            handles.DSA = handles.DSA.Noise_Configuration;
+        end
+        if handles.Noise_Mode.Value
+            switch Noise_Menu.Value 
+                case 1 % Sweept sine                    
+                    handles.DSA = NoiseMode(handles.DSA);
+                case 2 % Fixed sine
+                    handles.Noise_Amp_Units.Value = 2;  % mV
+                    Noise_Amp_Callback(handles.Noise_Amp,[],handles);                    
+                    Amp = str2double(handles.Noise_Amp.String);
+                    handles.DSA = NoiseMode2(handles.DSA,Amp);
+            end
+            
             handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: Noise Mode ON';
             Actions_Str_Callback(handles.Actions_Str,[],handles);
         end
@@ -1246,48 +1271,55 @@ function DSA_Read_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of DSA_Read
-if hObject.Value
-    hObject.BackgroundColor = [120 170 50]/255;  % Green Color
-    hObject.Enable = 'off';
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Action of the device (including line)
-    if handles.DSA_On.Value        
-        %% Falta añadir la configuración de la medida de Z(w) y Noise
-        [handles.DSA, datos] = handles.DSA.Read;   
-    end
-    if handles.PXI_On.Value
-        if handles.TF_Mode.Value
-            handles.PXI = handles.PXI.TF_Configuration;
-        else
-            handles.PXI = handles.PXI.Noise_Configuration;
-        end
-        [data, WfmI] = handles.PXI.Get_Wave_Form;  % Las adquisiciones se guardan en una variable TestData.TF o TestData.Noise
-        datos = [WfmI data];
-    end    
-    handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A:';
+if isempty(handles.DSA.ObjHandle)
+    handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
-    
-    % Updated TestData.TF or TestData.Noise
-    if handles.TF_Mode.Value
-        if isempty(handles.TestData.TF{1})
-            handles.TestData.TF{1} = datos;
-        else
-            handles.TestData.TF{length(handles.TestData.TF)+1} = datos;
-        end
-    else
-        if isempty(handles.TestData.Noise{1})
-            handles.TestData.Noise{1} = datos;
-        else
-            handles.TestData.Noise{length(handles.TestData.Noise)+1} = datos;
-        end
-    end
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    pause(1);
-    hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
-    hObject.Enable = 'on';
+else
+    if hObject.Value
+        hObject.BackgroundColor = [120 170 50]/255;  % Green Color
+        hObject.Enable = 'off';
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Action of the device (including line)
+        if handles.DSA_On.Value
+            %% Falta añadir la configuración de la medida de Z(w) y Noise
+            [handles.DSA, datos] = handles.DSA.Read;
+        end
+        if handles.PXI_On.Value
+            if handles.TF_Mode.Value
+                handles.PXI = handles.PXI.TF_Configuration;
+            else
+                handles.PXI = handles.PXI.Noise_Configuration;
+            end
+            [data, WfmI] = handles.PXI.Get_Wave_Form;  % Las adquisiciones se guardan en una variable TestData.TF o TestData.Noise
+            datos = [WfmI data];
+        end
+        handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A:';
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
+        
+        % Updated TestData.TF or TestData.Noise
+        if handles.TF_Mode.Value
+            if isempty(handles.TestData.TF{1})
+                handles.TestData.TF{1} = datos;
+            else
+                handles.TestData.TF{length(handles.TestData.TF)+1} = datos;
+            end
+        end
+        if handles.Noise_Mode.Value
+            if isempty(handles.TestData.Noise{1})
+                handles.TestData.Noise{1} = datos;
+            else
+                handles.TestData.Noise{length(handles.TestData.Noise)+1} = datos;
+            end
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        pause(1);
+        hObject.BackgroundColor = [240 240 240]/255;
+        hObject.Value = 0;
+        hObject.Enable = 'on';
+    end
 end
 
 % --- Executes on button press in DSA_On.
