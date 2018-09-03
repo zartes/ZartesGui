@@ -213,11 +213,39 @@ for i = 1:size(handles.Ibias_Table.Data,1)
         end
     end
 end
-Ibvalues = eval(['repmat(Data,1,' handles.Ibias_NRepeat.String ');']);
+Data = eval(['repmat(Data,1,' handles.Ibias_NRepeat.String ');']);
 
-if handles.Ibias_Negative.Value
-    Ibvalues = [Ibvalues -Ibvalues];
+Ibvalues.p = [];
+Ibvalues.n = [];
+
+indp = find(Data >= 0);
+Ibvalues.p = unique(Data(Data >= 0),'stable');
+indn = find(Data <= 0);
+Ibvalues.n = unique(Data(Data <= 0),'stable');
+
+if ~isempty(indp)
+    if (Data(indp(1)) == Data(indp(end)))&& Data(indp(1)) == 0
+        Ibvalues.p(1) = [];
+        Ibvalues.p(end+1) = 0;
+    end
+else
+    if handles.Ibias_Negative.Value    
+        Ibvalues.p = -Ibvalues.n;
+    end
 end
+% Correct the zero value as the first one and replace it if it was in the
+% last place.
+if ~isempty(indn)
+    if (Data(indn(1)) == Data(indn(end)))&& Data(indn(1)) == 0
+        Ibvalues.n(1) = [];
+        Ibvalues.n(end+1) = 0;
+    end
+else
+    if handles.Ibias_Negative.Value    
+        Ibvalues.n = -Ibvalues.p;
+    end
+end
+
 
 %%%% Field values Setting
 Data = [];
@@ -236,15 +264,15 @@ Field = Data;
 
 %%% Configuration data is parsed to an structure
 
-if isempty(handles.TempName)
-    warndlg('Temperature values must be stored in a txt file','ZarTES v1.0');
-    Temp_Save_Callback(handles.Temp_Save,[],handles);
-    if isempty(handles.TempName)
-       warndlg('Error generating the Configuration file!','ZarTES v1.0');  
-    end
-end
+% if isempty(handles.TempName)
+%     warndlg('Temperature values must be stored in a txt file','ZarTES v1.0');
+%     Temp_Save_Callback(handles.Temp_Save,[],handles);
+%     if isempty(handles.TempName)
+%        warndlg('Error generating the Configuration file!','ZarTES v1.0');  
+%     end
+% end
 Conf.Temps.Values = Temps;
-Conf.Temps.File = [handles.TempDir handles.TempName];
+% Conf.Temps.File = [handles.TempDir handles.TempName];
 
 Conf.Ibvalues.Mode = handles.AQ_IVs.Value; % 0 (off), 1 (on) 
 Conf.Ibvalues.Values = Ibvalues;
