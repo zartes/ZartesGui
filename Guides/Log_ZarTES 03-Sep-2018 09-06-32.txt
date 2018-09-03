@@ -1,0 +1,10 @@
+Session starts: 03-Sep-2018 09:06:33
+Current Source Connection for Field Setup is missed. Check connection and initialize it from the MENU.
+Current Source Connection for Field Setup is missed. Check connection and initialize it from the MENU.
+Current Source Connection for Field Setup is missed. Check connection and initialize it from the MENU.
+Current Source Connection for Field Setup is missed. Check connection and initialize it from the MENU.
+Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.
+Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.
+Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.
+Multimeter Connection is missed. Check connection and initialize it from the MENU.
+Current Source Connection for Field Setup is missed. Check connection and initialize it from the MENU.
