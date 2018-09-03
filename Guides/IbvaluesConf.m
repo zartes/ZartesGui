@@ -260,7 +260,7 @@ Conf.Pulses.Mode = handles.AQ_Pulse.Value; % 0 (off), 1 (on)
 Conf.Pulses.Parameters = [];
 
 
-Start_Automatic_Acquisition(handles,Conf);
+Start_Automatic_Acquisition(handles,handles.SetupTES,Conf);
 
 
 handles.src.UserData = Conf;
