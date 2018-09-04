@@ -1219,30 +1219,7 @@ else
         handles.DSA_OnOff_Str.String = 'Source ON';
         handles.DSA_Read.Enable = 'on';
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if handles.TF_Mode.Value
-            
-            switch TF_Menu.Value 
-                case 1 % Sweept sine
-                    handles.Sine_Amp_Units.Value = 2;
-                    Sine_Amp_Callback(handles.Sine_Amp,[],handles);                    
-                    Amp = str2double(handles.Sine_Amp.String);
-                    handles.DSA = SineSweeptMode(handles.DSA,Amp);
-                case 2 % Fixed sine
-                    handles.Sine_Freq_Units.Value = 2;
-                    Sine_Freq_Callback(handles.Sine_Freq,[],handles);                    
-                    Amp = str2double(handles.Sine_Amp.String);
-                    handles.DSA = FixedSine(handles.DSA,freq)
-            end
-            handles.DSA = handles.DSA.TF_Configuration;
-            
-            handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: TF Mode ON';
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-        else
-            handles.DSA = handles.DSA.Noise_Configuration;
-            
-            handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: Noise Mode ON';
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-        end
+        
         handles.DSA.SourceOn;        
         handles.Actions_Str.String = [handles.Actions_Str.String '; Source Mode ON'];
         Actions_Str_Callback(handles.Actions_Str,[],handles);
@@ -1265,48 +1242,142 @@ function DSA_Read_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of DSA_Read
-if hObject.Value
-    hObject.BackgroundColor = [120 170 50]/255;  % Green Color
-    hObject.Enable = 'off';
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Action of the device (including line)
-    if handles.DSA_On.Value        
-        %% Falta añadir la configuración de la medida de Z(w) y Noise
-        [handles.DSA, datos] = handles.DSA.Read;   
-    end
-    if handles.PXI_On.Value
-        if handles.TF_Mode.Value
-            handles.PXI = handles.PXI.TF_Configuration;
-        else
-            handles.PXI = handles.PXI.Noise_Configuration;
-        end
-        [data, WfmI] = handles.PXI.Get_Wave_Form;  % Las adquisiciones se guardan en una variable TestData.TF o TestData.Noise
-        datos = [WfmI data];
-    end    
-    handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A:';
+if isempty(handles.DSA.ObjHandle)
+    handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
-    
-    % Updated TestData.TF or TestData.Noise
-    if handles.TF_Mode.Value
-        if isempty(handles.TestData.TF{1})
-            handles.TestData.TF{1} = datos;
-        else
-            handles.TestData.TF{length(handles.TestData.TF)+1} = datos;
-        end
-    else
-        if isempty(handles.TestData.Noise{1})
-            handles.TestData.Noise{1} = datos;
-        else
-            handles.TestData.Noise{length(handles.TestData.Noise)+1} = datos;
-        end
-    end
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    pause(1);
-    hObject.BackgroundColor = [240 240 240]/255;
     hObject.Value = 0;
-    hObject.Enable = 'on';
+else
+    if hObject.Value
+        hObject.BackgroundColor = [120 170 50]/255;  % Green Color
+        hObject.Enable = 'off';
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Action of the device (including line)
+        if handles.TF_Mode.Value            
+            if handles.DSA_On.Value
+                switch handles.TF_Menu.Value
+                    case 1 % Sweept sine
+                        handles.Sine_Amp_Units.Value = 2;  % mV
+                        Sine_Amp_Callback(handles.Sine_Amp,[],handles);
+                        Amp = str2double(handles.Sine_Amp.String);
+                        handles.DSA = SineSweeptMode(handles.DSA,Amp);
+                    case 2 % Fixed sine
+                        handles.Sine_Freq_Units.Value = 1;  % Hz
+                        Sine_Freq_Callback(handles.Sine_Freq,[],handles);
+                        freq = str2double(handles.Sine_Freq.String);
+                        handles.DSA = FixedSine(handles.DSA,freq);
+                end
+                handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: TF Mode ON';
+                Actions_Str_Callback(handles.Actions_Str,[],handles);
+                
+                [handles.DSA, datos] = handles.DSA.Read;
+                handles.DSA_TF_Data = datos;
+                
+            end            
+            
+            if handles.PXI_On.Value
+                handles.PXI = handles.PXI.TF_Configuration;   
+                handles.Actions_Str.String = 'PXI Acquisition Card: TF Mode ON';
+                Actions_Str_Callback(handles.Actions_Str,[],handles);
+                
+                [data, WfmI] = handles.PXI.Get_Wave_Form;
+                handles.DSA_TF_Data = datos;
+            end
+            
+        end
+        if handles.Noise_Mode.Value
+            if handles.DSA_On.Value
+                switch handles.Noise_Menu.Value
+                    case 1 % Sweept sine
+                        handles.DSA = NoiseMode(handles.DSA);
+                    case 2 % Fixed sine
+                        handles.Noise_Amp_Units.Value = 2;  % mV
+                        Noise_Amp_Callback(handles.Noise_Amp,[],handles);
+                        Amp = str2double(handles.Noise_Amp.String);
+                        handles.DSA = NoiseMode2(handles.DSA,Amp);
+                end
+                handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: Noise Mode ON';
+                Actions_Str_Callback(handles.Actions_Str,[],handles);
+                
+                [handles.DSA, datos] = handles.DSA.Read;
+                handles.DSA_Noise_Data = datos;
+            end
+            
+            if handles.PXI_On.Value
+                handles.PXI = handles.PXI.Noise_Configuration;
+                handles.Actions_Str.String = 'PXI Acquisition Card: Noise Mode ON';
+                Actions_Str_Callback(handles.Actions_Str,[],handles);
+                
+                [data, WfmI] = handles.PXI.Get_Wave_Form;
+                [psd,freq] = PSD(data);
+                datos(:,1) = freq;
+                datos(:,2) = sqrt(psd);                
+                n_avg = 5;
+                for jj = 1:n_avg-1%%%Ya hemos adquirido una.
+                    [data, WfmI] = handles.PXI.Get_Wave_Form;
+                    [psd,freq] = PSD(data);
+                    aux(:,1) = freq;
+                    aux(:,2) = sqrt(psd);
+                    datos(:,2) = datos(:,2)+aux(:,2);
+                end
+                datos(:,2) = datos(:,2)/n_avg;
+                
+                handles.PXI_Noise_Data = datos;
+            end
+        end
+        
+        if handles.TF_Mode.Value            
+            if handles.DSA_On.Value
+                if isempty(handles.TestData.TF.DSA{1})
+                    handles.TestData.TF.DSA{1} = handles.DSA_TF_Data;
+                else
+                    handles.TestData.TF.DSA{length(handles.TestData.TF.DSA)+1} = handles.DSA_TF_Data;
+                end
+            end
+            if handles.PXI_On.Value
+                if isempty(handles.TestData.TF.PXI{1})
+                    handles.TestData.TF.PXI{1} = handles.PXI_TF_Data;
+                else
+                    handles.TestData.TF.PXI{length(handles.TestData.TF.PXI)+1} = handles.PXI_TF_Data;
+                end
+            end
+        end
+        if handles.Noise_Mode.Value            
+            if handles.DSA_On.Value
+                if isempty(handles.TestData.TF.DSA{1})
+                    handles.TestData.TF.DSA{1} = handles.DSA_TF_Data;
+                else
+                    handles.TestData.TF.DSA{length(handles.TestData.TF.DSA)+1} = handles.DSA_TF_Data;
+                end
+            end
+            if handles.PXI_On.Value
+                
+            end
+        end
+        
+        
+        % Updated TestData.TF or TestData.Noise
+        if handles.TF_Mode.Value
+            if isempty(handles.TestData.TF{1})
+                handles.TestData.TF{1} = datos;
+            else
+                handles.TestData.TF{length(handles.TestData.TF)+1} = datos;
+            end
+        end
+        if handles.Noise_Mode.Value
+            if isempty(handles.TestData.Noise{1})
+                handles.TestData.Noise{1} = datos;
+            else
+                handles.TestData.Noise{length(handles.TestData.Noise)+1} = datos;
+            end
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        pause(1);
+        hObject.BackgroundColor = [240 240 240]/255;
+        hObject.Value = 0;
+        hObject.Enable = 'on';
+    end
 end
 
 % --- Executes on button press in DSA_On.
@@ -1383,17 +1454,27 @@ function TF_Mode_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of TF_Mode
+
+if (hObject.Value == 0)&&(handles.Noise_Mode.Value == 0)
+    handles.DSA_OnOff.Enable = 'off';
+else
+    handles.DSA_OnOff.Enable = 'on';
+end
+
 Ch_TF = handles.TF_Panel.Children;
-Ch_Noise = handles.Noise_Panel.Children;
+% Ch_Noise = handles.Noise_Panel.Children;
 if hObject.Value
+    
     set(Ch_TF,'Enable','on');
-    set(Ch_Noise,'Enable','off');
-    handles.PXI_Mode.Value = 1;
+    TF_Menu_Callback(handles.TF_Menu,[],handles);
+%     set(Ch_Noise,'Enable','off');
+%     handles.PXI_Mode.Value = 1;
 else
     set(Ch_TF,'Enable','off');
-    set(Ch_Noise,'Enable','on');
-    handles.PXI_Mode.Value = 2;
+%     set(Ch_Noise,'Enable','on');
+%     handles.PXI_Mode.Value = 2;
 end
+
 
 % --- Executes on button press in Noise_Mode.
 function Noise_Mode_Callback(hObject, eventdata, handles)
@@ -1401,16 +1482,24 @@ function Noise_Mode_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of Noise_Mode
-Ch_TF = handles.TF_Panel.Children;
+% Ch_TF = handles.TF_Panel.Children;
+
+if (hObject.Value == 0)&&(handles.TF_Mode.Value == 0)
+    handles.DSA_OnOff.Enable = 'off';
+else
+    handles.DSA_OnOff.Enable = 'on';
+end
+
 Ch_Noise = handles.Noise_Panel.Children;
 if hObject.Value
-    set(Ch_TF,'Enable','off');
+%     set(Ch_TF,'Enable','off');
     set(Ch_Noise,'Enable','on');
-    handles.PXI_Mode.Value = 2;
+    Noise_Menu_Callback(handles.Noise_Menu,[],handles);
+%     handles.PXI_Mode.Value = 2;
 else
-    set(Ch_TF,'Enable','on');
+%     set(Ch_TF,'Enable','on');
     set(Ch_Noise,'Enable','off');
-    handles.PXI_Mode.Value = 1;
+%     handles.PXI_Mode.Value = 1;
 end
 
 
@@ -1778,6 +1867,13 @@ function TF_Menu_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % Hints: contents = cellstr(get(hObject,'String')) returns TF_Menu contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from TF_Menu
+if hObject.Value == 1
+    set([handles.Sine_Amp handles.Sine_Amp_Units],'Enable','on');
+    set([handles.Sine_Freq handles.Sine_Freq_Units],'Enable','off');
+else
+    set([handles.Sine_Amp handles.Sine_Amp_Units],'Enable','off');
+    set([handles.Sine_Freq handles.Sine_Freq_Units],'Enable','on');
+end
 
 % --- Executes during object creation, after setting all properties.
 function TF_Menu_CreateFcn(hObject, eventdata, handles)
@@ -1797,7 +1893,11 @@ function Noise_Menu_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % Hints: contents = cellstr(get(hObject,'String')) returns Noise_Menu contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Noise_Menu
-
+if hObject.Value == 1
+    set([handles.Noise_Amp handles.Noise_Amp_Units],'Enable','off');
+else
+    set([handles.Noise_Amp handles.Noise_Amp_Units],'Enable','on');
+end
 % --- Executes during object creation, after setting all properties.
 function Noise_Menu_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to Noise_Menu (see GCBO)

@@ -213,6 +213,9 @@ for i = 1:length(temps)
                         
                         SetupTEScontrolers('DSA_OnOff_Callback',SetupTES.DSA_OnOff, [], guidata(SetupTES.DSA_OnOff));
                         setupTES.DSA.SineSweeptMode(setupTES.DSA,IZvalues(iz)*1e-6*0.02);
+                        
+                        %%%%%%%%%%%%%% Complex impedance Z(w) acquisition
+                        %%%%%%%%%%%%%% by DSA analyzer
                         try
                             [setupTES.DSA, datos] = setupTES.DSA.Read(setupTES.DSA);
                             file = strcat('TF_',Itxt,'uA','.txt');
@@ -221,8 +224,9 @@ for i = 1:length(temps)
                         catch
                             %% Añadir una parte que haga referencia a que estos datos no se han adquirido
                         end
-                        
-                        
+                           
+                        %%%%%%%%%%%%%% Complex impedance Z(w) acquisition
+                        %%%%%%%%%%%%%% by PXI Card 
                         try
                             setupTES.PXI = TF_Configuration(setupTES.PXI);
                             [data, WfmI] = Get_Wave_Form(setupTES.PXI)
@@ -232,6 +236,8 @@ for i = 1:length(temps)
                             
                         end
                         
+                        %%%%%%%%%%%%%% Noise system response acquisition
+                        %%%%%%%%%%%%%% by DSA analyzer
                         
                         try
                             setupTES.DSA = NoiseMode(setupTES.DSA);
@@ -244,6 +250,8 @@ for i = 1:length(temps)
                             
                         end
                         
+                        %%%%%%%%%%%%%% Noise system response acquisition
+                        %%%%%%%%%%%%%% by PXI analyzer
                         
                         try
                             obj = Noise_Configuration(setupTES.PXI);

@@ -61,6 +61,19 @@ end
 try 
     handles.src = varargin{1};
     handles.SetupTES = guidata(handles.src);
+    
+    handles.Z_Method.Value = handles.SetupTES.TF_Menu.Value;
+    Z_Method_Callback(handles.Z_Method,[],handles);
+    handles.Sine_Amp.String = handles.SetupTES.Sine_Amp.String;
+    handles.Sine_Amp_Units.Value = handles.SetupTES.Sine_Amp_Units.Value;
+    handles.Sine_Freq.String = handles.SetupTES.Sine_Freq.String;
+    handles.Sine_Freq_Units.Value = handles.SetupTES.Sine_Freq_Units.Value;
+    
+    handles.Noise_Method.Value = handles.SetupTES.Noise_Menu.Value;
+    Noise_Method_Callback(handles.Noise_Method,[],handles);
+    handles.Noise_Amp.String = handles.SetupTES.Noise_Amp.String;
+    handles.Noise_Amp_Units.Value = handles.SetupTES.Noise_Amp_Units.Value;
+    
 catch
 end
 
@@ -599,7 +612,11 @@ function Noise_Method_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns Noise_Method contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Noise_Method
-
+if hObject.Value == 1
+    set([handles.Noise_Amp handles.Noise_Amp_Units],'Enable','off');
+else
+    set([handles.Noise_Amp handles.Noise_Amp_Units],'Enable','on');
+end
 
 % --- Executes during object creation, after setting all properties.
 function Noise_Method_CreateFcn(hObject, eventdata, handles)
@@ -704,7 +721,13 @@ function Z_Method_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns Z_Method contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Z_Method
-
+if hObject.Value == 1
+    set([handles.Sine_Amp handles.Sine_Amp_Units],'Enable','on');
+    set([handles.Sine_Freq handles.Sine_Freq_Units],'Enable','off');
+else
+    set([handles.Sine_Amp handles.Sine_Amp_Units],'Enable','off');
+    set([handles.Sine_Freq handles.Sine_Freq_Units],'Enable','on');
+end
 
 % --- Executes during object creation, after setting all properties.
 function Z_Method_CreateFcn(hObject, eventdata, handles)
@@ -725,7 +748,9 @@ function DSA_TF_Conf_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 waitfor(Conf_Setup(hObject,handles.Z_Method.Value,handles));
+
 pause();
+
 function Sine_Amp_Callback(hObject, eventdata, handles)
 % hObject    handle to Sine_Amp (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1110,11 +1135,12 @@ if ~hObject.Value
         handles.Noise_Amp handles.Noise_Amp_Units],'Enable','off');
 else
     set([handles.AQ_DSA handles.AQ_PXI ...
-        handles.Z_Method handles.DSA_TF_Conf ...
-        handles.Sine_Amp handles.Sine_Amp_Units ...
-        handles.Sine_Freq handles.Sine_Freq_Units ...
-        handles.Noise_Method handles.DSA_Noise_Conf ...
-        handles.Noise_Amp handles.Noise_Amp_Units],'Enable','on');
+        handles.DSA_TF_Conf handles.DSA_Noise_Conf ...
+        handles.Z_Method handles.Noise_Method],'Enable','on');
+    set([handles.AQ_DSA handles.AQ_PXI],'Value',1);
+    Z_Method_Callback(handles.Z_Method,[],handles);
+    Noise_Method_Callback(handles.Noise_Method,[],handles);
+    
 end
 
 

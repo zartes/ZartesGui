@@ -255,15 +255,15 @@ function Save_Callback(hObject, eventdata, handles)
 switch handles.varargin{1}.Tag
     case 'DSA_TF_Conf'
         handles.varargin{3}.TF_Menu.Value = handles.Options.Value;
-        handles.handles1.SetupTES.DSA.Config.SSine = handles.ConfInstrs{1};
-        handles.handles1.SetupTES.DSA.Config.FSine = handles.ConfInstrs{2};
+        handles.handles1.SetupTES.DSA.Conf.SSine = handles.ConfInstrs{1};
+        handles.handles1.SetupTES.DSA.Conf.FSine = handles.ConfInstrs{2};
     case 'DSA_Noise_Conf'
         handles.varargin{3}.Noise_Menu.Value = handles.Options.Value;
-        handles.handles1.SetupTES.DSA.Config.Noise1 = handles.ConfInstrs{1};
-        handles.handles1.SetupTES.DSA.Config.Noise2 = handles.ConfInstrs{2};
+        handles.handles1.SetupTES.DSA.Conf.Noise1 = handles.ConfInstrs{1};
+        handles.handles1.SetupTES.DSA.Conf.Noise2 = handles.ConfInstrs{2};
 end
 
 
-guidata(handles.handles1.SetupTES.SetupTES,handles.handles1.SetupTES)
+guidata(handles.handles1.SetupTES,handles.handles1)
 
 figure1_DeleteFcn(handles.figure1,eventdata,handles);
