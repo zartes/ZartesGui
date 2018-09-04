@@ -151,7 +151,7 @@ for i = 1:length(temps)
                 
                 file = strcat(temps(i),'_Rf',num2str(Rf),'K_',dire,'_',pol,'_matlab.txt');
                 save([AQ_dir filesep 'IVs' filesep file],'data','-ascii');
-                            
+                
                 %%%%%%%%%%%%%%%%%%%%%%%%% Impedancia compleja
                 if Conf.ZwNoise.Mode % If 1, then Z(w) + Noise are acquired
                     if k1 == 1
@@ -161,7 +161,7 @@ for i = 1:length(temps)
                         succ = mkdir([AQ_dir filesep 'Z(w)-Ruido' filesep], Tstring);
                         ZwNoise_Dir = [AQ_dir filesep 'Z(w)-Ruido' filesep Tstring filesep];
                     end
-%                     succ = mkdir([AQ_dir filesep 'Z(w)-Ruido' filesep], Tstring);
+                    
                     if succ == 0
                         disp(['Error creating the ' Tstring ' folder!']);
                         QuestButton = questdlg('Do you want to continue?', ...
@@ -213,45 +213,37 @@ for i = 1:length(temps)
                         
                         SetupTEScontrolers('DSA_OnOff_Callback',SetupTES.DSA_OnOff, [], guidata(SetupTES.DSA_OnOff));
                         setupTES.DSA.SineSweeptMode(setupTES.DSA,IZvalues(iz)*1e-6*0.02);
+                        
+                        
+                        if handles.AQ_DSA.Value
+                            SetupTES.DSA_On.Value = 1;
+                        end
+                        if handles.AQ_PXI.Value
+                            SetupTES.PXI_On.Value = 1;
+                        end
+                           
+                        SetupTEScontrolers('DSA_Read_Callback',SetupTES.DSA_Read, [], guidata(SetupTES.DSA_Read));
+                        %%%%%%%%%%%%%% Complex impedance Z(w) acquisition
+                        %%%%%%%%%%%%%% by DSA analyzer
                         try
-                            [setupTES.DSA, datos] = setupTES.DSA.Read(setupTES.DSA);
-                            file = strcat('TF_',Itxt,'uA','.txt');
-                            save([ZwNoise_Dir file],'datos','-ascii');%salva los datos a fichero.
-                            clear datos
+                            if handles.AQ_DSA.Value
+                                file = strcat('TF_',Itxt,'uA','.txt');
+                                save([ZwNoise_Dir file],'handles.DSA_TF_Data','-ascii');%salva los datos a fichero.
+                                
+                                file = strcat('HP_noise_',Itxt,'uA','.txt');
+                                save([ZwNoise_Dir file],'handles.DSA_Noise_Data','-ascii'); %salva los datos a fichero.                                
+                            end
+                            if handles.AQ_PXI.Value
+                                file = strcat('PXI_TF_',Itxt,'uA','.txt');
+                                save([ZwNoise_Dir file],'handles.PXI_TF_Data','-ascii'); %salva los datos a fichero.
+                                
+                                file = strcat('PXI_noise_',Itxt,'uA','.txt');
+                                save([ZwNoise_Dir file],'handles.PXI_Noise_Data','-ascii'); %salva los datos a fichero.                                
+                            end                                                        
+                            
                         catch
                             %% Añadir una parte que haga referencia a que estos datos no se han adquirido
-                        end
-                        
-                        
-                        
-                        obj = TF_Configuration(obj);
-                        file = strcat('PXI_TF_',Itxt,'uA','.txt');
-                        save([ZwNoise_Dir file],'TF','-ascii'); %salva los datos a fichero.
-                        
-                        
-                        try
-                            setupTES.DSA = NoiseMode(setupTES.DSA);
-                            setupTES.DSA.LauchMeasurement(setupTES.DSA);
-                            [setupTES.DSA, datos] = setupTES.DSA.Read(setupTES.DSA);
-                            file = strcat('HP_noise_',Itxt,'uA','.txt');
-                            save([ZwNoise_Dir file],'datos','-ascii'); %salva los datos a fichero.
-                            clear datos
-                        catch
-                            
-                        end
-                        
-                        obj = Noise_Configuration(setupTES.pxi);
-                        aux=pxi_AcquirePSD(pxi);
-                        datos=aux;
-                        n_avg=5;
-                        for jj=1:n_avg-1%%%Ya hemos adquirido una.
-                            aux=pxi_AcquirePSD(pxi);
-                            datos(:,2)=datos(:,2)+aux(:,2);
-                        end
-                        datos(:,2)=datos(:,2)/n_avg;
-                        file = strcat('PXI_noise_',Itxt,'uA','.txt');
-                        save([ZwNoise_Dir file],'datos','-ascii'); %salva los datos a fichero.
-                        
+                        end                                                   
                         
                     end  % end for IZ_values
                     

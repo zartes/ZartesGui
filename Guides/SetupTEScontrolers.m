@@ -80,6 +80,10 @@ handles.FileName = [];
 handles.FileDir = [];
 
 handles.Datos = [];
+handles.DSA_TF_Data = [];
+handles.DSA_Noise_Data = [];
+handles.PXI_TF_Data = [];
+handles.PXI_NoiseData = [];
 
 handles = Menu_Generation(handles);  % Here, the constructor is applied
 % After Constructor, all the values have to be defined in the guide
@@ -192,7 +196,7 @@ varargout{1} = handles.output;
 set(handles.SetupTES,'Visible','on');
 a_str = {'New Figure';'Open File';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
 for i = 1:length(a_str)
-    eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);    
+    eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
     a.Visible = 'off';
 end
 %%%%%%%%%%%%%%%%%%  SQUID FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -264,7 +268,7 @@ else
         
         if ~isempty(eventdata)
             Ibias_sign = eventdata;
-        else            
+        else
             ButtonName = questdlg('What range of I bias?', ...
                 'Current Sign Question', ...
                 'Positive', 'Negative', 'Positive');
@@ -614,7 +618,7 @@ else
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         
         Multi_Read_Callback(handles.Multi_Read, [], handles)
-                
+        
         % Update TestData.IVs
         handles.TestData.IVs = [handles.TestData.IVs; Ireal str2double(handles.Multi_Value.String)];
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -635,7 +639,7 @@ function SQ_Ibias_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of SQ_Ibias as text
 %        str2double(get(hObject,'String')) returns contents of SQ_Ibias as a double
 value = str2double(hObject.String);
-if ~isempty(value)&&~isnan(value)    
+if ~isempty(value)&&~isnan(value)
 else
     hObject.String = '40';
     handles.SQ_Ibias_Units.Value = 3;
@@ -907,7 +911,7 @@ else
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
-        handles.CurSour.CurrentSource_Start;        
+        handles.CurSour.CurrentSource_Start;
         handles.Actions_Str.String = 'Current Source: Mode ON';
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1170,7 +1174,7 @@ else
         % Action of the device (including line)
         [handles.Multi, Vdc] = handles.Multi.Read;  % The output is in Volts.
         handles.Multi_Value.String = num2str(Vdc.Value);
-        handles.Actions_Str.String = ['Multimeter: Voltage ' num2str(Vdc.Value) ' V']; 
+        handles.Actions_Str.String = ['Multimeter: Voltage ' num2str(Vdc.Value) ' V'];
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
@@ -1219,37 +1223,8 @@ else
         handles.DSA_OnOff_Str.String = 'Source ON';
         handles.DSA_Read.Enable = 'on';
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if handles.TF_Mode.Value            
-            switch TF_Menu.Value 
-                case 1 % Sweept sine
-                    handles.Sine_Amp_Units.Value = 2;  % mV
-                    Sine_Amp_Callback(handles.Sine_Amp,[],handles);                    
-                    Amp = str2double(handles.Sine_Amp.String);
-                    handles.DSA = SineSweeptMode(handles.DSA,Amp);
-                case 2 % Fixed sine
-                    handles.Sine_Freq_Units.Value = 1;  % Hz
-                    Sine_Freq_Callback(handles.Sine_Freq,[],handles);                    
-                    freq = str2double(handles.Sine_Freq.String);
-                    handles.DSA = FixedSine(handles.DSA,freq);
-            end                        
-            handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: TF Mode ON';
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-        end
-        if handles.Noise_Mode.Value
-            switch Noise_Menu.Value 
-                case 1 % Sweept sine                    
-                    handles.DSA = NoiseMode(handles.DSA);
-                case 2 % Fixed sine
-                    handles.Noise_Amp_Units.Value = 2;  % mV
-                    Noise_Amp_Callback(handles.Noise_Amp,[],handles);                    
-                    Amp = str2double(handles.Noise_Amp.String);
-                    handles.DSA = NoiseMode2(handles.DSA,Amp);
-            end
-            
-            handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: Noise Mode ON';
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-        end
-        handles.DSA.SourceOn;        
+        
+        handles.DSA.SourceOn;
         handles.Actions_Str.String = [handles.Actions_Str.String '; Source Mode ON'];
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1282,37 +1257,112 @@ else
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
-        if handles.DSA_On.Value
-            %% Falta añadir la configuración de la medida de Z(w) y Noise
-            [handles.DSA, datos] = handles.DSA.Read;
-        end
-        if handles.PXI_On.Value
-            if handles.TF_Mode.Value
-                handles.PXI = handles.PXI.TF_Configuration;
-            else
-                handles.PXI = handles.PXI.Noise_Configuration;
-            end
-            [data, WfmI] = handles.PXI.Get_Wave_Form;  % Las adquisiciones se guardan en una variable TestData.TF o TestData.Noise
-            datos = [WfmI data];
-        end
-        handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A:';
-        Actions_Str_Callback(handles.Actions_Str,[],handles);
-        
-        % Updated TestData.TF or TestData.Noise
         if handles.TF_Mode.Value
-            if isempty(handles.TestData.TF{1})
-                handles.TestData.TF{1} = datos;
-            else
-                handles.TestData.TF{length(handles.TestData.TF)+1} = datos;
+            if handles.DSA_On.Value
+                switch handles.TF_Menu.Value
+                    case 1 % Sweept sine
+                        handles.Sine_Amp_Units.Value = 2;  % mV
+                        Sine_Amp_Callback(handles.Sine_Amp,[],handles);
+                        Amp = str2double(handles.Sine_Amp.String);
+                        handles.DSA = SineSweeptMode(handles.DSA,Amp);
+                    case 2 % Fixed sine
+                        handles.Sine_Freq_Units.Value = 1;  % Hz
+                        Sine_Freq_Callback(handles.Sine_Freq,[],handles);
+                        freq = str2double(handles.Sine_Freq.String);
+                        handles.DSA = FixedSine(handles.DSA,freq);
+                end
+                handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: TF Mode ON';
+                Actions_Str_Callback(handles.Actions_Str,[],handles);
+                
+                [handles.DSA, datos] = handles.DSA.Read;
+                handles.DSA_TF_Data = datos;
+                
+            end
+            
+            if handles.PXI_On.Value
+                handles.PXI = handles.PXI.TF_Configuration;
+                handles.Actions_Str.String = 'PXI Acquisition Card: TF Mode ON';
+                Actions_Str_Callback(handles.Actions_Str,[],handles);
+                
+                [data, WfmI] = handles.PXI.Get_Wave_Form;
+                handles.DSA_TF_Data = datos;
+            end
+            
+        end
+        if handles.Noise_Mode.Value
+            if handles.DSA_On.Value
+                switch handles.Noise_Menu.Value
+                    case 1 % Sweept sine
+                        handles.DSA = NoiseMode(handles.DSA);
+                    case 2 % Fixed sine
+                        handles.Noise_Amp_Units.Value = 2;  % mV
+                        Noise_Amp_Callback(handles.Noise_Amp,[],handles);
+                        Amp = str2double(handles.Noise_Amp.String);
+                        handles.DSA = NoiseMode2(handles.DSA,Amp);
+                end
+                handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: Noise Mode ON';
+                Actions_Str_Callback(handles.Actions_Str,[],handles);
+                
+                [handles.DSA, datos] = handles.DSA.Read;
+                handles.DSA_Noise_Data = datos;
+            end
+            
+            if handles.PXI_On.Value
+                handles.PXI = handles.PXI.Noise_Configuration;
+                handles.Actions_Str.String = 'PXI Acquisition Card: Noise Mode ON';
+                Actions_Str_Callback(handles.Actions_Str,[],handles);
+                
+                [data, WfmI] = handles.PXI.Get_Wave_Form;
+                [psd,freq] = PSD(data);
+                datos(:,1) = freq;
+                datos(:,2) = sqrt(psd);
+                n_avg = 5;
+                for jj = 1:n_avg-1%%%Ya hemos adquirido una.
+                    [data, WfmI] = handles.PXI.Get_Wave_Form;
+                    [psd,freq] = PSD(data);
+                    aux(:,1) = freq;
+                    aux(:,2) = sqrt(psd);
+                    datos(:,2) = datos(:,2)+aux(:,2);
+                end
+                datos(:,2) = datos(:,2)/n_avg;
+                
+                handles.PXI_Noise_Data = datos;
+            end
+        end
+        
+        if handles.TF_Mode.Value
+            if handles.DSA_On.Value
+                if isempty(handles.TestData.TF.DSA{1})
+                    handles.TestData.TF.DSA{1} = handles.DSA_TF_Data;
+                else
+                    handles.TestData.TF.DSA{length(handles.TestData.TF.DSA)+1} = handles.DSA_TF_Data;
+                end
+            end
+            if handles.PXI_On.Value
+                if isempty(handles.TestData.TF.PXI{1})
+                    handles.TestData.TF.PXI{1} = handles.PXI_TF_Data;
+                else
+                    handles.TestData.TF.PXI{length(handles.TestData.TF.PXI)+1} = handles.PXI_TF_Data;
+                end
             end
         end
         if handles.Noise_Mode.Value
-            if isempty(handles.TestData.Noise{1})
-                handles.TestData.Noise{1} = datos;
-            else
-                handles.TestData.Noise{length(handles.TestData.Noise)+1} = datos;
+            if handles.DSA_On.Value
+                if isempty(handles.TestData.Noise.DSA{1})
+                    handles.TestData.Noise.DSA{1} = handles.DSA_Noise_Data;
+                else
+                    handles.TestData.Noise.DSA{length(handles.TestData.Noise.DSA)+1} = handles.DSA_Noise_Data;
+                end
+            end
+            if handles.PXI_On.Value
+                if isempty(handles.TestData.Noise.PXI{1})
+                    handles.TestData.Noise.PXI{1} = handles.PXI_Noise_Data;
+                else
+                    handles.TestData.Noise.PXI{length(handles.TestData.Noise.PXI)+1} = handles.PXI_Noise_Data;
+                end
             end
         end
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         pause(1);
@@ -1396,17 +1446,27 @@ function TF_Mode_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of TF_Mode
+
+if (hObject.Value == 0)&&(handles.Noise_Mode.Value == 0)
+    handles.DSA_OnOff.Enable = 'off';
+else
+    handles.DSA_OnOff.Enable = 'on';
+end
+
 Ch_TF = handles.TF_Panel.Children;
-Ch_Noise = handles.Noise_Panel.Children;
+% Ch_Noise = handles.Noise_Panel.Children;
 if hObject.Value
+    
     set(Ch_TF,'Enable','on');
-    set(Ch_Noise,'Enable','off');
-    handles.PXI_Mode.Value = 1;
+    TF_Menu_Callback(handles.TF_Menu,[],handles);
+    %     set(Ch_Noise,'Enable','off');
+    %     handles.PXI_Mode.Value = 1;
 else
     set(Ch_TF,'Enable','off');
-    set(Ch_Noise,'Enable','on');
-    handles.PXI_Mode.Value = 2;
+    %     set(Ch_Noise,'Enable','on');
+    %     handles.PXI_Mode.Value = 2;
 end
+
 
 % --- Executes on button press in Noise_Mode.
 function Noise_Mode_Callback(hObject, eventdata, handles)
@@ -1414,16 +1474,24 @@ function Noise_Mode_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of Noise_Mode
-Ch_TF = handles.TF_Panel.Children;
+% Ch_TF = handles.TF_Panel.Children;
+
+if (hObject.Value == 0)&&(handles.TF_Mode.Value == 0)
+    handles.DSA_OnOff.Enable = 'off';
+else
+    handles.DSA_OnOff.Enable = 'on';
+end
+
 Ch_Noise = handles.Noise_Panel.Children;
 if hObject.Value
-    set(Ch_TF,'Enable','off');
+    %     set(Ch_TF,'Enable','off');
     set(Ch_Noise,'Enable','on');
-    handles.PXI_Mode.Value = 2;
+    Noise_Menu_Callback(handles.Noise_Menu,[],handles);
+    %     handles.PXI_Mode.Value = 2;
 else
-    set(Ch_TF,'Enable','on');
+    %     set(Ch_TF,'Enable','on');
     set(Ch_Noise,'Enable','off');
-    handles.PXI_Mode.Value = 1;
+    %     handles.PXI_Mode.Value = 1;
 end
 
 
@@ -1791,6 +1859,13 @@ function TF_Menu_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % Hints: contents = cellstr(get(hObject,'String')) returns TF_Menu contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from TF_Menu
+if hObject.Value == 1
+    set([handles.Sine_Amp handles.Sine_Amp_Units],'Enable','on');
+    set([handles.Sine_Freq handles.Sine_Freq_Units],'Enable','off');
+else
+    set([handles.Sine_Amp handles.Sine_Amp_Units],'Enable','off');
+    set([handles.Sine_Freq handles.Sine_Freq_Units],'Enable','on');
+end
 
 % --- Executes during object creation, after setting all properties.
 function TF_Menu_CreateFcn(hObject, eventdata, handles)
@@ -1810,7 +1885,11 @@ function Noise_Menu_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % Hints: contents = cellstr(get(hObject,'String')) returns Noise_Menu contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Noise_Menu
-
+if hObject.Value == 1
+    set([handles.Noise_Amp handles.Noise_Amp_Units],'Enable','off');
+else
+    set([handles.Noise_Amp handles.Noise_Amp_Units],'Enable','on');
+end
 % --- Executes during object creation, after setting all properties.
 function Noise_Menu_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to Noise_Menu (see GCBO)
@@ -1946,7 +2025,7 @@ for i = 1:size(handles.HndlStr,1)
     end
     eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
         '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Obj_Properties},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
-        
+    
 end
 
 %%%%%%% Temperature Control
@@ -1955,7 +2034,7 @@ handles.menu(3) = uimenu('Parent',handles.SetupTES,'Label',...
 handles.Menu_Temp = uimenu('Parent',handles.menu(3),'Label',...
     'Control','Callback',{@TempControl});
 
-%%%%%%% Start Acquisition 
+%%%%%%% Start Acquisition
 handles.menu(4) = uimenu('Parent',handles.SetupTES,'Label',...
     'Acquisition');
 handles.Menu_ACQ_Conf = uimenu('Parent',handles.menu(4),'Label',...
@@ -2088,7 +2167,7 @@ if ~isempty(handles.FileName)
         handles.Draw_Select.Visible = 'on';
         legend SHOW;
         
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2101,7 +2180,7 @@ if ~isempty(handles.FileName)
         
     end
 end
-guidata(hObject,handles);    
+guidata(hObject,handles);
 
 % --- Executes on selection change in Draw_Select.
 function Draw_Select_Callback(hObject, eventdata, handles)
@@ -2122,7 +2201,7 @@ end
 DataStr = {'IVs';'Noise';'TF';'RTs'};
 if handles.TestPlot.Value
     eval(['Data = handles.TestData.' DataStr{handles.Draw_Select.Value}]);
-elseif handles.FilePlot.Value    
+elseif handles.FilePlot.Value
     LoadedFileList = handles.List_Files.String;
     if iscell(handles.FileName)
         if strcmp(LoadedFileList{handles.List_Files.Value},'All')
@@ -2161,7 +2240,7 @@ elseif handles.FilePlot.Value
             elseif iscell(Data) && length(Data) == 1 && isempty(Data{1})
                 warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
                 return;
-            end            
+            end
             ManagingData2Plot(Data,DataName,handles);
         end
     else
@@ -2171,7 +2250,7 @@ elseif handles.FilePlot.Value
         catch
             warndlg(['No data of ' DataStr{handles.Draw_Select.Value} ' were loaded'],'ZarTES v1.0');
             return;
-        end        
+        end
         if isempty(Data)
             warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
             return;
@@ -2212,7 +2291,7 @@ if (hObject.Value||handles.GraphPlot.Value)
     handles.Browse_File.Enable = 'on';
 else
     handles.Browse_File.Enable = 'off';
-end           
+end
 guidata(hObject,handles);
 
 % --- Executes on button press in GraphPlot.
@@ -2261,23 +2340,23 @@ guidata(hObject,handles);
 function ManagingData2Plot(Data,DataName,handles)
 DataName(DataName == '_') = ' ';
 switch size(Data,2)
-    case 2  % Noise        
+    case 2  % Noise
         plot(handles.Result_Axes,Data(:,1),Data(:,2),'Visible','off','DisplayName',DataName);
         xlabel(handles.Result_Axes,'Freq (Hz)');
-        ylabel(handles.Result_Axes,'PSD'); 
+        ylabel(handles.Result_Axes,'PSD');
         handles.Result_Axes.XScale = 'log';
-        handles.Result_Axes.YScale = 'log';   
-    case 3  % TF     
+        handles.Result_Axes.YScale = 'log';
+    case 3  % TF
         plot(handles.Result_Axes,Data(:,2),Data(:,3),'Visible','off','DisplayName',DataName);
-%         plot(handles.Result_Axes,Data(:,1),sqrt(Data(:,2).^2+Data(:,3).^2),'Visible','off','DisplayName',DataName);
+        %         plot(handles.Result_Axes,Data(:,1),sqrt(Data(:,2).^2+Data(:,3).^2),'Visible','off','DisplayName',DataName);
         xlabel(handles.Result_Axes,'Re(mZ)');
         ylabel(handles.Result_Axes,'Im(mZ)');
         handles.Result_Axes.XScale = 'linear';
-        handles.Result_Axes.YScale = 'linear';   
-    case 4  % I-Vs        
+        handles.Result_Axes.YScale = 'linear';
+    case 4  % I-Vs
         plot(handles.Result_Axes,Data(:,2),Data(:,4),'Visible','off','DisplayName',DataName);
         xlabel(handles.Result_Axes,'Ibias (\mu A)');
-        ylabel(handles.Result_Axes,'Vdc(V)');    
+        ylabel(handles.Result_Axes,'Vdc(V)');
         handles.Result_Axes.XScale = 'linear';
         handles.Result_Axes.YScale = 'linear';
     otherwise % R(T)
@@ -2287,7 +2366,7 @@ switch size(Data,2)
         xlabel(handles.Result_Axes,Data.textdata{2})
         ylabel(handles.Result_Axes,'??');
         handles.Result_Axes.XScale = 'linear';
-        handles.Result_Axes.YScale = 'linear';        
+        handles.Result_Axes.YScale = 'linear';
 end
 
 
@@ -2320,8 +2399,8 @@ if handles.FilePlot.Value
             handles.List_Files.String = FileName;
             handles.List_Files.Value = 1;
             set([handles.LoadFiles_Str handles.List_Files],'Visible','on');
-        end                
-            
+        end
+        
         if handles.FilePlot.Value
             if iscell(handles.FileName)
                 handles.Hold_Plot.Value = 1;
@@ -2330,7 +2409,7 @@ if handles.FilePlot.Value
                 for i = 1:length(handles.FileName)
                     fid = fopen([handles.FileDir handles.FileName{i}]);
                     Data = importdata([handles.FileDir handles.FileName{i}]);
-                    fclose(fid);                    
+                    fclose(fid);
                     switch size(Data,2)
                         case 2 % Noise
                             handles.LoadData.Noise{i} = Data;
@@ -2352,7 +2431,7 @@ if handles.FilePlot.Value
             else
                 fid = fopen([handles.FileDir handles.FileName]);
                 Data = importdata([handles.FileDir handles.FileName]);
-                fclose(fid);                
+                fclose(fid);
                 switch size(Data,2)
                     case 2 % Noise
                         handles.LoadData.Noise = Data;
@@ -2420,7 +2499,7 @@ if (handles.FilePlot.Value||handles.GraphPlot.Value)
     handles.Browse_File.Enable = 'on';
 else
     handles.Browse_File.Enable = 'off';
-end  
+end
 
 if hObject.Value  % Current values acquired
     % Tengo que mejorar la gestion de los valores de Test
@@ -2453,9 +2532,9 @@ XRange = [RECT(1) RECT(1)+RECT(3)];
 YRange = [RECT(2) RECT(2)+RECT(4)];
 
 a = findall(handles.Result_Axes,'Type','Line');
-for i = 1:length(a)    
+for i = 1:length(a)
     Name{i} = a(i).DisplayName;
-    indx{i} = find(a(i).XData >= XRange(1) & a(i).XData <= XRange(2)); 
+    indx{i} = find(a(i).XData >= XRange(1) & a(i).XData <= XRange(2));
     indy{i} = find(a(i).YData >= YRange(1) & a(i).YData <= YRange(2));
     inds{i} = intersect(indx{i},indy{i});
     if ~isempty(inds{i})
@@ -2526,7 +2605,7 @@ function List_Files_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns List_Files contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from List_Files
-% 
+%
 Draw_Select_Callback(handles.Draw_Select,[],handles);
 Check_Plot_Callback(handles.Check_Plot,[],handles);
 guidata(hObject,handles);
