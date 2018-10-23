@@ -54,7 +54,7 @@ classdef ElectronicMagnicon
         
         function obj = Calibration(obj)
             [obj, out] = mag_setRf_FLL_CH_updated(obj);
-            if out == 'OK'
+            if strcmp(out, 'OK')
                 disp('Initialization completed');
             else
                 disp('Problem detected, check the connections!');
@@ -63,7 +63,7 @@ classdef ElectronicMagnicon
         
         function TES2NormalState(obj,Ibias_sign)
             %%% Maximum current value is imposed
-            Put_TES_toNormal_State_CH_updated(obj,Ibias_sign)
+            Put_TES_toNormal_State_CH_updated(obj,Ibias_sign);
             
         end
         function ResetClossedLoop(obj) 
@@ -100,7 +100,6 @@ classdef ElectronicMagnicon
             catch
             end
             delete(obj.ObjHandle);
-%             rmpath('G:\Mi unidad\ICMA\zartes_ACQ-master\Magnicon_Matlab\');
         end
        
     end

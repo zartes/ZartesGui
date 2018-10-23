@@ -1,11 +1,9 @@
 classdef Circuit
     
-    properties (Access = private)
-        Rf;             % Impedance of FLL (linked to Squid Rf magnitude)
-    end
     properties              
         Rpar;           % Parasitic Impedance (TES branch)
-        Rn;             % Impedance of TES in Normal state
+        Rn;             % Impedance of TES in Normal state  
+        Rf;             % Impedance of FLL (linked to Squid Rf magnitude)
         Rsh;            % Impedance of the resistive divisor
         invMf;          % Inverse of the relation between Amplitude and flux (input)
         invMin;         % Inverse of the relation between Amplitude and flux (feedback)
@@ -34,7 +32,7 @@ classdef Circuit
             
             obj.invMf = PhysicalMeasurement;
             obj.invMf.Value = 66;
-            obj.invMf.Units = '';
+            obj.invMf.Units = 'uA';
             
             obj.invMin = PhysicalMeasurement;
             obj.invMin.Value = 24.1;

@@ -22,7 +22,7 @@ function varargout = SetupTEScontrolers(varargin)
 
 % Edit the above text to modify the response to help SetupTEScontrolers
 
-% Last Modified by GUIDE v2.5 27-Aug-2018 10:47:07
+% Last Modified by GUIDE v2.5 01-Oct-2018 13:45:44
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -169,8 +169,10 @@ handles.SetupTES.UserData = handles.Position_old;
 handles.Draw_Select.String = {'I-V Curves';'Noise';'TF';'R(T)s'};
 handles.Draw_Select.Value = 1;
 handles.TestData.IVs = [];
-handles.TestData.Noise = {[]};
-handles.TestData.TF = {[]};
+handles.TestData.Noise.DSA = {[]};
+handles.TestData.Noise.PXI = {[]};
+handles.TestData.TF.DSA = {[]};
+handles.TestData.TF.PXI = {[]};
 handles.TestData.Pulses = {[]};
 
 handles.LoadData.IVs = [];
@@ -266,8 +268,13 @@ else
         hObject.BackgroundColor = [120 170 50]/255;  % Green Color
         hObject.Enable = 'off';
         
-        if ~isempty(eventdata)
+        if ~isobject(eventdata)           
             Ibias_sign = eventdata;
+            if Ibias_sign == 1
+                ButtonName = 'Positive';
+            else
+                ButtonName = 'Negative';
+            end
         else
             ButtonName = questdlg('What range of I bias?', ...
                 'Current Sign Question', ...
@@ -291,7 +298,7 @@ else
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        pause(1);
+        pause(0.6);
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -320,7 +327,7 @@ else
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        pause(1);
+        pause(0.6);
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -345,19 +352,29 @@ else
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
-        handles.Squid = handles.Squid.Calibration;
-        handles.SQ_Rf_real.String = num2str(handles.Squid.Rf.Value);
-        handles.Actions_Str.String = 'Electronic Magnicon: RF Calibration done';
-        Actions_Str_Callback(handles.Actions_Str,[],handles);
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        try
+            handles.Squid = handles.Squid.Calibration;
+            handles.SQ_Rf_real.String = num2str(handles.Squid.Rf.Value);
+            handles.Circuit.Rf.Value = handles.Squid.Rf.Value;
+            handles.Menu_Circuit.UserData = handles.Circuit;
+            handles.Actions_Str.String = 'Electronic Magnicon: RF Calibration done';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            pause(0.2);
+            hObject.BackgroundColor = [240 240 240]/255;
+            hObject.Value = 0;
+            hObject.Enable = 'on';
+        catch
+            hObject.BackgroundColor = [240 240 240]/255;
+            hObject.Value = 0;
+            hObject.Enable = 'on';
+%             SQ_Calibration_Callback(hObject, eventdata, handles)
+        end
         
-        pause(1);
-        hObject.BackgroundColor = [240 240 240]/255;
-        hObject.Value = 0;
-        hObject.Enable = 'on';
     end
 end
-
+guidata(hObject,handles);
 
 function SQ_Pulse_Amp_Callback(hObject, eventdata, handles)
 % hObject    handle to SQ_Pulse_Amp (see GCBO)
@@ -576,6 +593,7 @@ else
         handles.SQ_Ibias_Units.Value = 3;
         SQ_Ibias_Units_Callback(handles.SQ_Ibias_Units,[],handles);
         Ibvalue = str2double(handles.SQ_Ibias.String);
+        pause(0.3);
         
         handles.Squid.Set_Current_Value(Ibvalue)  % uA.
         handles.Actions_Str.String = ['Electronic Magnicon: I bias set to ' num2str(Ibvalue) ' uA'];
@@ -587,7 +605,7 @@ else
         handles.Multi_Read.Value = 1;
         Multi_Read_Callback(handles.Multi_Read,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        pause(1);
+        
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -620,10 +638,10 @@ else
         Multi_Read_Callback(handles.Multi_Read, [], handles)
         
         % Update TestData.IVs
-        handles.TestData.IVs = [handles.TestData.IVs; Ireal str2double(handles.Multi_Value.String)];
+        handles.TestData.IVs = [handles.TestData.IVs; Ireal.Value str2double(handles.Multi_Value.String)];
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        pause(1);
+        
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -957,7 +975,7 @@ else
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        pause(1);
+        
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -1071,7 +1089,7 @@ else
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        pause(1);
+        
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -1178,7 +1196,7 @@ else
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        pause(1);
+        
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -1254,6 +1272,9 @@ else
     if hObject.Value
         hObject.BackgroundColor = [120 170 50]/255;  % Green Color
         hObject.Enable = 'off';
+        if isempty(handles.Circuit.Rf.Value)
+            SQ_Calibration_Callback(handles.SQ_Calibration,[],handles);
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
@@ -1274,8 +1295,8 @@ else
                 handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: TF Mode ON';
                 Actions_Str_Callback(handles.Actions_Str,[],handles);
                 
-                [handles.DSA, datos] = handles.DSA.Read;
-                handles.DSA_TF_Data = datos;
+                [handles.DSA, datos] = handles.DSA.Read;                
+                handles.DSA_TF_Data = datos;                                
                 
             end
             
@@ -1285,7 +1306,7 @@ else
                 Actions_Str_Callback(handles.Actions_Str,[],handles);
                 
                 [data, WfmI] = handles.PXI.Get_Wave_Form;
-                handles.DSA_TF_Data = datos;
+                handles.PXI_TF_Data = data;
             end
             
         end
@@ -1302,7 +1323,7 @@ else
                 end
                 handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: Noise Mode ON';
                 Actions_Str_Callback(handles.Actions_Str,[],handles);
-                
+                clear datos;
                 [handles.DSA, datos] = handles.DSA.Read;
                 handles.DSA_Noise_Data = datos;
             end
@@ -1314,6 +1335,7 @@ else
                 
                 [data, WfmI] = handles.PXI.Get_Wave_Form;
                 [psd,freq] = PSD(data);
+                clear datos;
                 datos(:,1) = freq;
                 datos(:,2) = sqrt(psd);
                 n_avg = 5;
@@ -1332,40 +1354,130 @@ else
         
         if handles.TF_Mode.Value
             if handles.DSA_On.Value
-                if isempty(handles.TestData.TF.DSA{1})
-                    handles.TestData.TF.DSA{1} = handles.DSA_TF_Data;
-                else
-                    handles.TestData.TF.DSA{length(handles.TestData.TF.DSA)+1} = handles.DSA_TF_Data;
+                if ~isempty(handles.DSA_TF_Data)
+                    if isempty(handles.TestData.TF.DSA{1})
+                        handles.TestData.TF.DSA{1} = handles.DSA_TF_Data;
+                    else
+                        if ~isnumeric(eventdata)
+                            ButtonName = questdlg('Do you want to erase current TF (DSA) test values?', ...
+                                'ZarTES v1.0', ...
+                                'Yes', 'No', 'Yes');
+                            switch ButtonName
+                                case 'Yes'
+                                    handles.TestData.TF.DSA = {[]};
+                            end % switch
+                        end
+                        handles.TestData.TF.DSA{length(handles.TestData.TF.DSA)+1} = handles.DSA_TF_Data;
+                    end
+                    
+                    clear Data;
+                    cla(handles.Result_Axes);
+                    DataName = ' ';
+                    Data(:,1) = handles.TestData.TF.DSA{end}(:,1);
+                    Data(:,2) = handles.TestData.TF.DSA{end}(:,2);
+                    Data(:,3) = handles.TestData.TF.DSA{end}(:,3);
+                    Child = handles.Result_Axes.Children;
+                    ManagingData2Plot(Data,DataName,handles)
+                    Check_Plot_Callback(handles.Check_Plot,[],handles);
+                    refreshdata(handles.Result_Axes);
+                    delete(Child)
                 end
             end
             if handles.PXI_On.Value
-                if isempty(handles.TestData.TF.PXI{1})
-                    handles.TestData.TF.PXI{1} = handles.PXI_TF_Data;
-                else
-                    handles.TestData.TF.PXI{length(handles.TestData.TF.PXI)+1} = handles.PXI_TF_Data;
+                if ~isempty(handles.PXI_TF_Data)
+                    
+                    if isempty(handles.TestData.TF.PXI{1})
+                        handles.TestData.TF.PXI{1} = handles.PXI_TF_Data;
+                    else
+                        if ~isnumeric(eventdata)
+                            ButtonName = questdlg('Do you want to erase current TF (PXI) test values?', ...
+                                'ZarTES v1.0', ...
+                                'Yes', 'No', 'Yes');
+                            switch ButtonName
+                                case 'Yes'
+                                    handles.TestData.TF.PXI = {[]};
+                            end % switch
+                        end
+                        handles.TestData.TF.PXI{length(handles.TestData.TF.PXI)+1} = handles.PXI_TF_Data;
+                    end
+                    
+                    clear Data;
+                    cla(handles.Result_Axes);
+                    DataName = ' ';
+                    Data(:,1) = handles.TestData.TF.PXI{end}(:,1);
+                    Data(:,2) = handles.TestData.TF.PXI{end}(:,2);
+                    Data(:,3) = handles.TestData.TF.PXI{end}(:,3);
+                    Child = handles.Result_Axes.Children;
+                    ManagingData2Plot(Data,DataName,handles)
+                    Check_Plot_Callback(handles.Check_Plot,[],handles);
+                    refreshdata(handles.Result_Axes);
+                    delete(Child)
                 end
             end
         end
         if handles.Noise_Mode.Value
             if handles.DSA_On.Value
-                if isempty(handles.TestData.Noise.DSA{1})
-                    handles.TestData.Noise.DSA{1} = handles.DSA_Noise_Data;
-                else
-                    handles.TestData.Noise.DSA{length(handles.TestData.Noise.DSA)+1} = handles.DSA_Noise_Data;
+                if ~isempty(handles.DSA_Noise_Data)
+                    if isempty(handles.TestData.Noise.DSA{1})
+                        handles.TestData.Noise.DSA{1} = handles.DSA_Noise_Data;
+                    else
+                        if ~isnumeric(eventdata)
+                            ButtonName = questdlg('Do you want to erase current Noise (DSA) test values?', ...
+                                'ZarTES v1.0', ...
+                                'Yes', 'No', 'Yes');
+                            switch ButtonName
+                                case 'Yes'
+                                    handles.TestData.Noise.DSA = {[]};
+                            end % switch
+                        end
+                        handles.TestData.Noise.DSA{length(handles.TestData.Noise.DSA)+1} = handles.DSA_Noise_Data;
+                    end
+                    
+                    clear Data;
+                    cla(handles.Result_Axes);
+                    DataName = ' ';
+                    Data(:,1) = handles.TestData.Noise.DSA{end}(:,1);
+                    Data(:,2) = handles.TestData.Noise.DSA{end}(:,2);
+                    Child = handles.Result_Axes.Children;
+                    ManagingData2Plot(Data,DataName,handles)
+                    Check_Plot_Callback(handles.Check_Plot,[],handles);
+                    refreshdata(handles.Result_Axes);
+                    delete(Child)
                 end
             end
             if handles.PXI_On.Value
-                if isempty(handles.TestData.Noise.PXI{1})
-                    handles.TestData.Noise.PXI{1} = handles.PXI_Noise_Data;
-                else
-                    handles.TestData.Noise.PXI{length(handles.TestData.Noise.PXI)+1} = handles.PXI_Noise_Data;
+                if ~isempty(handles.PXI_Noise_Data)
+                    if isempty(handles.TestData.Noise.PXI{1})
+                        handles.TestData.Noise.PXI{1} = handles.PXI_Noise_Data;
+                    else
+                        if ~isnumeric(eventdata)
+                            ButtonName = questdlg('Do you want to erase current Noise (PXI) test values?', ...
+                                'ZarTES v1.0', ...
+                                'Yes', 'No', 'Yes');
+                            switch ButtonName
+                                case 'Yes'
+                                    handles.TestData.Noise.PXI = {[]};
+                            end % switch
+                        end
+                        handles.TestData.Noise.PXI{length(handles.TestData.Noise.PXI)+1} = handles.PXI_Noise_Data;
+                    end
+                    clear Data;
+                    cla(handles.Result_Axes);
+                    DataName = ' ';
+                    Data(:,1) = handles.TestData.Noise.PXI{end}(:,1);
+                    Data(:,2) = handles.TestData.Noise.PXI{end}(:,2);
+                    Child = handles.Result_Axes.Children;
+                    ManagingData2Plot(Data,DataName,handles)
+                    Check_Plot_Callback(handles.Check_Plot,[],handles);
+                    refreshdata(handles.Result_Axes);
+                    delete(Child)
                 end
             end
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        pause(1);
+        
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -1379,7 +1491,16 @@ function DSA_On_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of DSA_On
 if (hObject.Value||handles.PXI_On.Value)
-    handles.DSA_Read.Enable = 'on';
+    if hObject.Value
+        if (handles.TF_Mode.Value||handles.Noise_Mode.Value)
+            handles.DSA_Read.Enable = 'on';
+        else
+            handles.DSA_Read.Enable = 'off';
+        end
+    end
+    if handles.PXI_On.Value
+        handles.DSA_Read.Enable = 'on';
+    end
 else
     handles.DSA_Read.Enable = 'off';
 end
@@ -1390,11 +1511,26 @@ function PXI_On_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of PXI_On
-if (hObject.Value||handles.DSA_On.Value)
-    handles.DSA_Read.Enable = 'on';
+if (hObject.Value||handles.DSA_On.Value)    
+    if handles.DSA_On.Value        
+        if (handles.TF_Mode.Value||handles.Noise_Mode.Value)
+            handles.DSA_Read.Enable = 'on';
+        else
+            handles.DSA_Read.Enable = 'off';
+        end
+    end    
+    if hObject.Value
+        handles.DSA_Read.Enable = 'on';
+    end
 else
     handles.DSA_Read.Enable = 'off';
 end
+% 
+% if (hObject.Value||handles.DSA_On.Value)
+%     handles.DSA_Read.Enable = 'on';
+% else
+%     handles.DSA_Read.Enable = 'off';
+% end
 if hObject.Value
     set([handles.PXI_Mode handles.PXI_Conf_Mode],'Enable','on');
 else
@@ -1433,7 +1569,7 @@ else
             handles.TestData.Pulses{length(handles.TestData.Pulses)} = [WfmI data];
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        pause(1);
+        pause(0.2);
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -1449,8 +1585,12 @@ function TF_Mode_Callback(hObject, eventdata, handles)
 
 if (hObject.Value == 0)&&(handles.Noise_Mode.Value == 0)
     handles.DSA_OnOff.Enable = 'off';
+    if ~handles.PXI_On.Value
+        handles.DSA_Read.Enable = 'off';
+    end
 else
     handles.DSA_OnOff.Enable = 'on';
+    handles.DSA_Read.Enable = 'on';
 end
 
 Ch_TF = handles.TF_Panel.Children;
@@ -1478,8 +1618,12 @@ function Noise_Mode_Callback(hObject, eventdata, handles)
 
 if (hObject.Value == 0)&&(handles.TF_Mode.Value == 0)
     handles.DSA_OnOff.Enable = 'off';
+    if ~handles.PXI_On.Value
+        handles.DSA_Read.Enable = 'off';
+    end
 else
     handles.DSA_OnOff.Enable = 'on';
+    handles.DSA_Read.Enable = 'on';
 end
 
 Ch_Noise = handles.Noise_Panel.Children;
@@ -2179,6 +2323,27 @@ if ~isempty(handles.FileName)
         handles.SetupTES.Position = handles.SetupTES.UserData;
         
     end
+else % Test Values
+    if hObject.Value
+        if handles.TestPlot.Value
+            set([handles.Elect_Mag_Panel handles.Charac_Panel...
+                handles.Field_Panel handles.Actions_Panel...
+                handles.Graph_Panel],'Units','Character');
+            
+            handles.SetupTES.Position = [handles.Position_old(1) handles.Position_old(2) 0.89 handles.Position_old(4)];
+            pause(0.2)
+            handles.Result_Axes.Position = [0.65 0.15 0.30 0.50]; %  Normalized
+            handles.Draw_Select.Visible = 'off';
+            handles.Result_Axes.Visible = 'on';
+            set(handles.Result_Axes.Children,'Visible','on');       
+        end        
+        
+    else
+        handles.Result_Axes.Visible = 'off';
+        set(handles.Result_Axes.Children,'Visible','off');        
+        legend HIDE;
+        handles.SetupTES.Position = handles.SetupTES.UserData;
+    end
 end
 guidata(hObject,handles);
 
@@ -2341,24 +2506,47 @@ function ManagingData2Plot(Data,DataName,handles)
 DataName(DataName == '_') = ' ';
 switch size(Data,2)
     case 2  % Noise
-        plot(handles.Result_Axes,Data(:,1),Data(:,2),'Visible','off','DisplayName',DataName);
-        xlabel(handles.Result_Axes,'Freq (Hz)');
-        ylabel(handles.Result_Axes,'PSD');
-        handles.Result_Axes.XScale = 'log';
-        handles.Result_Axes.YScale = 'log';
+        
+        loglog(handles.Result_Axes,Data(:,1),V2I(Data(:,2)*1e12,handles.Circuit),'.-r','Visible','off','DisplayName',DataName);
+        hold(handles.Result_Axes,'on');
+        grid(handles.Result_Axes,'on');
+        loglog(handles.Result_Axes,Data(:,1),medfilt1(V2I(Data(:,2)*1e12,handles.Circuit),20),'.-k','Visible','off','DisplayName',DataName)
+        ylabel(handles.Result_Axes,'pA/Hz^{0.5}','fontsize',12,'fontweight','bold')
+        xlabel(handles.Result_Axes,'\nu (Hz)','fontsize',12,'fontweight','bold')
+        set(handles.Result_Axes,'XScale','log','YScale','log')        
+        axis(handles.Result_Axes,'tight')        
+        set(handles.Result_Axes,'linewidth',2,'fontsize',11,'fontweight',...
+            'bold','XMinorGrid','off','YMinorGrid','off','GridLineStyle','-',...
+            'xtick',[10 100 1000 1e4 1e5],'xticklabel',{'10' '10^2' '10^3' '10^4' '10^5'});
+        
+%         
+%         plot(handles.Result_Axes,Data(:,1),Data(:,2),'Visible','off','DisplayName',DataName);
+%         xlabel(handles.Result_Axes,'Freq (Hz)');
+%         ylabel(handles.Result_Axes,'PSD');
+%         handles.Result_Axes.XScale = 'log';
+%         handles.Result_Axes.YScale = 'log';
     case 3  % TF
-        plot(handles.Result_Axes,Data(:,2),Data(:,3),'Visible','off','DisplayName',DataName);
-        %         plot(handles.Result_Axes,Data(:,1),sqrt(Data(:,2).^2+Data(:,3).^2),'Visible','off','DisplayName',DataName);
-        xlabel(handles.Result_Axes,'Re(mZ)');
-        ylabel(handles.Result_Axes,'Im(mZ)');
-        handles.Result_Axes.XScale = 'linear';
-        handles.Result_Axes.YScale = 'linear';
+%         plot(handles.Result_Axes,Data(:,1),Data(:,2)+1i*Data(:,3),'Visible','off','DisplayName',DataName);
+set(handles.Result_Axes,'linewidth',2,'fontsize',12,'fontweight','bold',...
+            'XTickMode','auto','XTickLabelMode','auto',...
+            'XMinorGrid','on','YMinorGrid','on');
+        set(handles.Result_Axes,'XScale','linear','YScale','linear')
+                plot(handles.Result_Axes,Data(:,2)+1i*Data(:,3),'Visible','off','DisplayName',DataName);
+        xlabel(handles.Result_Axes,'Re(mZ)','fontsize',12,'fontweight','bold');
+        ylabel(handles.Result_Axes,'Im(mZ)','fontsize',12,'fontweight','bold');
+         
+        axis(handles.Result_Axes,'tight')  
+        
     case 4  % I-Vs
-        plot(handles.Result_Axes,Data(:,2),Data(:,4),'Visible','off','DisplayName',DataName);
-        xlabel(handles.Result_Axes,'Ibias (\mu A)');
-        ylabel(handles.Result_Axes,'Vdc(V)');
+        set(handles.Result_Axes,'linewidth',2,'fontsize',12,'fontweight','bold',...
+            'XTickMode','auto','XTickLabelMode','auto',...
+            'XMinorGrid','off','YMinorGrid','off');
         handles.Result_Axes.XScale = 'linear';
-        handles.Result_Axes.YScale = 'linear';
+        handles.Result_Axes.YScale = 'linear'; 
+        plot(handles.Result_Axes,Data(:,2),Data(:,4),'Visible','off','DisplayName',DataName,'Marker','o','Color',[0 0.447 0.741]);
+        xlabel(handles.Result_Axes,'Ibias (\mu A)','fontsize',12,'fontweight','bold');
+        ylabel(handles.Result_Axes,'Vdc(V)','fontsize',12,'fontweight','bold');               
+%         set(handles.Result_Axes,'linewidth',2,'fontsize',12,'fontweight','bold');
     otherwise % R(T)
         for i = 2:2:size(Data.data,2)-1
             plot(handles.Result_Axes,Data.data(:,i),Data.data(:,i+1),'Visible','off','DisplayName',Data.textdata{i+1});
@@ -2368,6 +2556,7 @@ switch size(Data,2)
         handles.Result_Axes.XScale = 'linear';
         handles.Result_Axes.YScale = 'linear';
 end
+
 
 
 % --- Executes on button press in Browse_File.
@@ -2621,3 +2810,79 @@ function List_Files_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in SQ_RangeIbias.
+function SQ_RangeIbias_Callback(hObject, eventdata, handles)
+% hObject    handle to SQ_RangeIbias (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% Llama a un pequeño gui para dar valor inicial, final y resolucion
+
+hObject.UserData = [];
+waitfor(Conf_Setup(hObject));
+
+Range = hObject.UserData;
+
+if isempty(Range)
+    return;
+end
+if ~isempty(handles.TestData.IVs)
+    ButtonName = questdlg('Do you want to erase current I-V Curve test values?', ...
+        'ZarTES v1.0', ...
+        'Yes', 'No', 'Yes');
+    switch ButtonName
+        case 'Yes'
+            handles.TestData.IVs = [];            
+    end % switch
+end
+
+if size(Range,2) > 1
+    for i = 1:size(Range,1)
+        Ibias{i} = Range{i,1}:Range{i,2}:Range{i,3};
+    end
+else
+    Ibias{1} = cell2mat(Range);
+end
+
+
+% Poner el valor en el sitio que le corresponde
+for i = 1:length(Ibias)
+    xlim(handles.Result_Axes,[min(Ibias{i}) max(Ibias{i})]);
+    for j = 1:length(Ibias{i})        
+        handles.SQ_Ibias.String = Ibias{i}(j);
+        
+        handles.SQ_Set_I.Value = 1;
+        SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
+        if i == 1 && j == 1
+            pause(0.5);
+        end
+        
+        Ireal = handles.Squid.Read_Current_Value;
+        handles.TestData.IVs = [handles.TestData.IVs; Ireal.Value str2double(handles.Multi_Value.String)];
+        
+        
+%         Ireal = Ibias{i}(j);        
+%         Vout = Ireal/100;                
+%         handles.TestData.IVs = [handles.TestData.IVs; Ireal Vout];
+        
+        clear Data
+        Child = handles.Result_Axes.Children;
+        Data(:,2) = handles.TestData.IVs(:,1);
+        Data(:,4) = handles.TestData.IVs(:,2);
+        DataName = '';
+        ManagingData2Plot(Data,DataName,handles)
+        Check_Plot_Callback(handles.Check_Plot,[],handles);
+        refreshdata(handles.Result_Axes);
+        delete(Child)
+        axis(handles.Result_Axes,'tight')
+        % Tendríamos que pintar los valores cada vez que se están
+        % registrando.
+                
+    end
+end
+
+
+%% Añadir la lectura de la temperatura del baño! 

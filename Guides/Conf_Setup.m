@@ -115,7 +115,7 @@ switch varargin{1}.Tag
         Srch = cell2mat(Srch);
         DSA_Conf.FSine{Srch == 1} = ['SRLV ' varargin{3}.Sine_Amp.String 'mV'];
         ConfInstrs{2} = DSA_Conf.FSine;
-        
+        handles.handles1 = handles1;
         
         
     case 'DSA_Noise_Conf'
@@ -143,6 +143,10 @@ switch varargin{1}.Tag
         Srch = cell2mat(Srch);
         DSA_Conf.Noise1{Srch == 1} = ['SF ' varargin{3}.Noise_Amp.String 'Hz'];
         ConfInstrs{1} = DSA_Conf.Noise1;
+        % Configuration of the DSA options
+        handles.ConfInstrs = ConfInstrs;
+        
+        handles.Table.Data = handles.ConfInstrs{varargin{2}};
         % Noise Conf.
         
         
@@ -156,14 +160,22 @@ switch varargin{1}.Tag
         Srch = cell2mat(Srch);
         DSA_Conf.Noise2{Srch == 1} = ['SRLV ' varargin{3}.Noise_Amp.String 'mV'];
         ConfInstrs{2} = DSA_Conf.Noise2;
+        % Configuration of the DSA options
+        handles.ConfInstrs = ConfInstrs;
+        
+        handles.Table.Data = handles.ConfInstrs{varargin{2}};        
+        handles.handles1 = handles1;
+        
+    case 'SQ_RangeIbias'
+        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnName = {'Initial Value';'Step';'Final Value'};
+        handles.Options.Visible = 'off';         
+        handles.Table.Data = num2cell([500 -10 0]);               
 end
 
-% Configuration of the DSA options
-handles.ConfInstrs = ConfInstrs;
 
-handles.Table.Data = handles.ConfInstrs{varargin{2}};
 
-handles.handles1 = handles1;
+
 % Update handles structure
 guidata(hObject, handles);
 
@@ -257,13 +269,18 @@ switch handles.varargin{1}.Tag
         handles.varargin{3}.TF_Menu.Value = handles.Options.Value;
         handles.handles1.SetupTES.DSA.Config.SSine = handles.ConfInstrs{1};
         handles.handles1.SetupTES.DSA.Config.FSine = handles.ConfInstrs{2};
+        guidata(handles.handles1.SetupTES.SetupTES,handles.handles1.SetupTES)
+
     case 'DSA_Noise_Conf'
         handles.varargin{3}.Noise_Menu.Value = handles.Options.Value;
         handles.handles1.SetupTES.DSA.Config.Noise1 = handles.ConfInstrs{1};
         handles.handles1.SetupTES.DSA.Config.Noise2 = handles.ConfInstrs{2};
+        guidata(handles.handles1.SetupTES.SetupTES,handles.handles1.SetupTES)
+
+    case 'SQ_RangeIbias'
+        handles.varargin{1}.UserData = handles.Table.Data;
 end
 
 
-guidata(handles.handles1.SetupTES.SetupTES,handles.handles1.SetupTES)
 
 figure1_DeleteFcn(handles.figure1,eventdata,handles);
