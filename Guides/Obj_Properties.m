@@ -82,26 +82,40 @@ set(handles.figure1,'Color',[0.3 0.35 0.59],'Position',...
 
 content.ParametersStr = properties(handles.Obj.UserData);
 
+j = 1;
 for i = 1:length(content.ParametersStr)
-    eval('data{i,1} = content.ParametersStr{i};');
-    if strcmp(eval(['class(handles.Obj.UserData.' content.ParametersStr{i} ')']),'PhysicalMeasurement')
-        eval(['data{i,2} = handles.Obj.UserData.' content.ParametersStr{i} '.Value;']);
-        eval(['data{i,3} = handles.Obj.UserData.' content.ParametersStr{i} '.Units;']);
-    elseif ~strcmp(eval(['class(handles.Obj.UserData.' content.ParametersStr{i} ')']),'cell')        
-        eval(['data{i,2} = handles.Obj.UserData.' content.ParametersStr{i} ';']);
-        data{i,3} = '';
-    else
-        for j = 1:length(eval(['handles.Obj.UserData.' content.ParametersStr{i}]))
-            % Casos en los que el dato es un cell 
-            if j ~= length(eval(['handles.Obj.UserData.' content.ParametersStr{i}]))
-            data{i,2} = ['{' eval(['handles.Obj.UserData.' content.ParametersStr{i} '{j}']) ';'];
-            else
-                data{i,2} = [data{i,2} eval(['handles.Obj.UserData.' content.ParametersStr{i} '{j}']) '}'];
+    if ~strcmp(content.ParametersStr{j},'ObjHandle')
+        eval('data{j,1} = content.ParametersStr{j};');
+        if strcmp(eval(['class(handles.Obj.UserData.' content.ParametersStr{j} ')']),'PhysicalMeasurement')
+            eval(['data{j,2} = handles.Obj.UserData.' content.ParametersStr{j} '.Value;']);
+            eval(['data{j,3} = handles.Obj.UserData.' content.ParametersStr{j} '.Units;']);
+        elseif ~strcmp(eval(['class(handles.Obj.UserData.' content.ParametersStr{j} ')']),'cell')
+            if isstruct(eval(['handles.Obj.UserData.' content.ParametersStr{j} ';']))
+                data{j,2} = '';
+                data{j,3} = '';
+            elseif isempty(eval(['handles.Obj.UserData.' content.ParametersStr{j} ';']))
+                data{j,2} = '';
+                data{j,3} = '';
+            else                
+                eval(['data{j,2} = handles.Obj.UserData.' content.ParametersStr{j} ';']);
+                data{j,3} = '';
+            end
+        else
+            for jj = 1:length(eval(['handles.Obj.UserData.' content.ParametersStr{j}]))
+                % Casos en los que el dato es un cell
+                if jj ~= length(eval(['handles.Obj.UserData.' content.ParametersStr{j}]))
+                    data{j,2} = ['{' eval(['handles.Obj.UserData.' content.ParametersStr{j} '{jj}']) ';'];
+                else
+                    data{j,2} = [data{j,2} eval(['handles.Obj.UserData.' content.ParametersStr{j} '{jj}']) '}'];
+                    data{j,3} = '';
+                end
             end
         end
+        j = j+1;
     end
 end
-set(handles.tabla,'Data',data);
+
+handles.tabla.Data =data;
 % data_conf = data;
 % 
 % set(handles.Conf_File,'String',handles.ConfFile,'Value',handles.ConfFileNum);    
@@ -169,6 +183,9 @@ for i = 1:size(OrigParameters,1)
     end
 end
 
+handles1 = guidata(handles.Obj.Parent.Parent);
+handles1.Circuit = handles.Obj.UserData;
+guidata(handles.Obj.Parent.Parent,handles1);
 uiwait(msgbox('Properties were successfully saved!','ZarTES v.1'));
 
 delete(handles.figure1);

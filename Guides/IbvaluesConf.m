@@ -22,7 +22,7 @@ function varargout = IbvaluesConf(varargin)
 
 % Edit the above text to modify the response to help IbvaluesConf
 
-% Last Modified by GUIDE v2.5 31-Aug-2018 12:18:48
+% Last Modified by GUIDE v2.5 10-Oct-2018 09:09:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -134,12 +134,12 @@ end
 
 S = xml2struct([handles.ConfDir handles.ConfName]);
 
-Conf.Temps.Values = str2double(split(S.Conf.Temps.Values.Text,' '));
+Conf.Temps.Values = str2double(strsplit(S.Conf.Temps.Values.Text,' '));
 Conf.Temps.File = S.Conf.Temps.File.Text;
 Conf.Ibvalues.Mode = str2double(S.Conf.Ibvalues.Mode.Text);
-Conf.Ibvalues.Values = str2double(split(S.Conf.Ibvalues.Values.Text,' '));
+Conf.Ibvalues.Values = str2double(strsplit(S.Conf.Ibvalues.Values.Text,' '));
 Conf.Field.Mode = str2double(S.Conf.Field.Mode.Text);
-Conf.Field.Values = str2double(split(S.Conf.Field.Values.Text,' '));
+Conf.Field.Values = str2double(strsplit(S.Conf.Field.Values.Text,' '));
 Conf.ZwNoise.Mode = str2double(S.Conf.ZwNoise.Mode.Text);
 Conf.ZwNoise.Parameters = [];
 Conf.Pulses.Mode = str2double(S.Conf.Pulses.Mode.Text);
@@ -161,105 +161,56 @@ else
     handles.TempName = Conf.Temps.File(max(strfind(Conf.Temps.File,filesep))+1:end);
     handles.TempDir = Conf.Temps.File(1:max(strfind(Conf.Temps.File,filesep)));
 end
-handles.Temp_Table.Data = [];
-handles.Temp_Table.Data{size(Conf.Temps.Values,1),3} = []; 
-handles.Temp_Table.Data(1:size(Conf.Temps.Values,1),size(Conf.Temps.Values,2)) = cellstr(num2str(Conf.Temps.Values));
+handles.Temp_Table.Data = {[]};
+handles.Temp_Table.Data(size(Conf.Temps.Values,1),3) = {[]}; 
+% handles.Temp_Table.Data(1:size(Conf.Temps.Values,2),size(Conf.Temps.Values,1)) = Conf.Temps.Values';
+handles.Temp_Table.Data(1:size(Conf.Temps.Values,2),size(Conf.Temps.Values,1)) = cellstr(num2str(Conf.Temps.Values'));
    
 handles.AQ_IVs.Value = Conf.Ibvalues.Mode;
 AQ_IVs_Callback(handles.AQ_IVs, [], handles);
 if handles.AQ_IVs.Value
-    handles.Ibias_Table.Data = [];
-    handles.Ibias_Table.Data{size(Conf.Ibvalues.Values,1),3} = [];
-    handles.Ibias_Table.Data(1:size(Conf.Ibvalues.Values,1),size(Conf.Ibvalues.Values,2)) = cellstr(num2str(Conf.Ibvalues.Values));
+    handles.Ibias_Table.Data = {[]};
+    handles.Ibias_Table.Data(size(Conf.Ibvalues.Values,1),3) = {[]};
+    handles.Ibias_Table.Data(1:size(Conf.Ibvalues.Values,2),size(Conf.Ibvalues.Values,1)) = cellstr(num2str(Conf.Ibvalues.Values'));
 end
 
-handles.BField_Mode.Value = Conf.Field.Mode;
-BField_Mode_Callback(handles.BField_Mode, [], handles);
-if handles.BField_Mode.Value
-    handles.Field_Table.Data = [];
-    handles.Field_Table.Data{size(Conf.Field.Values,1),3} = [];
-    handles.Field_Table.Data(1:size(Conf.Field.Values,1),size(Conf.Field.Values,2)) = cellstr(num2str(Conf.Field.Values));
-end
+handles.AQ_Field.String = num2str(Conf.Field.Values);
+% handles.BField_Mode.Value = Conf.Field.Mode;
+% BField_Mode_Callback(handles.BField_Mode, [], handles);
+% if handles.BField_Mode.Value
+%     handles.Field_Table.Data = {[]};
+%     handles.Field_Table.Data(size(Conf.Field.Values,1),3) = {[]};
+%     handles.Field_Table.Data(1:size(Conf.Field.Values,2),size(Conf.Field.Values,1)) = cellstr(num2str(Conf.Field.Values'));
+% end
 
-handles.AQ_mode.Value = Conf.ZwNoise.Mode;
-AQ_mode_Callback(handles.AQ_mode, [], handles);
+handles.AQ_Zw.Value = Conf.ZwNoise.Mode;
+AQ_Zw_Callback(handles.AQ_Zw, [], handles);
+
+Temps = num2cell(Conf.Temps.Values');
+
+IV_Tick(1:length(Temps),1) = {'Yes'};
+
+Zw_Tick(1:length(Temps),1) = {'No'}; 
+Zw_Tick(Conf.Temps.Values' == 0.05|Conf.Temps.Values' == 0.07) = {'Yes'};
+
+Pulse_Tick(1:length(Temps),1) = {'No'}; 
+Pulse_Tick(Conf.Temps.Values' == 0.05|Conf.Temps.Values' == 0.07) = {'Yes'};
+
+handles.Summary_Table.Data = [Temps IV_Tick Zw_Tick Pulse_Tick];
+
 
 handles.AQ_Pulse.Value = Conf.Pulses.Mode;
 AQ_Pulse_Callback(handles.AQ_Pulse, [], handles);
 guidata(handles.figure1,handles);
 
 
-% --- Executes on button press in Start_AQ.
-function Start_AQ_Callback(hObject, eventdata, handles)
-% hObject    handle to Start_AQ (see GCBO)
+% --- Executes on button press in Field_Start.
+function Field_Start_Callback(hObject, eventdata, handles)
+% hObject    handle to Field_Start (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 %%%% Bath Temperature Range Setting
-Data = [];
-for i = 1:size(handles.Temp_Table.Data,1)
-    if ~isempty(handles.Temp_Table.Data{i,1})
-        if isempty(handles.Temp_Table.Data{i,2})
-            Data = [Data str2double(handles.Temp_Table.Data{i,1})];
-        elseif ~isempty(handles.Temp_Table.Data{i,3})
-            Data = [Data eval([num2str(handles.Temp_Table.Data{i,1}) ':' ...
-                num2str(handles.Temp_Table.Data{i,2}) ':' ...
-                num2str(handles.Temp_Table.Data{i,3}) ])];
-        end
-    end
-end
-Data = unique(sort(Data));
-% Remove possible 0 values
-Data(Data == 0) = [];
-Temps = Data;
-
-%%%% I bias Range Setting
-Data = [];
-for i = 1:size(handles.Ibias_Table.Data,1)
-    if ~isempty(handles.Ibias_Table.Data{i,1})
-        if isempty(handles.Ibias_Table.Data{i,2})
-            Data = [Data str2double(handles.Ibias_Table.Data{i,1})];
-        elseif ~isempty(handles.Ibias_Table.Data{i,3})
-            Data = [Data eval([num2str(handles.Ibias_Table.Data{i,1}) ':' ...
-                num2str(handles.Ibias_Table.Data{i,2}) ':' ...
-                num2str(handles.Ibias_Table.Data{i,3}) ])];
-        end
-    end
-end
-Data = eval(['repmat(Data,1,' handles.Ibias_NRepeat.String ');']);
-
-Ibvalues.p = [];
-Ibvalues.n = [];
-
-indp = find(Data >= 0);
-Ibvalues.p = unique(Data(Data >= 0),'stable');
-indn = find(Data <= 0);
-Ibvalues.n = unique(Data(Data <= 0),'stable');
-
-if ~isempty(indp)
-    if (Data(indp(1)) == Data(indp(end)))&& Data(indp(1)) == 0
-        Ibvalues.p(1) = [];
-        Ibvalues.p(end+1) = 0;
-    end
-else
-    if handles.Ibias_Negative.Value    
-        Ibvalues.p = -Ibvalues.n;
-    end
-end
-% Correct the zero value as the first one and replace it if it was in the
-% last place.
-if ~isempty(indn)
-    if (Data(indn(1)) == Data(indn(end)))&& Data(indn(1)) == 0
-        Ibvalues.n(1) = [];
-        Ibvalues.n(end+1) = 0;
-    end
-else
-    if handles.Ibias_Negative.Value    
-        Ibvalues.n = -Ibvalues.p;
-    end
-end
-
-
 %%%% Field values Setting
 Data = [];
 for i = 1:size(handles.Field_Table.Data,1)
@@ -273,48 +224,21 @@ for i = 1:size(handles.Field_Table.Data,1)
         end
     end
 end
-Field = Data;
-
-%%% Configuration data is parsed to an structure
-
-% if isempty(handles.TempName)
-%     warndlg('Temperature values must be stored in a txt file','ZarTES v1.0');
-%     Temp_Save_Callback(handles.Temp_Save,[],handles);
-%     if isempty(handles.TempName)
-%        warndlg('Error generating the Configuration file!','ZarTES v1.0');  
-%     end
-% end
-Conf.Temps.Values = Temps;
-% Conf.Temps.File = [handles.TempDir handles.TempName];
-
-Conf.Ibvalues.Mode = handles.AQ_IVs.Value; % 0 (off), 1 (on) 
-Conf.Ibvalues.Values = Ibvalues;
-
-Conf.Field.Mode = handles.BField_Mode.Value;  % 0 (off), 1 (on)
-Conf.Field.Values = Field;
-
-Conf.ZwNoise.Mode = handles.AQ_mode.Value; % 0 (off), 1 (on)
-Conf.ZwNoise.Zw.Parameters = [];
-Conf.ZwNoise.Noise.Parameters = [];
-
-Conf.Pulses.Mode = handles.AQ_Pulse.Value; % 0 (off), 1 (on)
-Conf.Pulses.Parameters = [];
-
+Conf.OP2Field.On = 1;
+Conf.Field = Data;
+Conf.Ibias = str2double(handles.Field_Ibias.String);
+Conf.Rn = str2double(handles.Field_Rn.String);
+Conf.Temp = str2double(handles.Field_Temp);
 
 Start_Automatic_Acquisition(handles,handles.SetupTES,Conf);
-
-
-handles.src.UserData = Conf;
-
-guidata(hObject,handles);
 
 
 
 % figure1_DeleteFcn(handles.figure1,eventdata,handles);   
 
-% --- Executes on button press in Cancel.
-function Cancel_Callback(hObject, eventdata, handles)
-% hObject    handle to Cancel (see GCBO)
+% --- Executes on button press in Field_Cancel.
+function Field_Cancel_Callback(hObject, eventdata, handles)
+% hObject    handle to Field_Cancel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 figure1_DeleteFcn(handles.figure1,eventdata,handles);   
@@ -343,7 +267,7 @@ try
         figure1_DeleteFcn(handles.figure1,eventdata,handles);            
        
     elseif strcmp(eventdata.Key,'return')
-        if strcmp(get(handles.Start_AQ,'Enable'),'on')
+        if strcmp(get(handles.Field_Start,'Enable'),'on')
             Accept_Callback(handles.Start,eventdata,handles);
         end
     end
@@ -513,6 +437,7 @@ switch Tag
                 'TooltipString',[Dir Name]);     
             fid = fopen([Dir Name]);
             Data = fscanf(fid,'%f');
+            Data = unique(Data);
             fclose(fid);
             handles.Temp_Table.Data = {[]};
             %%% Updating the Temp Table values
@@ -552,11 +477,11 @@ function Temp_Panel_SelectionChangedFcn(hObject, eventdata, handles)
 
 switch hObject.Tag
     case 'Temp_Manual'
-%         handles.Temp_Table.Enable = 'on';
+        handles.Temp_Table.Enable = 'on';
         handles.Temp_Browse.Enable = 'off';
         
     otherwise
-%         handles.Temp_Table.Enable = 'on';
+        handles.Temp_Table.Enable = 'on';
         handles.Temp_Browse.Enable = 'on';
 end    
 guidata(hObject,handles);
@@ -1118,13 +1043,13 @@ function Pulse_Conf_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes on button press in AQ_mode.
-function AQ_mode_Callback(hObject, eventdata, handles)
-% hObject    handle to AQ_mode (see GCBO)
+% --- Executes on button press in AQ_Zw.
+function AQ_Zw_Callback(hObject, eventdata, handles)
+% hObject    handle to AQ_Zw (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of AQ_mode
+% Hint: get(hObject,'Value') returns toggle state of AQ_Zw
 
 if ~hObject.Value
     set([handles.AQ_DSA handles.AQ_PXI ...
@@ -1132,11 +1057,13 @@ if ~hObject.Value
         handles.Sine_Amp handles.Sine_Amp_Units ...
         handles.Sine_Freq handles.Sine_Freq_Units ...
         handles.Noise_Method handles.DSA_Noise_Conf ...
-        handles.Noise_Amp handles.Noise_Amp_Units],'Enable','off');
+        handles.Noise_Amp handles.Noise_Amp_Units ...
+        handles.Summary_Table],'Enable','off');
 else
     set([handles.AQ_DSA handles.AQ_PXI ...
         handles.DSA_TF_Conf handles.DSA_Noise_Conf ...
-        handles.Z_Method handles.Noise_Method],'Enable','on');
+        handles.Z_Method handles.Noise_Method ...
+        handles.Summary_Table],'Enable','on');
     set([handles.AQ_DSA handles.AQ_PXI],'Value',1);
     Z_Method_Callback(handles.Z_Method,[],handles);
     Noise_Method_Callback(handles.Noise_Method,[],handles);
@@ -1226,4 +1153,249 @@ function Field_Remove_Callback(hObject, eventdata, handles)
 
 if size(handles.Field_Table.Data,1) > 1
     handles.Field_Table.Data(end,:) = [];
+end
+
+
+
+function Field_Rn_Callback(hObject, eventdata, handles)
+% hObject    handle to Field_Rn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Field_Rn as text
+%        str2double(get(hObject,'String')) returns contents of Field_Rn as a double
+Edit_Protect(hObject)
+
+% --- Executes during object creation, after setting all properties.
+function Field_Rn_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Field_Rn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Field_Ibias_Callback(hObject, eventdata, handles)
+% hObject    handle to Field_Ibias (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Field_Ibias as text
+%        str2double(get(hObject,'String')) returns contents of Field_Ibias as a double
+Edit_Protect(hObject)
+
+% --- Executes during object creation, after setting all properties.
+function Field_Ibias_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Field_Ibias (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Bath_Start.
+function Bath_Start_Callback(hObject, eventdata, handles)
+% hObject    handle to Bath_Start (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+Data = [];
+for i = 1:size(handles.Temp_Table.Data,1)
+    if ~isempty(handles.Temp_Table.Data{i,1})
+        if isempty(handles.Temp_Table.Data{i,2})
+            Data = [Data str2double(handles.Temp_Table.Data{i,1})];
+        elseif ~isempty(handles.Temp_Table.Data{i,3})
+            Data = [Data eval([num2str(handles.Temp_Table.Data{i,1}) ':' ...
+                num2str(handles.Temp_Table.Data{i,2}) ':' ...
+                num2str(handles.Temp_Table.Data{i,3}) ])];
+        end
+    end
+end
+Data = unique(sort(Data));
+% Remove possible 0 values
+Data(Data == 0) = [];
+Temps = Data;
+
+%%%% I bias Range Setting
+Data = [];
+for i = 1:size(handles.Ibias_Table.Data,1)
+    if ~isempty(handles.Ibias_Table.Data{i,1})
+        if isempty(handles.Ibias_Table.Data{i,2})
+            Data = [Data str2double(handles.Ibias_Table.Data{i,1})];            
+        elseif isnan(handles.Ibias_Table.Data{i,2})
+            Data = handles.Ibias_Table.Data{i,1};
+        elseif ~isempty(handles.Ibias_Table.Data{i,3})
+            Data = [Data eval([num2str(handles.Ibias_Table.Data{i,1}) ':' ...
+                num2str(handles.Ibias_Table.Data{i,2}) ':' ...
+                num2str(handles.Ibias_Table.Data{i,3}) ])];
+        end
+    end
+end
+Data = eval(['repmat(Data,1,' handles.Ibias_NRepeat.String ');']);
+
+Ibvalues.p = [];
+Ibvalues.n = [];
+
+indp = find(Data >= 0);
+Ibvalues.p = unique(Data(Data >= 0),'stable');
+indn = find(Data <= 0);
+Ibvalues.n = unique(Data(Data <= 0),'stable');
+
+if ~isempty(indp)
+    if (Data(indp(1)) == Data(indp(end)))&& Data(indp(1)) == 0
+        Ibvalues.p(1) = [];
+        Ibvalues.p(end+1) = 0;
+    end
+else
+    if handles.Ibias_Negative.Value    
+        Ibvalues.p = -Ibvalues.n;
+    end
+end
+% Correct the zero value as the first one and replace it if it was in the
+% last place.
+if ~isempty(indn)
+    if (Data(indn(1)) == Data(indn(end)))&& Data(indn(1)) == 0
+        Ibvalues.n(1) = [];
+        Ibvalues.n(end+1) = 0;
+    end
+else
+    if handles.Ibias_Negative.Value    
+        Ibvalues.n = -Ibvalues.p;
+    end
+end
+
+
+%%%% Field values Setting
+Data = [];
+for i = 1:size(handles.Field_Table.Data,1)
+    if ~isempty(handles.Field_Table.Data{i,1})
+        if isempty(handles.Field_Table.Data{i,2})
+            Data = [Data str2double(handles.Field_Table.Data{i,1})];
+        elseif ~isempty(handles.Field_Table.Data{i,3})
+            Data = [Data eval([num2str(handles.Field_Table.Data{i,1}) ':' ...
+                num2str(handles.Field_Table.Data{i,2}) ':' ...
+                num2str(handles.Field_Table.Data{i,3}) ])];
+        end
+    end
+end
+Field = Data;
+
+%%% Configuration data is parsed to an structure
+
+% if isempty(handles.TempName)
+%     warndlg('Temperature values must be stored in a txt file','ZarTES v1.0');
+%     Temp_Save_Callback(handles.Temp_Save,[],handles);
+%     if isempty(handles.TempName)
+%        warndlg('Error generating the Configuration file!','ZarTES v1.0');  
+%     end
+% end
+Conf.Temps.Values = Temps;
+% Conf.Temps.File = [handles.TempDir handles.TempName];
+
+Conf.Ibvalues.Mode = handles.AQ_IVs.Value; % 0 (off), 1 (on) 
+Conf.Ibvalues.Values = Ibvalues;
+
+
+Conf.OP2Field.On = 0;
+Conf.Field.Mode = handles.BField_Mode.Value;  % 0 (off), 1 (on)
+Conf.Field.Values = Field;
+
+Conf.ZwNoise.Mode = handles.AQ_Zw.Value; % 0 (off), 1 (on)
+Conf.ZwNoise.Zw.Parameters = [];
+Conf.ZwNoise.Noise.Parameters = [];
+
+Conf.Pulses.Mode = handles.AQ_Pulse.Value; % 0 (off), 1 (on)
+Conf.Pulses.Parameters = [];
+
+
+Start_Automatic_Acquisition(handles,handles.SetupTES,Conf);
+
+
+handles.src.UserData = Conf;
+
+guidata(hObject,handles);
+
+% --- Executes on button press in Bath_Cancel.
+function Bath_Cancel_Callback(hObject, eventdata, handles)
+% hObject    handle to Bath_Cancel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+
+function AQ_Field_Callback(hObject, eventdata, handles)
+% hObject    handle to AQ_Field (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of AQ_Field as text
+%        str2double(get(hObject,'String')) returns contents of AQ_Field as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function AQ_Field_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to AQ_Field (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Refresh_Table.
+function Refresh_Table_Callback(hObject, eventdata, handles)
+% hObject    handle to Refresh_Table (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+Data = [];
+for i = 1:size(handles.Temp_Table.Data,1)
+    if ~isempty(handles.Temp_Table.Data{i,1})
+        if isempty(handles.Temp_Table.Data{i,2})
+            Data = [Data str2double(handles.Temp_Table.Data{i,1})];
+        elseif ~isempty(handles.Temp_Table.Data{i,3})
+            Data = [Data eval([num2str(handles.Temp_Table.Data{i,1}) ':' ...
+                num2str(handles.Temp_Table.Data{i,2}) ':' ...
+                num2str(handles.Temp_Table.Data{i,3}) ])];
+        end
+    end
+end
+Data = unique(sort(Data));
+% Remove possible 0 values
+Data(Data == 0) = [];
+Temps = Data';
+if ~isempty(Temps)
+    if handles.AQ_IVs.Value
+        IV_Ticks(1:length(Temps),1) = {'Yes'};
+    else
+        IV_Ticks(1:length(Temps),1) = {'No'};
+    end
+    
+    if handles.AQ_Zw.Value
+        Zw_Ticks(1:length(Temps),1) = {'No'};
+        Zw_Ticks(Temps == 0.05 | Temps == 0.07) = {'Yes'};
+    else
+        Zw_Ticks(1:length(Temps),1) = {'No'};
+    end
+    
+    if handles.AQ_Pulse.Value
+        Pulse_Ticks(1:length(Temps),1) = {'No'};
+        Pulse_Ticks(Temps == 0.05 | Temps == 0.07) = {'Yes'};
+    else
+        Pulse_Ticks(1:length(Temps),1) = {'No'};
+    end
+    
+    handles.Summary_Table.Data = [num2cell(Temps) IV_Ticks Zw_Ticks Pulse_Ticks];
+else
+    warndlg('No Temperature values selected!','ZarTES v1.0');
 end

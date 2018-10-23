@@ -18,7 +18,7 @@ function [freq, data, header] = hp_read_updated(dsa)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%  ASCII read header %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Str15 = 'str2double(char(fread(dsa.ObjHandle,15,''char'')))';
+Str15 = 'str2double(char(fread(dsa.ObjHandle,15,''char'')));';
 
 fprintf(dsa.ObjHandle,'DDAS');
 fread(dsa.ObjHandle,2,'char');          % se leen los 2 primeros caracteres. #I
@@ -51,6 +51,7 @@ n_data = (header.n_tot-header.size)/header.n_points; %segun el modo de lectura t
 %datos o dos arrays (real e imag).
 
 % ASCII read data
+h = waitbar(0,'Digital Signal Analyzer Reading...','WindowStyle','Modal','Name','ZarTES v1.0');
 data = NaN(2,header.n_points);
 for i = 1:header.n_points
     %data(j,i)=str2double(char(fread(dsa.ObjHandle,15,'char')));
@@ -59,7 +60,9 @@ for i = 1:header.n_points
     if (n_data == 2)
         data(2,i) = eval(Str15);
     end
+    waitbar(i/header.n_points,h);
 end
+close(h);
 if (n_data ~= 2)
     data(2,:) = [];
 end

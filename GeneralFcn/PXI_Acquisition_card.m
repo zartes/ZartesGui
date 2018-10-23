@@ -72,13 +72,13 @@ classdef PXI_Acquisition_card
             obj.Options.channelList = '1';
             
             obj.ConfStructs.Horizontal.RL = 2e5;%%%2e5 para fi=1Hz, RL=2e4 para fi=10Hz.
-            pxi_ConfigureHorizontal_updated(obj)
+            pxi_ConfigureHorizontal_updated(obj);
             
-            pxi_ConfigureChannels_updated(obj)
+            pxi_ConfigureChannels_updated(obj);
             
             obj.ConfStructs.Trigger.Type = 6;
             obj.ConfStructs.Trigger.Source = 'NISCOPE_VAL_IMMEDIATE';
-            pxi_ConfigureTrigger_updated(obj)
+            pxi_ConfigureTrigger_updated(obj);
         end
         
         function obj = Pulses_Configuration(obj,Level)

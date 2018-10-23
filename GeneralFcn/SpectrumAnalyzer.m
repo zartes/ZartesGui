@@ -89,18 +89,22 @@ classdef SpectrumAnalyzer
         end
         
         function LauchMeasurement(obj)
+            h = waitbar(0,'Digital Signal Analyzer Reading...','WindowStyle','Modal','Name','ZarTES v1.0');            
             fprintf(obj.ObjHandle,'STRT');             % Measurement is launched
             fprintf(obj.ObjHandle,'SMSD');             % Query measure finish?
-            % Bucle waiting for the measurement
-            while(~str2double(fscanf(obj.ObjHandle)))
+            % Bucle waiting for the measurement            
+            while(~str2double(fscanf(obj.ObjHandle)))                
                 pause(10);
                 fprintf(obj.ObjHandle,'SMSD');
-                second(now)
+                second(now);
+            end
+            if ishandle(h)
+                close(h);
             end
         end
         
         function [obj, datos] = Read(obj)
-            LauchMeasurement(obj)
+            LauchMeasurement(obj);
             [freq, data, header] = hp_read_updated(obj);
             datos = [freq' data'];
             obj.Header = header;

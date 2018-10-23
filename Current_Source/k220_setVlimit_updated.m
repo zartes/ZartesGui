@@ -24,4 +24,4 @@ function k220 = k220_setVlimit_updated(k220)
 % Here it is needed to add a units tester
 
 str = strcat('V',num2str(k220.Vmax.Value),'X','\n');
-query(k220.ObjHandle,str)
+query(k220.ObjHandle,str);
