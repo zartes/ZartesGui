@@ -81,7 +81,7 @@ classdef TES_Struct
                         indx = find(obj.IVsetN(j).rtes > 0.005);
                         x = x(indx);
                     end
-                    diffptes = diffptes(indx+1);
+                    diffptes = diffptes(indx);
                     range = find(diffptes > nanmedian(diffptes)+0.01*max(diffptes));
                     minrange(i,1) = x(range(end));
                     maxrange(i,1) = x(range(end-1));
@@ -94,8 +94,8 @@ classdef TES_Struct
                         j = j+1;
                     end
                 end
-                minrange = ceil(max(minrange)*1e2)/1e2;
-                maxrange = floor(min(maxrange)*1e2)/1e2;
+                minrange = min(ceil(max(minrange)*1e2)/1e2,0.2);
+                maxrange = max(floor(min(maxrange)*1e2)/1e2,0.85);
                 %             perc = (minrange:0.01:maxrange);
                 
                 warning off;
