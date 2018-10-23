@@ -1041,13 +1041,14 @@ classdef TES_Struct
             
             if obj.Report.FitPTset
                 StrRange = {'P';'N'};
+                fig = figure('Name','FitP vs. Tset');
                 for k = 1:2
                     if isempty(eval(['obj.IVset' StrRange{k} '.ibias']))
                         continue;
                     end
-                    IVTESset = eval(['obj.IVset' StrRange{k}]);
-                    fig = figure('Name','FitP vs. Tset');
-                    ax = subplot(1,1,k); hold(ax,'on');
+                    IVTESset = eval(['obj.IVset' StrRange{k}]);                    
+                    ax = subplot(1,2,k); hold(ax,'on');
+                    eval(['perc = [obj.Gset' StrRange{k} '.rp]'';'])
                     for jj = 1:length(perc)
                         Paux = [];
                         Iaux = [];
@@ -1074,7 +1075,7 @@ classdef TES_Struct
                         Tbath(isnan(Tbath)) = [];                                            
                         plot(ax,Tbath,Paux*1e12,'bo','markerfacecolor','b'),hold(ax,'on');
                         
-                        switch model
+                        switch eval(['obj.Gset' StrRange{k} '(jj).model'])
                             case 1
                                 X0 = [-500 3 1];
                                 XDATA = Tbath;
@@ -1091,7 +1092,7 @@ classdef TES_Struct
                                 fit2 = lsqcurvefit(@(x,tbath)x(1)+x(2)*tbath,[3 2], log(auxtbath(2:end)),log(gbaux),[],opts); %#ok<NASGU>                                                              
                                 plot(ax,log(auxtbath(2:end)),log(gbaux),'.-')
                         end
-                        if model ~= 3
+                        if eval(['obj.Gset' StrRange{k} '(jj).model']) ~= 3
                             opts = optimset('Display','off');
                             [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(@fitP,X0,XDATA,Paux*1e12,LB,[],opts); %#ok<ASGLU>
                             plot(ax,Tbath,fitP(fit,XDATA),'-r','linewidth',1)                                                        
@@ -1104,10 +1105,10 @@ classdef TES_Struct
             end
             
             if obj.Report.FitZset
-                TESDATA.PlotTFTbathRp(0.05,0.15:0.05:0.85);
+                obj.PlotTFTbathRp(0.05,0.15:0.05:0.85);
             end
             if obj.Report.NoiseSet 
-                TESDATA.PlotNoiseTbathRp(0.05,0.15:0.05:0.85);
+                obj.PlotNoiseTbathRp(0.05,0.15:0.05:0.85);
             end
             
         end        
