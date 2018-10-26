@@ -50,17 +50,26 @@ classdef TES_P
             if ~ischar(param)
                 warndlg('param must be string','ZarTES v1.0');
                 return;
-            else
+            else                
                 ValidParams = fieldnames(obj(1).p);
-                if ~isempty(cell2mat(strfind(ValidParams,param)))
+                ok_ind = 0;
+                for i = 1:length(ValidParams)
+                    if strcmp(ValidParams{i},param)
+                        ok_ind = 1;
+                    end
+                end
+                if ok_ind                                
                     if exist('Tbath','var')
                         if ischar(Tbath) % Transformar en valor numerico '50.0mK'
                             Tbath = str2double(Tbath(1:end-2))*1e-3;
                         end
                         Tbaths = [obj.Tbath];
-                        ind = find(Tbaths == Tbath);
-                        rp = [obj(ind).p.rp];
-                        val = eval(['[obj(ind).p.' param '];']);
+                        ind = find(Tbaths == Tbath);                        
+                        for i = 1:length(Tbath)
+                            rp{i} = [obj(ind(i)).p.rp];
+                            val{i} = eval(['[obj(ind(i)).p.' param '];']);
+                        end
+%                         val = eval(['[obj(ind).p.' param '];']);
                     else
                         Tbath = [obj.Tbath];
 %                         rp = nan(length(Tbaths),1);

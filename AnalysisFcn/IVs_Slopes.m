@@ -1,16 +1,16 @@
-function [mN, mS] = IVs_Slopes(IVset,opt)
+function [mN, mS] = IVs_Slopes(IVset,fig)
 
 % Nos basamos en las diferencias de la derivada de la curva.
-if nargin == 2
-    figure;
-    ax(1) = subplot(1,2,1);
-    hold(ax(1),'on');
-    grid(ax(1),'on');
-    ax(2) = subplot(1,2,2);
-    hold(ax(2),'on');
-    grid(ax(2),'on');
-    
+if nargin == 1        
+    fig = figure;
 end
+ax(1) = subplot(1,2,1);
+hold(ax(1),'on');
+grid(ax(1),'on');
+ax(2) = subplot(1,2,2);
+hold(ax(2),'on');
+grid(ax(2),'on');
+
 tolerance = 5;
 
 for i = 1:length(IVset)
