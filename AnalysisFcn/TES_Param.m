@@ -11,6 +11,11 @@ classdef TES_Param
     end
     
     methods
+        function CheckValues(obj)
+            h = figure('Visible','off','Tag','TES_Param');
+            waitfor(Conf_Setup(h,[],obj));
+        end
+        
         function G_new = G_calc(obj,Temp)
             % Temp in K
             try

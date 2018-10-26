@@ -12,6 +12,19 @@ classdef TES_Noise
     end
     
     methods
+        function obj = Update(obj,data)
+            FN = properties(obj);
+            if nargin == 2
+                fieldNames = fieldnames(data);
+                for i = 1:length(fieldNames)
+                    if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
+                        eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
+                    end
+                end
+                
+            end
+            
+        end
     end
     
 end
