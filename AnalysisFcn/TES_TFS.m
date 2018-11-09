@@ -19,7 +19,16 @@ classdef TES_TFS
             obj.f = [];
             obj.file = [];
         end
-        
+        function ok = Filled(obj)
+            FN = properties(obj);
+            for i = 1:length(FN)
+                if isempty(eval(['obj.' FN{i}]))
+                    ok = 0;  % Empty field
+                    return;
+                end
+            end
+            ok = 1; % All fields are filled
+        end
         function obj = UpdateTFS(obj,data)
             FN = properties(obj);
             if nargin == 2
