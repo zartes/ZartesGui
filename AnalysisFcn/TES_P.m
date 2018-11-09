@@ -11,6 +11,7 @@ classdef TES_P
         ztes = {[]};
         fZ = {[]};
         ERP = {[]};
+        Filtered = {[]};
         fileNoise = {[]};  
         NoiseModel = {[]};
         fNoise = {[]};
@@ -42,10 +43,22 @@ classdef TES_P
             obj.p.M = [];
             obj.p.Mph = [];        
         end
+        function ok = Filled(obj)
+            for j = 1:length(obj)
+                FN = fieldnames(obj(j).p);
+                for i = 1:length(FN)
+                    if isempty(eval(['obj(j).p.' FN{i}]))
+                        ok = 0;  % Empty field
+                        return;
+                    end
+                end
+            end
+            ok = 1; % All fields are filled
+        end
 
         % Metodos para que devuelva cualquier valor a una temperatura
         % determinada. O un valor a un Rp determinado y variando Tbath
-        function [val,rp,Tbath] = GetParamVsRn(obj,param,Tbath)
+        function [val,rp,Tbaths] = GetParamVsRn(obj,param,Tbath)
             % Selecion de Tbath y parametro a buscar en funcion de Rn
             if ~ischar(param)
                 warndlg('param must be string','ZarTES v1.0');
@@ -64,8 +77,10 @@ classdef TES_P
                             Tbath = str2double(Tbath(1:end-2))*1e-3;
                         end
                         Tbaths = [obj.Tbath];
-                        ind = find(Tbaths == Tbath);                        
-                        for i = 1:length(Tbath)
+                        %                         ind = find(Tbaths == Tbath);
+                        [~,ind]=intersect(Tbaths,Tbath);
+                        %                         for i = 1:length(Tbath)
+                        for i = 1:length(ind)
                             rp{i} = [obj(ind(i)).p.rp];
                             val{i} = eval(['[obj(ind(i)).p.' param '];']);
                         end

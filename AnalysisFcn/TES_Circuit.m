@@ -3,16 +3,17 @@ classdef TES_Circuit
     %   Detailed explanation goes here
     
     properties
-        Rsh;
-        Rf;
-        invMf;
-        invMin;
-        Rpar;
-        Rn;
-        mS;
-        mN;
-        L;
+        Rsh;  %Ohm
+        Rf;   %Ohm
+        invMf;  % uA/phi
+        invMin; % uA/phi
+        Rpar;  %Ohm
+        Rn;  % (%)
+        mS;  % Ohm
+        mN;  % Ohm
+        L;  % H
     end
+    
     
     methods
         function obj = Constructor(obj)
@@ -26,6 +27,16 @@ classdef TES_Circuit
             obj.mN = [];
             obj.L = 7.7e-08;
         end        
+        function ok = Filled(obj)
+            FN = properties(obj);
+            for i = 1:length(FN)
+                if isempty(eval(['obj.' FN{i}]))
+                    ok = 0;  % Empty field
+                    return;
+                end
+            end
+            ok = 1; % All fields are filled
+        end
         function obj = Update(obj,data)
             FN = properties(obj);
             if nargin == 2

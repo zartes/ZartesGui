@@ -327,7 +327,7 @@ plot(hs,1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2,'ButtonDownFcn',{@DisplayResul
 legend(hs,'Experimental',eval(['handles.varargin{1}.P' StrCond '(ind_Tbath).ElecThermModel{handles.Files_Ind}']));
 
 axis(hs,'tight');
-title(hs,strcat(num2str(round(OP.r0*100)),'%Rn'),'fontsize',12);
+title(hs,strcat(num2str(OP.r0*100,'%3.2f'),'%Rn'),'fontsize',12);
 if abs(OP.Z0-OP.Zinf) < 1.5e-3
     set(get(findobj(hs,'type','axes'),'title'),'color','r');
 end
@@ -417,7 +417,7 @@ set(hs1,'FontSize',11,'FontWeight','bold');
 set(hs1,'LineWidth',2)
 set(hs1,'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-')
 set(hs1,'XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'})
-title(hs1,strcat(num2str(round(OP.r0*100)),'%Rn'),'fontsize',12);
+title(hs1,strcat(num2str(OP.r0*100,'%3.2f'),'%Rn'),'fontsize',12);
 %         OP.Z0,OP.Zinf
 %debug
 if abs(OP.Z0-OP.Zinf) < 1.5e-3
