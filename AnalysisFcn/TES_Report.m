@@ -3,7 +3,7 @@ classdef TES_Report
     %   Detailed explanation goes here
     
     properties                
-        IV_Slopes = 1;
+        IV_Curves = 1;
         FitPTset = 1;
         NKGTset = 1;
         ABCTset = 1;
