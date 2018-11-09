@@ -22,7 +22,7 @@ function varargout = Analyzer(varargin)
 
 % Edit the above text to modify the response to help Analyzer
 
-% Last Modified by GUIDE v2.5 08-Nov-2018 14:21:17
+% Last Modified by GUIDE v2.5 09-Nov-2018 13:03:32
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -780,4 +780,3 @@ switch ButtonName
     case 'No'
         delete(hObject);
 end
-

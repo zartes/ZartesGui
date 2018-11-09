@@ -10,6 +10,8 @@ if iscell(file)||ischar(file)
     T=strcat(path,file);
 else
     errordlg('Invalid Data path name!','ZarTES v1.0','modal');
+    IVset = [];
+    Rf = [];
     return;
 end
 
