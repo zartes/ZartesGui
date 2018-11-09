@@ -1,7 +1,7 @@
 classdef TES_Struct
     %UNTITLED7 Summary of this class goes here
     %   Detailed explanation goes here
-   
+    
     properties
         circuit;
         TFS;
@@ -38,38 +38,35 @@ classdef TES_Struct
             obj.PN = obj.PN.Constructor;
             obj.TES = TES_Param;
             obj.Report = TES_Report;
-        end
+        end        
         
-        function obj = CheckCircuit(obj)
-            h = figure('Visible','off','Tag','TES_Struct');
-            waitfor(Conf_Setup(h,[],obj));
-            NewCircuit = guidata(h);
-            if ~isempty(NewCircuit)                
-                obj.circuit = obj.circuit.Update(NewCircuit);
-            end
-        end
-        
-        function obj = CheckIVCurvesVisually(obj, figIV)
-            if ~exist('figIV','var')
-                figIV = []; 
-            end
-            StrRange = {'P';'N'};
+        function obj = CheckIVCurvesVisually(obj)
+            
+            figIV = []; %#ok<NASGU>
+            StrRange = {'p';'n'};
             for j = 1:length(StrRange)
-                eval(['figIV = plotIVs(obj.IVset' StrRange{j} ',figIV);']);
+                eval(['figIV = plotIVs(obj.IVset' upper(StrRange{j}) ',figIV);']);
                 
                 % Revisar las curvas IV y seleccionar aquellas para eliminar del
                 % analisis
-                waitfor(helpdlg('Before closing this message, please check the IV curves','ZarTES v1.0'));
-                eval(['obj.IVset' StrRange{j} ' = get(figIV.hObject,''UserData'');']); 
+                h = helpdlg('Before closing this message, please check the IV curves','ZarTES v1.0');
+                true = 1;
+                while true
+                    pause(0.1);
+                    if ~ishandle(h)
+                        true = 0;
+                    end
+                    pause(0.1);
+                end
+                eval(['obj.IVset' upper(StrRange{j}) ' = get(figIV.hObject,''UserData'');']); %#ok<UNRCH>
             end
-        end
+        end                       
         
-        function obj = fitPvsTset(obj,perc,model,fig)
+        function obj = fitPvsTset(obj,perc,model)
             %funcion para ajustar automaticamente curvas P-Tbath a un valor o valores
             %de porcentaje de Rn. Ojo al uso de cells o arrays en IVset.
             % varargin{1}=modelo [1, 2 o 3].
-            if isempty(perc)
-%             if ~exist('perc','var')
+            if ~exist('perc','var')
                 % Extracting the range automatically
                 j = 1;
                 for i = 1:size(obj.IVsetP,2)+size(obj.IVsetN,2)
@@ -84,10 +81,7 @@ classdef TES_Struct
                         indx = find(obj.IVsetN(j).rtes > 0.005);
                         x = x(indx);
                     end
-                    if isempty(indx)
-                        continue;
-                    end
-                    diffptes = diffptes(indx);
+                    diffptes = diffptes(indx+1);
                     range = find(diffptes > nanmedian(diffptes)+0.01*max(diffptes));
                     minrange(i,1) = x(range(end));
                     maxrange(i,1) = x(range(end-1));
@@ -100,8 +94,8 @@ classdef TES_Struct
                         j = j+1;
                     end
                 end
-                minrange = min(ceil(max(minrange)*1e2)/1e2,0.2);
-                maxrange = max(floor(min(maxrange)*1e2)/1e2,0.85);
+                minrange = ceil(max(minrange)*1e2)/1e2;
+                maxrange = floor(min(maxrange)*1e2)/1e2;
                 %             perc = (minrange:0.01:maxrange);
                 
                 warning off;
@@ -119,26 +113,24 @@ classdef TES_Struct
                 
             end
             
-            if isempty(model)
+            if ~exist('model','var')
                 model = 1;
             end
-            if isempty(fig)
-                fig = figure('Name','fitP vs. Tset');
-            end
+            fig = figure('Name','fitP vs. Tset');
             StrRange = {'P';'N'};
             for k = 1:2
                 if isempty(eval(['obj.IVset' StrRange{k} '.ibias']))
                     continue;
                 end
                 ax = subplot(1,2,k); hold(ax,'on');
-                IVTESset = eval(['obj.IVset' StrRange{k}]);
+                IVTESset = eval(['obj.IVset' StrRange{k}]);                
                 for jj = 1:length(perc)
                     Paux = [];
                     Iaux = [];
                     Tbath = [];
                     kj = 1;
                     for i = 1:length(IVTESset)
-                        if IVTESset(i).good
+                        if IVTESset(i).good                                                         
                             ind = find(IVTESset(i).rtes > 0.1 & IVTESset(i).rtes < 0.8);%%%algunas IVs fallan.
                             if isempty(ind)
                                 continue;
@@ -155,7 +147,7 @@ classdef TES_Struct
                     end
                     Paux(isnan(Paux)) = [];
                     Iaux(isnan(Iaux)) = [];
-                    Tbath(isnan(Tbath)) = [];
+                    Tbath(isnan(Tbath)) = [];                                                            
                     plot(ax,Tbath,Paux*1e12,'bo','markerfacecolor','b'),hold(ax,'on');
                     
                     switch model
@@ -180,18 +172,21 @@ classdef TES_Struct
                     end
                     if model ~= 3
                         opts = optimset('Display','off');
-                        
+                        %                         [beta,R,J,CovB,MSE,ErrorModelInfo] = nlinfit(XDATA,Paux*1e12,@fitP,X0,opts)
                         [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(@fitP,X0,XDATA,Paux*1e12,LB,[],opts); %#ok<ASGLU>
-                        plot(ax,Tbath,fitP(fit,XDATA),'-r','linewidth',1)                        
+                        
+                        %                         MSE = (residual*residual')/(length(XDATA)-length(fit));
+                        %                         ci = nlparci(fit,residual,'jacobian',jacob);
+                        %                         CI = ci-fit';
+                        %                         CI = abs(CI(:,1)).*sign(fit)';
+                        
+                        plot(ax,Tbath,fitP(fit,XDATA),'-r','linewidth',1)
+                        
                         Gaux(jj) = GetGfromFit(fit);%#ok<AGROW,NASGU> %%antes se pasaba fitaux.
-%                         ci = nlparci(fit,residual,'jacobian',jacob);
-%                         CI = (ci(:,2)-ci(:,1))';                                                
-                        ERP = sum(abs(abs(Paux*1e12-fitP(fit,XDATA))./abs(Paux*1e12)))/length(Paux*1e12);
                         eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
                         eval(['obj.Gset' StrRange{k} '(jj).K = Gaux(jj).K;']);
                         eval(['obj.Gset' StrRange{k} '(jj).Tc = Gaux(jj).Tc;']);
                         eval(['obj.Gset' StrRange{k} '(jj).G = Gaux(jj).G;']);
-                        eval(['obj.Gset' StrRange{k} '(jj).ERP = ERP;']);
                     end
                     eval(['obj.Gset' StrRange{k} '(jj).rp = perc(jj);']);
                     eval(['obj.Gset' StrRange{k} '(jj).model = model;']);
@@ -203,10 +198,9 @@ classdef TES_Struct
             end
         end
         
-        function obj = plotNKGTset(obj,fig,opt)
-            %opt deshabilita seleccionar el OP
+        function obj = plotNKGTset(obj) 
             
-            MS = 5; %#ok<NASGU>
+            MS = 10; %#ok<NASGU>
             LS = 1; %#ok<NASGU>
             color{1} = [0 0.447 0.741];
             color{2} = [1 0 0]; %#ok<NASGU>
@@ -215,21 +209,14 @@ classdef TES_Struct
             StrLabel = {'n';'Tc(K)';'K(nW/K^n)';'G(pW/K)'};
             StrRange = {'P';'N'};
             StrIbias = {'Positive';'Negative'};
-            Marker = {'o';'^'};
-            LineStr = {'.-';':'};
-            
             for k = 1:2
                 if isempty(eval(['obj.Gset' StrRange{k} '.n']))
                     continue;
                 end
-                if nargin < 2
+                if ~exist('fig','var')
                     fig.hObject = figure;
                 end
-                Gset = eval(['obj.Gset' StrRange{k}]);    
-                try
-                    TES_OP_y = find([Gset.Tc] == obj.TES.Tc,1,'last');
-                catch
-                end
+                Gset = eval(['obj.Gset' StrRange{k}]);     %#ok<NASGU>
                 if isfield(fig,'subplots')
                     h = fig.subplots;
                 end
@@ -239,51 +226,37 @@ classdef TES_Struct
                         hold(h(j),'on');
                         grid(h(j),'on');
                     end
-                    rp = [Gset.rp];                    
-                    [~,ind] = sort(rp);                                                                                                   
-                    val = eval(['[Gset.' StrField{j} '];']);                    
-                    eval(['plot(h(j),rp(ind),val(ind),''' LineStr{k} ''','...
-                        '''color'',color{k},''MarkerFaceColor'',color{k},''linewidth'',LS,''markersize'',MS,''Marker'',''' Marker{k} ''',''DisplayName'',''' StrIbias{k} ''');']);
+                    eval(['plot(h(j),[Gset.rp],[Gset.' StrField{j} '],''.-'','...
+                        '''color'',color{k},''linewidth'',LS,''markersize'',MS,''DisplayName'',''' StrIbias{k} ''');']);
                     xlim(h(j),[0.15 0.9]);
                     xlabel(h(j),'R_{TES}/R_n','fontsize',11,'fontweight','bold');
                     ylabel(h(j),StrLabel{j},'fontsize',11,'fontweight','bold');
                     set(h(j),'linewidth',2,'fontsize',11,'fontweight','bold')
-                    try                         
-                        eval(['plot(h(j),Gset(TES_OP_y).rp,Gset(TES_OP_y).' StrField{j} ',''.-'','...
-                            '''color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'',''linewidth'',LS,''Marker'',''hexagram'',''markersize'',2*MS,''DisplayName'',''Operation Point'');']);
-                    catch
-                    end
-                end                
+                end
+                
                 fig.subplots = h;
             end
-            if nargin < 2
+            if ~exist('fig','var')
                 warndlg('TESDATA.fitPvsTset must be firstly applied.','ZarTES v1.0')
                 fig = [];
             end
-            if nargin < 3
-                pause(0.2)
-                waitfor(helpdlg('After closing this message, select a point for TES characterization','ZarTES v1.0'));
-                figure(fig.hObject);
-                [X,~] = ginput(1);
-                ind_rp = find(rp > X,1); %#ok<NASGU>
+            pause(0.2)
+            waitfor(helpdlg('After closing this message, select a point for TES characterization','ZarTES v1.0'));
+            figure(fig.hObject);
+            [X,~] = ginput(1);
+            ind_rp = find([obj.GsetP.rp] > X,1); %#ok<NASGU>
+
+            StrField = {'n';'Tc';'K';'G'};
+            TESmult = {'1';'1';'1e-12';'1e-12';};
+            for i = 1:length(StrField)
+                eval(['val = [obj.GsetP.' StrField{i} '];']);
+                eval(['obj.TES.' StrField{i} ' = val(ind_rp)*' TESmult{i} ';']);
                 
-                IndxOP = findobj('DisplayName','Operation Point');
-                delete(IndxOP);
-                
-                StrField = {'n';'Tc';'K';'G'};
-                TESmult = {'1';'1';'1e-12';'1e-12';};
-                for i = 1:length(StrField)
-                    eval(['val = [obj.GsetP.' StrField{i} '];']);
-                    eval(['obj.TES.' StrField{i} ' = val(ind_rp)*' TESmult{i} ';']);
-                    
-                    eval(['plot(h(i),obj.GsetP(ind_rp).rp,val(ind_rp),''.-'','...
-                        '''color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'',''linewidth'',LS,''Marker'',''hexagram'',''markersize'',2*MS,''DisplayName'',''Operating Point'');']);
-                end
-                uiwait(msgbox({['n: ' num2str(obj.TES.n)];['K: ' num2str(obj.TES.K)];...
-                    ['Tc: ' num2str(obj.TES.Tc) 'mK'];['G: ' num2str(obj.TES.G)]},'TES Operating Point','modal'));
-            else
-                
+                eval(['plot(h(i),obj.GsetP(ind_rp).rp,val(ind_rp),''.-'','...
+                    '''color'',''g'',''linewidth'',LS,''markersize'',1.5*MS,''DisplayName'',''Operating Point'');']);
             end
+            uiwait(msgbox({['n: ' num2str(obj.TES.n)];['K: ' num2str(obj.TES.K)];...
+                ['Tc: ' num2str(obj.TES.Tc) 'mK'];['G: ' num2str(obj.TES.G)]},'TES Operating Point','modal'));
         end
         
         function obj = EnterDimensions(obj)
@@ -296,11 +269,11 @@ classdef TES_Struct
             answer = inputdlg(prompt,name,numlines,defaultanswer);
             if ~isempty(answer)
                 obj.TES.sides = sqrt(str2double(answer{1})*str2double(answer{2}));
-            end
+            end            
             
-        end
+        end        
         
-        function obj = FitZset(obj,fig)
+        function obj = FitZset(obj)
             %%%Ajuste automático de Z(w) para varias temperaturas de baño
             
             ButtonName = questdlg('Select Files Acquisition device', ...
@@ -333,9 +306,9 @@ classdef TES_Struct
             
             StrRange = {'P';'N'};
             StrRangeExt = {'Positive Ibias Range';'Negative Ibias Range'};
-            if nargin < 2
-                fig = nan(1,2);
-            end                        
+            fig = nan(1,2);
+            model = 1;
+            
             for k1 = 1:2
                 if isempty(eval(['obj.IVset' StrRange{k1} '.ibias']))
                     continue;
@@ -375,12 +348,12 @@ classdef TES_Struct
                         continue;
                     end
                     
-                    D = [dirs{i} obj.NoiseOpt.NoiseBaseName];
+                    D = [dirs{i} obj.NoiseOpt.NoiseBaseName];                    
                     filesNoise = ListInBiasOrder(D);
                     
                     indSep = find(dirs{i} == filesep);
                     Path = dirs{i}(indSep(end)+1:end);
-                    Tbath = sscanf(Path,'%dmK');
+                    Tbath = sscanf(Path,'%dmK\');
                     %%%hacemos loop en cada fichero a analizar.
                     k = 1;
                     ImZmin = nan(1,length(filesZ));
@@ -396,7 +369,7 @@ classdef TES_Struct
                         end
                         thefile = strcat(dirs{i},'\',filesZ{j1});
                         
-                        [param, ztes, fZ, ERP, CI, aux1, StrModel, p0] = obj.FitZ(thefile);
+                        [param, ztes, fZ, ERP, CI, aux1, StrModel, p0] = obj.FitZ(thefile);                                                                                                
                         
                         if param.rp > 1 || param.rp < 0
                             continue;
@@ -408,52 +381,32 @@ classdef TES_Struct
                         eval(['obj.P' StrRange{k1} '(i).CI{jj} = CI;']);
                         eval(['obj.P' StrRange{k1} '(i).residuo(jj) = aux1;']);
                         eval(['obj.P' StrRange{k1} '(i).fileZ(jj) = {[dirs{i} filesep filesZ{j1}]};']);
-                        eval(['obj.P' StrRange{k1} '(i).ElecThermModel(jj) = {StrModel};']);
+                        eval(['obj.P' StrRange{k1} '(i).ElecThermModel(jj) = {StrModel};']);                              
                         eval(['obj.P' StrRange{k1} '(i).ztes{jj} = ztes;']);
                         eval(['obj.P' StrRange{k1} '(i).fZ{jj} = fZ;']);
                         eval(['obj.P' StrRange{k1} '(i).ERP{jj} = ERP;']);
-                        
-                        % Datos filtrados por valores negativos de C o
-                        % alpha
-                        if param.C < 0 || param.ai < 0 
-                            eval(['obj.P' StrRange{k1} '(i).Filtered{jj} = 1;']);
-                        elseif ERP > 0.8
-                            eval(['obj.P' StrRange{k1} '(i).Filtered{jj} = 1;']);
-                        else
-                            eval(['obj.P' StrRange{k1} '(i).Filtered{jj} = 0;']);
-                        end
-                        % Datos filtrados por valores con ERP (Error
-                        % Relativo Promedio) mayores de 0.8
-                        
                         %%%%%%%%%%%%%%%%%%%%%%Pintamos Gráficas
                         
                         if obj.TFOpt.boolShow
                             if jj == 1
-                                if nargin < 2
-                                    fig(i) = figure('Name',Path);
-                                else
-                                    figure(fig);
-                                    indAxes = findobj(fig,'Type','Axes');
-                                    delete(indAxes);
-                                end
+                                fig(i) = figure('Name',Path);
                                 ax = axes;
-                                grid(ax,'on');
-                                hold(ax,'on');
                             end
                             ind = 1:3:length(ztes);
                             
                             h(h_i) = plot(ax,1e3*ztes(ind),'.','color',[0 0.447 0.741],...
                                 'markerfacecolor',[0 0.447 0.741],'markersize',15,'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj}]);
-                            %%% Paso marker de 'o' a '.'
+                            grid(ax,'on');
+                            hold(ax,'on');%%% Paso marker de 'o' a '.'
                             set(ax,'linewidth',2,'fontsize',12,'fontweight','bold');
                             xlabel(ax,'Re(mZ)','fontsize',12,'fontweight','bold');
                             ylabel(ax,'Im(mZ)','fontsize',12,'fontweight','bold');%title('Ztes with fits (red)');
                             ImZmin(jj) = min(imag(1e3*ztes));
-                            ylim(ax,[min(-15,min(ImZmin)-1) 1])
+                            ylim(ax,[min(-15,min(ImZmin)-1) 1])                            
                             g(h_i) = plot(ax,1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2,...
-                                'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj} ':fit']);hold(ax,'on');
+                                'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj} ':fit']);hold(ax,'on');                            
                             set([h(h_i) g(h_i)],'UserData',[h(h_i) g(h_i)]);
-                        end
+                        end                                                
                         if k == 1 || jj == length(filesZ)
                             aux_str = strcat(num2str(round(param.rp*100)),'% R_n'); %#ok<NASGU>
                         end
@@ -476,12 +429,12 @@ classdef TES_Struct
                                 H1.figure.Name = 'Noise Analysis';
                             end
                             FileName = [dirs{i} filesep filesNoise{j1}];
-                            [RES, SimRes, M, Mph, fNoise, SigNoise] = obj.fitNoise(FileName, param);
+                            [RES, SimRes, M, Mph, fNoise, SigNoise] = obj.fitNoise(FileName, param);  
                             
-                            %                             f_DS = fNoise(1:3:end);
-                            %
-                            %                             f_DS = logspace(log10(fNoise(1)),log10(fNoise(end)),321)';
-                            %                             SigNoise_DS =spline(fNoise,SigNoise,f_DS);
+%                             f_DS = fNoise(1:3:end);
+%                             
+%                             f_DS = logspace(log10(fNoise(1)),log10(fNoise(end)),321)';
+%                             SigNoise_DS =spline(fNoise,SigNoise,f_DS);
                             
                             eval(['obj.P' StrRange{k1} '(i).p(jj).ExRes = RES;']);
                             eval(['obj.P' StrRange{k1} '(i).p(jj).ThRes = SimRes;']);
@@ -491,7 +444,7 @@ classdef TES_Struct
                             eval(['obj.P' StrRange{k1} '(i).SigNoise{jj} = SigNoise;']);
                             eval(['obj.P' StrRange{k1} '(i).p(jj).M = M;']);
                             eval(['obj.P' StrRange{k1} '(i).p(jj).Mph = Mph;']);
-                            
+                                             
                         end
                         h_i = h_i+1;
                         jj = jj+1;
@@ -501,7 +454,7 @@ classdef TES_Struct
                 end
                 eval(['dat.P = obj.P' StrRange{k1} ';']);
                 
-                try
+                try                    
                     if ishandle(H.figure)
                         delete(H.figure)
                         clear('H')
@@ -509,7 +462,7 @@ classdef TES_Struct
                     if ishandle(H1.figure)
                         delete(H1.figure)
                         clear('H1')
-                    end
+                    end                                        
                 catch
                 end
                 if obj.TFOpt.boolShow
@@ -519,7 +472,7 @@ classdef TES_Struct
                     waitfor(helpdlg('After closing this message, check the validity of the curves and fittings','ZarTES v1.0'));
                     Data = get(fig(1),'UserData'); %#ok<NASGU>
                     eval(['obj.P' StrRange{k1} ' = Data.P;']);
-                end
+                end                                
                 % Capar los datos de forma que no puedan existir valores porl
                 % encima de 1 y por debajo de 0
                 % Además tendríamos que hacer un sort para que se pinten en
@@ -528,12 +481,12 @@ classdef TES_Struct
                 eval(['[rp,rpjj] =sort([obj.P' StrRange{k1} '(k1).p.rp]);']);
                 if ~isempty(rp)
                     
-                    switch obj.TFOpt.ElecThermModel
-                        case 'One Single Thermal Block'
+                    switch model
+                        case 1
                             StrModelPar = {'Zinf';'Z0';'taueff'};          % 3 parameters
-                        case 'Two Thermal Blocks (Specify which)'
+                        case 2
                             StrModelPar = {'Zinf';'Z0';'taueff';'ca0';'tauA'};
-                        case 'Three Thermal Blocks (Specify which)'
+                        case 3
                             StrModelPar = {'Zinf';'Z0';'taueff';'tau1';'tau2';'d1';'d2'};
                     end
                     figParam(k1) = figure; %#ok<AGROW>
@@ -548,18 +501,18 @@ classdef TES_Struct
                         hold(as(i),'on');
                     end
                     set(as,'linewidth',2,'fontsize',12,'fontweight','bold');
-                    figParam(k1).Name = ['Thermal Model Parameters Evolution: ' StrRangeExt{k1}]; %#ok<AGROW>
+                    figParam(k1).Name = ['Thermal Model Parameters Evolution: ' StrRangeExt{k1}]; %#ok<AGROW>                    
                 end
                 
             end
-        end
+        end        
         
         function [param, ztes, fZ, ERP, CI, aux1, StrModel, p0] = FitZ(obj,FileName)
             
             indSep = find(FileName == filesep);
-            Path = FileName(1:indSep(end));
+            Path = FileName(1:indSep(end));            
             Name = FileName(find(FileName == filesep, 1, 'last' )+1:end);
-            Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
+            Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK\');
             Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
             % Buscamos si es Ibias positivos o negativos
             if ~isempty(strfind(Path,'Negative Bias'))
@@ -569,9 +522,9 @@ classdef TES_Struct
             else
                 [~,Tind] = min(abs([obj.IVsetP.Tbath]*1e3-Tbath));
                 IV = obj.IVsetP(Tind);
-                CondStr = 'P';
+                CondStr = 'P';                        
             end
-            % Primero valoramos que este en la lista
+            % Primero valoramos que este en la lista            
             filesZ = ListInBiasOrder([Path obj.TFOpt.TFBaseName])';
             SearchFiles = strfind(filesZ,Name);
             for i = 1:length(filesZ)
@@ -580,7 +533,7 @@ classdef TES_Struct
                     break;
                 end
             end
-            fS = obj.TFS.f;
+            fS = obj.TFS.f;            
             try
                 eval(['[~,Tind] = find(abs([obj.P' CondStr '.Tbath]*1e3-Tbath)==0);']);
                 eval(['ztes = obj.P' CondStr '(Tind).ztes{IndFile};'])
@@ -607,35 +560,33 @@ classdef TES_Struct
                     ca0 = 1e-1;
                     tauA = 1e-6;
                     p0 = [Zinf Z0 tau0 ca0 tauA];%%%p0 for 2 block model.  % 5 parameters
-                    StrModel = 'Two Thermal Blocks (Specify which)';
+                    StrModel = 'Two Thermal Blocks (Specify which)'; 
                 case 'Three Thermal Blocks (Specify which)'
                     tau1 = 1e-5;
                     tau2 = 1e-5;
                     d1 = 0.8;
                     d2 = 0.1;
                     p0 = [Zinf Z0 tau0 tau1 tau2 d1 d2];%%%p0 for 3 block model.   % 7 parameters
-                    StrModel = 'Three Thermal Blocks (Specify which)';
+                    StrModel = 'Three Thermal Blocks (Specify which)'; 
             end
-                      
             
             [p,aux1,aux2,aux3,out,lambda,jacob] = lsqcurvefit(@fitZ,p0,fS,...
                 [real(ztes) imag(ztes)],[],[],opts);%#ok<ASGLU> %%%uncomment for real parameters.
             MSE = (aux2'*aux2)/(length(fS)-length(p)); %#ok<NASGU>
             ci = nlparci(p,aux2,'jacobian',jacob);
-%             CI = ci(:,1)'-p;
-%             CI = abs(CI).*sign(p);
-            CI = (ci(:,2)-ci(:,1))';
+            CI = ci(:,1)'-p;
+            CI = abs(CI).*sign(p);
             p_CI = [p; CI];
             param = GetModelParameters(p_CI,IV,Ib,obj);
-            fZ = fitZ(p,fS);
+            fZ = fitZ(p,fS);            
             ERP = sum(abs(abs(ztes-fZ(:,1)+1i*fZ(:,2))./abs(ztes)))/length(ztes);
-        end
+        end                
         
         function [RES, SimRes, M, Mph, fNoise, SigNoise] = fitNoise(obj,FileName, param)
             indSep = find(FileName == filesep);
             Path = FileName(1:indSep(end));
-            Name = FileName(find(FileName == filesep, 1, 'last' )+1:end);
-            Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
+            Name = FileName(find(FileName == filesep, 1, 'last' )+1:end);    
+            Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK\');
             Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
             % Buscamos si es Ibias positivos o negativos
             if ~isempty(strfind(Path,'Negative Bias'))
@@ -645,8 +596,8 @@ classdef TES_Struct
             else
                 [~,Tind] = min(abs([obj.IVsetP.Tbath]*1e3-Tbath));
                 IV = obj.IVsetP(Tind);
-                CondStr = 'P';
-            end
+                CondStr = 'P';                        
+            end                        
             
             [noisedata, file] = loadnoise(0,Path,Name);%#ok<ASGLU> %%%quito '.txt'
             fNoise = noisedata{1}(:,1);
@@ -657,8 +608,8 @@ classdef TES_Struct
             f = logspace(0,6,1000);
             sIaux = ppval(spline(f,SimulatedNoise.sI),noisedata{1}(:,1));
             NEP = sqrt(V2I(noisedata{1}(:,2),obj.circuit).^2-SimulatedNoise.squid.^2)./sIaux;
-            NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
-            RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./medfilt1(real(NEP),20).^2))/2/1.609e-19;
+            NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.            
+            RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./medfilt1(real(NEP),20).^2))/2/1.609e-19; 
             %                 RES = 2.35/sqrt(trapz(noisedata{1}(1:end-1,1),1./medfilt1(real(NEP),20).^2))/2/1.609e-19; %#ok<NASGU>
             %%%Excess noise trials.
             %%%Johnson Excess
@@ -681,9 +632,9 @@ classdef TES_Struct
                 ymod = median(ppval(spline(f,SimulatedNoise.NEP*1e18),noisedata{1}(findx,1)));
                 Mph = sqrt(ydata/ymod-1);
             end
-        end
+        end        
         
-        function plotABCT(obj,fig)
+        function plotABCT(obj)
             
             warning off
             
@@ -704,37 +655,32 @@ classdef TES_Struct
                 rpaux = 0.1:0.01:0.9;
             end
             YLabels = {'C(fJ/K)';'\tau_{eff}(\mus)';'\alpha_i';'\beta_i'};
-            DataStr = {'rp(IndxGood),[P(i).p(jj(IndxGood)).C]*1e15';'rp(IndxGood),[P(i).p(jj(IndxGood)).taueff]*1e6';...
-                'rp(IndxGood),[P(i).p(jj(IndxGood)).ai]';'rp(IndxGood),[P(i).p(jj(IndxGood)).bi]'};
-            DataStr_CI = {'[P(i).p(jj(IndxGood)).C_CI]*1e15';'[P(i).p(jj(IndxGood)).taueff_CI]*1e6';...
-                '[P(i).p(jj(IndxGood)).ai_CI]';'[P(i).p(jj(IndxGood)).bi_CI]'};
-            
-            DataStrBad = {'rp(IndxBad),[P(i).p(jj(IndxBad)).C]*1e15';'rp(IndxBad),[P(i).p(jj(IndxBad)).taueff]*1e6';...
-                'rp(IndxBad),[P(i).p(jj(IndxBad)).ai]';'rp(IndxBad),[P(i).p(jj(IndxBad)).bi]'};
-            DataStrBad_CI = {'[P(i).p(jj(IndxBad)).C_CI]*1e15';'[P(i).p(jj(IndxBad)).taueff_CI]*1e6';...
-                '[P(i).p(jj(IndxBad)).ai_CI]';'[P(i).p(jj(IndxBad)).bi_CI]'};
+            DataStr = {'rp(indC),C(indC)';'[P(i).p(jj).rp],[P(i).p(jj).taueff]*1e6';...
+                'rp(indai),ai(indai)';'[P(i).p(jj).rp],[P(i).p(jj).bi]'};
+            DataStr_CI = {'C_CI(indC)';'[P(i).p(jj).taueff_CI]*1e6';...
+                'ai_CI(indai)';'[P(i).p(jj).bi_CI]'};
             
             PlotStr = {'plot';'semilogy';'plot';'semilogy'};
             
             
             StrRange = {'P';'N'};
-            ind = 1;
             for k = 1:2
                 if isempty(eval(['obj.P' StrRange{k} '.Tbath']))
                     continue;
                 end
                 P = eval(['obj.P' StrRange{k} ';']);
-                if nargin < 2
+                if ~exist('fig','var')
                     fig.hObject = figure('Visible','off');
                 end
                 if ~isfield(fig,'subplots')
                     h = nan(4,1);
                     for i = 1:4
-                        h(i) = subplot(2,2,i,'Visible','off','ButtonDownFcn',{@Identify_Origin});
+                        h(i) = subplot(2,2,i,'Visible','off');
                     end
                 else
                     h = fig.subplots;
                 end
+                %global hc ht ha hb hl
                 for i = 1:length(P)
                     if mod(i,2)
                         MarkerStr(i) = {'.-'};
@@ -742,348 +688,268 @@ classdef TES_Struct
                         MarkerStr(i) = {'.-.'};
                     end
                     TbathStr = [num2str(P(i).Tbath*1e3) 'mK-']; %mK
-                    if k == 1
+                    signo = sign(sscanf(char(regexp(P(i).fileZ{1},'-?\d+.?\d+uA','match')),'%fuA')*1e-6);
+                    if signo == 1
                         NameStr = [TbathStr 'PosIbias'];
                     else
                         NameStr = [TbathStr 'NegIbias'];
                     end
-                    [rp,jj] = sort([P(i).p.rp]);    
-                    if isempty(P(i).Filtered{1})
-                        P(i).Filtered(1:length(rp)) = {0};
-                    end
-                    IndxGood = find(cell2mat(P(i).Filtered(jj))== 0);                    
-                    IndxBad = find(cell2mat(P(i).Filtered(jj))== 1);                    
+                    %     shc = subplot(2,2,1);
+                    [rp,jj] = sort([P(i).p.rp]);
                     
-                    for j = 1:4                        
+                    C = abs([P(i).p(jj).C])*1e15;
+                    C_CI = abs([P(i).p(jj).C_CI])*1e15;
+                    %%%Filtrado para visualización
+                    mC = nanmedian(C);
+                    %     indC = find(C < 3*mC & C > 0.3*mC);
+                    indC = 1:length(C);
+                    
+                    ai = abs([P(i).p(jj).ai]);
+                    ai_CI = abs([P(i).p(jj).ai_CI]);
+                    %%%Filtrado para visualización
+                    mai = nanmedian(ai);
+                    %     indai = find(ai < 3*mai & ai > 0.3*mai);
+                    indai = 1:length(ai);
+                    
+                    for j = 1:4
+                                                                        
                         eval(['h_ax(' num2str(i) ',' num2str(j) ') = ' PlotStr{j} '(h(' num2str(j) '),' DataStr{j} ...
                             ',''' MarkerStr{i} ''',''color'',colors{k},''linewidth'',LW1,''markersize'',MS,''DisplayName'',''' NameStr ''''...
-                            ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}]);']);
+                            ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;obj.circuit}]);']);
                         eval(['grid(h(' num2str(j) '),''on'');']);
                         eval(['hold(h(' num2str(j) '),''on'');']);
                         eval(['xlabel(h(' num2str(j) '),''R_{TES}/R_n'',''fontsize'',11,''fontweight'',''bold'');']);
                         eval(['ylabel(h(' num2str(j) '),''' YLabels{j} ''',''fontsize'',11,''fontweight'',''bold'');']);
-                        eval(['er(ind) = errorbar(h(' num2str(j) '),' DataStr{j} ',' DataStr_CI{j} ',''Visible'',''off'',''DisplayName'',''' NameStr ' Error Bar'');']);
+                        eval(['er(k,i,j) = errorbar(h(' num2str(j) '),' DataStr{j} ',' DataStr_CI{j} ');']);
                         eval(['set(h(' num2str(j) '),''fontsize'',11,''fontweight'',''bold'');']);
                         eval(['axis(h(' num2str(j) '),''tight'');']);
-                        try
-                            eval(['h_bad(ind) = ' PlotStr{j} '(h(' num2str(j) '),' DataStrBad{j} ...
-                                ',''' MarkerStr{i} ''',''color'',[1 1 1]*160/255,''markersize'',MS,''DisplayName'',''Filtered'''...
-                                ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}],''Visible'',''off'',''linestyle'',''none'');']);
-                            eval(['erbad(ind) = errorbar(h(' num2str(j) '),' DataStrBad{j} ',' DataStrBad_CI{j} ',''Visible'',''off'',''color'',[1 1 1]*160/255,''linestyle'',''none'',''DisplayName'',''Filtered Error Bar'');']);
-                        catch
-                        end
-                        ind = ind+1;
-                    end                    
+                        
+                    end
+                    %     brush on;
+                    %     linkprop(h_ax(i,:),'brushdata');
+                    
+                    %brush off;
+                    linkaxes(h,'x');
                 end
                 
                 if ~isfield(fig,'subplots')
+                    %
                     semilogy(h(4),0.1:0.01:0.9,1./(0.1:0.01:0.9)-1,'r','linewidth',2,'DisplayName','Beta^{teo}');
                     if ~isempty(obj.TES.sides)
                         plot(h(1),rpaux,CN*1e15*ones(1,length(rpaux)),'-.','color','r','linewidth',2,'DisplayName','{C_{LB}}^{teo}')
                         plot(h(1),rpaux,2.43*CN*1e15*ones(1,length(rpaux)),'-.','color','k','linewidth',2,'DisplayName','{C_{UB}}^{teo}')
                     end
                 end
-                fig.subplots = h;
+                fig.subplots = h;                
                 xlim([0.15 0.9])
             end
             fig.hObject.Visible = 'on';
-            data.er = er;
-            try
-                data.h_bad = h_bad;
-                data.erbad = erbad;
-            catch
-            end
-            
-            set(h,'Visible','on','ButtonDownFcn',{@GraphicErrors},'UserData',data,'fontsize',12,'linewidth',2,'fontweight','bold')
-        end
+            set(h,'Visible','on','ButtonDownFcn',{@GraphicErrors},'UserData',er,'fontsize',12,'linewidth',2,'fontweight','bold')
+        end        
         
-        function fig = PlotNoiseTbathRp(obj,Tbath,Rn,fig)
-            
-            StrCond = {'P';'N'};
-            StrCond_Label = {'Positive_Ibias';'Negative_Ibias'};
-            IndFig = 1;
-            for iP = 1:2                
-                if isempty(Tbath)
-                    ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
-                else
-                    for i = 1:length(Tbath)
-                        eval(['ind_TbathN(i) = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
-                    end
+        function PlotNoiseTbathRp(obj,Tbath,Rn)
+            if exist('Tbath','var')
+                if ischar(Tbath) % Transformar en valor numerico '50.0mK'
+                    Tbath = str2double(Tbath(1:end-2))*1e-3;
                 end
-                for ind_Tbath = ind_TbathN
-                    
-                    if ~isempty(Rn)
-                        %                     Rn = sort(0.20:0.10:0.8,'descend');  % Example of using
-                        eval(['Rp = [obj.P' StrCond{iP} '(ind_Tbath).p.rp];']);
-                        
-                        for i = 1:length(Rn)
-                            [~,ind(i)] = min(abs(Rp-Rn(i)));
-                        end
-                        eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileNoise(ind)]'';';]);
-                        eval(['N = length(files' StrCond{iP} ');']);
-                    else
-                        eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileNoise]'';';]);
-                        eval(['N = length(files' StrCond{iP} ');']);
-                        ind = N:-1:1;
-                        eval(['files' StrCond{iP} ' = files' StrCond{iP} '(ind);']);
-                    end                    
-                    
-                    if nargin < 4
-                        fig(IndFig) = figure('Name',StrCond_Label{iP});
+                if exist('Rn','var')
+                    if any(Rn <= 0) || any(Rn > 1)
+                        warndlg('Rn out of range, Rn must be among 0-1 values!','ZarTES v1.0');
+                        return;
                     end
-                    [ncols,~] = SmartSplit(N);
-                    hs = nan(N,1);
-                    j = 0;
-                    for i = 1:N
-                        hs(i) = subplot(ceil(N/ncols),ncols,i);
-                        hold(hs(i),'on');
-                        grid(hs(i),'on');
-                        xlabel(hs(i),'\nu (Hz)');
-                        if ~mod(j,ncols)
+                    boolcomponents = 1;
+                    StrCond = {'P';'N'};
+                    StrCond_Label = {'Positive_Ibias';'Negative_Ibias'};
+                    for iP = 1:2
+                        fig = figure('Name',StrCond_Label{iP});
+                        
+                        eval(['ind_Tbath = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath);']);
+                        eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileNoise]'';';]);
+                        eval(['files' StrCond{iP} ' = files' StrCond{iP} '(end:-1:1);']);
+                        eval(['N = length(files' StrCond{iP} ');']);                        
+                        
+                        for i = 1:N
+                            eval(['noise{i} = importdata(files' StrCond{iP} '{i});']);                                                                                    
+                            eval(['FileName = files' StrCond{iP} '{i};']);
+                            FileName = FileName(find(FileName == filesep,1,'last')+1:end);
+                            Ib = sscanf(FileName,strcat(obj.NoiseOpt.NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
+                            eval(['OP = setTESOPfromIb(Ib,obj.IVset' StrCond{iP} '(ind_Tbath),obj.P' StrCond{iP} '(ind_Tbath).p,obj);']);
+                            [ncols,nrows] = SmartSplit(N); %#ok<ASGLU>
+                            hs = subplot(ceil(N/ncols),ncols,i);
+                            hold(hs,'on');
+                            grid(hs,'on');
+                            if obj.NoiseOpt.Mjo == 1
+                                M = OP.M;
+                            else
+                                M = 0;
+                            end
+                            auxnoise = noisesim('irwin',obj.TES,OP,obj.circuit,M);
+                            f = logspace(0,6,1000);
+                            si0 = auxnoise;%debug,para N = 1 ver la SI.
+                            
                             switch obj.NoiseOpt.tipo
                                 case 'current'
-                                    ylabel(hs(i),'pA/Hz^{0.5}');
+                                    
+                                    loglog(hs,noise{i}(:,1),V2I(noise{i}(:,2)*1e12,obj.circuit),'.-r'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                                    loglog(hs,noise{i}(:,1),medfilt1(V2I(noise{i}(:,2)*1e12,obj.circuit),20),'.-k'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                                    
+                                    if obj.NoiseOpt.Mph == 0
+                                        totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
+                                    else
+                                        Mexph = OP.Mph;
+                                        totnoise = sqrt((auxnoise.ph*(1+Mexph^2)).^2+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+                                    end
+                                    
+                                    if ~boolcomponents
+                                        loglog(hs,f,totnoise*1e12,'b');
+                                        h = findobj(hs,'color','b');
+                                    else
+                                        loglog(hs,f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
+                                        legend(hs,'experimental','exp\_filtered','jhonson','phonon','shunt','total');
+                                        legend(hs,'off');
+                                        h = findobj(hs,'displayname','total');
+                                    end
+                                    ylabel(hs,'pA/Hz^{0.5}','fontsize',12,'fontweight','bold')
+                                    
                                 case 'nep'
-                                    ylabel(hs,'aW/Hz^{0.5}');
+                                    
+                                    sIaux = ppval(spline(f,auxnoise.sI),noise{i}(:,1));
+                                    NEP = real(sqrt((V2I(noise{i}(:,2),obj.circuit).^2-auxnoise.squid.^2))./sIaux);
+                                    loglog(noise{i}(:,1),(NEP*1e18),'.-r'),hold on,grid on,
+                                    loglog(noise{i}(:,1),medfilt1(NEP*1e18,20),'.-k'),hold on,grid on,
+                                    if obj.NoiseOpt.Mph == 0
+                                        totNEP = auxnoise.NEP;
+                                    else
+                                        totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
+                                    end
+                                    if ~boolcomponents
+                                        loglog(hs,f,totNEP*1e18,'b');hold on;grid on;
+                                        h = findobj(hs,'color','b');
+                                    else
+                                        loglog(hs,f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
+                                        legend(hs,'experimental','exp\_filtered','jhonson','phonon','shunt','total');
+                                        legend(hs,'off');
+                                        h = findobj(hs,'displayname','total');
+                                    end
+                                    ylabel(hs,'aW/Hz^{0.5}','fontsize',12,'fontweight','bold')
                             end
-                            j = 0;
+                            xlabel(hs,'\nu (Hz)','fontsize',12,'fontweight','bold')
+                            axis(hs,[1e1 1e5 2 1e3])%% axis([1e1 1e5 1 1e4])
+                            
+                            %h = get(gca,'children')
+                            set(h(1),'linewidth',3);
+                            set(hs,'fontsize',11,'fontweight','bold');
+                            set(hs,'linewidth',2)
+                            set(hs,'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-')
+                            set(hs,'xtick',[10 100 1000 1e4 1e5],'xticklabel',{'10' '10^2' '10^3' '10^4' '10^5'})
+                            set(hs,'XScale','log','YScale','log')
+                            title(hs,strcat(num2str(round(OP.r0*100)),'%Rn'),'fontsize',12);
+                            %         OP.Z0,OP.Zinf
+                            %debug
+                            if abs(OP.Z0-OP.Zinf) < 1.5e-3
+                                set(get(findobj(hs,'type','axes'),'title'),'color','r');
+                            end
+                            
+                            n = get(fig,'number');
+                            fi = strcat('-f',num2str(n));
+                            mkdir('figs');
+                            name = strcat('figs\Noise',num2str(Tbath*1e3),'mK_',StrCond_Label{iP});
+                            print(fi,name,'-dpng','-r0');
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            
+                            
+                            %%%%Pruebas sobre la cotribución de cada frecuencia a la
+                            %%%%Resolucion.
+                            if strcmpi(obj.NoiseOpt,'nep') && 0
+                                figure
+                                %RESJ = sqrt(2*log(2)./trapz(f,1./medfilt1(totNEP,1).^2));%%%x = noisedata{1}(:,1);
+                                RESJ = sqrt(2*log(2)./trapz(f,1./totNEP.^2));
+                                disp(num2str(RESJ));
+                                %semilogx(f(1:end-1),((RESJ./totNEP(1:end-1)).^2/(2*log(2)).*diff(f))),hold on
+                                semilogx(hs,f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19),hold on
+                                fx = noise{i}(:,1);
+                                RESJ2 = sqrt(2*log(2)./trapz(fx,1./NEP.^2));
+                                disp(num2str(RESJ2));
+                                %semilogx(fx(1:end-1),((RESJ2./NEP(1:end-1)).^2/(2*log(2)).*diff(fx)),'r')
+                                semilogx(hs,fx(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fx))))/1.609e-19,'r')
+                                %semilogx(fx(1:end-1),((RESJ2./medfilt1(NEP(1:end-1),20)).^2/(2*log(2)).*diff(fx)),'k')
+                            end
+                            
                         end
-                        j = j+1;
                     end
-                    set(hs,'LineWidth',2,'FontSize',11,'FontWeight','bold',...
-                        'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-',...
-                        'xtick',[10 100 1000 1e4 1e5],'xticklabel',{'10' '10^2' '10^3' '10^4' '10^5'},...
-                        'XScale','log','YScale','log');
                     
-                    for i = 1:N
-                        eval(['FileName = files' StrCond{iP} '{i};']);
-                        FileName = FileName(find(FileName == filesep,1,'last')+1:end);
-                        Ib = sscanf(FileName,strcat(obj.NoiseOpt.NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
-                        eval(['OP = setTESOPfromIb(Ib,obj.IVset' StrCond{iP} '(ind_Tbath),obj.P' StrCond{iP} '(ind_Tbath).p,obj);']);
-                        if obj.NoiseOpt.Mjo == 1
-                            M = OP.M;
-                        else
-                            M = 0;
-                        end
-                        SigNoise = eval(['obj.P' StrCond{iP} '(ind_Tbath).SigNoise{ind(i)};']);
-                        fNoise = eval(['obj.P' StrCond{iP} '(ind_Tbath).fNoise{ind(i)};']);
-                        auxnoise = noisesim('irwin',obj.TES,OP,obj.circuit,M);
-                        f = logspace(0,6,1000);
-                        
-                        switch obj.NoiseOpt.tipo
-                            case 'current'
-                                
-                                loglog(hs(i),fNoise(:,1),SigNoise,'.-r'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                                loglog(hs(i),fNoise(:,1),medfilt1(SigNoise,20),'.-k'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                                
-                                if obj.NoiseOpt.Mph == 0
-                                    totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
-                                else
-                                    Mexph = OP.Mph;
-                                    totnoise = sqrt((auxnoise.ph*(1+Mexph^2)).^2+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
-                                end
-                                if ~obj.NoiseOpt.boolcomponents
-                                    loglog(hs(i),f,totnoise*1e12,'b');
-                                    h = findobj(hs(i),'color','b');
-                                else
-                                    loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
-                                    legend(hs(i),'experimental','exp\_filtered','jhonson','phonon','shunt','total');
-                                    legend(hs(i),'off');
-                                    h = findobj(hs,'displayname','total');
-                                end
-                            case 'nep'
-                                sIaux = ppval(spline(f,auxnoise.sI),fNoise(:,1));
-                                NEP = real(sqrt((SigNoise.^2-auxnoise.squid.^2))./sIaux);
-                                loglog(hs(i),fNoise(:,1),(NEP*1e18),'.-r'),hold on,grid on,
-                                loglog(hs(i),fNoise(:,1),medfilt1(NEP*1e18,20),'.-k'),hold on,grid on,
-                                if obj.NoiseOpt.Mph == 0
-                                    totNEP = auxnoise.NEP;
-                                else
-                                    totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
-                                end
-                                if ~obj.NoiseOpt.boolcomponents
-                                    loglog(hs(i),f,totNEP*1e18,'b');hold on;grid on;
-                                    h = findobj(hs(i),'color','b');
-                                else
-                                    loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
-                                    legend(hs(i),'experimental','exp\_filtered','jhonson','phonon','shunt','total');
-                                    legend(hs(i),'off');
-                                    h = findobj(hs(i),'displayname','total');
-                                end
-                        end
-                        axis(hs(i),[1e1 1e5 2 1e3])
-                        title(hs(i),strcat(num2str(OP.r0*100,'%3.2f'),'%Rn'),'fontsize',12);
-                        %         OP.Z0,OP.Zinf
-                        %debug
-                        if abs(OP.Z0-OP.Zinf) < 1.5e-3
-                            set(get(findobj(hs(i),'type','axes'),'title'),'color','r');
-                        end
-                        
-                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                        
-                        
-                        %%%%Pruebas sobre la cotribución de cada frecuencia a la
-                        %%%%Resolucion.
-                        if strcmpi(obj.NoiseOpt,'nep')
-                            %RESJ = sqrt(2*log(2)./trapz(f,1./medfilt1(totNEP,1).^2));%%%x = noisedata{1}(:,1);
-                            RESJ = sqrt(2*log(2)./trapz(f,1./totNEP.^2));
-                            disp(num2str(RESJ));
-                            %semilogx(f(1:end-1),((RESJ./totNEP(1:end-1)).^2/(2*log(2)).*diff(f))),hold on
-                            semilogx(hs(i),f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19),hold on
-                            RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
-                            disp(num2str(RESJ2));
-                            %semilogx(fx(1:end-1),((RESJ2./NEP(1:end-1)).^2/(2*log(2)).*diff(fx)),'r')
-                            semilogx(hs(i),fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise(:,1)))))/1.609e-19,'r')
-                            %semilogx(fx(1:end-1),((RESJ2./medfilt1(NEP(1:end-1),20)).^2/(2*log(2)).*diff(fx)),'k')
-                        end
-                        
-                    end                                                            
-                    if nargin < 3
-                        n = get(fig(IndFig),'number');
-                        fi = strcat('-f',num2str(n));
-                        mkdir('figs');
-                        name = strcat('figs\Noise',num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3),'mK_',StrCond_Label{iP});
-                        print(fi,name,'-dpng','-r0');
-                    end
-                    IndFig = IndFig+1;
-                end                
-            end
+                end
+            end            
         end
         
-        function fig = PlotTFTbathRp(obj,Tbath,Rn,fig)
-            StrCond = {'P';'N'};
-            StrCond_Label = {'Positive_Ibias';'Negative_Ibias'};
-            IndFig = 1;
-            for iP = 1:2
-                if isempty(Tbath)
-                    ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
-                else
-                    for i = 1:length(Tbath)
-                        eval(['ind_TbathN(i) = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
-                    end
+        function PlotTFTbathRp(obj,Tbath,Rn)
+            if exist('Tbath','var')
+                if ischar(Tbath) % Transformar en valor numerico '50.0mK'
+                    Tbath = str2double(Tbath(1:end-2))*1e-3;
                 end
-                for ind_Tbath = ind_TbathN
-                    
-                    if ~isempty(Rn)
-                        %                     Rn = sort(0.20:0.10:0.8,'descend');  % Example of using
-                        eval(['Rp = [obj.P' StrCond{iP} '(ind_Tbath).p.rp];']);
-                        
-                        for i = 1:length(Rn)
-                            [~,ind(i)] = min(abs(Rp-Rn(i)));
-                        end
-                        eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ(ind)]'';';]);
-                        eval(['N = length(files' StrCond{iP} ');']);
-                    else
+                if exist('Rn','var')
+                    if any(Rn <= 0) || any(Rn > 1)
+                        warndlg('Rn out of range, Rn must be among 0-1 values!','ZarTES v1.0');
+                        return;
+                    end
+                    boolcomponents = 1;
+                    StrCond = {'P';'N'};
+                    StrCond_Label = {'Positive_Ibias';'Negative_Ibias'};
+                    for iP = 1:2
+                        fig = figure('Name',StrCond_Label{iP});                        
+                        eval(['ind_Tbath = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath);']);
                         eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ]'';';]);
-                        eval(['N = length(files' StrCond{iP} ');']);
-                        ind = N:-1:1;
-                        eval(['files' StrCond{iP} ' = files' StrCond{iP} '(ind);']);
-                    end     
-                    
-                    
-%                     eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ]'';';]);
-%                     eval(['files' StrCond{iP} ' = files' StrCond{iP} '(end:-1:1);']);
-%                     eval(['N = length(files' StrCond{iP} ');']);
-                    if nargin < 4
-                        fig(IndFig) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
-                    end
-                    [ncols,~] = SmartSplit(N);
-                    hs = nan(N,1);
-                    j = 0;
-                    for i = 1:N
-                        hs(i) = subplot(ceil(N/ncols),ncols,i);
-                        hold(hs(i),'on');
-                        grid(hs(i),'on');
-                        xlabel(hs(i),'Re(mZ)');
-                        if ~mod(j,ncols)
-                            ylabel(hs(i),'Im(mZ)');
-                            j = 0;
+                        eval(['files' StrCond{iP} ' = files' StrCond{iP} '(end:-1:1);']);
+                        eval(['N = length(files' StrCond{iP} ');']);                                                
+                        for i = 1:N
+                            eval(['TF{i} = importdata(files' StrCond{iP} '{i});']);
+                            eval(['FileName = files' StrCond{iP} '{i};']);
+                            FileName = FileName(find(FileName == filesep,1,'last')+1:end);                            
+                            if ~isempty(strfind(FileName,'TF_PXI_'))
+                                Ib = sscanf(FileName,'TF_PXI_%fuA.txt')*1e-6;
+                            else
+                                Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
+                            end                                
+                            
+                            eval(['OP = setTESOPfromIb(Ib,obj.IVset' StrCond{iP} '(ind_Tbath),obj.P' StrCond{iP} '(ind_Tbath).p,obj);']);
+                            [ncols,nrows] = SmartSplit(N); %#ok<ASGLU>
+                            hs = subplot(ceil(N/ncols),ncols,i);
+                            hold(hs,'on');
+                            grid(hs,'on');
+                            ztes = eval(['obj.P' StrCond{iP} '(ind_Tbath).ztes{N-i+1};']);
+                            fZ = eval(['obj.P' StrCond{iP} '(ind_Tbath).fZ{N-i+1};']);
+                            
+                            plot(hs,1e3*ztes,'.','color',[0 0.447 0.741],...
+                                'markerfacecolor',[0 0.447 0.741],'markersize',15);
+                            
+                            set(hs,'linewidth',2,'fontsize',12,'fontweight','bold');
+                            xlabel(hs,'Re(mZ)','fontsize',12,'fontweight','bold');
+                            ylabel(hs,'Im(mZ)','fontsize',12,'fontweight','bold');%title('Ztes with fits (red)');
+                            ImZmin = min(imag(1e3*ztes));
+                            ylim(hs,[min(-15,min(ImZmin)-1) 1])                            
+                            plot(hs,1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2);
+                            title(hs,strcat(num2str(round(OP.r0*100)),'%Rn'),'fontsize',12);
+                            if abs(OP.Z0-OP.Zinf) < 1.5e-3
+                                set(get(findobj(hs,'type','axes'),'title'),'color','r');
+                            end
+                            
+                            n = get(fig,'number');
+                            fi = strcat('-f',num2str(n));
+                            mkdir('figs');
+                            name = strcat('figs\TF',num2str(Tbath*1e3),'mK_',StrCond_Label{iP});
+                            print(fi,name,'-dpng','-r0');
                         end
-                        j = j+1;
-                    end
-                    set(hs,'LineWidth',2,'FontSize',11,'FontWeight','bold');
-                    for i = 1:N
-                        %                             eval(['TF{i} = importdata(files' StrCond{iP} '{i});']);
-                        eval(['FileName = files' StrCond{iP} '{i};']);
-                        FileName = FileName(find(FileName == filesep,1,'last')+1:end);
-                        if ~isempty(strfind(FileName,'TF_PXI_'))
-                            Ib = sscanf(FileName,'TF_PXI_%fuA.txt')*1e-6;
-                        else
-                            Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
-                        end
-                        eval(['OP = setTESOPfromIb(Ib,obj.IVset' StrCond{iP} '(ind_Tbath),obj.P' StrCond{iP} '(ind_Tbath).p,obj);']);
                         
-                        ztes = eval(['obj.P' StrCond{iP} '(ind_Tbath).ztes{ind(i)};']);
-                        fZ = eval(['obj.P' StrCond{iP} '(ind_Tbath).fZ{ind(i)};']);
-                        
-                        plot(hs(i),1e3*ztes,'.','color',[0 0.447 0.741],...
-                            'markerfacecolor',[0 0.447 0.741],'markersize',15);
-                        
-                        ImZmin = min(imag(1e3*ztes));
-                        ylim(hs(i),[min(-15,min(ImZmin)-1) 1])
-                        plot(hs(i),1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2);
-                        title(hs(i),strcat(num2str(OP.r0*100,'%3.2f'),'%Rn'),'fontsize',12);
-                        if abs(OP.Z0-OP.Zinf) < 1.5e-3
-                            set(get(findobj(hs(i),'type','axes'),'title'),'color','r');
-                        end
                     end
-                    if nargin < 3
-                        n = get(fig(IndFig),'number');
-                        fi = strcat('-f',num2str(n));
-                        mkdir('figs');
-                        name = strcat('figs\TF',num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3),'mK_',StrCond_Label{iP});
-                        print(fi,name,'-dpng','-r0');
-                    end
-                    IndFig = IndFig+1;
                 end
             end
+            
+            
         end
         
         function GraphsReport(obj)
             % Pequeño menú para seleccionar lo que se quiere pintar
-            
-            WordFileName = 'TestDoc.doc';
-            CurDir = pwd;
-            FileSpec = fullfile(CurDir,WordFileName);
-            
-            ActXWord = actxserver('Word.Application');
-            ActXWord.Visible = false;
-            trace(ActXWord.Visible);  
-            WordHandle = invoke(ActXWord.Documents,'Add');
-            
-            answer = inputdlg({'Insert Name of the TES or date'},'ZarTES v1.0',[1 50],{' '});
-            if isempty(answer)
-                answer{1} = ' ';
-            end            
-            ActXWord.Selection.Font.Name = 'Arial';
-            ActXWord.Selection.Font.Size = 15;
-            ActXWord.Selection.BoldRun;
-            ActXWord.Selection.TypeText(['Informe del TES: ' answer{1}]);            
-            ActXWord.Selection.TypeParagraph; %enter
-            ActXWord.Selection.TypeParagraph;
-            
-            ActXWord.Selection.Font.Size = 11;
-            ActXWord.Selection.LtrRun; 
-            ActXWord.Selection.TypeText('TES Circuit parameters:');            
-            ActXWord.Selection.TypeParagraph;
-            
-            CircProp = properties(obj.circuit);
-            for i = 1:length(CircProp)
-                CircProp{i} = [CircProp{i} ': ' num2str(eval(['obj.circuit.' CircProp{i}]))];
-                ActXWord.Selection.TypeText(CircProp{i});
-                ActXWord.Selection.TypeParagraph;
-            end            
-            
-            ActXWord.Selection.TypeText('TES parameters:');
-            ActXWord.Selection.TypeParagraph;
-            
-            TESProp = properties(obj.TES);
-            for i = 1:length(TESProp)
-                TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TES.' TESProp{i}]))];
-                ActXWord.Selection.TypeText(TESProp{i});
-                ActXWord.Selection.TypeParagraph;
-            end        
-            
+                                 
             %% Pintar curvas IV
             if obj.Report.IV_Curves
                 figIV.hObject = figure('Visible','off');
@@ -1117,82 +983,6 @@ classdef TES_Struct
                 set(h,'fontsize',12,'linewidth',2,'fontweight','bold')
                 axis(h,'tight');
                 figIV.hObject.Visible = 'on';
-                
-                
-                TextString = 'IV Curves';
-                ActXWord.Selection.TypeText(TextString);
-                ActXWord.Selection.TypeParagraph; %enter
-                
-                print(figIV.hObject,'-dmeta');
-                invoke(ActXWord.Selection,'Paste');
-%                 close(figIV.hObject);
-            end
-            
-            if obj.Report.FitPTset
-                StrRange = {'P';'N'};
-                fig = figure('Name','FitP vs. Tset');
-                for k = 1:2
-                    if isempty(eval(['obj.IVset' StrRange{k} '.ibias']))
-                        continue;
-                    end
-                    IVTESset = eval(['obj.IVset' StrRange{k}]);
-                    ax = subplot(1,2,k); hold(ax,'on');
-                    eval(['perc = [obj.Gset' StrRange{k} '.rp]'';'])
-                    for jj = 1:length(perc)
-                        Paux = [];
-                        Iaux = [];
-                        Tbath = [];
-                        kj = 1;
-                        for i = 1:length(IVTESset)
-                            if IVTESset(i).good
-                                ind = find(IVTESset(i).rtes > 0.1 & IVTESset(i).rtes < 0.8);%%%algunas IVs fallan.
-                                if isempty(ind)
-                                    continue;
-                                end
-                                Paux(kj) = ppval(spline(IVTESset(i).rtes(ind),IVTESset(i).ptes(ind)),perc(jj)); %#ok<AGROW>
-                                Iaux(kj) = ppval(spline(IVTESset(i).rtes(ind),IVTESset(i).ites(ind)),perc(jj));%#ok<AGROW> %%%
-                                Tbath(kj) = IVTESset(i).Tbath; %#ok<AGROW>
-                                kj = kj+1;
-                            else
-                                Paux(kj) = nan;
-                                Iaux(kj) = nan;
-                                Tbath(kj) = nan;
-                            end
-                        end
-                        Paux(isnan(Paux)) = [];
-                        Iaux(isnan(Iaux)) = [];
-                        Tbath(isnan(Tbath)) = [];
-                        plot(ax,Tbath,Paux*1e12,'bo','markerfacecolor','b'),hold(ax,'on');
-                        
-                        switch eval(['obj.Gset' StrRange{k} '(jj).model'])
-                            case 1
-                                X0 = [-500 3 1];
-                                XDATA = Tbath;
-                                LB = [-Inf 2 0 ];%%%Uncomment for model1
-                            case 2
-                                X0 = [-6500 3.03 13 1.9e4];
-                                XDATA = [Tbath;Iaux*1e6];
-                                LB = [-1e5 2 0 0];
-                            case 3
-                                auxtbath = min(Tbath):1e-4:max(Tbath);
-                                auxptes = spline(Tbath,Paux,auxtbath);
-                                gbaux = abs(diff(auxptes)./diff(auxtbath));
-                                opts = optimset('Display','off');
-                                fit2 = lsqcurvefit(@(x,tbath)x(1)+x(2)*tbath,[3 2], log(auxtbath(2:end)),log(gbaux),[],opts); %#ok<NASGU>
-                                plot(ax,log(auxtbath(2:end)),log(gbaux),'.-')
-                        end
-                        if eval(['obj.Gset' StrRange{k} '(jj).model']) ~= 3
-                            opts = optimset('Display','off');
-                            [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(@fitP,X0,XDATA,Paux*1e12,LB,[],opts); %#ok<ASGLU>
-                            plot(ax,Tbath,fitP(fit,XDATA),'-r','linewidth',1)
-                        end
-                    end
-                    xlabel(ax,'T_{bath}(K)','fontsize',11,'fontweight','bold')
-                    ylabel(ax,'P_{TES}(pW)','fontsize',11,'fontweight','bold')
-                    set(ax,'fontsize',12,'linewidth',2,'fontweight','bold')
-                end
-                print(fig,'-dmeta')
-%                 close(fig)
             end
             
             %% Pintar NKGT set
@@ -1243,100 +1033,86 @@ classdef TES_Struct
                     fig.subplots = h1;
                 end
                 fig.hObject.Visible = 'on';
-                
-                TextString = 'NKGT Figure';
-                ActXWord.Selection.TypeText(TextString);
-                ActXWord.Selection.TypeParagraph; %enter
-                
-                print(fig.hObject,'-dmeta');
-                invoke(ActXWord.Selection,'Paste');
-                ActXWord.Selection.TypeParagraph;    
-%                 close(fig.hObject);
-            end
-            
-            if obj.Report.FitZset            
-                TextString = 'Z(w) Analysis';
-                ActXWord.Selection.TypeText(TextString);
-                ActXWord.Selection.TypeParagraph; %enter
-                
-                fig = obj.PlotTFTbathRp([]);
-                for i = 1:length(fig)
-                    print(fig(i),'-dmeta')
-                    invoke(ActXWord.Selection,'Paste');
-                end
-                clear fig;
-            end
-            if obj.Report.NoiseSet
-                TextString = 'Noise Analysis';
-                ActXWord.Selection.TypeText(TextString);
-                ActXWord.Selection.TypeParagraph; %enter
-                
-                fig = obj.PlotNoiseTbathRp([]);
-                for i = 1:length(fig)
-                    print(fig(i),'-dmeta')
-                    invoke(ActXWord.Selection,'Paste');
-                end
-                clear fig;
             end
             
             if obj.Report.ABCTset
-                fig.hObject = figure;
-                obj.plotABCT(fig);
-                
-                TextString = 'ABCT Figure';
-                ActXWord.Selection.TypeText(TextString);
-                ActXWord.Selection.TypeParagraph; %enter
-                
-                print(fig.hObject,'-dmeta');
-                invoke(ActXWord.Selection,'Paste');
-                ActXWord.Selection.TypeParagraph;
-                
-                try
-                    ActXWord.Selection.TypeText(['Fitting TF to: ' obj.PP(1).ElecThermModel{1}]);
-                    ActXWord.Selection.TypeParagraph;
-                catch
-                end
-                try
-                    StrIni = 'Positive Ibias at ';
-                    Temps = num2str([obj.PP.Tbath]'*1e3);
-                    for i = 1:length(Temps)
-                        StrIni = [StrIni Temps(i,:) ' mK ',];
-                    end
-                    StrIni(end) = [];
-                    ActXWord.Selection.TypeText(StrIni)
-                catch
-                end
-                
-                try
-                    StrIni = 'Negative Ibias at ';
-                    Temps = num2str([obj.PN.Tbath]'*1e3);
-                    for i = 1:length(Temps)
-                        StrIni = [StrIni Temps(i,:) ' mK ',];
-                    end
-                    StrIni(end) = [];
-                    ActXWord.Selection.TypeText(StrIni)
-                    ActXWord.Selection.TypeParagraph;
-                catch
-                end
-                clear fig;
-            end                                                
-            
-            if ~exist(FileSpec,'file')
-                % Save file as new:
-                invoke(WordHandle,'SaveAs',FileSpec,1);
-            else
-                % Save existing file:
-                invoke(WordHandle,'Save');
+                obj.plotABCT;
             end
-            % Close the word window:
-            invoke(WordHandle,'Close');
-            % Quit MS Word
-            invoke(ActXWord,'Quit');
-            % Close Word and terminate ActiveX:
-            delete(ActXWord);
-        end
+            
+            if obj.Report.FitPTset
+                StrRange = {'P';'N'};
+                for k = 1:2
+                    if isempty(eval(['obj.IVset' StrRange{k} '.ibias']))
+                        continue;
+                    end
+                    IVTESset = eval(['obj.IVset' StrRange{k}]);
+                    fig = figure('Name','FitP vs. Tset');
+                    ax = subplot(1,1,k); hold(ax,'on');
+                    for jj = 1:length(perc)
+                        Paux = [];
+                        Iaux = [];
+                        Tbath = [];
+                        kj = 1;
+                        for i = 1:length(IVTESset)
+                            if IVTESset(i).good                                
+                                ind = find(IVTESset(i).rtes > 0.1 & IVTESset(i).rtes < 0.8);%%%algunas IVs fallan.
+                                if isempty(ind)
+                                    continue;
+                                end
+                                Paux(kj) = ppval(spline(IVTESset(i).rtes(ind),IVTESset(i).ptes(ind)),perc(jj)); %#ok<AGROW>
+                                Iaux(kj) = ppval(spline(IVTESset(i).rtes(ind),IVTESset(i).ites(ind)),perc(jj));%#ok<AGROW> %%%
+                                Tbath(kj) = IVTESset(i).Tbath; %#ok<AGROW>
+                                kj = kj+1;
+                            else
+                                Paux(kj) = nan;
+                                Iaux(kj) = nan;
+                                Tbath(kj) = nan;
+                            end
+                        end
+                        Paux(isnan(Paux)) = [];
+                        Iaux(isnan(Iaux)) = [];
+                        Tbath(isnan(Tbath)) = [];                                            
+                        plot(ax,Tbath,Paux*1e12,'bo','markerfacecolor','b'),hold(ax,'on');
+                        
+                        switch model
+                            case 1
+                                X0 = [-500 3 1];
+                                XDATA = Tbath;
+                                LB = [-Inf 2 0 ];%%%Uncomment for model1
+                            case 2
+                                X0 = [-6500 3.03 13 1.9e4];
+                                XDATA = [Tbath;Iaux*1e6];
+                                LB = [-1e5 2 0 0];
+                            case 3
+                                auxtbath = min(Tbath):1e-4:max(Tbath);
+                                auxptes = spline(Tbath,Paux,auxtbath);
+                                gbaux = abs(diff(auxptes)./diff(auxtbath));
+                                opts = optimset('Display','off');
+                                fit2 = lsqcurvefit(@(x,tbath)x(1)+x(2)*tbath,[3 2], log(auxtbath(2:end)),log(gbaux),[],opts); %#ok<NASGU>                                                              
+                                plot(ax,log(auxtbath(2:end)),log(gbaux),'.-')
+                        end
+                        if model ~= 3
+                            opts = optimset('Display','off');
+                            [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(@fitP,X0,XDATA,Paux*1e12,LB,[],opts); %#ok<ASGLU>
+                            plot(ax,Tbath,fitP(fit,XDATA),'-r','linewidth',1)                                                        
+                        end
+                    end
+                    xlabel(ax,'T_{bath}(K)','fontsize',11,'fontweight','bold')
+                    ylabel(ax,'P_{TES}(pW)','fontsize',11,'fontweight','bold')
+                    set(ax,'fontsize',12,'linewidth',2,'fontweight','bold')
+                end
+            end
+            
+            if obj.Report.FitZset
+                TESDATA.PlotTFTbathRp(0.05,0.15:0.05:0.85);
+            end
+            if obj.Report.NoiseSet 
+                TESDATA.PlotNoiseTbathRp(0.05,0.15:0.05:0.85);
+            end
+            
+        end        
         
-        function fig = PlotTESData(obj,param,Rn,Tbath,fig)
+        function PlotTESData(obj,param,Rn,Tbath)            
             if ~ischar(param)
                 warndlg('param must be string','ZarTES v1.0');
                 return;
@@ -1344,101 +1120,89 @@ classdef TES_Struct
                 YLabels = {'C(fJ/K)';'\tau_{eff}(\mus)';'\alpha_i';'\beta_i'};
                 colors{1} = [0 0.4470 0.7410];
                 colors{2} = [1 0.5 0.05];
-                if isempty(Tbath)
+                if nargin == 3
                     valP = nan;
                     valN = nan;
                     % Selecion de Rn y parametro a buscar en funcion de Tbath
                     [valP,TbathP,RnsP] = obj.PP.GetParamVsTbath(param,Rn); % Rn must be 0-1 value
                     [valN,TbathN,RnsN] = obj.PN.GetParamVsTbath(param,Rn); % Rn must be 0-1 value
                     
-                    StrRange = {'P';'N'};
-                    StrCond = {'Positive';'Negative'};
-                    StrMarker = {'o';'^'};
-                    if nargin < 5
-                        fig = figure('Visible','on');
-                    end
-                    if isempty(findobj('Type','Axes'))
-                        ax = axes(fig);
-                        hold(ax,'on');
-                    else
-                        ax = findobj('Type','Axes');
-                    end
-                    for k = 1:2                        
-                        for i = 1:eval(['size(Tbath' StrRange{k} ',1)'])
-                            if strcmp(param,'ai')||strcmp(param,'ai_CI')||strcmp(param,'C')||strcmp(param,'C_CI')
-                                eval(['val' StrRange{k} '{i} = abs(val' StrRange{k} '{i});']);
-                                if strcmp(param,'ai')||strcmp(param,'ai_CI')
-                                    Ylabel = '\alpha_i';
-                                end
-                                if strcmp(param,'C')||strcmp(param,'C_CI')
-                                    Ylabel = 'C(fJ/K)';
-                                end
-                            elseif strcmp(param,'taueff')||strcmp(param,'taueff_CI')
-                                eval(['val' StrRange{k} '{i} = val' StrRange{k} '{i}*1e6;']);
-                                Ylabel = '\tau_{eff}(\mus)';
-                            elseif strcmp(param,'bi')||strcmp(param,'bi_CI')
-                                Ylabel = '\beta_i';
-                            else
-                                Ylabel = param;
-                            end                                                        
-                            if eval(['size(val' StrRange{k} ',2) == 1'])
-                                eval(['h = plot(ax,Tbath' StrRange{k} '(i,:),val' StrRange{k} ',''LineStyle'',''-.'',''Marker'',''' StrMarker{k} ''''...
-                                    ',''DisplayName'',[''Rn: '' num2str(median(Rns' StrRange{k} ',1)) '' - ' StrCond{k} ' Ibias'']);']) %,'MarkerFaceColor',colors{1},'MarkerEdgeColor',colors{1}
-                            else
-                                eval(['h = plot(ax,Tbath' StrRange{k} '(i,:),val' StrRange{k} ',''LineStyle'',''-.'',''Marker'',''' StrMarker{k} ''''...
-                                    ',''DisplayName'',[''Rn: '' num2str(median(Rns' StrRange{k} '(i,:))) '' - ' StrCond{k} ' Ibias'']);'])
-                            end
-                            for n = 1:length(h)
-                                h(n).MarkerFaceColor = h(n).Color;
-                            end
+                    if strcmp(param,'ai')||strcmp(param,'ai_CI')||strcmp(param,'C')||strcmp(param,'C_CI')
+                        valP = abs(valP);
+                        valN = abs(valN);
+                        if strcmp(param,'ai')||strcmp(param,'ai_CI')
+                            Ylabel = '\alpha_i';
                         end
+                        if strcmp(param,'C')||strcmp(param,'C_CI')
+                            Ylabel = 'C(fJ/K)';
+                        end
+                    elseif strcmp(param,'taueff')||strcmp(param,'taueff_CI')
+                        valP = valP*1e6;
+                        valN = valN*1e6;
+                        Ylabel = '\tau_{eff}(\mus)';
+                    elseif strcmp(param,'bi')||strcmp(param,'bi_CI')
+                        Ylabel = '\beta_i';
+                    else
+                        Ylabel = param;
+                    end
+                    fig = figure('Visible','on');
+                    ax = axes(fig);                    
+                    hold(ax,'on');
+                    for i = 1:size(TbathP,1)
+                        if size(valP,2) == 1
+                            h = plot(ax,TbathP(i,:),valP','LineStyle','-.','Marker','o','DisplayName',['Rn: ' num2str(median(RnsP,1)) ' - Positive Ibias']); %,'MarkerFaceColor',colors{1},'MarkerEdgeColor',colors{1}
+                        else
+                            h = plot(ax,TbathP(i,:),valP(i,:),'LineStyle','-.','Marker','o','DisplayName',['Rn: ' num2str(median(RnsP(i,:))) ' - Positive Ibias']); %,'MarkerFaceColor',colors{1},'MarkerEdgeColor',colors{1}
+                        end
+                        h.MarkerFaceColor = h.Color;
+                    end
+                    for i = 1:size(TbathN,1)
+                        if size(valN,2) == 1
+                            h = plot(ax,TbathN(i,:),valN','LineStyle','-.','Marker','^','DisplayName',['Rn: ' num2str(median(RnsN,1)) ' - Negative Ibias']);
+                        else
+                            h = plot(ax,TbathN(i,:),valN(i,:),'LineStyle','-.','Marker','^','DisplayName',['Rn: ' num2str(median(RnsN(i,:))) ' - Negative Ibias']);
+                        end
+                        h.MarkerFaceColor = h.Color;
                     end
                     xlabel(ax,'T_{bath} (mK)');
                     ylabel(ax,Ylabel);
-                    set(ax,'FontSize',11,'FontWeight','bold');
+                    set(ax,'FontSize',11,'FontWeight','bold');                    
                     
-                elseif isempty(Rn)
+                elseif nargin == 4              
                     valP = nan;
                     valN = nan;
                     % Selecion de Tbath y parametro a buscar en funcion de Rn
                     [valP,rpP,TbathP] = obj.PP.GetParamVsRn(param,Tbath); % Tbath = '50.0mK' o Tbath = 0.05;
                     [valN,rpN,TbathN] = obj.PN.GetParamVsRn(param,Tbath);
-                    if nargin < 5
-                        fig = figure('Visible','on');                        
-                    end
-                    if isempty(findobj('Type','Axes'))
-                        ax = axes(fig);
-                        hold(ax,'on');
-                    else
-                        ax = findobj('Type','Axes');
-                    end
-                    StrRange = {'P';'N'};
-                    StrCond = {'Positive';'Negative'};
-                    for k = 1:2
-                        for i = 1:eval(['length(Tbath' StrRange{k} ')'])
-                            if strcmp(param,'ai')||strcmp(param,'ai_CI')||strcmp(param,'C')||strcmp(param,'C_CI')
-                                eval(['val' StrRange{k} '{i} = abs(val' StrRange{k} '{i});']);
-                                if strcmp(param,'ai')||strcmp(param,'ai_CI')
-                                    Ylabel = '\alpha_i';
-                                end
-                                if strcmp(param,'C')||strcmp(param,'C_CI')
-                                    Ylabel = 'C(fJ/K)';
-                                end
-                            elseif strcmp(param,'taueff')||strcmp(param,'taueff_CI')
-                                eval(['val' StrRange{k} '{i} = val' StrRange{k} '{i}*1e6;']);
-                                Ylabel = '\tau_{eff}(\mus)';
-                            elseif strcmp(param,'bi')||strcmp(param,'bi_CI')
-                                Ylabel = '\beta_i';
-                            else
-                                Ylabel = param;
-                            end
-                            eval(['plot(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},''LineStyle'',''-.'',''Marker'',''o'''...
-                                ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias'']);']);
+                    
+                    if strcmp(param,'ai')||strcmp(param,'ai_CI')||strcmp(param,'C')||strcmp(param,'C_CI')
+                        valP = abs(valP);
+                        valN = abs(valN);
+                        if strcmp(param,'ai')||strcmp(param,'ai_CI')
+                            Ylabel = '\alpha_i';
                         end
+                        if strcmp(param,'C')||strcmp(param,'C_CI')
+                            Ylabel = 'C(fJ/K)';
+                        end
+                    elseif strcmp(param,'taueff')||strcmp(param,'taueff_CI')
+                        valP = valP*1e6;
+                        valN = valN*1e6;
+                        Ylabel = '\tau_{eff}(\mus)';
+                    elseif strcmp(param,'bi')||strcmp(param,'bi_CI')
+                        Ylabel = '\beta_i';
+                    else
+                        Ylabel = param;
                     end
-                    xlabel(ax,'R_{TES}/Rn');
+                
+                                  
+                    fig = figure('Visible','on');
+                    ax = axes(fig);                    
+                    hold(ax,'on');
+                    plot(ax,rpP,valP,'DisplayName',['T_{bath}: ' num2str(TbathP) ' mK - Positive Ibias']);
+                    plot(ax,rpN,valN,'DisplayName',['T_{bath}: ' num2str(TbathN) ' mK - Negative Ibias']);
+                    xlabel(ax,'RTES/Rn');
                     ylabel(ax,Ylabel);
-                    set(ax,'FontSize',11,'FontWeight','bold');                    
+                    set(ax,'FontSize',11,'FontWeight','bold');   
                 end
                 
             end
@@ -1448,10 +1212,10 @@ classdef TES_Struct
             TF_Noise_Viewer(obj);
         end
         
-        function Save(obj,FileName)
-            uisave('obj',FileName);
+        function Save(obj)             %#ok<MANU>
+            uisave('obj');
         end
-                
+    
     end
 end
 

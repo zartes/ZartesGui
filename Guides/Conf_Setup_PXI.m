@@ -67,8 +67,7 @@ switch varargin{1}.Tag
         
         % By default, TF Mode should be set %
 %         varargin{3}.PXI = TF_Configuration(varargin{3}.PXI);
-        %
-        
+        %        
         % Horizontal setting
         a = fieldnames(varargin{3}.PXI.ConfStructs);
         handles.SubStructure.String = a;
@@ -82,7 +81,14 @@ switch varargin{1}.Tag
         
     case 'PXI_Pulses_Conf'  % Pulses
         handles.Options.String = {'Pulses Mode'};
-        
+        a = fieldnames(varargin{3}.PXI.ConfStructs);
+        handles.SubStructure.String = a;
+        % SubStructure within Horizontal setup
+        eval(['b = fieldnames(varargin{3}.PXI.ConfStructs.' a{1} ');']);
+        for i = 1:length(b)
+            ConfInstrs{i,1} = b{i};
+            ConfInstrs{i,2} = num2str(eval(['varargin{3}.PXI.ConfStructs.' a{1} '.' b{i} ';']));
+        end    
          
 end
 
@@ -164,7 +170,21 @@ switch handles.varargin{1}.Tag
         
     case 'PXI_Pulses_Conf'  % Pulses
         handles.Options.String = {'Pulses Mode'};
-        
+        if handles.Options.Value == 1
+%             handles.varargin{3}.PXI = TF_Configuration(handles.varargin{3}.PXI);
+        else
+%             handles.varargin{3}.PXI = Noise_Configuration(handles.varargin{3}.PXI);
+        end
+        %
+        % Horizontal setting
+        a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
+        handles.SubStructure.String = a;
+        % SubStructure within Horizontal setup
+        eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+        for i = 1:length(b)
+            ConfInstrs{i,1} = b{i};
+            ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
+        end       
          
 end
 
@@ -217,7 +237,7 @@ switch handles.varargin{1}.Tag
     case 'PXI_Conf_Mode'
         handles.varargin{3}.PXI_Mode.Value = handles.Options.Value;
     case 'PXI_Pulses_Conf'
-%         handles.varargin{3}.PXI_Mode.Value = handles.Options.Value;        
+        handles.varargin{3}.PXI_Mode.Value = handles.Options.Value;        
 end
 handles.varargin{1}.UserData = handles.varargin{3}.PXI.ConfStructs;
 figure1_DeleteFcn(handles.figure1,eventdata,handles);  
@@ -245,7 +265,13 @@ switch handles.varargin{1}.Tag
         
     case 'PXI_Pulses_Conf'  % Pulses
         handles.Options.String = {'Pulses Mode'};
-        
+        a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
+        % SubStructure within Horizontal setup
+        eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+        for i = 1:length(b)
+            ConfInstrs{i,1} = b{i};
+            ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
+        end        
          
 end
 

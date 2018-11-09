@@ -19,16 +19,7 @@ classdef TES_TFS
             obj.f = [];
             obj.file = [];
         end
-        function ok = Filled(obj)
-            FN = properties(obj);
-            for i = 1:length(FN)
-                if isempty(eval(['obj.' FN{i}]))
-                    ok = 0;  % Empty field
-                    return;
-                end
-            end
-            ok = 1; % All fields are filled
-        end
+        
         function obj = UpdateTFS(obj,data)
             FN = properties(obj);
             if nargin == 2
@@ -42,8 +33,8 @@ classdef TES_TFS
             end
         end
        
-        function obj = TFfromFile(obj,DataPath,fig)            
-            if nargin > 1              
+        function obj = TFfromFile(obj,DataPath)            
+            if exist('DataPath','var')                
                 TF = importTF(DataPath);
             else
                 if ~isempty(obj.file)
@@ -57,24 +48,21 @@ classdef TES_TFS
                 obj = obj.UpdateTFS(TF);
             else
                 errordlg('No TF was selected!','ZarTES v1.0')
-                return;
             end
-            if nargin == 3
-                obj = CheckTF(obj,fig);
-            else
-                obj = CheckTF(obj);
-            end            
+            obj.PlotTF;
+            ButtonName = questdlg('Is this TFS valid?', ...
+                'ZarTES v1.0', ...
+                'Yes', 'No', 'Yes');
+            switch ButtonName
+                case 'No'
+                    obj = obj.Constructor;                
+                case 'Yes'
+                    waitfor(msgbox('TF in Superconductor state updated','ZarTES v1.0'));
+            end % switch
         end
         
-        function obj = PlotTF(obj,fig)
-            if nargin < 2
-                fig = figure;
-            end
-            if isempty(obj.tf)
-                errordlg('No TF was selected!','ZarTES v1.0');
-                obj = TFfromFile(obj,[],fig);
-                return;
-            end
+        function obj = PlotTF(obj)
+            figure;
             ax = axes;
             plot(ax,real(obj.tf),imag(obj.tf),'.','color',[0 0.447 0.741],...
                 'markerfacecolor',[0 0.447 0.741],'markersize',15,'DisplayName',obj.file);
@@ -84,19 +72,6 @@ classdef TES_TFS
             FileName = obj.file(find(obj.file == filesep,1,'last')+1:end);
             title(ax,FileName,'Interpreter','none');
             set(ax,'FontSize',11,'FontWeight','bold');
-        end
-        
-        function obj = CheckTF(obj,fig)
-            obj.PlotTF(fig);
-            ButtonName = questdlg('Is this TFS valid?', ...
-                'ZarTES v1.0', ...
-                'Yes', 'No', 'Yes');
-            switch ButtonName
-                case 'No'
-                    obj = obj.Constructor;                
-                case 'Yes'
-                    waitfor(msgbox('TF in Superconductor state updated','ZarTES v1.0'));
-            end % switch            
         end
         
     end    

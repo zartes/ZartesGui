@@ -16,21 +16,8 @@ G0 = TESDATA.TES.G;
 [iaux,ii] = unique(IVmeasure.ibias,'stable');
 vaux = IVmeasure.vout(ii);
 [m,i3] = min(diff(vaux)./diff(iaux)); %#ok<ASGLU>
-
-%%%% Modificado por Juan %%%%%
-
-CompStr = {'>';'';'<'};
-if eval(['Ib' CompStr{median(sign(iaux))+2} 'iaux(1:i3)'])    
-    P = polyfit(iaux(i3+1:end),vaux(i3+1:end),1);
-    Vout = polyval(P,Ib);
-else
-    Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
-end
-
-% pp = spline(iaux(1:i3),vaux(1:i3));%%ojo, el spline no es bueno fuera de la transición.
-% Vout = ppval(pp,Ib);
-
-
+pp = spline(iaux(1:i3),vaux(1:i3));%%ojo, el spline no es bueno fuera de la transición.
+Vout = ppval(pp,Ib);
 %ind=find(abs(IVmeasure.ib-Ib)<1e-10);
 %Vout=IVmeasure.vout(ind);
 %[I0,V0]=GetIVTES(Vout,Ib,Rf);
@@ -59,25 +46,22 @@ rp_CI = p(2,:);
 rp(1,3) = abs(rp(3));
 if(length(rp) == 3)
         %derived parameters
-        %for simple model rp(1)=Zinf, rp(2)=Z0, rp(3)=taueff
+        %for simple model p(1)=Zinf, p(2)=Z0, p(3)=taueff
         %rp=real(p);
         %El orden importa a la hora de exportar los datos.
         param.rp = R0/Rn;
-        param.L0 = (rp(2)-rp(1))/(rp(2)+R0);  
-%         param.L0_CI = sqrt( ((1/(R0 + rp(2)) - (rp(2) - rp(1))/(R0 + rp(2))^2)*rp_CI(2))^2 + ((-1/(R0 + rp(2)))*rp_CI(1))^2 );       
-        
-        param.L0_CI = sqrt((((rp(1)+R0)/((rp(2)+R0)^2))*rp_CI(2))^2 + ((-1/(R0 + rp(2)))*rp_CI(1))^2 );
-        
+        param.L0 = (rp(2)-rp(1))/(rp(2)+R0);
+        param.L0_CI = sqrt(((- (rp(2) - rp(1))/(R0 - rp(2))^2 - 1/(R0 - rp(2)))*rp_CI(2))^2+ ((1/(R0 - rp(2)))+rp_CI(1))^2);        
         param.ai = param.L0*G0*T0/P0;
         param.ai_CI = sqrt(((G0*T0/P0)*param.L0_CI)^2);
         param.bi = (rp(1)/R0)-1;
-        param.bi_CI = sqrt(((1/R0)*rp_CI(1))^2);        
+        param.bi_CI = sqrt(((1/R0)*rp_CI(1))^2);
+        param.tau0 = rp(3)*(param.L0-1);
+        param.tau0_CI = sqrt( ((param.L0-1)*rp_CI(1))^2 + ((rp_CI(3))*param.L0_CI)^2 );
         param.taueff = rp(3);
         param.taueff_CI = rp_CI(3);
-        param.tau0 = rp(3)*(param.L0-1);
-        param.tau0_CI = sqrt(((param.L0-1)*rp_CI(3))^2 + ((rp(3))*param.L0_CI)^2 );
         param.C = param.tau0*G0;        
-        param.C_CI = sqrt(((G0)*param.tau0_CI)^2 );
+        param.C_CI = sqrt( ((G0)*param.tau0_CI)^2 );
         param.Zinf = rp(1);
         param.Zinf_CI = rp_CI(1);
         param.Z0 = rp(2);

@@ -19,8 +19,13 @@ if isfield(fig,'subplots')
 end
 
 j = 1;
-for i = 1:length(IVmeasure)        
-    if IVmeasure(i).good
+for i = 1:length(IVmeasure)
+    if isfield(IVmeasure,'good')
+        good = IVmeasure(i).good;
+    else
+        good = 1;
+    end
+    if good
 %         i,good
         ibias = IVmeasure(i).ibias;
         vout = IVmeasure(i).vout;%valor corregido de Vout.
