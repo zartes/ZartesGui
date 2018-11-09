@@ -31,20 +31,6 @@ classdef TES_IVCurveSet
             end            
         end
         
-        function ok = Filled(obj)
-            FN = properties(obj);
-            StrNo = {'ttes';'rp2';'aIV';'bIV'};
-            for i = 1:length(FN)
-                if isempty(cell2mat(strfind(StrNo,FN{i})))
-                    if isempty(eval(['obj.' FN{i}]))
-                        ok = 0;  % Empty field
-                        return;
-                    end
-                end
-            end
-            ok = 1; % All fields are filled
-        end
-        
         function obj = ImportFullIV(obj,path,fileN)
             %%%Nueva versión de la funcion de importacion de IVs con alguna
             %%%modificacion.
@@ -147,15 +133,13 @@ classdef TES_IVCurveSet
                 end
             end
             
-%             if isempty(obj(1).IVsetPath)
-                IVsPath = uigetdir(DataPath, 'Pick a Data path named IVs');
-                if IVsPath ~= 0
-                    IVsPath = [IVsPath filesep];
-                else
-                    errordlg('Invalid Data path name!','ZarTES v1.0','modal');
-                    return;
-                end
-%             end
+            IVsPath = uigetdir(DataPath, 'Pick a Data path named IVs');
+            if IVsPath ~= 0
+                IVsPath = [IVsPath filesep];
+            else
+                errordlg('Invalid Data path name!','ZarTES v1.0','modal');
+                return;
+            end            
             obj(1).IVsetPath = IVsPath;                        
             
             StrRange = {'p';'n'};

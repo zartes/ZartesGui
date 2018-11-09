@@ -22,7 +22,7 @@ TESDATA = TESDATA.EnterDimensions;
 TESDATA = TESDATA.FitZset;
 TESDATA.plotABCT;
 % Recopila las gráficas más importantes,
-TESDATA.PlotTFTbathRp;
-TESDATA.PlotNoiseTbathRp;
+TESDATA.PlotTFTbathRp(0.05,[0.15:0.05:0.85]);
+TESDATA.PlotNoiseTbathRp(0.05,[0.15:0.05:0.85]);
 TESDATA.GraphsReport;
 TESDATA.Save;

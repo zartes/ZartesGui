@@ -1264,7 +1264,7 @@ function DSA_Read_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of DSA_Read
-if isempty(handles.DSA.ObjHandle)
+if (isempty(handles.DSA.ObjHandle))&&(isempty(handles.PXI.ObjHandle))
     handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
     hObject.Value = 0;
@@ -1556,23 +1556,37 @@ else
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
         
-        warndlg('Change ''Pulses Configuration'' before READ (PXI) button.','ZarTES v1.0');
+%         warndlg('Change ''Pulses Configuration'' before READ (PXI) button.','ZarTES v1.0');
+        handles.PXI.AbortAcquisition;
         handles.PXI.Pulses_Configuration;
-        [data, WfmI] = handles.PXI.Get_Wave_Form;   % Las adquisiciones se guardan en una variable TestData.Pulses
+        
+        [data, WfmI, TimeLapsed] = handles.PXI.Get_Wave_Form;   % Las adquisiciones se guardan en una variable TestData.Pulses        
+%         actualSR = get(get(handles.PXI.ObjHandle,'horizontal'),'Actual_Sample_Rate');
+        if ~TimeLapsed 
+        plot(handles.Result_Axes,data(:,1),data(:,2),'-.');
+        grid(handles.Result_Axes,'on'); 
+        xlabel(handles.Result_Axes,'Time (s)')
+        ylabel(handles.Result_Axes,'Amplitude (a.u.)')
+        set(handles.Result_Axes,'FontSize',11,'FontWeight','bold')
+        
         handles.Actions_Str.String = 'PXI Acquisition Card: Acquisition of pulse system response';
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         
         % Updated TestData.Pulses
         if isempty(handles.TestData.Pulses{1})
-            handles.TestData.Pulses{1} = [WfmI data];
+            handles.TestData.Pulses{1} = data;
         else
-            handles.TestData.Pulses{length(handles.TestData.Pulses)} = [WfmI data];
+            handles.TestData.Pulses{length(handles.TestData.Pulses)} = data;
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        pause(0.2);
+        pause(2);
+        else
+            warndlg('No Data for Acquisition was found, change Trigger Settings','ZarTES v1.0');
+        end
         hObject.BackgroundColor = [240 240 240]/255;
         hObject.Value = 0;
         hObject.Enable = 'on';
+        
     end
 end
 
@@ -2081,6 +2095,14 @@ function PXI_Pulses_Conf_Callback(hObject, eventdata, handles)
 % hObject    handle to PXI_Pulses_Conf (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+waitfor(Conf_Setup_PXI(hObject,handles.PXI_Mode.Value,handles));
+handles.PXI.ConfStructs = hObject.UserData;
+handles.Actions_Str.String = 'PXI Acquisition Card: Configuration changes';
+Actions_Str_Callback(handles.Actions_Str,[],handles);
+
+guidata(hObject,handles);
+
 
 
 function Actions_Str_Callback(hObject, eventdata, handles)

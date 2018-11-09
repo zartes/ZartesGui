@@ -1,4 +1,4 @@
-function [data, WfmI] = pxi_GetWaveForm_updated(pxi)
+function [data, WfmI, TimeLapsed] = pxi_GetWaveForm_updated(pxi)
 % Function to donwload one screen capture and the related information to this vector; of PXI Acq. Card
 %
 % Output:
@@ -11,7 +11,8 @@ function [data, WfmI] = pxi_GetWaveForm_updated(pxi)
 
 %% Función para descargar una captura y la informacion asociada a un vector
 
-numSamples = get(get(pxi.ObjHandle,'horizontal'),'min_number_of_points');
+% numSamples = get(get(pxi.ObjHandle,'horizontal'),'min_number_of_points');
+numSamples = pxi.ConfStructs.Horizontal.RL;
 ChL = length(pxi.ConfStructs.Vertical.ChannelList);
 if ChL == 1
     numChannels = 1;
@@ -36,14 +37,28 @@ waveformArray = zeros(1,numSamples*numChannels);%%%Prealojamos espacio.
 %     waveformInfo(i).reserved1 = 0;
 %     waveformInfo(i).reserved2 = 0;
 % end 
-
-invoke(pxi.ObjHandle.Acquisition, 'initiateacquisition'); %%%Puede ir aquí o fuera.
+try
+    invoke(pxi.ObjHandle.Acquisition, 'initiateacquisition'); %%%Puede ir aquí o fuera.
+catch
+    pxi.AbortAcquisition;
+end
+try
 [Wfm, WfmI] = invoke(pxi.ObjHandle.Acquisition, 'fetch',...
     pxi.Options.channelList,...
     pxi.Options.TimeOut,...
     numSamples,...
     waveformArray,... 
     pxi.WaveFormInfo); %%
+    TimeLapsed = 0;
+catch me
+    switch me.message
+        case ['The instrument returned an error while executing the function.' char(10) 'Maximum time exceeded before the operation completed.']
+            data = [];
+            WfmI = [];
+            TimeLapsed = 1;
+            return;
+    end
+end
 
 DT = WfmI.xIncrement;
 L = WfmI.actualSamples;

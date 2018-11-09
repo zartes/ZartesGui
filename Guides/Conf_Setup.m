@@ -170,11 +170,79 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value';'Step';'Final Value'};
         handles.Options.Visible = 'off';         
-        handles.Table.Data = num2cell([500 -10 0]);               
+        handles.Table.Data = num2cell([500 -10 0]);     
+    case 'TES_Struct'
+        set(handles.figure1,'Name','TES Circuit Parameters');        
+        set([handles.Add handles.Remove handles.Options],'Visible','off');
+        handles.Table.ColumnName = {'Parameter';'Value';'Units'};
+        handles.Table.ColumnEditable = [false true false];
+        CircProp = properties(handles.varargin{3}.circuit);        
+        TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'Ohm';'%';'Ohm';'Ohm';'H'};
+        handles.Table.Data(1:length(CircProp),1) = CircProp;
+        for i = 1:length(CircProp)
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i}]);
+            handles.Table.Data{i,3} = TESUnits{i};
+        end
+    case 'TES_Param'
+        set(handles.figure1,'Name','TES Operating Point');
+        set([handles.Add handles.Remove handles.Options handles.Save],'Visible','off');
+        handles.Table.ColumnName = {'Parameter';'Value';'Units'};
+        handles.Table.ColumnEditable = [false false false];
+        TESProp = properties(handles.varargin{3});
+        TESUnits = {'adim';'pW/K^n';'mK';'pW/K';'m'};
+        handles.Table.Data(1:length(TESProp),1) = TESProp;
+        for i = 1:length(TESProp)
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
+            handles.Table.Data{i,3} = TESUnits{i};
+        end
+    case 'TES_TF_Opt'
+        set(handles.figure1,'Name','TF Visualization Options');
+        set([handles.Add handles.Remove handles.Options],'Visible','off');
+        handles.Table.Data = {[]};
+        handles.Table.ColumnEditable = [true true true];
+        TESProp = properties(handles.varargin{3});
+        handles.Table.ColumnName = TESProp';        
+        handles.Table.ColumnFormat{1} = 'Logical';
+        handles.Table.ColumnFormat{2} = {'\TF*','\PXI_TF*'};
+        handles.Table.ColumnFormat{3} = {'One Single Thermal Block','Two Thermal Blocks'};                        
+        for i = 1:length(TESProp)
+            if strcmp(handles.Table.ColumnFormat{i},'Logical')
+                if eval(['handles.varargin{3}.' TESProp{i}])
+                    handles.Table.Data{1,i} = true;
+                else
+                    handles.Table.Data{1,i} = false;
+                end
+            else
+                handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
+            end
+        end
+        
+    case 'TES_Noise_Opt'
+        set(handles.figure1,'Name','Noise Visualization Options');
+        set([handles.Add handles.Remove handles.Options],'Visible','off');
+        handles.Table.Data = {[]};        
+        TESProp = properties(handles.varargin{3});                
+        handles.Table.ColumnName = TESProp';
+        handles.Table.ColumnFormat{1} = {'current','nep'};
+        handles.Table.ColumnFormat{2} = 'Logical';
+        handles.Table.ColumnFormat{3} = 'Logical';
+        handles.Table.ColumnFormat{4} = 'Logical';
+        handles.Table.ColumnFormat{5} = {'\HP_noise*','\PXI_noise*'};
+        handles.Table.ColumnFormat{6} = {'irwin','wouter'};    
+        handles.Table.ColumnEditable = [true true true true true true];
+        for i = 1:length(TESProp)
+            if strcmp(handles.Table.ColumnFormat{i},'Logical')
+                if eval(['handles.varargin{3}.' TESProp{i}])
+                    handles.Table.Data{1,i} = true;
+                else
+                    handles.Table.Data{1,i} = false;
+                end
+            else
+                handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
+            end
+        end
+        
 end
-
-
-
 
 % Update handles structure
 guidata(hObject, handles);
@@ -279,6 +347,51 @@ switch handles.varargin{1}.Tag
 
     case 'SQ_RangeIbias'
         handles.varargin{1}.UserData = handles.Table.Data;
+    case 'TES_Struct'
+        ButtonName = questdlg('Circuit parameters might be changed', ...
+            'ZarTES v1.0', ...
+            'Save', 'Cancel', 'Save');
+        switch ButtonName
+            case 'Save'
+                CircProp = properties(handles.varargin{3}.circuit);                                
+                for i = 1:length(CircProp)
+                    eval(['NewCircuit.' CircProp{i} ' = handles.Table.Data{i,2};']);
+                end
+                handles.varargin{1}.UserData = NewCircuit;
+                guidata(handles.varargin{1},NewCircuit);
+        end % switch
+    case 'TES_TF_Opt'
+        TES_TF = properties(handles.varargin{3});
+        for i = 1:length(TES_TF)
+            if strcmp(handles.Table.ColumnFormat{i},'Logical')
+                if handles.Table.Data{1,i}
+                    eval(['NewOPT.' TES_TF{i} ' = 1;']);
+                else
+                    eval(['NewOPT.' TES_TF{i} ' = 0;']);
+                end
+            else
+                eval(['NewOPT.' TES_TF{i} ' = handles.Table.Data{1,i};']);
+            end
+        end
+        handles.varargin{1}.UserData = NewOPT;
+        guidata(handles.varargin{1},NewOPT);
+        
+    case 'TES_Noise_Opt'
+        TES_Noise = properties(handles.varargin{3});        
+        for i = 1:length(TES_Noise)
+            if strcmp(handles.Table.ColumnFormat{i},'Logical')
+                if handles.Table.Data{1,i}
+                    eval(['NewOPT.' TES_Noise{i} ' = 1;']);
+                else
+                    eval(['NewOPT.' TES_Noise{i} ' = 0;']);
+                end
+            else
+                eval(['NewOPT.' TES_Noise{i} ' = handles.Table.Data{1,i};']);
+            end
+        end
+        handles.varargin{1}.UserData = NewOPT;
+        guidata(handles.varargin{1},NewOPT);
+        
 end
 
 

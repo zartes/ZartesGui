@@ -24,31 +24,31 @@ classdef Circuit
             
             obj.Rn = PhysicalMeasurement;
             obj.Rn.Value = 0.0232;
-            obj.Rn.Units = '';
+            obj.Rn.Units = '%';
             
             obj.Rsh = PhysicalMeasurement;
             obj.Rsh.Value = 0.002;
-            obj.Rsh.Units = '';
+            obj.Rsh.Units = 'Ohm';
             
             obj.invMf = PhysicalMeasurement;
             obj.invMf.Value = 66;
-            obj.invMf.Units = 'uA';
+            obj.invMf.Units = 'uA/phi';
             
             obj.invMin = PhysicalMeasurement;
             obj.invMin.Value = 24.1;
-            obj.invMin.Units = '';
+            obj.invMin.Units = 'uA/phi';
             
             obj.L = PhysicalMeasurement;
             obj.L.Value = 7.7e-08;
-            obj.L.Units = '';
+            obj.L.Units = 'H';
             
             obj.mN = PhysicalMeasurement;
             obj.mN.Value = 650.7;
-            obj.mN.Units = '';
+            obj.mN.Units = 'Ohm';
             
             obj.mS = PhysicalMeasurement;
             obj.mS.Value = 8133;
-            obj.mS.Units = '';
+            obj.mS.Units = 'Ohm';
         end
     end
     

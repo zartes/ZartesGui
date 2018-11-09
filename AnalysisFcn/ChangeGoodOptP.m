@@ -51,18 +51,18 @@ switch sel_typ
         %% Add more options about provisional marks
         
         set(src,'uicontextmenu',cmenu);
-%         true = 1;
-%         while true
-%             pause(0.1);
-%             if ishandle(cmenu)
-%                 if strcmp(cmenu.Visible,'off')
-%                     true = 0;
-%                 end
-%             else
-%                 true = 0;
-%             end
-%             pause(0.1);
-%         end
+        true = 1;
+        while true
+            pause(0.1);
+            if ishandle(cmenu)
+                if strcmp(cmenu.Visible,'off')
+                    true = 0;
+                end
+            else
+                true = 0;
+            end
+            pause(0.1);
+        end
         %         if ishandle(src_change.src_text)
         %             set(src_change.src_text,'Color',color_old);
         %         end
