@@ -63,9 +63,38 @@ classdef ElectronicMagnicon
         
         function TES2NormalState(obj,Ibias_sign)
             %%% Maximum current value is imposed
-            Put_TES_toNormal_State_CH_updated(obj,Ibias_sign);
+            Put_TES_toNormal_State_CH_updated(obj,Ibias_sign);           
+            status = obj.CheckNormalState;% status == 1 Normal State reached % status == 0 Superconductor State
+            Ibias = 500;
+            while status == 0
+                mag_ConnectLNCS_updated(obj);
+                mag_setLNCSImag_updated(obj,signo*Ibias*1.25);                
+                % In the case of using the source in channel 1, it is mandatory to remove
+                % the LNCS device.
+                mag_setImag_CH_updated(obj,signo*500);
+                mag_setLNCSImag_updated(obj,0);
+                mag_DisconnectLNCS_updated(obj);
+                status = obj.CheckNormalState;
+                Ibias = Ibias*1.25;
+            end                        
             
         end
+        
+        function status = CheckNormalState(obj)
+            Ibvalue = [500 490 480];
+            Ireal = zeros(1,3);
+            for i = 1:length(Ibvalue)
+                obj.Set_Current_Value(Ibvalue(i));
+                Ireal(i) = obj.Read_Current_Value;
+            end
+            P = polyfit(Ibvalue,Ireal,1);
+            if P(1) < 3000 % Normal State Reached
+                status = 1;
+            else
+                status = 0;
+            end
+        end
+        
         function ResetClossedLoop(obj) 
             %%% Clossed loop is reset
             mag_setAMP_CH_updated(obj);
