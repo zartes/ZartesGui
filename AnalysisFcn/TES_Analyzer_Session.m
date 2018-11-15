@@ -1,6 +1,6 @@
 classdef TES_Analyzer_Session
-    %UNTITLED Summary of this class goes here
-    %   Detailed explanation goes here
+    % Class to analyze TES data from one session
+    %   Each session open by Analyzer.m is stored in this class.
     
     properties
         File = [];
@@ -12,6 +12,7 @@ classdef TES_Analyzer_Session
     
     methods
         function obj = LoadTES(obj)
+            % Function to load TES data previously saved. 
             
             [filename, pathname] = uigetfile('*.mat', 'Pick a MATLAB file');
             if isequal(filename,0) || isequal(pathname,0)                
@@ -28,12 +29,7 @@ classdef TES_Analyzer_Session
                 FN = fieldnames(tes);
                 obj.TES = eval(['tes.' FN{1}]);
             end
-        end
-        
-        function obj = Automatic_Analysis(obj)
-            
-        end
-        
+        end                
     end
     
 end

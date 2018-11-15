@@ -1,23 +1,28 @@
 classdef TES_TF_Opt
-    %UNTITLED2 Summary of this class goes here
-    %   Detailed explanation goes here
+    % Class TF for TES data
+    %   This class contains options for Z(W) analysis
     
-    properties        
-        boolShow = 1;
-        TFBaseName = '\TF*';% (HP); '\PXI_TF*';
-        ElecThermModel = 'One Single Thermal Block'
+    properties
+        boolShow = 1;                               % 0,1
+        TFBaseName = '\TF*';                        % \TF*, '\PXI_TF*';
+        ElecThermModel = 'One Single Thermal Block' % One Single Thermal Block, Two Thermal Blocks
     end
     
     methods
         function obj = View(obj)
+            % Function to check visually the class values
+            
             h = figure('Visible','off','Tag','TES_TF_Opt');
             waitfor(Conf_Setup(h,[],obj));
             TF_Opt = guidata(h);
             if ~isempty(TF_Opt)
                 obj = obj.Update(TF_Opt);
             end
-        end        
+        end
+        
         function obj = Update(obj,data)
+            % Function to update the class values
+            
             FN = properties(obj);
             if nargin == 2
                 fieldNames = fieldnames(data);
@@ -26,10 +31,8 @@ classdef TES_TF_Opt
                         eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
                     end
                 end
-                
             end
-            
         end
+        
     end
-    
 end

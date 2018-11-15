@@ -1,19 +1,23 @@
 classdef TES_Gset
-    %UNTITLED3 Summary of this class goes here
-    %   Detailed explanation goes here
+    % Class Gset for TES data
+    %   Data derived from P-Tbath curve fitting at Rn values
     
     properties
-        n;
-        K;
-        Tc;
-        G;
-        rp;
+        n;      % a.u.
+        K;      % nW/K^n
+        Tc;     % K
+        G;      % pW/K
+        rp;     % Normalized units
         model;
-        ERP;
+        ERP;    % Normalized units
     end
     
     methods
+        
         function ok = Filled(obj)
+            % Function to check whether the class is filled or empty (all
+            % fields must be filled to be considered as filled, except for ERP)
+            
             FN = properties(obj);
             StrNo = {'ERP'};
             for i = 1:length(FN)
@@ -26,7 +30,7 @@ classdef TES_Gset
             end
             ok = 1; % All fields are filled
         end
+        
     end
-    
 end
 
