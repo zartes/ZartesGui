@@ -1,5 +1,6 @@
 function GraphicErrors(src,evnt)
-   
+% Auxiliary function to handle right-click mouse options of ABCT representation 
+% Last update: 14/11/2018   
     
 Data = src.UserData;
 VarVisible = Data.er(1).Visible;
@@ -29,18 +30,6 @@ c4 = uimenu(cmenu,'Label','Show Negative Ibias Data','Callback',...
         {@Handle_Errors},'UserData',Data);
 
 set(src,'uicontextmenu',cmenu);
-% true = 1;
-% while true
-%     pause(0.1);    
-%     if ishandle(cmenu)
-%         if strcmp(cmenu.Visible,'off')
-%             true = 0;
-%         end
-%     else
-%         true = 0;
-%     end
-%     pause(0.2);
-% end
 
 function Handle_Errors(src,evnt)
 

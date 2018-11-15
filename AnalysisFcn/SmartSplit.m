@@ -1,44 +1,35 @@
 function [ncols,nrows] = SmartSplit(N)
-%%%% función para partir una figura con 'N' subplots en un array con una
-%%%% distribución optimizada.
-switch N
-    case 1
-        ncols = 1; 
-        nrows = 1;
-    case 2
-        ncols = 1; 
-        nrows = 2;
-    case 3
-        ncols = 1; 
-        nrows = 3;
-    case 4
-        ncols = 2; 
-        nrows = 2;
-    case 5
-        ncols = 3; 
-        nrows = 2;
-    case 6
-        ncols = 3; 
-        nrows = 2;
-    case 7
-        ncols = 4; 
-        nrows = 2;
-    case 8
-        ncols = 4; 
-        nrows = 2;
-    case 9
-        ncols = 3; 
-        nrows = 3;
-    case 10
-        ncols = 5; 
-        nrows = 2;
-    case 11
-        ncols = 4; 
-        nrows = 3;
-    case 12
-        ncols = 4; 
-        nrows = 3;
-    otherwise
-        nrows = 4;
-        ncols = max(ceil(N/nrows),1);
-end    
+% Function to generate smart distribution of subplots
+%
+% Input:
+% - N: number of subplots
+%
+% Output:
+% - ncols: number of columns
+% - nrows: number of rows
+%
+% Example of usage:
+% [ncols,nrows] = SmartSplit(N)
+%
+% Last update: 14/11/2018
+
+SmartDist = [1 1;... 
+    1 2;...
+    1 3;...
+    2 2;...
+    3 2;...
+    3 2;...
+    4 2;...
+    4 2;...
+    3 3;...
+    5 2;...
+    4 3;...
+    4 3;...
+    4 max(ceil(N/4),1)];
+if N <= 12
+    ncols = SmartDist(N,1);
+    nrows = SmartDist(N,2);
+else
+    ncols = SmartDist(13,1);
+    nrows = SmartDist(13,2);
+end

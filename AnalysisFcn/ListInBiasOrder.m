@@ -1,6 +1,17 @@
 function files = ListInBiasOrder(D,varargin)
-%%%Listar ficheros en orden de corriente de bias.
-%%%D es un string tipo 'HP*' 'TF*' ec.
+% Function to list files in current value order
+%
+% Input:
+% - D es un string tipo 'HP*' 'TF*' ec.
+% - order: in absence order is descend by default
+%
+% Output:
+% - files
+%
+% Example of usage:
+% files = ListInBiasOrder('TF*')
+%
+% Last update: 14/11/2018
 
 if nargin == 2
     order = varargin{1};

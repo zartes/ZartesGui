@@ -57,7 +57,7 @@ handles.output = hObject;
 position = get(handles.Analyzer,'Position');
 set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
-    'Units','Normalized');
+    'Units','Normalized','Toolbar','figure');
 
 handles.TES_ID = 0;
 handles.NewTES = {[]};
@@ -92,14 +92,14 @@ MenuTES.SubMenu{IndMenu} = {'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data'};
 MenuTES.Fcn{IndMenu} = {'MacroTES'};
 IndMenu = IndMenu +1;
 
-MenuTES.Label{IndMenu} = {'Options'};
-MenuTES.SubMenu{IndMenu} = {'TF Options';'Noise Options'};
-MenuTES.Fcn{IndMenu} = {'OptionsTES'};
-IndMenu = IndMenu +1;
-
 MenuTES.Label{IndMenu} = {'Summary'};
 MenuTES.SubMenu{IndMenu} = {'TF-Noise Viewer';'Word Graphical Report'};
 MenuTES.Fcn{IndMenu} = {'SummaryTES'};
+IndMenu = IndMenu +1;
+
+MenuTES.Label{IndMenu} = {'Options'};
+MenuTES.SubMenu{IndMenu} = {'TF Options';'Noise Options';'Report Options'};
+MenuTES.Fcn{IndMenu} = {'OptionsTES'};
 IndMenu = IndMenu +1;
 
 MenuTES.Label{IndMenu} = {'Help'};
@@ -205,7 +205,7 @@ handles = guidata(src);
 switch src.Label
     case 'Load TES'
         
-        StrLabel = {'TES Data';'Help'};
+        StrLabel = {'TES Data';'Help';'Guide';'About'};
         for i = 1:length(StrLabel)
             h = findobj('Label',StrLabel{i});
             h.Enable = 'on';
@@ -264,7 +264,8 @@ switch src.Label
             h(i).Enable = 'off';
         end
         
-        StrLabel = {'TES Data';'Load TES';'TES Analysis';'Set Data Path';'Options';'TF Options';'Noise Options';'Help'};
+        StrLabel = {'TES Data';'Load TES';'TES Analysis';'Set Data Path';...
+            'Options';'TF Options';'Noise Options';'Report Options';'Help';'Guide';'About'};
         for i = 1:length(StrLabel)
             h = findobj('Label',StrLabel{i});
             h.Enable = 'on';
@@ -339,17 +340,6 @@ switch src.Label
         indAxes = findobj('Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
-               
-        warndlg('Thermal parameter have changed','ZarTES v1.0');
-        ButtonName = questdlg('Re-Analyze Z(w)-Noise?', ...
-            'ZarTES v1.0', ...
-            'Yes', 'No', 'Yes');
-        switch ButtonName
-            case 'Yes'
-                indAxes = findobj('Type','Axes');
-                delete(indAxes);
-                handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.FitZset(handles.Analyzer);                                            
-        end % switch
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID); 
     case 'Set TF in Superconductor State (TFS)' 
         indAxes = findobj('Type','Axes');
@@ -441,7 +431,7 @@ switch src.Label
         param = str{s};
         ButtonName = questdlg('What''s next?', ...
             'ZarTES v1.0', ...
-            [param ' vs. Tbath'], [param ' vs. Rn'], [param ' vs. Tbath']);
+            [param ' vs. Tbath'], [param ' vs. Rn'], [param ' vs. param'], [param ' vs. Tbath']);
         switch ButtonName
             case [param ' vs. Tbath']
                 prompt = {'Enter the Rn range:'};
@@ -462,6 +452,17 @@ switch src.Label
                 end
                 Tbath = str2double(str(s))';
                 handles.Session{handles.TES_ID}.TES.PlotTESData(param,[],Tbath,handles.Analyzer);
+            case [param ' vs. param']
+                str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
+                [s,~] = listdlg('PromptString','Select a model parameter:',...
+                    'SelectionMode','single',...
+                    'ListString',str);
+                if isempty(s)
+                    return;
+                end
+                param2 = str{s};
+                params = char([{param};{param2}]);
+                handles.Session{handles.TES_ID}.TES.PlotTESData(params,[],[],handles.Analyzer);
         end % switch
         
 end
@@ -644,6 +645,8 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES.TFOpt = handles.Session{handles.TES_ID}.TES.TFOpt.View;
     case 'Noise Options'
         handles.Session{handles.TES_ID}.TES.NoiseOpt = handles.Session{handles.TES_ID}.TES.NoiseOpt.View;
+    case 'Report Options'
+        handles.Session{handles.TES_ID}.TES.Report = handles.Session{handles.TES_ID}.TES.Report.View;
 end
 guidata(src,handles);
 

@@ -1,6 +1,6 @@
 classdef TES_P
-    %UNTITLED5 Summary of this class goes here
-    %   Detailed explanation goes here
+    % Class P for TES data
+    %   This class contains the Z(w)-Noise analysis data
     
     properties
         p;
@@ -12,7 +12,7 @@ classdef TES_P
         fZ = {[]};
         ERP = {[]};
         Filtered = {[]};
-        fileNoise = {[]};  
+        fileNoise = {[]};
         NoiseModel = {[]};
         fNoise = {[]};
         SigNoise = {[]};
@@ -20,7 +20,10 @@ classdef TES_P
     end
     
     methods
+        
         function obj = Constructor(obj)
+            % Function to generate the class with default values
+            
             obj.p.rp = [];
             obj.p.L0 = [];
             obj.p.L0_CI = [];
@@ -41,9 +44,13 @@ classdef TES_P
             obj.p.ExRes = [];
             obj.p.ThRes = [];
             obj.p.M = [];
-            obj.p.Mph = [];        
+            obj.p.Mph = [];
         end
+        
         function ok = Filled(obj)
+            % Function to check whether the class is filled or empty (all
+            % fields must be filled to be considered as filled)
+            
             for j = 1:length(obj)
                 FN = fieldnames(obj(j).p);
                 for i = 1:length(FN)
@@ -55,15 +62,15 @@ classdef TES_P
             end
             ok = 1; % All fields are filled
         end
-
-        % Metodos para que devuelva cualquier valor a una temperatura
-        % determinada. O un valor a un Rp determinado y variando Tbath
-        function [val,rp,Tbaths] = GetParamVsRn(obj,param,Tbath)
-            % Selecion de Tbath y parametro a buscar en funcion de Rn
+        
+        function [val,rp,Tbath] = GetParamVsRn(obj,param,Tbath)
+            % Function to obtain any parameter values at selected Tbaths
+            % with respect to Rn values
+            
             if ~ischar(param)
                 warndlg('param must be string','ZarTES v1.0');
                 return;
-            else                
+            else
                 ValidParams = fieldnames(obj(1).p);
                 ok_ind = 0;
                 for i = 1:length(ValidParams)
@@ -71,38 +78,44 @@ classdef TES_P
                         ok_ind = 1;
                     end
                 end
-                if ok_ind                                
+                if ok_ind
                     if exist('Tbath','var')
                         if ischar(Tbath) % Transformar en valor numerico '50.0mK'
                             Tbath = str2double(Tbath(1:end-2))*1e-3;
                         end
                         Tbaths = [obj.Tbath];
                         %                         ind = find(Tbaths == Tbath);
-                        [~,ind]=intersect(Tbaths,Tbath);
+                        [~,ind] = intersect(Tbaths,Tbath);
                         %                         for i = 1:length(Tbath)
                         for i = 1:length(ind)
                             rp{i} = [obj(ind(i)).p.rp];
+                            rp{i} = rp{i}(cell2mat(obj(ind(i)).Filtered) == 1);
                             val{i} = eval(['[obj(ind(i)).p.' param '];']);
+                            val{i} = val{i}(cell2mat(obj(ind(i)).Filtered) == 1);
                         end
-%                         val = eval(['[obj(ind).p.' param '];']);
+                        %                         val = eval(['[obj(ind).p.' param '];']);
                     else
                         Tbath = [obj.Tbath];
-%                         rp = nan(length(Tbaths),1);
-%                         val = nan(length(Tbaths),1);
+                        %                         rp = nan(length(Tbaths),1);
+                        %                         val = nan(length(Tbaths),1);
                         for i = 1:length(Tbath)
                             rp{i} = [obj(i).p.rp];
+                            rp{i} = rp{i}(cell2mat(obj(i).Filtered) == 1);
                             val{i} = eval(['[obj(i).p.' param '];']);
+                            val{i} = val{i}(cell2mat(obj(i).Filtered) == 1);
                         end
                     end
                 else
                     warndlg('param not valid!','ZarTES v1.0');
                     return;
                 end
-            end                           
+            end
         end
         
         function [val,Tbaths,Rns] = GetParamVsTbath(obj,param,Rn)
-            % Selecion de Rn y parametro a buscar en funcion de Tbath
+            % Function to obtain any parameter values at selected Rn values
+            % with respect to Tbath values
+            
             if ~ischar(param)
                 warndlg('param must be string','ZarTES v1.0');
                 return;
@@ -131,8 +144,11 @@ classdef TES_P
                             Rns = nan(length(Tbaths),1);
                             for i = 1:length(Tbaths)
                                 rp = [obj(i).p.rp];
+                                rp = rp(cell2mat(obj(i).Filtered) == 1);
                                 [~,ind] = min(abs(rp-Rn));
-                                val(i,:) = eval(['obj(i).p(ind).' param ';']);
+                                data = eval(['[obj(i).p.' param '];']);
+                                data = data(cell2mat(obj(i).Filtered) == 1);
+                                val(i,:) = data(ind);
                                 Rns(i,:) = rp(ind);
                             end
                         else
@@ -147,7 +163,36 @@ classdef TES_P
             end
         end
         
+        function [val1,val2,Tbaths1,Tbaths2] = GetParamVsParam(obj,param1,param2)
+            % Function to obtain any parameter values with respect to other parameter values
+            
+            if (~ischar(param1))||(~ischar(param2))
+                warndlg('param1 and param2 must be strings','ZarTES v1.0');
+                return;
+            else
+                ValidParams = fieldnames(obj(1).p);
+                ok1_ind = 0;
+                ok2_ind = 0;
+                for i = 1:length(ValidParams)
+                    if strcmp(ValidParams{i},param1)
+                        ok1_ind = 1;
+                    end
+                    if strcmp(ValidParams{i},param2)
+                        ok2_ind = 1;
+                    end
+                end
+                if (ok1_ind)&&(ok2_ind)
+                    [val1,Rns1,Tbaths1] = GetParamVsRn(obj,param1);
+                    [val2,Rns2,Tbaths2] = GetParamVsRn(obj,param2);
+                else
+                    val1 = [];
+                    val2 = [];
+                    Tbaths1 = [];
+                    Tbaths2 = [];
+                end
+            end
+        end
+        
     end
-    
 end
 

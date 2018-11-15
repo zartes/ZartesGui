@@ -295,7 +295,9 @@ end
 ind_Tbath = ind;
 eval(['files' StrCond ' = [handles.varargin{1}.P' StrCond '(ind_Tbath).fileZ]'';';]);
 handles.Nfiles = length(eval(['files' StrCond ';']));
+cla(handles.TF_axes);
 hs = handles.TF_axes; 
+set(hs,'XScale','linear','YScale','linear')
 % eval(['TF{handles.Files_Ind} = importdata(files' StrCond '{handles.Files_Ind});']);
 eval(['FileName = files' StrCond '{handles.Files_Ind};']);
 FileName = FileName(find(FileName == filesep,1,'last')+1:end);
@@ -305,7 +307,7 @@ if ~isempty(strfind(FileName,'TF_PXI_'))
 else
     Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
 end
-eval(['OP = setTESOPfromIb(Ib,handles.varargin{1}.IVset' StrCond '(ind_Tbath),handles.varargin{1}.P' StrCond '(ind_Tbath).p,handles.varargin{1});']);
+eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,handles.varargin{1}.IVset' StrCond '(ind_Tbath),handles.varargin{1}.P' StrCond '(ind_Tbath).p);']);
 
 data{1} = eval(['handles.varargin{1}.P' StrCond '(ind_Tbath)']);
 data{2} = handles.Files_Ind;
@@ -344,6 +346,7 @@ end
 set(handles.TF_axes,'ButtonDownFcn',{@DisplayResults},'UserData',data);
 
 %% Noise is drawn
+cla(handles.Noise_axes);
 hs1 = handles.Noise_axes;
 eval(['filesNoise' StrCond ' = [handles.varargin{1}.P' StrCond '(ind_Tbath).fileNoise]'';';]);
 eval(['fNoise{handles.Files_Ind} = handles.varargin{1}.P' StrCond '(ind_Tbath).fNoise{handles.Files_Ind};';]);
@@ -354,14 +357,16 @@ eval(['FileName = filesNoise' StrCond '{handles.Files_Ind};']);
 FileName = FileName(find(FileName == filesep,1,'last')+1:end);
 
 Ib = sscanf(FileName,strcat(handles.varargin{1}.NoiseOpt.NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
-eval(['OP = setTESOPfromIb(Ib,handles.varargin{1}.IVset' StrCond '(ind_Tbath),handles.varargin{1}.P' StrCond '(ind_Tbath).p,handles.varargin{1});']);
+eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,handles.varargin{1}.IVset' StrCond '(ind_Tbath),handles.varargin{1}.P' StrCond '(ind_Tbath).p);']);
 if handles.varargin{1}.NoiseOpt.Mjo == 1
     M = OP.M;
 else
     M = 0;
 end
-auxnoise = noisesim('irwin',handles.varargin{1}.TES,OP,handles.varargin{1}.circuit,M);
 f = logspace(0,6,1000);
+% auxnoise = obj.noisesim(OP,M,f);
+auxnoise = handles.varargin{1}.noisesim(OP,M,f);
+
 switch handles.varargin{1}.NoiseOpt.tipo
     case 'current'
         
@@ -388,9 +393,10 @@ switch handles.varargin{1}.NoiseOpt.tipo
     case 'nep'
         
         sIaux = ppval(spline(f,auxnoise.sI),fNoise{handles.Files_Ind}(:,1));
-        NEP = real(sqrt((SigNoise{handles.Files_Ind}.^2-auxnoise.squid.^2))./sIaux);
-        loglog(fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r'),hold on,grid on,
-        loglog(fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,20),'.-k'),hold on,grid on,
+        NEP = real(sqrt((SigNoise{handles.Files_Ind}*1e-12.^2-auxnoise.squid.^2))./sIaux);
+        
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r'),hold on,grid on,
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,20),'.-k'),hold on,grid on,
         if handles.varargin{1}.NoiseOpt.Mph == 0
             totNEP = auxnoise.NEP;
         else
@@ -529,18 +535,6 @@ for i = 1:length(NoiseParam)
     c4(i) = uimenu(c2(2),'Label',NoiseParam{i});
 end
 set(src,'uicontextmenu',cmenu);
-true = 1;
-while true
-    pause(0.1);    
-    if ishandle(cmenu)
-        if strcmp(cmenu.Visible,'off')
-            true = 0;
-        end
-    else
-        true = 0;
-    end
-    pause(0.1);
-end
 
 function HandleBoolComp(src,evnt,handles)
 
@@ -566,18 +560,6 @@ else
 end
 
 set(src,'uicontextmenu',cmenu);
-true = 1;
-while true
-    pause(0.1);    
-    if ishandle(cmenu)
-        if strcmp(cmenu.Visible,'off')
-            true = 0;
-        end
-    else
-        true = 0;
-    end
-    pause(0.1);
-end
 
 function NoiseComp(src,evnt)
 

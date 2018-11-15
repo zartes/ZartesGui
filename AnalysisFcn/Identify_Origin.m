@@ -1,27 +1,8 @@
 function Identify_Origin(src,evnt)
-if evnt.Button == 1
-%     hd = findobj('Type','Uimenu');
-%     set(hd,'Visible','off');
-end
+% Auxiliary function to handle right-click mouse options of TF-Noise_Viewer
+% Last update: 14/11/2018   
 
 if evnt.Button == 3
-    % evnt.IntersectionPoint
-    % return;
-%     XData = src.XData;
-%     % YData = src.YData;
-%     x_click = evnt.IntersectionPoint(1);
-%     ind_U = find(XData >= x_click,1);
-%     U_error = abs(XData(ind_U)-x_click);
-%     ind_L = find(XData <= x_click, 1, 'last' );
-%     L_error = abs(XData(ind_L)-x_click);
-%     if U_error < L_error
-%         ind = ind_U;
-%     else
-%         ind = ind_L;
-%     end
-%     if isempty(ind)
-%         return;
-%     end
     
     Data = src.UserData;
     P = Data{1};
@@ -30,50 +11,24 @@ if evnt.Button == 3
     Circuit = Data{4};
     % En la gráfica los datos están ordenados de menor a mayor
     [XData, jj] = sort([P(N_meas).p.rp]);
-%     x_click = evnt.IntersectionPoint(1);
-    % YData = src.YData;
     x_click = evnt.IntersectionPoint(1);
     [val,ind] = min((abs(XData-x_click)));
     ind_orig = ind;
-%     [rp, jj] = sort([P(N_meas).p.rp]);
-    % P(N_meas).p(ind)
-    % rp(ind)
-%     IndxGood = find(cell2mat(P(N_meas).Filtered(jj))== 0);                    
-%     IndxBad = find(cell2mat(P(N_meas).Filtered(jj))== 1);
-%     ind_orig = jj(ind);
     
     hps = findobj(src.Parent.Parent,'Type','Axes');   
     StrParam = {'bi';'ai';'taueff*1e6';'C*1e15'};
-    % beta, alpha, tau, C
     for i = 1:length(hps)
         hp(i) = plot(hps(i),XData(ind_orig),eval(['P(N_meas).p(jj(ind_orig)).' StrParam{i}]),'.',...
             'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'markersize',15);
     end
     
-%     hp = plot(src.Parent,evnt.IntersectionPoint(1),evnt.IntersectionPoint(2),'.',...
-%         'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'markersize',15);
-    % Esto sirve para Tau y beta
-    % P(N_meas).p(ind_orig).bi
-    
     % Identificar el subplot
     Parent = src.Parent;
     Ylabel = Parent.YLabel.String;
     
-    % switch Ylabel
-    %     case 'C(fJ/K)'
-    %         C(indC)
-    %     case '\tau_{eff}(\mus)'
-    %         [P(i).p(jj).taueff]*1e6
-    %     case '\alpha_i'
-    %         ai(indai)
-    %     case '\beta_i'
-    % end
-    
     FileStr = P(N_meas).fileZ{jj(ind_orig)};
     FileStrLabel = ['..\Z(w)-' FileStr(strfind(FileStr,'Ruido'):end)];
     
-    % P(N_meas).fileZ(ind_orig)
-    % P(N_meas).fileZ(ind_orig)
     data{1} = P(N_meas).ztes{jj(ind_orig)};
     data{2} = P(N_meas).fZ{jj(ind_orig)};
     data{3} = P(N_meas).fileNoise{jj(ind_orig)};
@@ -101,7 +56,7 @@ if evnt.Button == 3
     cmenu = uicontextmenu('Visible','on');
     c1 = uimenu(cmenu,'Label',FileStrLabel);
     c2(1) = uimenu(c1,'Label','Z(w)-Noise Plots','Callback',...
-        {@ProvMarksActions},'UserData',data);
+        {@ActionFcn},'UserData',data);
     
     c2(2) = uimenu(c1,'Label','TF parameter analysis');
     for i = 1:length(TFParam)
@@ -115,47 +70,19 @@ if evnt.Button == 3
     
     if P(N_meas).Filtered{jj(ind_orig)} == 0
         c2(4) = uimenu(c1,'Label','Select as filtered','Callback',...
-        {@ProvMarksActions},'UserData',{Data; jj(ind_orig); P_Rango});
+        {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
     else
         c2(4) = uimenu(c1,'Label','Unselect as filtered','Callback',...
-        {@ProvMarksActions},'UserData',{Data; jj(ind_orig); P_Rango});
-    end
-    
+        {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
+    end    
    
-    
-    %
-    % c2(3) = uimenu(c1,'Label','Noise Plot','Callback',...
-    %     {@ProvMarksActions},'UserData',data,'Separator','on');
-    
-    
-    
-    
-    %         uimenu(cmenu,'Label','Change position mark','Callback',...
-    %             {@ProvMarksActions},'UserData',src_change);
-    %         uimenu(cmenu,'Label','Change description mark','Callback',...
-    %             {@ProvMarksActions},'UserData',src_change);
-    
-    %% Add more options about provisional marks
     set(src,'uicontextmenu',cmenu);
     waitfor(cmenu,'Visible','off')
     delete(hp);
-%     true = 1;
-%     while true
-%         pause(0.1);
-%         if ishandle(cmenu)            
-%             if strcmp(cmenu.Visible,'off')
-%                 true = 0;
-%                 
-%             end
-%         else
-%             true = 0;
-%         end
-%         pause(0.1);
-%     end    
 end
 
 
-function ProvMarksActions(src,evnt)
+function ActionFcn(src,evnt)
 
 File = src.Parent.Label;
 Data = get(src,'UserData');
@@ -182,7 +109,7 @@ switch str
         wdir = Data{3}(1:inds);
         filesNoise = Data{3}(inds+1:end);
         [noise,file] = loadnoise(0,wdir,filesNoise);
-%         fig = figure('Name',string(file));
+        
         ax(2) = subplot(1,2,2);        
         loglog(ax(2),noise{1}(:,1),V2I(noise{1}(:,2)*1e12,Data{4}),'.-r'),%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         hold(ax(2),'on'),grid(ax(2),'on')
@@ -229,8 +156,6 @@ switch str
         indAxes = findobj('Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotABCT(fig);
-        
-    
         
     otherwise
         
