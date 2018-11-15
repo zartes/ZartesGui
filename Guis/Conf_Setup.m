@@ -241,6 +241,30 @@ switch varargin{1}.Tag
                 handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
             end
         end
+    case 'TES_Report_Opt'
+        set(handles.figure1,'Name','Noise Visualization Options');
+        set([handles.Add handles.Remove handles.Options],'Visible','off');
+        handles.Table.Data = {[]};        
+        TESProp = properties(handles.varargin{3});                
+        handles.Table.ColumnName = TESProp';
+        handles.Table.ColumnFormat{1} = 'Logical';
+        handles.Table.ColumnFormat{2} = 'Logical';
+        handles.Table.ColumnFormat{3} = 'Logical';
+        handles.Table.ColumnFormat{4} = 'Logical';
+        handles.Table.ColumnFormat{5} = 'Logical';
+        handles.Table.ColumnFormat{6} = 'Logical'; 
+        handles.Table.ColumnEditable = [true true true true true true];
+        for i = 1:length(TESProp)
+            if strcmp(handles.Table.ColumnFormat{i},'Logical')
+                if eval(['handles.varargin{3}.' TESProp{i}])
+                    handles.Table.Data{1,i} = true;
+                else
+                    handles.Table.Data{1,i} = false;
+                end
+            else
+                handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
+            end
+        end
         
 end
 
@@ -387,6 +411,21 @@ switch handles.varargin{1}.Tag
                 end
             else
                 eval(['NewOPT.' TES_Noise{i} ' = handles.Table.Data{1,i};']);
+            end
+        end
+        handles.varargin{1}.UserData = NewOPT;
+        guidata(handles.varargin{1},NewOPT);
+    case 'TES_Report_Opt'
+        TES_Report = properties(handles.varargin{3});        
+        for i = 1:length(TES_Report)
+            if strcmp(handles.Table.ColumnFormat{i},'Logical')
+                if handles.Table.Data{1,i}
+                    eval(['NewOPT.' TES_Report{i} ' = 1;']);
+                else
+                    eval(['NewOPT.' TES_Report{i} ' = 0;']);
+                end
+            else
+                eval(['NewOPT.' TES_Report{i} ' = handles.Table.Data{1,i};']);
             end
         end
         handles.varargin{1}.UserData = NewOPT;

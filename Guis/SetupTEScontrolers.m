@@ -293,7 +293,8 @@ else
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
-        handles.Squid.TES2NormalState(Ibias_sign);
+        handles.Squid.TES2NormalState(Ibias_sign);                
+        
         handles.Actions_Str.String = ['Electronic Magnicon: TES in Normal State (' ButtonName ' values)'];
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -304,6 +305,8 @@ else
         hObject.Enable = 'on';
     end
 end
+
+
 
 % --- Executes on button press in SQ_Reset_Closed_Loop.
 function SQ_Reset_Closed_Loop_Callback(hObject, eventdata, handles)
@@ -1264,225 +1267,230 @@ function DSA_Read_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Hint: get(hObject,'Value') returns toggle state of DSA_Read
-if (isempty(handles.DSA.ObjHandle))&&(isempty(handles.PXI.ObjHandle))
+if (isempty(handles.DSA.ObjHandle))
     handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
-    hObject.Value = 0;
-else
-    if hObject.Value
-        hObject.BackgroundColor = [120 170 50]/255;  % Green Color
-        hObject.Enable = 'off';
-        if isempty(handles.Circuit.Rf.Value)
-            SQ_Calibration_Callback(handles.SQ_Calibration,[],handles);
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Action of the device (including line)
-        if handles.TF_Mode.Value
-            if handles.DSA_On.Value
-                switch handles.TF_Menu.Value
-                    case 1 % Sweept sine
-                        handles.Sine_Amp_Units.Value = 2;  % mV
-                        Sine_Amp_Callback(handles.Sine_Amp,[],handles);
-                        Amp = str2double(handles.Sine_Amp.String);
-                        handles.DSA = SineSweeptMode(handles.DSA,Amp);
-                    case 2 % Fixed sine
-                        handles.Sine_Freq_Units.Value = 1;  % Hz
-                        Sine_Freq_Callback(handles.Sine_Freq,[],handles);
-                        freq = str2double(handles.Sine_Freq.String);
-                        handles.DSA = FixedSine(handles.DSA,freq);
-                end
-                handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: TF Mode ON';
-                Actions_Str_Callback(handles.Actions_Str,[],handles);
-                
-                [handles.DSA, datos] = handles.DSA.Read;                
-                handles.DSA_TF_Data = datos;                                
-                
-            end
-            
-            if handles.PXI_On.Value
-                handles.PXI = handles.PXI.TF_Configuration;
-                handles.Actions_Str.String = 'PXI Acquisition Card: TF Mode ON';
-                Actions_Str_Callback(handles.Actions_Str,[],handles);
-                
-                [data, WfmI] = handles.PXI.Get_Wave_Form;
-                handles.PXI_TF_Data = data;
-            end
-            
-        end
-        if handles.Noise_Mode.Value
-            if handles.DSA_On.Value
-                switch handles.Noise_Menu.Value
-                    case 1 % Sweept sine
-                        handles.DSA = NoiseMode(handles.DSA);
-                    case 2 % Fixed sine
-                        handles.Noise_Amp_Units.Value = 2;  % mV
-                        Noise_Amp_Callback(handles.Noise_Amp,[],handles);
-                        Amp = str2double(handles.Noise_Amp.String);
-                        handles.DSA = NoiseMode2(handles.DSA,Amp);
-                end
-                handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: Noise Mode ON';
-                Actions_Str_Callback(handles.Actions_Str,[],handles);
-                clear datos;
-                [handles.DSA, datos] = handles.DSA.Read;
-                handles.DSA_Noise_Data = datos;
-            end
-            
-            if handles.PXI_On.Value
-                handles.PXI = handles.PXI.Noise_Configuration;
-                handles.Actions_Str.String = 'PXI Acquisition Card: Noise Mode ON';
-                Actions_Str_Callback(handles.Actions_Str,[],handles);
-                
-                [data, WfmI] = handles.PXI.Get_Wave_Form;
-                [psd,freq] = PSD(data);
-                clear datos;
-                datos(:,1) = freq;
-                datos(:,2) = sqrt(psd);
-                n_avg = 5;
-                for jj = 1:n_avg-1%%%Ya hemos adquirido una.
-                    [data, WfmI] = handles.PXI.Get_Wave_Form;
-                    [psd,freq] = PSD(data);
-                    aux(:,1) = freq;
-                    aux(:,2) = sqrt(psd);
-                    datos(:,2) = datos(:,2)+aux(:,2);
-                end
-                datos(:,2) = datos(:,2)/n_avg;
-                
-                handles.PXI_Noise_Data = datos;
-            end
-        end
-        
-        if handles.TF_Mode.Value
-            if handles.DSA_On.Value
-                if ~isempty(handles.DSA_TF_Data)
-                    if isempty(handles.TestData.TF.DSA{1})
-                        handles.TestData.TF.DSA{1} = handles.DSA_TF_Data;
-                    else
-                        if ~isnumeric(eventdata)
-                            ButtonName = questdlg('Do you want to erase current TF (DSA) test values?', ...
-                                'ZarTES v1.0', ...
-                                'Yes', 'No', 'Yes');
-                            switch ButtonName
-                                case 'Yes'
-                                    handles.TestData.TF.DSA = {[]};
-                            end % switch
-                        end
-                        handles.TestData.TF.DSA{length(handles.TestData.TF.DSA)+1} = handles.DSA_TF_Data;
-                    end
-                    
-                    clear Data;
-                    cla(handles.Result_Axes);
-                    DataName = ' ';
-                    Data(:,1) = handles.TestData.TF.DSA{end}(:,1);
-                    Data(:,2) = handles.TestData.TF.DSA{end}(:,2);
-                    Data(:,3) = handles.TestData.TF.DSA{end}(:,3);
-                    Child = handles.Result_Axes.Children;
-                    ManagingData2Plot(Data,DataName,handles)
-                    Check_Plot_Callback(handles.Check_Plot,[],handles);
-                    refreshdata(handles.Result_Axes);
-                    delete(Child)
-                end
-            end
-            if handles.PXI_On.Value
-                if ~isempty(handles.PXI_TF_Data)
-                    
-                    if isempty(handles.TestData.TF.PXI{1})
-                        handles.TestData.TF.PXI{1} = handles.PXI_TF_Data;
-                    else
-                        if ~isnumeric(eventdata)
-                            ButtonName = questdlg('Do you want to erase current TF (PXI) test values?', ...
-                                'ZarTES v1.0', ...
-                                'Yes', 'No', 'Yes');
-                            switch ButtonName
-                                case 'Yes'
-                                    handles.TestData.TF.PXI = {[]};
-                            end % switch
-                        end
-                        handles.TestData.TF.PXI{length(handles.TestData.TF.PXI)+1} = handles.PXI_TF_Data;
-                    end
-                    
-                    clear Data;
-                    cla(handles.Result_Axes);
-                    DataName = ' ';
-                    Data(:,1) = handles.TestData.TF.PXI{end}(:,1);
-                    Data(:,2) = handles.TestData.TF.PXI{end}(:,2);
-                    Data(:,3) = handles.TestData.TF.PXI{end}(:,3);
-                    Child = handles.Result_Axes.Children;
-                    ManagingData2Plot(Data,DataName,handles)
-                    Check_Plot_Callback(handles.Check_Plot,[],handles);
-                    refreshdata(handles.Result_Axes);
-                    delete(Child)
-                end
-            end
-        end
-        if handles.Noise_Mode.Value
-            if handles.DSA_On.Value
-                if ~isempty(handles.DSA_Noise_Data)
-                    if isempty(handles.TestData.Noise.DSA{1})
-                        handles.TestData.Noise.DSA{1} = handles.DSA_Noise_Data;
-                    else
-                        if ~isnumeric(eventdata)
-                            ButtonName = questdlg('Do you want to erase current Noise (DSA) test values?', ...
-                                'ZarTES v1.0', ...
-                                'Yes', 'No', 'Yes');
-                            switch ButtonName
-                                case 'Yes'
-                                    handles.TestData.Noise.DSA = {[]};
-                            end % switch
-                        end
-                        handles.TestData.Noise.DSA{length(handles.TestData.Noise.DSA)+1} = handles.DSA_Noise_Data;
-                    end
-                    
-                    clear Data;
-                    cla(handles.Result_Axes);
-                    DataName = ' ';
-                    Data(:,1) = handles.TestData.Noise.DSA{end}(:,1);
-                    Data(:,2) = handles.TestData.Noise.DSA{end}(:,2);
-                    Child = handles.Result_Axes.Children;
-                    ManagingData2Plot(Data,DataName,handles)
-                    Check_Plot_Callback(handles.Check_Plot,[],handles);
-                    refreshdata(handles.Result_Axes);
-                    delete(Child)
-                end
-            end
-            if handles.PXI_On.Value
-                if ~isempty(handles.PXI_Noise_Data)
-                    if isempty(handles.TestData.Noise.PXI{1})
-                        handles.TestData.Noise.PXI{1} = handles.PXI_Noise_Data;
-                    else
-                        if ~isnumeric(eventdata)
-                            ButtonName = questdlg('Do you want to erase current Noise (PXI) test values?', ...
-                                'ZarTES v1.0', ...
-                                'Yes', 'No', 'Yes');
-                            switch ButtonName
-                                case 'Yes'
-                                    handles.TestData.Noise.PXI = {[]};
-                            end % switch
-                        end
-                        handles.TestData.Noise.PXI{length(handles.TestData.Noise.PXI)+1} = handles.PXI_Noise_Data;
-                    end
-                    clear Data;
-                    cla(handles.Result_Axes);
-                    DataName = ' ';
-                    Data(:,1) = handles.TestData.Noise.PXI{end}(:,1);
-                    Data(:,2) = handles.TestData.Noise.PXI{end}(:,2);
-                    Child = handles.Result_Axes.Children;
-                    ManagingData2Plot(Data,DataName,handles)
-                    Check_Plot_Callback(handles.Check_Plot,[],handles);
-                    refreshdata(handles.Result_Axes);
-                    delete(Child)
-                end
-            end
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        
-        hObject.BackgroundColor = [240 240 240]/255;
+    if (isempty(handles.PXI.ObjHandle))
+        handles.Actions_Str.String = 'PXI Acquisition Card Connection is missed. Check connection and initialize it from the MENU.';
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
         hObject.Value = 0;
-        hObject.Enable = 'on';
     end
 end
+
+if hObject.Value
+    hObject.BackgroundColor = [120 170 50]/255;  % Green Color
+    hObject.Enable = 'off';
+    if isempty(handles.Circuit.Rf.Value)
+        SQ_Calibration_Callback(handles.SQ_Calibration,[],handles);
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Action of the device (including line)
+    if handles.TF_Mode.Value
+        if handles.DSA_On.Value
+            switch handles.TF_Menu.Value
+                case 1 % Sweept sine
+                    handles.Sine_Amp_Units.Value = 2;  % mV
+                    Sine_Amp_Callback(handles.Sine_Amp,[],handles);
+                    Amp = str2double(handles.Sine_Amp.String);
+                    handles.DSA = SineSweeptMode(handles.DSA,Amp);
+                case 2 % Fixed sine
+                    handles.Sine_Freq_Units.Value = 1;  % Hz
+                    Sine_Freq_Callback(handles.Sine_Freq,[],handles);
+                    freq = str2double(handles.Sine_Freq.String);
+                    handles.DSA = FixedSine(handles.DSA,freq);
+            end
+            handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: TF Mode ON';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+            
+            [handles.DSA, datos] = handles.DSA.Read;
+            handles.DSA_TF_Data = datos;
+            
+        end
+        
+        if handles.PXI_On.Value
+            handles.PXI = handles.PXI.TF_Configuration;
+            handles.Actions_Str.String = 'PXI Acquisition Card: TF Mode ON';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+            
+            [data, WfmI] = handles.PXI.Get_Wave_Form;
+            handles.PXI_TF_Data = data;
+        end
+        
+    end
+    if handles.Noise_Mode.Value
+        if handles.DSA_On.Value
+            switch handles.Noise_Menu.Value
+                case 1 % Sweept sine
+                    handles.DSA = NoiseMode(handles.DSA);
+                case 2 % Fixed sine
+                    handles.Noise_Amp_Units.Value = 2;  % mV
+                    Noise_Amp_Callback(handles.Noise_Amp,[],handles);
+                    Amp = str2double(handles.Noise_Amp.String);
+                    handles.DSA = NoiseMode2(handles.DSA,Amp);
+            end
+            handles.Actions_Str.String = 'Digital Signal Analyzer HP3562A: Noise Mode ON';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+            clear datos;
+            [handles.DSA, datos] = handles.DSA.Read;
+            handles.DSA_Noise_Data = datos;
+        end
+        
+        if handles.PXI_On.Value
+            handles.PXI = handles.PXI.Noise_Configuration;
+            handles.Actions_Str.String = 'PXI Acquisition Card: Noise Mode ON';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+            
+            [data, WfmI] = handles.PXI.Get_Wave_Form;
+            [psd,freq] = PSD(data);
+            clear datos;
+            datos(:,1) = freq;
+            datos(:,2) = sqrt(psd);
+            n_avg = 5;
+            for jj = 1:n_avg-1%%%Ya hemos adquirido una.
+                [data, WfmI] = handles.PXI.Get_Wave_Form;
+                [psd,freq] = PSD(data);
+                aux(:,1) = freq;
+                aux(:,2) = sqrt(psd);
+                datos(:,2) = datos(:,2)+aux(:,2);
+            end
+            datos(:,2) = datos(:,2)/n_avg;
+            
+            handles.PXI_Noise_Data = datos;
+        end
+    end
+    
+    if handles.TF_Mode.Value
+        if handles.DSA_On.Value
+            if ~isempty(handles.DSA_TF_Data)
+                if isempty(handles.TestData.TF.DSA{1})
+                    handles.TestData.TF.DSA{1} = handles.DSA_TF_Data;
+                else
+                    if ~isnumeric(eventdata)
+                        ButtonName = questdlg('Do you want to erase current TF (DSA) test values?', ...
+                            'ZarTES v1.0', ...
+                            'Yes', 'No', 'Yes');
+                        switch ButtonName
+                            case 'Yes'
+                                handles.TestData.TF.DSA = {[]};
+                        end % switch
+                    end
+                    handles.TestData.TF.DSA{length(handles.TestData.TF.DSA)+1} = handles.DSA_TF_Data;
+                end
+                
+                clear Data;
+                cla(handles.Result_Axes);
+                DataName = ' ';
+                Data(:,1) = handles.TestData.TF.DSA{end}(:,1);
+                Data(:,2) = handles.TestData.TF.DSA{end}(:,2);
+                Data(:,3) = handles.TestData.TF.DSA{end}(:,3);
+                Child = handles.Result_Axes.Children;
+                ManagingData2Plot(Data,DataName,handles)
+                Check_Plot_Callback(handles.Check_Plot,[],handles);
+                refreshdata(handles.Result_Axes);
+                delete(Child)
+            end
+        end
+        if handles.PXI_On.Value
+            if ~isempty(handles.PXI_TF_Data)
+                
+                if isempty(handles.TestData.TF.PXI{1})
+                    handles.TestData.TF.PXI{1} = handles.PXI_TF_Data;
+                else
+                    if ~isnumeric(eventdata)
+                        ButtonName = questdlg('Do you want to erase current TF (PXI) test values?', ...
+                            'ZarTES v1.0', ...
+                            'Yes', 'No', 'Yes');
+                        switch ButtonName
+                            case 'Yes'
+                                handles.TestData.TF.PXI = {[]};
+                        end % switch
+                    end
+                    handles.TestData.TF.PXI{length(handles.TestData.TF.PXI)+1} = handles.PXI_TF_Data;
+                end
+                
+                clear Data;
+                cla(handles.Result_Axes);
+                DataName = ' ';
+                Data(:,1) = handles.TestData.TF.PXI{end}(:,1);
+                Data(:,2) = handles.TestData.TF.PXI{end}(:,2);
+                Data(:,3) = handles.TestData.TF.PXI{end}(:,3);
+                Child = handles.Result_Axes.Children;
+                ManagingData2Plot(Data,DataName,handles)
+                Check_Plot_Callback(handles.Check_Plot,[],handles);
+                refreshdata(handles.Result_Axes);
+                delete(Child)
+            end
+        end
+    end
+    if handles.Noise_Mode.Value
+        if handles.DSA_On.Value
+            if ~isempty(handles.DSA_Noise_Data)
+                if isempty(handles.TestData.Noise.DSA{1})
+                    handles.TestData.Noise.DSA{1} = handles.DSA_Noise_Data;
+                else
+                    if ~isnumeric(eventdata)
+                        ButtonName = questdlg('Do you want to erase current Noise (DSA) test values?', ...
+                            'ZarTES v1.0', ...
+                            'Yes', 'No', 'Yes');
+                        switch ButtonName
+                            case 'Yes'
+                                handles.TestData.Noise.DSA = {[]};
+                        end % switch
+                    end
+                    handles.TestData.Noise.DSA{length(handles.TestData.Noise.DSA)+1} = handles.DSA_Noise_Data;
+                end
+                
+                clear Data;
+                cla(handles.Result_Axes);
+                DataName = ' ';
+                Data(:,1) = handles.TestData.Noise.DSA{end}(:,1);
+                Data(:,2) = handles.TestData.Noise.DSA{end}(:,2);
+                Child = handles.Result_Axes.Children;
+                ManagingData2Plot(Data,DataName,handles)
+                Check_Plot_Callback(handles.Check_Plot,[],handles);
+                refreshdata(handles.Result_Axes);
+                delete(Child)
+            end
+        end
+        if handles.PXI_On.Value
+            if ~isempty(handles.PXI_Noise_Data)
+                if isempty(handles.TestData.Noise.PXI{1})
+                    handles.TestData.Noise.PXI{1} = handles.PXI_Noise_Data;
+                else
+                    if ~isnumeric(eventdata)
+                        ButtonName = questdlg('Do you want to erase current Noise (PXI) test values?', ...
+                            'ZarTES v1.0', ...
+                            'Yes', 'No', 'Yes');
+                        switch ButtonName
+                            case 'Yes'
+                                handles.TestData.Noise.PXI = {[]};
+                        end % switch
+                    end
+                    handles.TestData.Noise.PXI{length(handles.TestData.Noise.PXI)+1} = handles.PXI_Noise_Data;
+                end
+                clear Data;
+                cla(handles.Result_Axes);
+                DataName = ' ';
+                Data(:,1) = handles.TestData.Noise.PXI{end}(:,1);
+                Data(:,2) = handles.TestData.Noise.PXI{end}(:,2);
+                Child = handles.Result_Axes.Children;
+                ManagingData2Plot(Data,DataName,handles)
+                Check_Plot_Callback(handles.Check_Plot,[],handles);
+                refreshdata(handles.Result_Axes);
+                delete(Child)
+            end
+        end
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    
+    hObject.BackgroundColor = [240 240 240]/255;
+    hObject.Value = 0;
+    hObject.Enable = 'on';
+end
+
 
 % --- Executes on button press in DSA_On.
 function DSA_On_Callback(hObject, eventdata, handles)
@@ -1556,30 +1564,30 @@ else
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
         
-%         warndlg('Change ''Pulses Configuration'' before READ (PXI) button.','ZarTES v1.0');
+        %         warndlg('Change ''Pulses Configuration'' before READ (PXI) button.','ZarTES v1.0');
         handles.PXI.AbortAcquisition;
         handles.PXI.Pulses_Configuration;
         
-        [data, WfmI, TimeLapsed] = handles.PXI.Get_Wave_Form;   % Las adquisiciones se guardan en una variable TestData.Pulses        
-%         actualSR = get(get(handles.PXI.ObjHandle,'horizontal'),'Actual_Sample_Rate');
-        if ~TimeLapsed 
-        plot(handles.Result_Axes,data(:,1),data(:,2),'-.');
-        grid(handles.Result_Axes,'on'); 
-        xlabel(handles.Result_Axes,'Time (s)')
-        ylabel(handles.Result_Axes,'Amplitude (a.u.)')
-        set(handles.Result_Axes,'FontSize',11,'FontWeight','bold')
-        
-        handles.Actions_Str.String = 'PXI Acquisition Card: Acquisition of pulse system response';
-        Actions_Str_Callback(handles.Actions_Str,[],handles);
-        
-        % Updated TestData.Pulses
-        if isempty(handles.TestData.Pulses{1})
-            handles.TestData.Pulses{1} = data;
-        else
-            handles.TestData.Pulses{length(handles.TestData.Pulses)} = data;
-        end
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        pause(2);
+        [data, WfmI, TimeLapsed] = handles.PXI.Get_Wave_Form;   % Las adquisiciones se guardan en una variable TestData.Pulses
+        %         actualSR = get(get(handles.PXI.ObjHandle,'horizontal'),'Actual_Sample_Rate');
+        if ~TimeLapsed
+            plot(handles.Result_Axes,data(:,1),data(:,2),'-.');
+            grid(handles.Result_Axes,'on');
+            xlabel(handles.Result_Axes,'Time (s)')
+            ylabel(handles.Result_Axes,'Amplitude (a.u.)')
+            set(handles.Result_Axes,'FontSize',11,'FontWeight','bold')
+            
+            handles.Actions_Str.String = 'PXI Acquisition Card: Acquisition of pulse system response';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+            
+            % Updated TestData.Pulses
+            if isempty(handles.TestData.Pulses{1})
+                handles.TestData.Pulses{1} = data;
+            else
+                handles.TestData.Pulses{length(handles.TestData.Pulses)} = data;
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            pause(2);
         else
             warndlg('No Data for Acquisition was found, change Trigger Settings','ZarTES v1.0');
         end
@@ -2213,6 +2221,26 @@ handles.Menu_ACQ_Ibias = uimenu('Parent',handles.menu(4),'Label',...
     'Ibias Range Configuration','Callback',{@ACQ_Ibias});
 handles.Menu_ACQ_Field = uimenu('Parent',handles.menu(4),'Label',...
     'Field Configuration','Callback',{@ACQ_Field});
+
+handles.menu(5) = uimenu('Parent',handles.SetupTES,'Label',...
+    'Help');
+handles.Menu_Guide = uimenu('Parent',handles.menu(5),'Label',...
+    'User Guide','Callback',{@UserGuide});
+handles.Menu_About = uimenu('Parent',handles.menu(5),'Label',...
+    'About','Callback',{@About});
+
+function UserGuide(src,evnt)
+open('SetupTES_Controlers_UserGuide.pdf');
+
+function About(src,evnt)
+fig = figure('Visible','off','NumberTitle','off','Name','ZarTES v1.0','MenuBar','none','Units','Normalized');
+ax = axes;
+data = imread('ICMA-CSIC.jpg');
+image(data)
+ax.Visible = 'off';
+fig.Position = [0.35 0.35 0.3 0.22];
+fig.Visible = 'on';
+
 
 
 function ACQ_Ibias(src,evnt)

@@ -1,7 +1,0 @@
-Session starts: 10-Oct-2018 09:42:15
-Electronic Magnicon: I bias 500 uA
-PXI Acquisition Card Connection is missed. Check connection and initialize it from the MENU.
-PXI Acquisition Card: Configuration changes
-Digital Signal Analyzer: Configuration changes in Noise Mode
-Digital Signal Analyzer: Configuration changes in TF Mode
-Digital Signal Analyzer: Configuration changes in TF Mode

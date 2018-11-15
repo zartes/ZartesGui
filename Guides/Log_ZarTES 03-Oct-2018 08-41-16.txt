@@ -1,8 +1,0 @@
-Session starts: 03-Oct-2018 08:41:16
-Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.
-Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.
-Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.
-Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.
-Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.
-Digital Signal Analyzer HP3562A Connection is missed. Check connection and initialize it from the MENU.
-Session ends: 03-Oct-2018 10:30:59
