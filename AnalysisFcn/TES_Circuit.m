@@ -54,7 +54,11 @@ classdef TES_Circuit
                 fieldNames = fieldnames(data);
                 for i = 1:length(fieldNames)
                     if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
-                        eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
+                        if isa(data,'Circuit')
+                            eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} '.Value;']);
+                        else
+                            eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
+                        end
                     end
                 end
                 
@@ -207,7 +211,7 @@ classdef TES_Circuit
             hold(ax(2),'on');
             grid(ax(2),'on');
             
-            tolerance = 5;
+            tolerance = 4;
             
             for i = 1:length(IVset)
                 
@@ -261,15 +265,15 @@ classdef TES_Circuit
                 set(ax(2),'fontsize',11,'fontweight','bold');
             end
             
-            mN = (prctile(Pendientes(Pendientes < Thres),75)-median(Pendientes(Pendientes < Thres)))/2;
+            mN1 = (prctile(Pendientes(Pendientes < Thres),75)-median(Pendientes(Pendientes < Thres)))/2+median(Pendientes(Pendientes < Thres));
             mS = median(Pendientes(Pendientes > Thres));
             
             f = fittype('a*x');
             [fit1,gof,fitinfo] = fit(cell2mat(indx'),cell2mat(indy'),f,'StartPoint',0);
-            mN1 = fit1.a;
+            mN = fit1.a;
             if nargin == 3
-                plot(ax(1),sort(unique(cell2mat(indx')))*1e6,sort(unique(cell2mat(indx')))*mN,'-g')
-                plot(ax(1),sort(unique(cell2mat(indx')))*1e6,sort(unique(cell2mat(indx')))*mN1,'-m')
+                %                 plot(ax(1),sort(unique(cell2mat(indx')))*1e6,sort(unique(cell2mat(indx')))*mN1,'-g')
+                plot(ax(1),sort(unique(cell2mat(indx')))*1e6,sort(unique(cell2mat(indx')))*mN,'-m')
             end
             
         end

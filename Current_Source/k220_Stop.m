@@ -5,10 +5,10 @@ function k220_Stop(k220)
 % - k220: connection object of the current source
 %
 % Example:
-% k220_Stop_updated(k220)
+% k220_Stop(k220)
 %
 % Last update: 04/07/2018
 
 %% Función para desactivar el output de la fuente.
 str = 'F0T4X\n'; %%% Funciona también 'F0T5X\n
-query(k220.ObjHandle,str)
+query(k220.ObjHandle,str);

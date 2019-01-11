@@ -31,6 +31,10 @@ classdef CurrentSource
             
             [obj, status] = k220_init(obj);
             obj = k220_setVlimit(obj);
+            I_initial.Value = 0;
+            I_initial.Units = 'A';
+            obj = SetIntensity(obj,I_initial);
+            obj = CurrentSource_Stop(obj);
         end
         
         function obj = Calibration(obj)

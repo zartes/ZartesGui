@@ -1,5 +1,5 @@
 function ChangeGoodOpt(src,evnt)
-% Auxiliary function to handle right-click mouse options of I-V curves representation 
+% Auxiliary function to handle right-click mouse options of I-V curves representation
 % Last update: 14/11/2018
 
 
@@ -12,20 +12,20 @@ switch sel_typ
                 NumFile = i;
                 break;
             end
-        end                        
+        end
         
         cmenu = uicontextmenu('Visible','on');
         c1 = uimenu(cmenu,'Label',src.Tag);
         try
-        data.NumFile = NumFile;
-        data.fig.hObject = src.Parent.Parent;
-        data.IVset = data.fig.hObject.UserData;
-        data.src = src;
-        uimenu(c1,'Label','Remove from analysis','Callback',...
-            {@ActionFcn},'UserData',data);
+            data.NumFile = NumFile;
+            data.fig.hObject = src.Parent.Parent;
+            data.IVset = data.fig.hObject.UserData;
+            data.src = src;
+            uimenu(c1,'Label','Remove from analysis','Callback',...
+                {@ActionFcn},'UserData',data);
         catch
         end
-                
+        
         set(src,'uicontextmenu',cmenu);
     otherwise
 end
@@ -44,8 +44,8 @@ switch str
             h1(i).Visible = 'off';
         end
         
-        UserData.IVset(UserData.NumFile).good = 0;        
-        UserData.fig.hObject.UserData = UserData.IVset;        
+        UserData.IVset(UserData.NumFile).good = 0;
+        UserData.fig.hObject.UserData = UserData.IVset;
         
     otherwise
         

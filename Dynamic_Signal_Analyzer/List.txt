@@ -1,0 +1,153 @@
+Listado de archivos de la carpeta Dynamic_Signal_Analyzer
+
+hp_Source_OFF.m
+  Function to deactivate the output of the source provided by HP3562A device 
+  output
+ 
+  Input:
+  - dsa: Object class HP3562A
+ 
+  Example:
+  hp_Source_OFF(dsa)
+ 
+  Last update: 06/07/2018
+
+
+hp_Source_ON.m
+  Function to activate the output of the source provided by HP3562A device 
+  output
+ 
+  Input:
+  - dsa: Object class HP3562A
+ 
+  Example:
+  hp_Source_ON(dsa)
+ 
+  Last update: 06/07/2018
+
+
+hp_WhiteNoise.m
+  Function to initialize the DSA HP3562A device in White Noise
+  output
+ 
+  Input:
+  - dsa: Object class DSA
+  - AMP: Amplitude value in mV
+ 
+  Example:
+  hp_WhiteNoise(dsa,AMP)
+ 
+  Last update: 06/07/2018
+
+
+hp_init.m
+  Function to initialize the Spectral Analyzer HP3562A device
+ 
+  Input:
+  - dsa: Class object SpectralAnalyzer
+ 
+  Output:
+  - multi: Object regards multimeter gpib connection
+  - status: status value (0: Ok; 1: Error);
+ 
+  Example:
+   [dsa, status] = hp_init(dsa)
+ 
+  Last update: 05/07/2018
+
+
+hp_measure_TF.m
+  Function to measure the Transfer Function by DSA HP3562A device
+ 
+  Input:
+  - dsa: Object class DSA
+  - varargin: Sine Amplitude in millivolts. By default: 20mV
+ 
+  Output:
+  - dsa: Object added Sine Sweept Configuration
+  - datos: [freq' data'] related to the spectrum.
+ 
+  Example:
+  [dsa, datos] = hp_measure_TF(dsa, varargin)
+ 
+  Last update: 05/07/2018
+
+
+hp_measure_noise.m
+  Function to measure the Noise response by DSA HP3562A device
+ 
+  Input:
+  - dsa: Object class DSA
+ 
+  Output:
+  - dsa: Object added Noise Configuration
+  - datos: [freq' data'] related to the spectrum.
+ 
+  Example:
+  [dsa, datos] = hp_measure_noise(dsa)
+ 
+  Last update: 05/07/2018
+
+
+hp_noise_config.m
+  Function to initialize the mode Noise in the DSA HP3562A device
+ 
+  Input:
+  - dsa: Object class DSA
+ 
+  Output:
+  - dsa: Object added mode Noise Configuration
+ 
+  Example:
+  hp_ss_config(dsa)
+ 
+  Last update: 05/07/2018
+
+
+hp_read.m
+  Function to read ASCII header of DSA HP3562A device
+ 
+  Input:
+  - dsa: Object class DSA (dsa.ObjHandle)
+ 
+  Output:
+  - freq: frequencies (units)
+  - data: power spectral density (PSD)
+  - header: ASCII header
+ 
+  Example:
+  [freq, data, header] = hp_read(dsa)
+ 
+  Last update: 05/07/2018
+
+
+hp_sin_config.m
+  Function to initialize the multimeter HP3458A device in Sine Sweept mode
+  output
+ 
+  Input:
+  - dsa: Object class Digital Signal Analyzer
+  - freq: frequency value in Hz
+ 
+  Example:
+  hp_sin_config(dsa,freq)
+ 
+  Last update: 06/07/2018
+ %función para configurar la source del HP.
+
+
+hp_ss_config.m
+  Function to initialize the mode Sine Sweept in the DSA HP3562A device
+ 
+  Input:
+  - dsa: Object class DSA
+ 
+  Output:
+  - dsa: Object added Sine Sweept Configuration
+ 
+  Example:
+  hp_ss_config(dsa)
+ 
+  Last update: 05/07/2018
+
+

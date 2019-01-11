@@ -8,7 +8,7 @@ function [k220, status] = k220_init(k220)
 % - k220: 
 %
 % Example:
-% k220 = k220_init_updated()
+% k220 = k220_init()
 %
 % Last update: 03/07/2018
 

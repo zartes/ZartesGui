@@ -1,0 +1,33 @@
+Listado de archivos de la carpeta Multimeter
+
+multi_init.m
+  Function to initialize the multimeter HP3458A device
+ 
+  Input:
+  - multi: Object class Multimetro
+ 
+  Output:
+  - multi: Object regards multimeter gpib connection
+  - status: status value (0: Ok; 1: Error);
+ 
+  Example:
+  [multi, status] = multi_init();
+ 
+  Last update: 28/06/2018
+
+
+multi_read.m
+  Function to read voltage from multimeter HP3458A
+ 
+  Input:
+  - multi: object refering to gpib connection of the HP3458A multimeter
+ 
+  Output:
+  - Vdc: voltage (units).
+ 
+  Example of usage:
+  Vdc = multi_read(multi);
+ 
+  Last uptdate: 28/06/2018
+
+

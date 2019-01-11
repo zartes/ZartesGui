@@ -154,7 +154,7 @@ function Previous_Callback(hObject, eventdata, handles)
 % hObject    handle to Previous (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.Files_Ind = handles.Files_Ind - 1;
+handles.Files_Ind = max(handles.Files_Ind - 1,1);
 if hObject ~= handles.Rewind
     if handles.Files_Ind == 1
         set([handles.Previous handles.Rewind],'Enable','off')
@@ -174,7 +174,7 @@ function Next_Callback(hObject, eventdata, handles)
 % hObject    handle to Next (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.Files_Ind = handles.Files_Ind + 1;
+handles.Files_Ind = min(handles.Files_Ind + 1,handles.Nfiles);
 if hObject ~= handles.Forward
     if handles.Files_Ind == handles.Nfiles
         set([handles.Next handles.Forward],'Enable','off')
@@ -329,7 +329,7 @@ plot(hs,1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2,'ButtonDownFcn',{@DisplayResul
 legend(hs,'Experimental',eval(['handles.varargin{1}.P' StrCond '(ind_Tbath).ElecThermModel{handles.Files_Ind}']));
 
 axis(hs,'tight');
-title(hs,strcat(num2str(OP.r0*100,'%3.2f'),'%Rn'),'fontsize',12);
+title(hs,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
 if abs(OP.Z0-OP.Zinf) < 1.5e-3
     set(get(findobj(hs,'type','axes'),'title'),'color','r');
 end
@@ -423,7 +423,7 @@ set(hs1,'FontSize',11,'FontWeight','bold');
 set(hs1,'LineWidth',2)
 set(hs1,'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-')
 set(hs1,'XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'})
-title(hs1,strcat(num2str(OP.r0*100,'%3.2f'),'%Rn'),'fontsize',12);
+title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
 %         OP.Z0,OP.Zinf
 %debug
 if abs(OP.Z0-OP.Zinf) < 1.5e-3
@@ -453,6 +453,15 @@ function TF_Name_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of TF_Name as a double
 handles.Files_Ind = get(hObject,'Value');
 set(handles.Noise_Name,'Value',handles.Files_Ind);
+if handles.Files_Ind == 1
+    set([handles.Forward handles.Next],'Enable','on');
+    set([handles.Rewind handles.Previous],'Enable','off');
+elseif handles.Files_Ind == handles.Nfiles
+    set([handles.Forward handles.Next],'Enable','off');
+    set([handles.Rewind handles.Previous],'Enable','on');
+else
+    set([handles.Rewind handles.Previous handles.Forward handles.Next],'Enable','on');
+end
 PlotTF_Noise(hObject,[],handles);
 
 guidata(hObject,handles);
@@ -493,6 +502,8 @@ function Noise_Name_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
 
 
 function DisplayResults(src,evnt)

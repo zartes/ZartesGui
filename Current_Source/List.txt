@@ -1,0 +1,68 @@
+Listado de los archivos de la carpeta Current_Source
+
+k220_Start.m
+  Function to activate the source output
+ 
+  Input:
+  - k220: connection object of the current source
+ 
+  Example:
+  k220_Start(k220)
+ 
+  Last update: 04/07/2018
+
+
+k220_Stop.m
+  Function to deactivate the source output
+ 
+  Input:
+  - k220: connection object of the current source
+ 
+  Example:
+  k220_Stop(k220)
+ 
+  Last update: 04/07/2018
+
+
+k220_init.m
+  Function to initialize the current source K220
+ 
+  Input:
+  - varargin: by default is empty.
+  
+  Output:
+  - k220: 
+ 
+  Example:
+  k220 = k220_init()
+ 
+  Last update: 03/07/2018
+
+
+k220_setI.m
+  Function to activate the source output
+ 
+  Input:
+  - k220: connection object of the current source
+  - Ivalue: current values (in units of A)
+ 
+  Example:
+  k220_setI(k220,Ivalue)
+ 
+  Last update: 04/07/2018
+
+
+k220_setVlimit.m
+  Function to change the maximum voltage limit value of the source device.
+  By default, the maximum voltage is set at 50 V whenever no second
+  argument is given.  
+ 
+  Input:
+  - k220: connection object of the current source
+ 
+  Example:
+  k220 = k220_setVlimit(k220)
+ 
+  Last update: 04/07/2018
+
+

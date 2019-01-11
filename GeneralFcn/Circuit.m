@@ -1,4 +1,5 @@
 classdef Circuit
+    % Class defining a Circuit class.
     
     properties              
         Rpar;           % Parasitic Impedance (TES branch)
@@ -14,6 +15,8 @@ classdef Circuit
     
     methods        
         function obj = Constructor(obj)
+            % Function to generate the class with default values
+            
             obj.Rf = PhysicalMeasurement;            
             obj.Rf.Value = [];
             obj.Rf.Units = 'Ohm';
@@ -24,7 +27,7 @@ classdef Circuit
             
             obj.Rn = PhysicalMeasurement;
             obj.Rn.Value = 0.0232;
-            obj.Rn.Units = '%';
+            obj.Rn.Units = 'Ohm';
             
             obj.Rsh = PhysicalMeasurement;
             obj.Rsh.Value = 0.002;

@@ -27,11 +27,11 @@ function varargout = Conf_Setup_PXI(varargin)
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @Conf_Setup_PXI_OpeningFcn, ...
-                   'gui_OutputFcn',  @Conf_Setup_PXI_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @Conf_Setup_PXI_OpeningFcn, ...
+    'gui_OutputFcn',  @Conf_Setup_PXI_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -61,37 +61,64 @@ set(handles.figure1,'Color',[0 0.2 0.5],'Position',...
     'Units','Normalized');
 
 
-switch varargin{1}.Tag
-    case 'PXI_Conf_Mode'  % TF or Noise
-        handles.Options.String = {'TF Mode';'Noise Mode'};
-        
-        % By default, TF Mode should be set %
-%         varargin{3}.PXI = TF_Configuration(varargin{3}.PXI);
-        %        
-        % Horizontal setting
-        a = fieldnames(varargin{3}.PXI.ConfStructs);
-        handles.SubStructure.String = a;
-        % SubStructure within Horizontal setup
-        eval(['b = fieldnames(varargin{3}.PXI.ConfStructs.' a{1} ');']);
-        for i = 1:length(b)
-            ConfInstrs{i,1} = b{i};
-            ConfInstrs{i,2} = num2str(eval(['varargin{3}.PXI.ConfStructs.' a{1} '.' b{i} ';']));
-        end                
-        
-        
-    case 'PXI_Pulses_Conf'  % Pulses
-        handles.Options.String = {'Pulses Mode'};
-        a = fieldnames(varargin{3}.PXI.ConfStructs);
-        handles.SubStructure.String = a;
-        % SubStructure within Horizontal setup
-        eval(['b = fieldnames(varargin{3}.PXI.ConfStructs.' a{1} ');']);
-        for i = 1:length(b)
-            ConfInstrs{i,1} = b{i};
-            ConfInstrs{i,2} = num2str(eval(['varargin{3}.PXI.ConfStructs.' a{1} '.' b{i} ';']));
-        end    
-         
+if isfield('Label','varargin') && strcmp(varargin{1}.Label,'PXI_Acquisition_card Properties')
+    handles.Options.String = {'ConfStructs';'WaveFormInfo';'Options';'ObjHandle'};
+    handles.Options.Value = 1;
+    UserData = varargin{1}.UserData;
+    a = fieldnames(UserData.ConfStructs);
+    handles.SubStructure.String = a;
+    % SubStructure within Horizontal setup
+    eval(['b = fieldnames(UserData.ConfStructs.' a{1} ');']);
+    for i = 1:length(b)
+        ConfInstrs{i,1} = b{i};
+        ConfInstrs{i,2} = num2str(eval(['UserData.ConfStructs.' a{1} '.' b{i} ';']));
+    end
+    
+else
+    
+    switch varargin{1}.Tag
+        case 'PXI_Conf_Mode'  % TF or Noise
+            
+        case 'PXI_TF_Zw_Conf'
+            handles.figure1.Name = 'PXI Configuration';
+            handles.Options.String = {'Zw'};
+            % Horizontal setting
+            a = fieldnames(varargin{3}.PXI.ConfStructs);
+            handles.SubStructure.String = a;
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(varargin{3}.PXI.ConfStructs.' a{1} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['varargin{3}.PXI.ConfStructs.' a{1} '.' b{i} ';']));
+            end
+        case 'PXI_TF_Noise_Conf'
+            handles.figure1.Name = 'PXI Configuration';
+            handles.Options.String = {'Noise'};
+            % Horizontal setting
+            a = fieldnames(varargin{3}.PXI.ConfStructs);
+            handles.SubStructure.String = a;
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(varargin{3}.PXI.ConfStructs.' a{1} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['varargin{3}.PXI.ConfStructs.' a{1} '.' b{i} ';']));
+            end
+            
+        case 'PXI_Pulse_Conf'  % Pulses
+            handles.figure1.Name = 'PXI Configuration';
+            handles.Options.String = {'Pulses'};
+            a = fieldnames(varargin{3}.PXI.ConfStructs);
+            handles.SubStructure.String = a;
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(varargin{3}.PXI.ConfStructs.' a{1} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['varargin{3}.PXI.ConfStructs.' a{1} '.' b{i} ';']));
+            end
+            
+    end
+    
 end
-
 % Configuration of the DSA options
 handles.ConfInstrs = ConfInstrs;
 
@@ -101,8 +128,6 @@ handles.Table.Data = handles.ConfInstrs;
 handles.Table.ColumnEditable = [false true false];
 handles.Table.ColumnName = {'Prop.';'Value';'Unit'};
 
-
-
 % Update handles structure
 guidata(hObject, handles);
 
@@ -111,7 +136,7 @@ guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = Conf_Setup_PXI_OutputFcn(hObject, eventdata, handles) 
+function varargout = Conf_Setup_PXI_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -127,7 +152,8 @@ function Add_Callback(hObject, eventdata, handles)
 % hObject    handle to Add (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.Table.Data = [handles.Table.Data; cell(1,3)];
+handles.Table.Data = [handles.Table.Data; cell(size(handles.Table.Data))];
+guidata(hObject,handles);
 
 % --- Executes on button press in Remove.
 function Remove_Callback(hObject, eventdata, handles)
@@ -137,7 +163,7 @@ function Remove_Callback(hObject, eventdata, handles)
 if size(handles.Table.Data,1) > 1
     handles.Table.Data(end,:) = [];
 end
-
+guidata(hObject,handles);
 
 % --- Executes on selection change in Options.
 function Options_Callback(hObject, eventdata, handles)
@@ -147,45 +173,92 @@ function Options_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns Options contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Options
-switch handles.varargin{1}.Tag
-    case 'PXI_Conf_Mode'  % TF or Noise
 
+if isfield('Label','varargin') && strcmp(handles.varargin{1}.Label,'PXI_Acquisition_card Properties')
+    UserData = handles.varargin{1}.UserData;
+    PXI_Str = {'ConfStructs';'WaveFormInfo';'Options';'ObjHandle'};
+    if size(eval(['UserData.' PXI_Str{handles.Options.Value} ]'),2) == 1
         if handles.Options.Value == 1
-%             handles.varargin{3}.PXI = TF_Configuration(handles.varargin{3}.PXI);
+            eval(['a = fieldnames(UserData.' PXI_Str{handles.Options.Value} ');']);
+            handles.SubStructure.String = a;
+            handles.SubStructure.Visible = 'on';
+            handles.SubStructure.Value = 1;
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(UserData.' PXI_Str{handles.Options.Value} '.' a{handles.SubStructure.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['UserData.' PXI_Str{handles.Options.Value} '.' a{handles.SubStructure.Value} '.' b{i} ';']));
+            end
         else
-%             handles.varargin{3}.PXI = Noise_Configuration(handles.varargin{3}.PXI);
+            handles.SubStructure.Value = 1;
+            handles.SubStructure.Visible = 'off';
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(UserData.' PXI_Str{handles.Options.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['UserData.' PXI_Str{handles.Options.Value} '.' b{i} ';']));
+            end
         end
-        %
-        % Horizontal setting
-        a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
-        handles.SubStructure.String = a;
-        % SubStructure within Horizontal setup
-        eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+    elseif size(eval(['UserData.' PXI_Str{handles.Options.Value} ]'),2) == 2
+        handles.SubStructure.Visible = 'on';
+        handles.SubStructure.String = {'1';'2'};
+        handles.SubStructure.Value = 1;
+        eval(['b = fieldnames(UserData.' PXI_Str{handles.Options.Value} '(' num2str(handles.SubStructure.Value) '));']);
         for i = 1:length(b)
             ConfInstrs{i,1} = b{i};
-            ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
-        end        
-        
-        
-        
-    case 'PXI_Pulses_Conf'  % Pulses
-        handles.Options.String = {'Pulses Mode'};
-        if handles.Options.Value == 1
-%             handles.varargin{3}.PXI = TF_Configuration(handles.varargin{3}.PXI);
-        else
-%             handles.varargin{3}.PXI = Noise_Configuration(handles.varargin{3}.PXI);
+            ConfInstrs{i,2} = num2str(eval(['UserData.' PXI_Str{handles.Options.Value} '(' num2str(handles.SubStructure.Value) ').' b{i} ';']));
         end
-        %
-        % Horizontal setting
-        a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
-        handles.SubStructure.String = a;
-        % SubStructure within Horizontal setup
-        eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
-        for i = 1:length(b)
-            ConfInstrs{i,1} = b{i};
-            ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
-        end       
-         
+    else
+        handles.SubStructure.Visible = 'off';
+        handles.SubStructure.String = {''};
+        handles.SubStructure.Value = 1;
+        try
+            eval(['b = fieldnames(UserData.' PXI_Str{handles.Options.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['UserData.' PXI_Str{handles.Options.Value} '(' num2str(handles.SubStructure.Value) ').' b{i} ';']));
+            end
+        catch
+            ConfInstrs{1,1} = '';
+        end
+    end
+else
+    
+    switch handles.varargin{1}.Tag
+        
+        case 'PXI_TF_Zw_Conf'
+            a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
+            handles.SubStructure.String = a;
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
+            end
+        case 'PXI_TF_Noise_Conf'
+            a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
+            handles.SubStructure.String = a;
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
+            end
+            
+        case 'PXI_Pulse_Conf'  % Pulses
+            handles.Options.String = {'Pulses'};
+            
+            % Horizontal setting
+            a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
+            handles.SubStructure.String = a;
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
+            end
+            
+    end
 end
 
 % Configuration of the DSA options
@@ -213,8 +286,8 @@ function Cancel_Callback(hObject, eventdata, handles)
 % hObject    handle to Cancel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-figure1_DeleteFcn(handles.figure1,eventdata,handles);  
+handles.varargin{1}.UserData = [];
+figure1_DeleteFcn(handles.figure1,eventdata,handles);
 
 
 
@@ -233,14 +306,16 @@ function Save_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-switch handles.varargin{1}.Tag
-    case 'PXI_Conf_Mode'
-        handles.varargin{3}.PXI_Mode.Value = handles.Options.Value;
-    case 'PXI_Pulses_Conf'
-        handles.varargin{3}.PXI_Mode.Value = handles.Options.Value;        
+if isfield('Label','varargin') && strcmp(handles.varargin{1}.Label,'PXI_Acquisition_card Properties')
+    UserData = handles.varargin{1}.UserData;
+    hndls = guidata(handles.varargin{1});
+    hndls.PXI = UserData;
+    guidata(hndls.SetupTES,hndls);
+else
+    handles.varargin{1}.UserData = handles.varargin{3}.PXI.ConfStructs;
 end
-handles.varargin{1}.UserData = handles.varargin{3}.PXI.ConfStructs;
-figure1_DeleteFcn(handles.figure1,eventdata,handles);  
+
+figure1_DeleteFcn(handles.figure1,eventdata,handles);
 
 
 
@@ -253,26 +328,81 @@ function SubStructure_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns SubStructure contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from SubStructure
-switch handles.varargin{1}.Tag
-    case 'PXI_Conf_Mode'  % TF or Noise
-        a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
-        % SubStructure within Horizontal setup
-        eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+
+if isfield('Label','varargin') && strcmp(handles.varargin{1}.Label,'PXI_Acquisition_card Properties')
+    UserData = handles.varargin{1}.UserData;
+    PXI_Str = {'ConfStructs';'WaveFormInfo';'Options';'ObjHandle'};
+    if size(eval(['UserData.' PXI_Str{handles.Options.Value} ]'),2) == 1
+        if handles.Options.Value == 1
+            eval(['a = fieldnames(UserData.' PXI_Str{handles.Options.Value} ');']);
+            handles.SubStructure.String = a;
+            handles.SubStructure.Visible = 'on';
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(UserData.' PXI_Str{handles.Options.Value} '.' a{handles.SubStructure.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['UserData.' PXI_Str{handles.Options.Value} '.' a{handles.SubStructure.Value} '.' b{i} ';']));
+            end
+        else
+            handles.SubStructure.Visible = 'off';
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(UserData.' PXI_Str{handles.Options.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['UserData.' PXI_Str{handles.Options.Value} '.' b{i} ';']));
+            end
+        end
+    elseif size(eval(['UserData.' PXI_Str{handles.Options.Value} ]'),2) == 2
+        handles.SubStructure.Visible = 'on';
+        handles.SubStructure.String = {'1';'2'};
+        eval(['b = fieldnames(UserData.' PXI_Str{handles.Options.Value} '(' num2str(handles.SubStructure.Value) '));']);
         for i = 1:length(b)
             ConfInstrs{i,1} = b{i};
-            ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
-        end        
-        
-    case 'PXI_Pulses_Conf'  % Pulses
-        handles.Options.String = {'Pulses Mode'};
-        a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
-        % SubStructure within Horizontal setup
-        eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
-        for i = 1:length(b)
-            ConfInstrs{i,1} = b{i};
-            ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
-        end        
-         
+            ConfInstrs{i,2} = num2str(eval(['UserData.' PXI_Str{handles.Options.Value} '(' num2str(handles.SubStructure.Value) ').' b{i} ';']));
+        end
+    else
+        handles.SubStructure.Visible = 'off';
+        handles.SubStructure.String = {''};
+        try
+            eval(['b = fieldnames(UserData.' PXI_Str{handles.Options.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['UserData.' PXI_Str{handles.Options.Value} '(' num2str(handles.SubStructure.Value) ').' b{i} ';']));
+            end
+        catch
+            ConfInstrs{1,1} = '';
+        end
+    end
+else
+    
+    switch handles.varargin{1}.Tag
+        case 'PXI_TF_Zw_Conf'  % TF or Noise
+            a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
+            end
+        case 'PXI_TF_Noise_Conf'
+            a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
+            end
+        case 'PXI_Pulse_Conf'  % Pulses
+            handles.Options.String = {'Pulses'};
+            a = fieldnames(handles.varargin{3}.PXI.ConfStructs);
+            % SubStructure within Horizontal setup
+            eval(['b = fieldnames(handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} ');']);
+            for i = 1:length(b)
+                ConfInstrs{i,1} = b{i};
+                ConfInstrs{i,2} = num2str(eval(['handles.varargin{3}.PXI.ConfStructs.' a{handles.SubStructure.Value} '.' b{i} ';']));
+            end
+            
+    end
 end
 
 % Configuration of the DSA options
@@ -307,9 +437,17 @@ function Table_CellEditCallback(hObject, eventdata, handles)
 a = handles.SubStructure.String;
 aN = handles.SubStructure.Value;
 data = handles.Table.Data;
-try
-    eval(['handles.varargin{3}.PXI.ConfStructs.' a{aN} '.' data{eventdata.Indices(1),eventdata.Indices(2)-1} ' = ' eventdata.NewData ';']);
-catch
-    eval(['handles.varargin{3}.PXI.ConfStructs.' a{aN} '.' data{eventdata.Indices(1),eventdata.Indices(2)-1} ' = ''' eventdata.NewData ''';']);
+
+PXI_Str = {'ConfStructs';'WaveFormInfo';'Options';'ObjHandle'};
+if isfield('Label','varargin') && strcmp(handles.varargin{1}.Label,'PXI_Acquisition_card Properties')
+    UserData = handles.varargin{1}.UserData;
+    eval(['UserData.' PXI_Str{handles.Options.Value} '.' a{aN} '.' data{eventdata.Indices(1),eventdata.Indices(2)-1} ' = ' eventdata.NewData ';']);
+    handles.varargin{1}.UserData = UserData;
+else
+    try
+        eval(['handles.varargin{3}.PXI.' PXI_Str{handles.Options.Value} '.' a{aN} '.' data{eventdata.Indices(1),eventdata.Indices(2)-1} ' = ' eventdata.NewData ';']);
+    catch
+        eval(['handles.varargin{3}.PXI.' PXI_Str{handles.Options.Value} '.' a{aN} '.' data{eventdata.Indices(1),eventdata.Indices(2)-1} ' = ''' eventdata.NewData ''';']);
+    end
 end
 guidata(hObject,handles);

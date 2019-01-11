@@ -1,6 +1,6 @@
 function Identify_Origin(src,evnt)
 % Auxiliary function to handle right-click mouse options of TF-Noise_Viewer
-% Last update: 14/11/2018   
+% Last update: 14/11/2018
 
 if evnt.Button == 3
     
@@ -15,7 +15,7 @@ if evnt.Button == 3
     [val,ind] = min((abs(XData-x_click)));
     ind_orig = ind;
     
-    hps = findobj(src.Parent.Parent,'Type','Axes');   
+    hps = findobj(src.Parent.Parent,'Type','Axes');
     StrParam = {'bi';'ai';'taueff*1e6';'C*1e15'};
     for i = 1:length(hps)
         hp(i) = plot(hps(i),XData(ind_orig),eval(['P(N_meas).p(jj(ind_orig)).' StrParam{i}]),'.',...
@@ -27,12 +27,14 @@ if evnt.Button == 3
     Ylabel = Parent.YLabel.String;
     
     FileStr = P(N_meas).fileZ{jj(ind_orig)};
-    FileStrLabel = ['..\Z(w)-' FileStr(strfind(FileStr,'Ruido'):end)];
+    FileStrLabel = ['..\Z(w)-' FileStr(strfind(FileStr,'TF'):end)];
     
     data{1} = P(N_meas).ztes{jj(ind_orig)};
     data{2} = P(N_meas).fZ{jj(ind_orig)};
     data{3} = P(N_meas).fileNoise{jj(ind_orig)};
-    data{4} = Circuit;
+    data{4} = P(N_meas).fNoise{jj(ind_orig)};
+    data{5} = P(N_meas).SigNoise{jj(ind_orig)};
+    data{6} = Circuit;
     
     TFParam = {['Tbath: ' num2str(P(N_meas).Tbath*1e3) 'mK'];...
         ['Residuo: ' num2str(P(N_meas).residuo(jj(ind_orig)))];...
@@ -66,16 +68,16 @@ if evnt.Button == 3
     c2(3) = uimenu(c1,'Label','Noise parameter analysis');
     for i = 1:length(NoiseParam)
         c4(i) = uimenu(c2(3),'Label',NoiseParam{i});
-    end        
+    end
     
     if P(N_meas).Filtered{jj(ind_orig)} == 0
-        c2(4) = uimenu(c1,'Label','Select as filtered','Callback',...
-        {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
+        c2(4) = uimenu(c1,'Label','Filter out','Callback',...
+            {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
     else
-        c2(4) = uimenu(c1,'Label','Unselect as filtered','Callback',...
-        {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
-    end    
-   
+        c2(4) = uimenu(c1,'Label','Unfilter','Callback',...
+            {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
+    end
+    
     set(src,'uicontextmenu',cmenu);
     waitfor(cmenu,'Visible','off')
     delete(hp);
@@ -93,6 +95,7 @@ filesZ = File(inds+1:end);
 filesZ(filesZ == '_') = ' ';
 switch str
     case 'Z(w)-Noise Plots'
+        
         fig = figure('Name',['Z(w)-Noise Plots: ' wdir1],'Visible','off');
         ax(1) = subplot(1,2,1);
         plot(ax(1),1e3*Data{1},'.','color',[0 0.447 0.741],...
@@ -101,27 +104,26 @@ switch str
         hold(ax(1),'on');%%% Paso marker de 'o' a '.'
         set(ax(1),'linewidth',2,'fontsize',12,'fontweight','bold');
         xlabel(ax(1),'Re(mZ)','fontsize',12,'fontweight','bold');
-        ylabel(ax(1),'Im(mZ)','fontsize',12,'fontweight','bold');%title('Ztes with fits (red)');  
+        ylabel(ax(1),'Im(mZ)','fontsize',12,'fontweight','bold');%title('Ztes with fits (red)');
         title(ax(1),filesZ);
-        plot(ax(1),1e3*Data{2}(:,1),1e3*Data{2}(:,2),'r','linewidth',2);                             
-    
-        inds = find(Data{3} == filesep, 1, 'last' );
-        wdir = Data{3}(1:inds);
-        filesNoise = Data{3}(inds+1:end);
-        [noise,file] = loadnoise(0,wdir,filesNoise);
+        plot(ax(1),1e3*Data{2}(:,1),1e3*Data{2}(:,2),'r','linewidth',2);
         
-        ax(2) = subplot(1,2,2);        
-        loglog(ax(2),noise{1}(:,1),V2I(noise{1}(:,2)*1e12,Data{4}),'.-r'),%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        inds = find(Data{3} == filesep, 1, 'last' );
+        filesNoise = Data{3}(inds+1:end);
+        file{1} = filesNoise;
+        ax(2) = subplot(1,2,2);
+        
+        loglog(ax(2),Data{4}(:,1),Data{5}(:,1),'.-r'),%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         hold(ax(2),'on'),grid(ax(2),'on')
-        loglog(ax(2),noise{1}(:,1),medfilt1(V2I(noise{1}(:,2)*1e12,Data{4}),20),'.-k'),hold(ax(2),'on'),grid(ax(2),'on')
+        loglog(ax(2),Data{4}(:,1),medfilt1(Data{5}(:,1),20),'.-k'),hold(ax(2),'on'),grid(ax(2),'on')
         set(ax(2),'linewidth',2,'fontsize',12,'fontweight','bold');
         ylabel(ax(2),'pA/Hz^{0.5}','fontsize',12,'fontweight','bold')
         xlabel(ax(2),'\nu (Hz)','fontsize',12,'fontweight','bold')
         file{1}(file{1} == '_') = ' ';
         title(ax(2),file{1});
-        fig.Visible = 'on';  
+        fig.Visible = 'on';
         
-    case 'Select as filtered'
+    case 'Filter out'
         handles = guidata(src.Parent.Parent.Parent);
         P = Data{1}{1};
         N_meas = Data{1}{2};
@@ -133,13 +135,13 @@ switch str
         else
             handles.Session{handles.TES_ID}.TES.PN(N_meas) = P(N_meas);
         end
-        guidata(handles.TES_Analysis,handles);
-        fig.hObject = handles.TES_Analysis;
+        guidata(handles.Analyzer,handles);
+        fig.hObject = handles.Analyzer;
         indAxes = findobj('Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotABCT(fig);
         
-    case 'Unselect as filtered'
+    case 'Unfilter'
         handles = guidata(src.Parent.Parent.Parent);
         P = Data{1}{1};
         N_meas = Data{1}{2};
@@ -151,12 +153,12 @@ switch str
         else
             handles.Session{handles.TES_ID}.TES.PN(N_meas) = P(N_meas);
         end
-        guidata(handles.TES_Analysis,handles);
-        fig.hObject = handles.TES_Analysis;
+        guidata(handles.Analyzer,handles);
+        fig.hObject = handles.Analyzer;
         indAxes = findobj('Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotABCT(fig);
         
     otherwise
         
-end    
+end

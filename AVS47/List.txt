@@ -1,0 +1,33 @@
+Listado de archivos de la carpeta AVS47
+
+avs_init.m
+  Function to initialize the AVS 47 device
+ 
+  Input:
+  - obj: Object class AVS
+ 
+  Output:
+  - obj: Object regards AVS gpib connection
+  - status: status value (0: Ok; 1: Error);
+ 
+  Example:
+  [obj, status] = avs_init(obj)
+ 
+  Last update: 10/01/2019
+
+
+avs_read.m
+  Function to read voltage from AVS 47
+ 
+  Input:
+  - obj: object refering to gpib connection of the AVS 47
+ 
+  Output:
+  - R: resistence (ohms).
+ 
+  Example of usage:
+  R = avs_read_updated(obj);
+ 
+  Last uptdate: 10/01/2019
+
+
