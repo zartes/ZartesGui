@@ -76,7 +76,7 @@ classdef TES_TFS
             % Function that imports TF from file
             
             if nargin > 1
-                [File, path] = uigetfile([DataPath '*'],'Pick Transfer Functions','Multiselect','off');
+                [File, path] = uigetfile([DataPath '*TF*'],'Pick Transfer Functions','Multiselect','off');
                 if iscell(File)||ischar(File)
                     T = strcat(path, File);
                 end

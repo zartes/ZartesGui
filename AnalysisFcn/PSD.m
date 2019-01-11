@@ -4,7 +4,7 @@ function [psd,freq]=PSD(data)
 
 t=data(:,1);
 x=data(:,2);
-SF=1./mean(diff(t))%
+SF=1./mean(diff(t));%
 N=length(x);
 ft=fft(x);ft=ft(1:N/2+1);
 psd=abs(ft).^2/SF/N;

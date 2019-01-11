@@ -84,20 +84,15 @@ classdef TES_P
                             Tbath = str2double(Tbath(1:end-2))*1e-3;
                         end
                         Tbaths = [obj.Tbath];
-                        %                         ind = find(Tbaths == Tbath);
                         [~,ind] = intersect(Tbaths,Tbath);
-                        %                         for i = 1:length(Tbath)
                         for i = 1:length(ind)
                             rp{i} = [obj(ind(i)).p.rp];
                             rp{i} = rp{i}(cell2mat(obj(ind(i)).Filtered) == 1);
                             val{i} = eval(['[obj(ind(i)).p.' param '];']);
                             val{i} = val{i}(cell2mat(obj(ind(i)).Filtered) == 1);
                         end
-                        %                         val = eval(['[obj(ind).p.' param '];']);
                     else
                         Tbath = [obj.Tbath];
-                        %                         rp = nan(length(Tbaths),1);
-                        %                         val = nan(length(Tbaths),1);
                         for i = 1:length(Tbath)
                             rp{i} = [obj(i).p.rp];
                             rp{i} = rp{i}(cell2mat(obj(i).Filtered) == 1);
@@ -133,7 +128,6 @@ classdef TES_P
                             [val(i,:),Tbaths(i,:),Rns(i,:)] = GetParamVsTbath(obj,param,Rn(i));
                         end
                     else
-                        %                 if ~isempty(cell2mat(strfind(ValidParams,param)))
                         if exist('Rn','var')
                             if Rn <= 0 || Rn > 1
                                 warndlg('Rn out of range, Rn must be among 0-1 values!','ZarTES v1.0');

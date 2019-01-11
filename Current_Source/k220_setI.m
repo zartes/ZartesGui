@@ -6,7 +6,7 @@ function k220_setI(k220,Ivalue)
 % - Ivalue: current values (in units of A)
 %
 % Example:
-% k220_setI_updated(k220,Ivalue)
+% k220_setI(k220,Ivalue)
 %
 % Last update: 04/07/2018
 

@@ -1,0 +1,216 @@
+Este archivo contiene el listado de archivos de la carpeta AnalysisFcn.
+
+Analyzer.exe (Ejecutable)
+
+Analyzer.m
+  ANALYZER MATLAB code for Analyzer.fig
+       
+
+BuildIbiasFromRp.m
+  Function to get Ibias (uA) for a specific Rn value
+ 
+  Input:
+  - IVset: struct (at least IVset.ibias, IVset.vout and IVset.rtes
+  - rp: percentage of Rn (
+
+
+ChangeGoodOpt.m
+  Auxiliary function to handle right-click mouse options of I-V curves representation 
+  Last update: 14/11/2018
+
+
+ChangeGoodOptP.m
+  Auxiliary function to handle right-click mouse options of Z(w) to electro-thermal model fitting representation 
+  Last update: 14/11/2018
+
+
+Conf_Setup.m
+  CONF_SETUP MATLAB code for Conf_Setup.fig       
+
+
+distinguishable_colors.m
+  DISTINGUISHABLE_COLORS: pick colors that are maximally perceptually distinct
+   
+  Example:
+    c = distinguishable_colors(25);
+    figure
+    image(reshape(c,[1 size(c)]))
+ 
+  Example using the file exchange's 'colorspace':
+    func = @(x) colorspace('RGB->Lab',x);
+    c = distinguishable_colors(25,'w',func);
+  Copyright 2010-2011 by Timothy E. Holy
+  Parse the inputs
+
+
+GraphicErrors.m
+  Auxiliary function to handle right-click mouse options of ABCT representation 
+  Last update: 14/11/2018   
+
+
+ICMA-CSIC.jpg
+  Image representing the ICMA-CSIC logo.
+
+
+Identify_Origin.m
+  Auxiliary function to handle right-click mouse options of TF-Noise_Viewer
+  Last update: 14/11/2018   
+
+
+List.txt
+  Listing of files regarding AnalysisFcn.
+
+
+ListInBiasOrder.m
+  Function to list files in current value order
+ 
+  Input:
+  - D: is string, 'HP*' 'TF*' etc.
+  - order: in absence order, is descend by default
+ 
+  Output:
+  - files
+ 
+  Example of usage:
+  files = ListInBiasOrder('TF*')
+ 
+  Last update: 14/11/2018
+
+
+multicmap.m
+  MULTICMAP Apply multiple colormaps to image objects
+            
+
+multiwaitbar.m
+  MULTIWAITBAR displays multiple waitbars.
+ 
+    Example:
+    H = multiwaitbar(3,[0 0 0 0],{'Please wait','Please wait','Please wait'});
+    for i = 0:0.2:1
+      for j = 0:0.2:1
+         for k = 0:0.1:1
+           multiwaitbar(3,[i j k],{'Computing','Computing','Computing'},H);
+         end
+      end
+    end
+    delete(H.figure)
+    clear('H')
+
+
+plotParamTES.m
+
+
+PSD.m
+  Function to compute the power spectral density.
+ 
+
+SmartSplit.m
+  Function to generate smart distribution of subplots
+ 
+  Input:
+  - N: number of subplots
+ 
+  Output:
+  - ncols: number of columns
+  - nrows: number of rows
+ 
+  Example of usage:
+  [ncols,nrows] = SmartSplit(N)
+ 
+  Last update: 14/11/2018
+
+
+TES_Analyzer_UserGuide.pdf
+
+
+TES_Analyzer_Session.m
+  Class to analyze TES data from one session
+    Each session open by Analyzer.m is stored in this class.
+
+    Reference page in Doc Center
+       doc TES_Analyzer_Session
+
+
+TES_Circuit.m
+  Class Circuit for TES data
+    Circuit represents the electrical components in the TES
+    characterization.
+
+    Reference page in Doc Center
+       doc TES_Circuit
+
+
+TES_Gset.m
+  Class Gset for TES data
+    Data derived from P-Tbath curve fitting at Rn values
+
+    Reference page in Doc Center
+       doc TES_Gset
+
+
+TES_IVCurveSet.m
+  Class IVCurveSet for TES data
+    Contains data from the I-V curves
+
+    Reference page in Doc Center
+       doc TES_IVCurveSet
+
+
+TES_Noise.m
+  Class Noise for TES data
+    This class contains options for Noise analysis
+
+    Reference page in Doc Center
+       doc TES_Noise
+
+
+TES_P.m
+  Class P for TES data
+    This class contains the Z(w)-Noise analysis data
+
+    Reference page in Doc Center
+       doc TES_P
+
+
+TES_Param.m
+  TES device class thermal parameters
+    Characteristics of TES device
+
+    Reference page in Doc Center
+       doc TES_Param
+
+
+TES_Report.m
+  Class Report for TES data
+    Options for generation a word file report
+
+    Reference page in Doc Center
+       doc TES_Report
+
+
+TES_Struct.m
+  Class Struct for TES data
+    This class contains all subclasses for TES analysis
+
+    Reference page in Doc Center
+       doc TES_Struct
+
+
+TES_TFS.m
+  Class TFS for TES data
+    This class contains transfer function in superconductor state
+
+    Reference page in Doc Center
+       doc TES_TFS
+
+
+TES_TF_Opt.m
+  Class TF for TES data
+    This class contains options for Z(W) analysis
+
+    Reference page in Doc Center
+       doc TES_TF_Opt
+
+
+TF_Noise_Viewer.m
+  TF_NOISE_VIEWER MATLAB code for TF_Noise_Viewer.fig

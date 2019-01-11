@@ -20,4 +20,5 @@ for i = 1:length(IVset)
     raux = IVset.rtes(ii);
     [~,i3] = min(diff(vaux)./diff(iaux));
     Ibs = spline(raux(1:i3),iaux(1:i3),rp)*1e6;
+%     Ibs = spline(raux(1:i3),iaux(1:i3),rp)*1e6;
 end

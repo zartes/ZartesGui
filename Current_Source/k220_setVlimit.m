@@ -7,7 +7,7 @@ function k220 = k220_setVlimit(k220)
 % - k220: connection object of the current source
 %
 % Example:
-% k220 = k220_setVlimit_updated(k220)
+% k220 = k220_setVlimit(k220)
 %
 % Last update: 04/07/2018
 

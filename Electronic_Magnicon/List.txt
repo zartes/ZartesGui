@@ -1,0 +1,353 @@
+Listado de archivos de la carpeta Electronic_Magnicon
+
+Put_TES_toNormal_State_CH.m
+  Function to set TES in Normal status, increasing the current with LNCS
+  device. 
+ 
+  Input:
+  - mag: communication object referring to electronic magnicon
+  - signo: sign of the current values (1 or -1).
+ 
+  Output:
+  - out: !!!!!! Needs to be defined  !!!!!
+ 
+  Example: out = Put_TES_toNormal_State_CH(mag,1,2)
+ 
+  Last update 26/06/2018
+
+
+mag_Configure_CalPulse.m
+  Function that sets the configuration of pulse acquisition of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Example of usage:
+  mag_Configure_CalPulse(s)
+ 
+  Last update: 09/07/2018
+
+
+mag_ConnectLNCS.m
+  Function to conect LNCS source
+ 
+  Input:
+  - s.ObjHandle: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon
+ 
+  Last update: 26/06/2018
+
+
+mag_DisconnectLNCS.m
+  Function to unplug LNCS source
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Last update: 26/06/2018
+
+
+mag_getBitrange_CH.m
+  Function to obtain the range of Ibias in double format
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Last update: 28/06/2018
+
+
+mag_getCalPulseDurationMode_CH.m
+  Function that gets the range duration time of the calibration pulse
+  of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - mode: numerical format: mode = 1 '<150us'; mode=2 '>=150us'
+ 
+  Example of usage:
+  mode = mag_getCalPulseDurationMode_CH(s)
+ 
+  Last update: 09/07/2018
+
+
+mag_getIrange_CH.m
+  Function to get the current range of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - range: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  range = mag_getIrange_CH(s)
+ 
+  Last update: 09/07/2018
+
+
+mag_init.m
+  Function to initialize the electronic magnicon communication via serial
+  port.
+ 
+  Input:
+  - COM: Serial port, 'COM5' for example.
+ 
+  Output:
+  - s: communication object referring to electronic magnicon
+ 
+  Last update: 26/06/2018
+  
+  if nargin == 0 
+
+mag_readImag_CH.m
+  Function to get Ibias value of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - IuA: Current values in uA
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Last update: 28/06/2018
+
+
+mag_readLNCSImag.m
+  Funcion para leer la Ibias de la LNCS!
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - IuA: Current values in uA
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Last update: 28/06/2018
+
+
+mag_readRf_FLL_CH.m
+  Function to measure the value of impedance Rf in closed loop
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+  - nch: source channel of the electronic magnicon
+ 
+  Output:
+  - Rf: Resistance (ohms)
+  
+  Example of usage:
+  Rf = mag_readRf_FLL_CH(s, 2)
+ 
+  Last update: 26/06/2018
+
+
+mag_setAMP_CH.m
+  Function that sets the electronic magnicon in AMP mode
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  out = mag_setAMP_CH(s)
+ 
+  Last update: 28/06/2018
+
+
+mag_setCalPulseAMP_CH.m
+  Function that sets the pulse amplitude electronic magnicon in AMP mode
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  out = mag_setCalPulseAMP_CH(s)
+ 
+  Last update: 28/06/2018
+
+
+mag_setCalPulseDT_CH.m
+  Function that sets the configuration of the range of pulse calibration
+  of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  out = mag_setCalPulseDT_CH(s)
+ 
+  Last update: 09/07/2018
+
+
+mag_setCalPulseDT_CH_updated.m
+  Function that sets the configuration of the range of pulse calibration
+  of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  out = mag_setCalPulseDT_CH_updated(s)
+ 
+  Last update: 09/07/2018
+
+
+mag_setCalPulseDuration_CH.m
+  Function that sets the pulse duration time (us)
+  of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  out = mag_setCalPulseDuration_CH(s)
+ 
+  Last update: 09/07/2018
+
+
+mag_setCalPulseMode_CH.m
+  Function that sets the configuration of pulse acquisition of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+  - mode: 'continuous' or 'single'
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  mag_Configure_CalPulse(s)
+ 
+  Last update: 09/07/2018
+
+
+mag_setCalPulseOFF_CH.m
+  Function that deactivates the pulse source of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  out = mag_setCalPulseOFF_CH(s)
+ 
+  Last update: 09/07/2018
+
+
+mag_setCalPulseON_CH.m
+  Function that activates the pulse source of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  out = mag_setCalPulseON_CH(s)
+ 
+  Last update: 09/07/2018
+
+
+mag_setFLL_CH.m
+  Function that sets the electronic magnicon in FLL mode
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  out = mag_setFLL_CH(s,nch)
+ 
+  Last update: 28/06/2018
+
+
+mag_setImag_CH.m
+  Function to set Ibias values of the electronic magnicon
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+  - IuA: Current values in microamperes
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Last update: 26/06/2018
+
+
+mag_setIrange_CH.m
+  Function to set the range of Ibias values
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+  - rango: Current values in microamperes
+  - nch: source channel
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Last update: 26/06/2018
+
+
+mag_setLNCSImag.m
+  Function to set fixed values of Ibias in LNCS device. 
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+  - IuA: Current values in microamperes
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example: out = mag_setLNCSImag(s,IuA)
+ 
+  Last update 26/06/2018
+
+
+mag_setRf_FLL_CH.m
+  Function that sets a fixed Rf value in FLL (Frequency-locked loop). The value finally taken is
+  rounded to the closest one on the following table:
+  table=[0 0.7 0.75 0.91 1 2.14 2.31 2.73 3.0 7.0 7.5 9.1 10 23.1 30 100]*1e3;
+ 
+  Input:
+  - s: communication object referring to electronic magnicon
+  - Rf: Resistance (ohms)
+  - nch: source channel of the electronic magnicon
+ 
+  Output:
+  - out: output of the query of the electronic magnicon, 'OK' or 'FAIL'
+ 
+  Example of usage:
+  out = mag_setRf_FLL_CH(s, 2e3, 2)
+ 
+  Last update: 26/06/2018
+
+

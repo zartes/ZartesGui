@@ -1,5 +1,5 @@
 function ChangeGoodOptP(src,evnt)
-% Auxiliary function to handle right-click mouse options of Z(w) to electro-thermal model fitting representation 
+% Auxiliary function to handle right-click mouse options of Z(w) to electro-thermal model fitting representation
 % Last update: 14/11/2018
 
 sel_typ = get(gcbf,'SelectionType');
@@ -35,7 +35,7 @@ switch sel_typ
         cmenu = uicontextmenu('Visible','on');
         c1 = uimenu(cmenu,'Label',src.Tag);
         uimenu(c1,'Label','Remove from analysis','Callback',...
-            {@ActionFcn},'UserData',Data);        
+            {@ActionFcn},'UserData',Data);
         set(src,'uicontextmenu',cmenu);
         
     otherwise

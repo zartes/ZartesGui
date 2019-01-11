@@ -95,14 +95,9 @@ classdef TES_Struct
                         continue;
                     end
                     diffptes = diffptes(indx);
-                    %                     plot(x,diffptes),hold on
                     range = find(diffptes > nanmedian(diffptes)+0.001*max(diffptes));
                     minrange(i,1) = x(range(end));
                     maxrange(i,1) = x(range(end-1));
-                    %                     plot(minrange,diffptes(range(end)),'Marker','o','MarkerSize',14)
-                    %                 figure,plot(x(find(diffptes > nanmedian(diffptes)+0.005*max(diffptes))),diffptes(find(diffptes > nanmedian(diffptes)+0.005*max(diffptes))),'r*')
-                    %                 hold on
-                    %                 plot(x,diffptes)
                     if i == size(obj.IVsetP,2)
                         j = 1;
                     else
@@ -192,8 +187,6 @@ classdef TES_Struct
                         [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(@obj.fitP,X0,XDATA,Paux*1e12,LB,[],opts); %#ok<ASGLU>
                         plot(ax,Tbath,obj.fitP(fit,XDATA),'-r','linewidth',1)
                         Gaux(jj) = obj.GetGfromFit(fit);%#ok<AGROW,NASGU> %%antes se pasaba fitaux.
-                        %                         ci = nlparci(fit,residual,'jacobian',jacob);
-                        %                         CI = (ci(:,2)-ci(:,1))';
                         ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA))./abs(Paux*1e12)))/length(Paux*1e12);
                         eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
                         eval(['obj.Gset' StrRange{k} '(jj).K = Gaux(jj).K;']);
@@ -228,7 +221,7 @@ classdef TES_Struct
         
         function param = GetGfromFit(obj,fit)
             % Function to get thermal parameters from fitting
-            fit
+            %             fit
             param.n = fit(2);
             param.K = -fit(1);
             param.Tc = (fit(3)/-fit(1))^(1/fit(2));
@@ -302,7 +295,28 @@ classdef TES_Struct
                 pause(0.2)
                 waitfor(helpdlg('After closing this message, select a point for TES characterization','ZarTES v1.0'));
                 figure(fig.hObject);
-                [X,~] = ginput(1);
+                
+                % Seleccion mediante teclado de la Rn
+                prompt = {'Enter the Rn (0 < Rn < 1) for TES thermal parameters'};
+                name = 'TES Thermal Parameters';
+                numlines = 1;
+                defaultanswer = {'0.8'};
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                if isempty(answer)
+                    warndlg('No Rn value selected','ZarTES v1.0');
+                    return;
+                else
+                    X = str2double(answer{1});
+                    if isnan(X)
+                        warndlg('Invalid Rn value','ZarTES v1.0');
+                        return;
+                    end
+                end
+                
+                % Seleccion mediante raton sobre las gráficas
+                %                 [X,~] = ginput(1);
+                
+                
                 ind_rp = find(rp > X,1); %#ok<NASGU>
                 
                 IndxOP = findobj('DisplayName','Operation Point');
@@ -519,11 +533,6 @@ classdef TES_Struct
                             end
                             FileName = [dirs{i} filesep filesNoise{j1}];
                             [RES, SimRes, M, Mph, fNoise, SigNoise] = obj.fitNoise(FileName, param);
-                            
-                            %                             f_DS = fNoise(1:3:end);
-                            %
-                            %                             f_DS = logspace(log10(fNoise(1)),log10(fNoise(end)),321)';
-                            %                             SigNoise_DS =spline(fNoise,SigNoise,f_DS);
                             
                             eval(['obj.P' StrRange{k1} '(i).p(jj).ExRes = RES;']);
                             eval(['obj.P' StrRange{k1} '(i).p(jj).ThRes = SimRes;']);
@@ -1207,7 +1216,6 @@ classdef TES_Struct
                         
                         f = logspace(0,6,1000);
                         auxnoise = obj.noisesim(OP,M,f);
-                        %                         auxnoise = noisesim('irwin',obj.TES,OP,obj.circuit,M);
                         
                         
                         switch obj.NoiseOpt.tipo
@@ -1252,9 +1260,7 @@ classdef TES_Struct
                                 end
                         end
                         axis(hs(i),[1e1 1e5 2 1e3])
-                        title(hs(i),strcat(num2str(OP.r0*100,'%3.2f'),'%Rn'),'fontsize',12);
-                        %         OP.Z0,OP.Zinf
-                        %debug
+                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
                         if abs(OP.Z0-OP.Zinf) < 1.5e-3
                             set(get(findobj(hs(i),'type','axes'),'title'),'color','r');
                         end
@@ -1265,16 +1271,12 @@ classdef TES_Struct
                         %%%%Pruebas sobre la cotribución de cada frecuencia a la
                         %%%%Resolucion.
                         if strcmpi(obj.NoiseOpt,'nep')
-                            %RESJ = sqrt(2*log(2)./trapz(f,1./medfilt1(totNEP,1).^2));%%%x = noisedata{1}(:,1);
                             RESJ = sqrt(2*log(2)./trapz(f,1./totNEP.^2));
                             disp(num2str(RESJ));
-                            %semilogx(f(1:end-1),((RESJ./totNEP(1:end-1)).^2/(2*log(2)).*diff(f))),hold on
                             semilogx(hs(i),f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19),hold on
                             RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
                             disp(num2str(RESJ2));
-                            %semilogx(fx(1:end-1),((RESJ2./NEP(1:end-1)).^2/(2*log(2)).*diff(fx)),'r')
                             semilogx(hs(i),fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise(:,1)))))/1.609e-19,'r')
-                            %semilogx(fx(1:end-1),((RESJ2./medfilt1(NEP(1:end-1),20)).^2/(2*log(2)).*diff(fx)),'k')
                         end
                         
                     end
@@ -1308,7 +1310,6 @@ classdef TES_Struct
                 for ind_Tbath = ind_TbathN
                     
                     if ~isempty(Rn)
-                        %                     Rn = sort(0.20:0.10:0.8,'descend');  % Example of using
                         eval(['Rp = [obj.P' StrCond{iP} '(ind_Tbath).p.rp];']);
                         
                         for i = 1:length(Rn)
@@ -1322,11 +1323,6 @@ classdef TES_Struct
                         ind = N:-1:1;
                         eval(['files' StrCond{iP} ' = files' StrCond{iP} '(ind);']);
                     end
-                    
-                    
-                    %                     eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ]'';';]);
-                    %                     eval(['files' StrCond{iP} ' = files' StrCond{iP} '(end:-1:1);']);
-                    %                     eval(['N = length(files' StrCond{iP} ');']);
                     if nargin < 4
                         fig(IndFig) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
                     end
@@ -1346,10 +1342,9 @@ classdef TES_Struct
                     end
                     set(hs,'LineWidth',2,'FontSize',11,'FontWeight','bold');
                     for i = 1:N
-                        %                             eval(['TF{i} = importdata(files' StrCond{iP} '{i});']);
                         eval(['FileName = files' StrCond{iP} '{i};']);
                         FileName = FileName(find(FileName == filesep,1,'last')+1:end);
-                        if ~isempty(strfind(FileName,'TF_PXI_'))
+                        if ~isempty(strfind(upper(FileName),'TF_PXI_'))
                             Ib = sscanf(FileName,'TF_PXI_%fuA.txt')*1e-6;
                         else
                             Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
@@ -1365,7 +1360,7 @@ classdef TES_Struct
                         ImZmin = min(imag(1e3*ztes));
                         ylim(hs(i),[min(-15,min(ImZmin)-1) 1])
                         plot(hs(i),1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2);
-                        title(hs(i),strcat(num2str(OP.r0*100,'%3.2f'),'%Rn'),'fontsize',12);
+                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
                         if abs(OP.Z0-OP.Zinf) < 1.5e-3
                             set(get(findobj(hs(i),'type','axes'),'title'),'color','r');
                         end
@@ -1397,7 +1392,7 @@ classdef TES_Struct
             
             answer = inputdlg({'Insert Name of the TES or date'},'ZarTES v1.0',[1 50],{' '});
             if isempty(answer)
-                answer{1} = ' ';
+                return;
             end
             ActXWord.Selection.Font.Name = 'Arial';
             ActXWord.Selection.Font.Size = 15;
@@ -1418,6 +1413,8 @@ classdef TES_Struct
                 ActXWord.Selection.TypeParagraph;
             end
             
+            ActXWord.Selection.TypeParagraph; %enter
+            ActXWord.Selection.TypeParagraph;
             ActXWord.Selection.TypeText('TES parameters:');
             ActXWord.Selection.TypeParagraph;
             
@@ -1427,6 +1424,8 @@ classdef TES_Struct
                 ActXWord.Selection.TypeText(TESProp{i});
                 ActXWord.Selection.TypeParagraph;
             end
+            ActXWord.Selection.TypeParagraph; %enter
+            ActXWord.Selection.TypeParagraph;
             
             %% Pintar curvas IV
             if obj.Report.IV_Curves
@@ -1469,7 +1468,10 @@ classdef TES_Struct
                 
                 print(figIV.hObject,'-dmeta');
                 invoke(ActXWord.Selection,'Paste');
-                %                 close(figIV.hObject);
+                close(figIV.hObject);
+                clear figIV;
+                ActXWord.Selection.TypeParagraph; %enter
+                ActXWord.Selection.TypeParagraph;
             end
             
             if obj.Report.FitPTset
@@ -1535,8 +1537,11 @@ classdef TES_Struct
                     ylabel(ax,'P_{TES}(pW)','fontsize',11,'fontweight','bold')
                     set(ax,'fontsize',12,'linewidth',2,'fontweight','bold')
                 end
-                print(fig,'-dmeta')
-                %                 close(fig)
+                print(fig,'-dmeta');
+                close(fig);
+                clear fig;
+                ActXWord.Selection.TypeParagraph; %enter
+                ActXWord.Selection.TypeParagraph;
             end
             
             %% Pintar NKGT set
@@ -1595,30 +1600,108 @@ classdef TES_Struct
                 print(fig.hObject,'-dmeta');
                 invoke(ActXWord.Selection,'Paste');
                 ActXWord.Selection.TypeParagraph;
-                %                 close(fig.hObject);
+                close(fig.hObject);
+                clear fig;
+                ActXWord.Selection.TypeParagraph; %enter
+                ActXWord.Selection.TypeParagraph;
             end
             
             if obj.Report.FitZset
                 TextString = 'Z(w) Analysis';
                 ActXWord.Selection.TypeText(TextString);
                 ActXWord.Selection.TypeParagraph; %enter
+                ActXWord.Selection.TypeParagraph;
                 
-                fig = obj.PlotTFTbathRp([],[]);
-                for i = 1:length(fig)
-                    print(fig(i),'-dmeta')
-                    invoke(ActXWord.Selection,'Paste');
+                prompt = {'Enter the Rn range:'};
+                name = 'Rn range (0 < Rn < 1)';
+                numlines = [1 70];
+                defaultanswer = {'0.5:0.05:0.8'};
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                Rn = eval(['[' answer{1} ']']);
+                
+                fig = obj.PlotTFTbathRp([],Rn);
+                try
+                    Temps = num2str([obj.PP.Tbath]'*1e3);
+                    for i = 1:length(Temps)
+                        StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
+                        StrIni(end) = [];
+                        ActXWord.Selection.TypeText(StrIni)
+                        ActXWord.Selection.TypeParagraph;
+                        ActXWord.Selection.TypeParagraph;
+                        print(fig(i),'-dmeta')
+                        invoke(ActXWord.Selection,'Paste');
+                        close(fig(i));
+                        ActXWord.Selection.TypeParagraph;
+                        ActXWord.Selection.TypeParagraph;
+                    end
+                catch
+                end
+                try
+                    Temps = num2str([obj.PN.Tbath]'*1e3);
+                    for j = 1:length(Temps)
+                        StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
+                        StrIni(end) = [];
+                        ActXWord.Selection.TypeText(StrIni)
+                        ActXWord.Selection.TypeParagraph;
+                        ActXWord.Selection.TypeParagraph;
+                        print(fig(i),'-dmeta')
+                        invoke(ActXWord.Selection,'Paste');
+                        close(fig(i));
+                        ActXWord.Selection.TypeParagraph;
+                        ActXWord.Selection.TypeParagraph;
+                    end
+                catch
                 end
                 clear fig;
             end
+            
             if obj.Report.NoiseSet
                 TextString = 'Noise Analysis';
                 ActXWord.Selection.TypeText(TextString);
                 ActXWord.Selection.TypeParagraph; %enter
+                ActXWord.Selection.TypeParagraph;
                 
-                fig = obj.PlotNoiseTbathRp([],[]);
-                for i = 1:length(fig)
-                    print(fig(i),'-dmeta')
-                    invoke(ActXWord.Selection,'Paste');
+                prompt = {'Enter the Rn range:'};
+                name = 'Rn range (0 < Rn < 1)';
+                numlines = [1 70];
+                defaultanswer = {'0.5:0.05:0.8'};
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                Rn = eval(['[' answer{1} ']']);
+                
+                fig = obj.PlotNoiseTbathRp([],Rn);
+                try
+                    Temps = num2str([obj.PP.Tbath]'*1e3);
+                    for i = 1:length(Temps)
+                        StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
+                        StrIni(end) = [];
+                        ActXWord.Selection.TypeText(StrIni)
+                        ActXWord.Selection.TypeParagraph;
+                        ActXWord.Selection.TypeParagraph;
+                        print(fig(i),'-dmeta')
+                        invoke(ActXWord.Selection,'Paste');
+                        close(fig(i));
+                        ActXWord.Selection.TypeParagraph;
+                        ActXWord.Selection.TypeParagraph;
+                    end
+                    
+                catch
+                end
+                try
+                    Temps = num2str([obj.PN.Tbath]'*1e3);
+                    for j = 1:length(Temps)
+                        StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
+                        StrIni(end) = [];
+                        ActXWord.Selection.TypeText(StrIni)
+                        ActXWord.Selection.TypeParagraph;
+                        ActXWord.Selection.TypeParagraph;
+                        print(fig(i),'-dmeta')
+                        invoke(ActXWord.Selection,'Paste');
+                        close(fig(i));
+                        ActXWord.Selection.TypeParagraph;
+                        ActXWord.Selection.TypeParagraph;
+                    end
+                    
+                catch
                 end
                 clear fig;
             end
@@ -1630,39 +1713,22 @@ classdef TES_Struct
                 TextString = 'ABCT Figure';
                 ActXWord.Selection.TypeText(TextString);
                 ActXWord.Selection.TypeParagraph; %enter
+                ActXWord.Selection.TypeParagraph;
                 
                 print(fig.hObject,'-dmeta');
                 invoke(ActXWord.Selection,'Paste');
+                close(fig.hObject);
+                clear fig;
+                ActXWord.Selection.TypeParagraph;
                 ActXWord.Selection.TypeParagraph;
                 
                 try
                     ActXWord.Selection.TypeText(['Fitting TF to: ' obj.PP(1).ElecThermModel{1}]);
                     ActXWord.Selection.TypeParagraph;
-                catch
-                end
-                try
-                    StrIni = 'Positive Ibias at ';
-                    Temps = num2str([obj.PP.Tbath]'*1e3);
-                    for i = 1:length(Temps)
-                        StrIni = [StrIni Temps(i,:) ' mK ',];
-                    end
-                    StrIni(end) = [];
-                    ActXWord.Selection.TypeText(StrIni)
-                catch
-                end
-                
-                try
-                    StrIni = 'Negative Ibias at ';
-                    Temps = num2str([obj.PN.Tbath]'*1e3);
-                    for i = 1:length(Temps)
-                        StrIni = [StrIni Temps(i,:) ' mK ',];
-                    end
-                    StrIni(end) = [];
-                    ActXWord.Selection.TypeText(StrIni)
                     ActXWord.Selection.TypeParagraph;
                 catch
                 end
-                clear fig;
+                
             end
             
             if ~exist(FileSpec,'file')
@@ -1705,7 +1771,8 @@ classdef TES_Struct
                         fig = figure('Visible','on');
                     end
                     if isempty(findobj('Type','Axes'))
-                        ax = axes(fig);
+                        figure(fig);
+                        ax = axes;
                         hold(ax,'on');
                     else
                         ax = findobj('Type','Axes');
@@ -1730,24 +1797,15 @@ classdef TES_Struct
                                 Ylabel = param;
                             end
                         end
-                        eval(['h = plot3(ax,val' StrRange{k} ',Tbath' StrRange{k} ',Rns' StrRange{k} ',''LineStyle'',''-.'',''Marker'',''' StrMarker{k} ''''...
+                        eval(['h = plot(ax,Tbath' StrRange{k} ',val' StrRange{k} ',''LineStyle'',''-.'',''Marker'',''' StrMarker{k} ''''...
                             ',''DisplayName'',''' StrCond{k} ' Ibias'');']);
                         
-                        %                             if eval(['size(val' StrRange{k} ',2) == 1'])
-                        %                                 eval(['h = plot(ax,Tbath' StrRange{k} '(i,:),val' StrRange{k} ',''LineStyle'',''-.'',''Marker'',''' StrMarker{k} ''''...
-                        %                                     ',''DisplayName'',[''Rn: '' num2str(median(Rns' StrRange{k} ',1)) '' - ' StrCond{k} ' Ibias'']);']) %,'MarkerFaceColor',colors{1},'MarkerEdgeColor',colors{1}
-                        %                             else
-                        %                                 eval(['h = plot(ax,Tbath' StrRange{k} '(i,:),val' StrRange{k} ',''LineStyle'',''-.'',''Marker'',''' StrMarker{k} ''''...
-                        %                                     ',''DisplayName'',[''Rn: '' num2str(median(Rns' StrRange{k} '(i,:))) '' - ' StrCond{k} ' Ibias'']);'])
-                        %                             end
                         for n = 1:length(h)
                             h(n).MarkerFaceColor = h(n).Color;
                         end
-                        %                     end
                     end
-                    ylabel(ax,'T_{bath} (mK)');
-                    xlabel(ax,Ylabel);
-                    zlabel(ax,'Rn(%)');
+                    xlabel(ax,'T_{bath} (K)');
+                    ylabel(ax,Ylabel);
                     set(ax,'FontSize',11,'FontWeight','bold');
                     grid(ax,'on');
                     
@@ -1761,7 +1819,8 @@ classdef TES_Struct
                         fig = figure('Visible','on');
                     end
                     if isempty(findobj('Type','Axes'))
-                        ax = axes(fig);
+                        figure(fig);
+                        ax = axes;
                         hold(ax,'on');
                     else
                         ax = findobj('Type','Axes');
@@ -1769,7 +1828,6 @@ classdef TES_Struct
                     StrRange = {'P';'N'};
                     StrCond = {'Positive';'Negative'};
                     for k = 1:2
-                        %                         i = eval(['find(Tbath' StrRange{k} ' == Tbath);']);
                         for i = 1:eval(['length(Tbath' StrRange{k} ')'])
                             if strcmp(param,'ai')||strcmp(param,'ai_CI')||strcmp(param,'C')||strcmp(param,'C_CI')
                                 eval(['val' StrRange{k} '{i} = abs(val' StrRange{k} '{i});']);
@@ -1805,7 +1863,8 @@ classdef TES_Struct
                     fig = figure('Visible','on');
                 end
                 if isempty(findobj('Type','Axes'))
-                    ax = axes(fig);
+                    figure(fig);
+                    ax = axes;
                     hold(ax,'on');
                 else
                     ax = findobj('Type','Axes');
@@ -1847,12 +1906,12 @@ classdef TES_Struct
                         else
                             Ylabel = param2;
                         end
-                        eval(['plot(ax,val' StrRange{k} '1{i},val' StrRange{k} '2{i},''LineStyle'',''none'',''Marker'',''o'''...
+                        eval(['plot(ax,val' StrRange{k} '2{i},val' StrRange{k} '1{i},''LineStyle'',''none'',''Marker'',''o'''...
                             ',''DisplayName'',[''T_{bath}: '' num2str(Tbaths' StrRange{k} '1(i)*1e3) '' mK - ' StrCond{k} ' Ibias'']);']);
                     end
                 end
-                xlabel(ax,Xlabel);
-                ylabel(ax,Ylabel);
+                xlabel(ax,Ylabel);
+                ylabel(ax,Xlabel);
                 set(ax,'FontSize',11,'FontWeight','bold');
             end
         end

@@ -27,11 +27,11 @@ function varargout = Obj_Properties(varargin)
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @Obj_Properties_OpeningFcn, ...
-                   'gui_OutputFcn',  @Obj_Properties_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @Obj_Properties_OpeningFcn, ...
+    'gui_OutputFcn',  @Obj_Properties_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -65,7 +65,7 @@ guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = Obj_Properties_OutputFcn(hObject, eventdata, handles) 
+function varargout = Obj_Properties_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -96,7 +96,7 @@ for i = 1:length(content.ParametersStr)
             elseif isempty(eval(['handles.Obj.UserData.' content.ParametersStr{j} ';']))
                 data{j,2} = '';
                 data{j,3} = '';
-            else                
+            else
                 eval(['data{j,2} = handles.Obj.UserData.' content.ParametersStr{j} ';']);
                 data{j,3} = '';
             end
@@ -116,12 +116,7 @@ for i = 1:length(content.ParametersStr)
 end
 
 handles.tabla.Data =data;
-% data_conf = data;
-% 
-% set(handles.Conf_File,'String',handles.ConfFile,'Value',handles.ConfFileNum);    
-%     Conf_File_Callback(handles.Conf_File,[],handles);    
-    
-    
+
 set(handles.figure1,'Visible','on');
 guidata(hObject,handles);
 % --- Executes on button press in Default_File.
@@ -179,7 +174,7 @@ for i = 1:size(OrigParameters,1)
             eval(['handles.Obj.UserData.' OrigParameters{i} ' = ''' data{indx,2} ''';'])
         case 'double'
             eval(['handles.Obj.UserData.' OrigParameters{i} ' = ' auxStr ';'])
-        otherwise 
+        otherwise
     end
 end
 
@@ -215,14 +210,3 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 delete(handles.figure1);
 
-
-% --- Executes when entered data in editable cell(s) in tabla.
-function tabla_CellEditCallback(hObject, eventdata, handles)
-% hObject    handle to tabla (see GCBO)
-% eventdata  structure with the following fields (see UITABLE)
-%	Indices: row and column indices of the cell(s) edited
-%	PreviousData: previous data for the cell(s) edited
-%	EditData: string(s) entered by the user
-%	NewData: EditData or its converted form set on the Data property. Empty if Data was not changed
-%	Error: error string when failed to convert EditData to appropriate value for Data
-% handles    structure with handles and user data (see GUIDATA)

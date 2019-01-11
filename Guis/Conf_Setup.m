@@ -22,7 +22,7 @@ function varargout = Conf_Setup(varargin)
 
 % Edit the above text to modify the response to help Conf_Setup
 
-% Last Modified by GUIDE v2.5 23-Jul-2018 10:35:04
+% Last Modified by GUIDE v2.5 27-Nov-2018 12:21:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -62,7 +62,19 @@ set(handles.figure1,'Color',[0 0.2 0.5],'Position',...
 
 
 switch varargin{1}.Tag
-    case 'DSA_TF_Conf'
+    case 'Squid_Pulse_Input_Conf'
+        hndl = guidata(varargin{1});
+        handles.figure1.Name = 'Pulse Input Configuration';
+        handles.Table.ColumnEditable = [false true false];
+        handles.Table.ColumnName = {'Parameter';'Value';'Units'};
+        handles.Options.Visible = 'off';
+        handles.Table.Data = [{'Amp'} {hndl.Squid.PulseAmp.Value} {hndl.Squid.PulseAmp.Units};...
+            {'Range'} {hndl.Squid.PulseDT.Value} {hndl.Squid.PulseDT.Units};...
+            {'Duration'} {hndl.Squid.PulseDuration.Value} {hndl.Squid.PulseDuration.Units};...
+            {'RL'} {hndl.Squid.RL.Value} {hndl.Squid.RL.Units}];
+        
+    case 'DSA_TF_Zw_Conf'
+        handles.figure1.Name = 'DSA Configuration';
         hndl = guidata(varargin{1});
         if isfield(hndl.SetupTES,'SetupTES')
             DSA_Conf = hndl.SetupTES.DSA.Config;
@@ -73,29 +85,31 @@ switch varargin{1}.Tag
         end
         ConfInstrs{1} = DSA_Conf.SSine;
         ConfInstrs{2} = DSA_Conf.FSine;
-        handles.Options.String = {'Sweept Sine';'Fixed Sine'};
+        ConfInstrs{3} = DSA_Conf.WNoise;
+        handles.Options.String = {'Sweept Sine';'Fixed Sine';'White Noise'};
         handles.Options.Value = varargin{2};
         
+        OptStr = {'SSine';'FSine';'WNoise'};
         
-        Srch = strfind(DSA_Conf.SSine,'SF ');
-        for i = 1:length(Srch)
-            if isempty(Srch{i})
-                Srch{i} = 0;
+        for j = 1:length(OptStr)
+            
+            eval(['Srch = strfind(DSA_Conf.' OptStr{j} ',''SRLV '');']);
+            for i = 1:length(Srch)
+                if isempty(Srch{i})
+                    Srch{i} = 0;
+                end
             end
-        end
-        Srch = cell2mat(Srch);
-        DSA_Conf.SSine{Srch == 1} = ['SF ' varargin{3}.Sine_Freq.String 'Hz'];
-        
-        Srch = strfind(DSA_Conf.SSine,'SRLV ');
-        for i = 1:length(Srch)
-            if isempty(Srch{i})
-                Srch{i} = 0;
+            Srch = cell2mat(Srch);
+            if hndl.DSA_Input_Amp_Units.Value == 4 % Porcentaje sobre Ibias
+                Porc = str2double(hndl.DSA_Input_Amp.String);
+                Ireal = hndl.Squid.Read_Current_Value;
+                SLRV_str = Ireal.Value*1e1*Porc;
+            else
+                Str = eval(['DSA_Conf.' OptStr{j} '{Srch == 1};']);
+                SRLV_str = Str(strfind(Str,'SRLV ')+5:end-2);
             end
+            eval(['DSA_Conf.' OptStr{j} '{Srch == 1} = [''SRLV ' SRLV_str 'mV''];'])
         end
-        Srch = cell2mat(Srch);
-        DSA_Conf.SSine{Srch == 1} = ['SRLV ' varargin{3}.Sine_Amp.String 'mV'];
-        ConfInstrs{1} = DSA_Conf.SSine;
-        
         
         Srch = strfind(DSA_Conf.FSine,'FSIN ');
         for i = 1:length(Srch)
@@ -104,21 +118,20 @@ switch varargin{1}.Tag
             end
         end
         Srch = cell2mat(Srch);
-        DSA_Conf.FSine{Srch == 1} = ['FSIN ' varargin{3}.Sine_Freq.String 'Hz'];
+        DSA_Conf.FSine{Srch == 1} = ['FSIN ' varargin{3}.DSA_Input_Freq.String 'Hz'];
         
-        Srch = strfind(DSA_Conf.FSine,'SRLV ');
-        for i = 1:length(Srch)
-            if isempty(Srch{i})
-                Srch{i} = 0;
-            end
-        end
-        Srch = cell2mat(Srch);
-        DSA_Conf.FSine{Srch == 1} = ['SRLV ' varargin{3}.Sine_Amp.String 'mV'];
+        
+        
+        ConfInstrs{1} = DSA_Conf.SSine;
         ConfInstrs{2} = DSA_Conf.FSine;
+        ConfInstrs{3} = DSA_Conf.WNoise;
+        % Configuration of the DSA options
         handles.handles1 = handles1;
+        handles.ConfInstrs = ConfInstrs;
+        handles.Table.Data = handles.ConfInstrs{varargin{2}};
         
-        
-    case 'DSA_Noise_Conf'
+    case 'DSA_TF_Noise_Conf'
+        handles.figure1.Name = 'DSA Configuration';
         hndl = guidata(varargin{1});
         if isfield(hndl.SetupTES,'SetupTES')
             DSA_Conf = hndl.SetupTES.DSA.Config;
@@ -128,56 +141,47 @@ switch varargin{1}.Tag
             handles1.SetupTES = hndl;
         end
         
-        ConfInstrs{1} = DSA_Conf.Noise1;
-        ConfInstrs{2} = DSA_Conf.Noise2;
-        handles.Options.String = {'Noise Setup 1';'Noise Setup 2'};
+        ConfInstrs{1} = DSA_Conf.Noise;
+        handles.Options.String = {'Noise Setup'};
         handles.Options.Value = varargin{2};
         
-        
-        Srch = strfind(DSA_Conf.Noise1,'SF ');
-        for i = 1:length(Srch)
-            if isempty(Srch{i})
-                Srch{i} = 0;
-            end
-        end
-        Srch = cell2mat(Srch);
-        DSA_Conf.Noise1{Srch == 1} = ['SF ' varargin{3}.Noise_Amp.String 'Hz'];
-        ConfInstrs{1} = DSA_Conf.Noise1;
-        % Configuration of the DSA options
-        handles.ConfInstrs = ConfInstrs;
-        
-        handles.Table.Data = handles.ConfInstrs{varargin{2}};
         % Noise Conf.
-        
-        
-        
-        Srch = strfind(DSA_Conf.Noise2,'SRLV ');
+        Srch = strfind(DSA_Conf.Noise,'SF ');
         for i = 1:length(Srch)
             if isempty(Srch{i})
                 Srch{i} = 0;
             end
         end
         Srch = cell2mat(Srch);
-        DSA_Conf.Noise2{Srch == 1} = ['SRLV ' varargin{3}.Noise_Amp.String 'mV'];
-        ConfInstrs{2} = DSA_Conf.Noise2;
+        DSA_Conf.Noise{Srch == 1} = ['SF ' varargin{3}.DSA_Input_Freq.String 'Hz'];
+        ConfInstrs{2} = DSA_Conf.Noise;
         % Configuration of the DSA options
         handles.ConfInstrs = ConfInstrs;
         
-        handles.Table.Data = handles.ConfInstrs{varargin{2}};        
+        handles.Table.Data = handles.ConfInstrs{1};
         handles.handles1 = handles1;
         
     case 'SQ_RangeIbias'
+        hndl = guidata(varargin{1});
+        handles.figure1.Name = 'Ibias Range Configuration';
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value';'Step';'Final Value'};
-        handles.Options.Visible = 'off';         
-        handles.Table.Data = num2cell([500 -10 0]);     
+        handles.Options.Visible = 'off';
+        handles.Table.Data = hndl.IbiasRange;
+    case 'CurSource_Range'
+        hndl = guidata(varargin{1});
+        handles.figure1.Name = 'Field Range Configuration';
+        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnName = {'Initial Value';'Step';'Final Value'};
+        handles.Options.Visible = 'off';
+        handles.Table.Data = hndl.FieldRange;
     case 'TES_Struct'
-        set(handles.figure1,'Name','TES Circuit Parameters');        
+        set(handles.figure1,'Name','TES Circuit Parameters');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false true false];
-        CircProp = properties(handles.varargin{3}.circuit);        
-        TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'Ohm';'%';'Ohm';'Ohm';'H'};
+        CircProp = properties(handles.varargin{3}.circuit);
+        TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'Ohm';'Ohm';'Ohm';'Ohm';'H'};
         handles.Table.Data(1:length(CircProp),1) = CircProp;
         for i = 1:length(CircProp)
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i}]);
@@ -201,10 +205,10 @@ switch varargin{1}.Tag
         handles.Table.Data = {[]};
         handles.Table.ColumnEditable = [true true true];
         TESProp = properties(handles.varargin{3});
-        handles.Table.ColumnName = TESProp';        
+        handles.Table.ColumnName = TESProp';
         handles.Table.ColumnFormat{1} = 'Logical';
         handles.Table.ColumnFormat{2} = {'\TF*','\PXI_TF*'};
-        handles.Table.ColumnFormat{3} = {'One Single Thermal Block','Two Thermal Blocks'};                        
+        handles.Table.ColumnFormat{3} = {'One Single Thermal Block','Two Thermal Blocks'};
         for i = 1:length(TESProp)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
                 if eval(['handles.varargin{3}.' TESProp{i}])
@@ -220,15 +224,15 @@ switch varargin{1}.Tag
     case 'TES_Noise_Opt'
         set(handles.figure1,'Name','Noise Visualization Options');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
-        handles.Table.Data = {[]};        
-        TESProp = properties(handles.varargin{3});                
+        handles.Table.Data = {[]};
+        TESProp = properties(handles.varargin{3});
         handles.Table.ColumnName = TESProp';
         handles.Table.ColumnFormat{1} = {'current','nep'};
         handles.Table.ColumnFormat{2} = 'Logical';
         handles.Table.ColumnFormat{3} = 'Logical';
         handles.Table.ColumnFormat{4} = 'Logical';
         handles.Table.ColumnFormat{5} = {'\HP_noise*','\PXI_noise*'};
-        handles.Table.ColumnFormat{6} = {'irwin','wouter'};    
+        handles.Table.ColumnFormat{6} = {'irwin','wouter'};
         handles.Table.ColumnEditable = [true true true true true true];
         for i = 1:length(TESProp)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
@@ -244,15 +248,15 @@ switch varargin{1}.Tag
     case 'TES_Report_Opt'
         set(handles.figure1,'Name','Noise Visualization Options');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
-        handles.Table.Data = {[]};        
-        TESProp = properties(handles.varargin{3});                
+        handles.Table.Data = {[]};
+        TESProp = properties(handles.varargin{3});
         handles.Table.ColumnName = TESProp';
         handles.Table.ColumnFormat{1} = 'Logical';
         handles.Table.ColumnFormat{2} = 'Logical';
         handles.Table.ColumnFormat{3} = 'Logical';
         handles.Table.ColumnFormat{4} = 'Logical';
         handles.Table.ColumnFormat{5} = 'Logical';
-        handles.Table.ColumnFormat{6} = 'Logical'; 
+        handles.Table.ColumnFormat{6} = 'Logical';
         handles.Table.ColumnEditable = [true true true true true true];
         for i = 1:length(TESProp)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
@@ -266,6 +270,62 @@ switch varargin{1}.Tag
             end
         end
         
+    case 'AQ_Temp_Set'
+        set(handles.figure1,'Name','Set Temperatures');
+        hndl = guidata(varargin{1});
+        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnName = {'Initial Value(K)';'Step(K)';'Final Value(K)'};
+        handles.Table.Data = {[]};
+        handles.Table.Data = num2cell(hndl.Temp.Values);
+        handles.Options.Visible = 'off';
+    case 'AQ_FieldScan_Set'
+        set(handles.figure1,'Name','Set Field Value for Scan (max Vout)');
+        hndl = guidata(varargin{1});
+        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
+        handles.Table.Data = {[]};
+        handles.Table.Data = hndl.FieldScan.BVvalue;
+        handles.Options.Visible = 'off';
+    case 'AQ_IC_Field_Set'
+        set(handles.figure1,'Name','Set Field Values for Critical Currents');
+        hndl = guidata(varargin{1});
+        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
+        handles.Table.Data = {[]};
+        handles.Table.Data = hndl.BFieldIC.BVvalue;
+        handles.Options.Visible = 'off';
+    case 'Ibias_Set'
+        set(handles.figure1,'Name','Set Ibias Values for IV Curves');
+        hndl = guidata(varargin{1});
+        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
+        handles.Table.Data = {[]};
+        handles.Table.Data = [hndl.IVcurves.Manual.Values.p; hndl.IVcurves.Manual.Values.n];
+        handles.Options.Visible = 'off';
+    case 'BFieldIC_Ibias'
+        set(handles.figure1,'Name','Set Ibias Values for Critical Currents');
+        hndl = guidata(varargin{1});
+        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
+        handles.Table.Data = {[]};
+        handles.Table.Data = [hndl.BFieldIC.IbiasValues.p; hndl.BFieldIC.IbiasValues.n];
+        handles.Options.Visible = 'off';
+    case 'AQ_TF_Rn_P_Set'
+        set(handles.figure1,'Name','Set % of Rn Values for Z(w) and Noise Adquisition');
+        hndl = guidata(varargin{1});
+        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnName = {'Initial Value(%)';'Step(%)';'Final Value(%)'};
+        handles.Table.Data = {[]};
+        handles.Table.Data = hndl.TF_Zw.rpp;
+        handles.Options.Visible = 'off';
+    case 'AQ_TF_Rn_N_Set'
+        set(handles.figure1,'Name','Set % of Rn Values for Z(w) and Noise Adquisition');
+        hndl = guidata(varargin{1});
+        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnName = {'Initial Value(%)';'Step(%)';'Final Value(%)'};
+        handles.Table.Data = {[]};
+        handles.Table.Data = hndl.TF_Zw.rpn;
+        handles.Options.Visible = 'off';
 end
 
 % Update handles structure
@@ -292,7 +352,7 @@ function Add_Callback(hObject, eventdata, handles)
 % hObject    handle to Add (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.Table.Data = [handles.Table.Data; cell(1,3)];
+handles.Table.Data = [handles.Table.Data; cell(1,size(handles.Table.Data,2))];
 
 % --- Executes on button press in Remove.
 function Remove_Callback(hObject, eventdata, handles)
@@ -312,10 +372,8 @@ function Options_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns Options contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Options
-
-
 handles.Table.Data = handles.ConfInstrs{hObject.Value};
-
+guidata(hObject,handles);
 
 % --- Executes during object creation, after setting all properties.
 function Options_CreateFcn(hObject, eventdata, handles)
@@ -336,7 +394,7 @@ function Cancel_Callback(hObject, eventdata, handles)
 % hObject    handle to Cancel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+handles.varargin{1}.UserData = [];
 figure1_DeleteFcn(handles.figure1,eventdata,handles);
 
 
@@ -357,19 +415,23 @@ function Save_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 switch handles.varargin{1}.Tag
-    case 'DSA_TF_Conf'
+    case 'Squid_Pulse_Input_Conf'
+        handles.varargin{1}.UserData = handles.Table.Data;
+    case 'DSA_TF_Zw_Conf'
         handles.varargin{3}.TF_Menu.Value = handles.Options.Value;
         handles.handles1.SetupTES.DSA.Config.SSine = handles.ConfInstrs{1};
         handles.handles1.SetupTES.DSA.Config.FSine = handles.ConfInstrs{2};
+        handles.handles1.SetupTES.DSA.Config.WNoise = handles.ConfInstrs{3};
         guidata(handles.handles1.SetupTES.SetupTES,handles.handles1.SetupTES)
-
-    case 'DSA_Noise_Conf'
+        
+    case 'DSA_TF_Noise_Conf'
         handles.varargin{3}.Noise_Menu.Value = handles.Options.Value;
-        handles.handles1.SetupTES.DSA.Config.Noise1 = handles.ConfInstrs{1};
-        handles.handles1.SetupTES.DSA.Config.Noise2 = handles.ConfInstrs{2};
+        handles.handles1.SetupTES.DSA.Config.Noise = handles.ConfInstrs{1};
         guidata(handles.handles1.SetupTES.SetupTES,handles.handles1.SetupTES)
-
+        
     case 'SQ_RangeIbias'
+        handles.varargin{1}.UserData = handles.Table.Data;
+    case 'CurSource_Range'
         handles.varargin{1}.UserData = handles.Table.Data;
     case 'TES_Struct'
         ButtonName = questdlg('Circuit parameters might be changed', ...
@@ -377,7 +439,7 @@ switch handles.varargin{1}.Tag
             'Save', 'Cancel', 'Save');
         switch ButtonName
             case 'Save'
-                CircProp = properties(handles.varargin{3}.circuit);                                
+                CircProp = properties(handles.varargin{3}.circuit);
                 for i = 1:length(CircProp)
                     eval(['NewCircuit.' CircProp{i} ' = handles.Table.Data{i,2};']);
                 end
@@ -401,7 +463,7 @@ switch handles.varargin{1}.Tag
         guidata(handles.varargin{1},NewOPT);
         
     case 'TES_Noise_Opt'
-        TES_Noise = properties(handles.varargin{3});        
+        TES_Noise = properties(handles.varargin{3});
         for i = 1:length(TES_Noise)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
                 if handles.Table.Data{1,i}
@@ -416,7 +478,7 @@ switch handles.varargin{1}.Tag
         handles.varargin{1}.UserData = NewOPT;
         guidata(handles.varargin{1},NewOPT);
     case 'TES_Report_Opt'
-        TES_Report = properties(handles.varargin{3});        
+        TES_Report = properties(handles.varargin{3});
         for i = 1:length(TES_Report)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
                 if handles.Table.Data{1,i}
@@ -431,8 +493,107 @@ switch handles.varargin{1}.Tag
         handles.varargin{1}.UserData = NewOPT;
         guidata(handles.varargin{1},NewOPT);
         
+    case 'AQ_Temp_Set'
+        Temp = ExtractFromTable(handles);
+        handles.varargin{1}.UserData = Temp;
+        guidata(handles.varargin{1},guidata(handles.varargin{1}));
+        
+    case 'AQ_FieldScan_Set'
+        Val = ExtractFromTable(handles);
+        handles.varargin{1}.UserData = Val;
+        guidata(handles.varargin{1},guidata(handles.varargin{1}));
+    case 'AQ_IC_Field_Set'
+        Val = ExtractFromTable(handles);
+        handles.varargin{1}.UserData = Val;
+        guidata(handles.varargin{1},guidata(handles.varargin{1}));
+    case 'Ibias_Set'
+        Val = ExtractFromTable(handles);
+        handles.varargin{1}.UserData = Val;
+        guidata(handles.varargin{1},guidata(handles.varargin{1}));
+    case 'BFieldIC_Ibias'
+        Val = ExtractFromTable(handles);
+        handles.varargin{1}.UserData = Val;
+        guidata(handles.varargin{1},guidata(handles.varargin{1}));
+    case 'AQ_TF_Rn_P_Set'
+        rpp = ExtractFromTable(handles);
+        handles.varargin{1}.UserData = rpp;
+        guidata(handles.varargin{1},guidata(handles.varargin{1}));
+        
+    case 'AQ_TF_Rn_N_Set'
+        rpn = ExtractFromTable(handles);
+        handles.varargin{1}.UserData = rpn;
+        guidata(handles.varargin{1},guidata(handles.varargin{1}));
+        
+end
+
+figure1_DeleteFcn(handles.figure1,eventdata,handles);
+
+
+% --- Executes when entered data in editable cell(s) in Table.
+function Table_CellEditCallback(hObject, eventdata, handles)
+% hObject    handle to Table (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.CONTROL.TABLE)
+%	Indices: row and column indices of the cell(s) edited
+%	PreviousData: previous data for the cell(s) edited
+%	EditData: string(s) entered by the user
+%	NewData: EditData or its converted form set on the Data property. Empty if Data was not changed
+%	Error: error string when failed to convert EditData to appropriate value for Data
+% handles    structure with handles and user data (see GUIDATA)
+
+switch handles.varargin{1}.Tag
+    case 'DSA_TF_Zw_Conf'
+        handles.varargin{3}.DSA_TF_Zw_Menu.Value = handles.Options.Value;
+        handles.ConfInstrs{handles.Options.Value} = handles.Table.Data;
+        guidata(hObject,handles);
+    case 'DSA_TF_Noise_Conf'
+        handles.varargin{3}.DSA_TF_Zw_Menu.Value = handles.Options.Value;
+        handles.ConfInstrs{handles.Options.Value} = handles.Table.Data;
+        guidata(hObject,handles);
+    case 'AQ_TF_Rn_P_Set'
+        if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
+            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v1.0');
+        end
+    case 'AQ_TF_Rn_N_Set'
+        if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
+            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v1.0');
+        end
 end
 
 
 
-figure1_DeleteFcn(handles.figure1,eventdata,handles);
+function Value = ExtractFromTable(handles)
+
+if size(handles.Table.Data,2) > 1
+    for i = 1:size(handles.Table.Data,1)
+        if isnumeric(handles.Table.Data{i,1})
+            try
+                Value{i} = handles.Table.Data{i,1}:handles.Table.Data{i,2}:handles.Table.Data{i,3};
+            catch
+                Value{i} = handles.Table.Data{i,1};
+            end
+        elseif ischar(handles.Table.Data{i,1})
+            Value{i} = str2double(handles.Table.Data{i,1}):str2double(handles.Table.Data{i,2}):str2double(handles.Table.Data{i,3});
+            if isnan(Value{i})
+                Value{i} = str2double(handles.Table.Data{i,1});
+            end
+        end
+    end
+else
+    try
+        Value{1} = cell2mat(handles.Table.Data);
+    catch
+        if iscell(handles.Table.Data)&&ischar(handles.Table.Data{1}(1))
+            Value{1} = str2double(handles.Table.Data);
+        else
+            Value{1} = handles.Table.Data;
+        end
+    end
+end
+vals = Value;
+clear Value;
+if median(sign(cell2mat(vals))) == 1
+    Value{1} = sort(unique(cell2mat(vals)),'descend');
+else
+    Value{1} = sort(unique(cell2mat(vals)),'ascend');
+end
+Value{1}(find(isnan(Value{1}))) = [];

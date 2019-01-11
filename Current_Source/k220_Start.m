@@ -5,10 +5,10 @@ function k220_Start(k220)
 % - k220: connection object of the current source
 %
 % Example:
-% k220_Start_updated(k220)
+% k220_Start(k220)
 %
 % Last update: 04/07/2018
 
 %% Función para activar el output de la fuente.
 str = 'F1T4X\n';
-query(k220.ObjHandle,str)
+query(k220.ObjHandle,str);

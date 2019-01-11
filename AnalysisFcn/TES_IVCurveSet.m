@@ -33,6 +33,21 @@ classdef TES_IVCurveSet
             end
         end
         
+        function obj = Update(obj,data)
+            % Function to update the class values
+            
+            FN = properties(obj);
+            if nargin == 2
+                fieldNames = fieldnames(data);
+                for i = 1:length(fieldNames)
+                    if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
+                        eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
+                    end
+                end
+                
+            end
+        end
+        
         function ok = Filled(obj)
             % Function to check whether the class is filled or empty (all
             % fields must be filled to be considered as filled, except for ttes, rp2, aIV, and bIV)
@@ -173,7 +188,6 @@ classdef TES_IVCurveSet
                 errordlg('Invalid Data path name!','ZarTES v1.0','modal');
                 return;
             end
-            %
             obj(1).IVsetPath = IVsPath;
             
             StrRange = {'p';'n'};
@@ -192,7 +206,7 @@ classdef TES_IVCurveSet
                 while i <= size(eval([upper(StrRange{j}) 'files']),1)
                     if isnan(str2double(eval([upper(StrRange{j}) 'files(i,1)'])))
                         eval([upper(StrRange{j}) 'files(i,:) = [];'])
-                    elseif ~isempty(strfind(eval([upper(StrRange{j}) 'files(i,:)']),'(')) %#ok<STREMP>
+                    elseif ~isempty(strfind(eval([upper(StrRange{j}) 'files(i,:)']),'('))
                         eval([upper(StrRange{j}) 'files(i,:) = [];'])
                     else
                         Value = str2double(eval([upper(StrRange{j}) 'files(i,1:strfind(' upper(StrRange{j}) 'files(i,:),''mK_'')-1)']));
@@ -284,8 +298,8 @@ classdef TES_IVCurveSet
             set([h_ib h_ites h_ptes h_rtes],'UserData',obj);
             linkprop([h_ib h_ites h_ptes h_rtes],'Color');
             set(fig.hObject,'UserData',obj);
-        end        
+        end
         
-    end    
+    end
 end
 

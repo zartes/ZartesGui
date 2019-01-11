@@ -6,7 +6,7 @@ classdef TES_Param
         n;
         K;
         Tc;
-        G;    
+        G;
         sides;
     end
     
@@ -37,9 +37,26 @@ classdef TES_Param
         
         function G_new = G_calc(obj,Temp)
             % Function to compute G at any Temperature in K
-            
+            if nargin < 2
+                prompt = {'Enter Temp (K) for compute G value'};
+                name = 'G(T)';
+                numlines = 1;
+                defaultanswer = {'0.1'};
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                if isempty(answer)
+                    warndlg('No Temp value selected','ZarTES v1.0');
+                    return;
+                else
+                    Temp = str2double(answer{1});
+                    if isnan(Temp)
+                        warndlg('Invalid Temp value','ZarTES v1.0');
+                        return;
+                    end
+                end
+            end
             try
                 G_new = obj.n*obj.K*Temp^(obj.n-1);
+                uiwait(msgbox(['G(' num2str(Temp) ') = ' num2str(G_new)],'ZarTES v1.0','modal'));
             catch
                 disp('TES values are empty.')
             end

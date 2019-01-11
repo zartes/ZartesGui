@@ -12,12 +12,12 @@ classdef TES_Analyzer_Session
     
     methods
         function obj = LoadTES(obj)
-            % Function to load TES data previously saved. 
+            % Function to load TES data previously saved.
             
             [filename, pathname] = uigetfile('*.mat', 'Pick a MATLAB file');
-            if isequal(filename,0) || isequal(pathname,0)                
+            if isequal(filename,0) || isequal(pathname,0)
                 obj = 0;
-            else                
+            else
                 obj.File = filename;
                 obj.Path = pathname;
                 answer = inputdlg({'Insert a Nick name for the TES'},'ZarTES v1.0',[1 50],{' '});
@@ -29,7 +29,7 @@ classdef TES_Analyzer_Session
                 FN = fieldnames(tes);
                 obj.TES = eval(['tes.' FN{1}]);
             end
-        end                
+        end
     end
     
 end

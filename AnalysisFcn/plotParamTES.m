@@ -1,10 +1,8 @@
 function plotParamTES(TESDATA,xl,yl,varargin)
-%%%Función para pintar y formatear parámetros a partir de una estructura P.
-%%%% Pinta parametro x frente a y a todas las temperaturas para un TES
-%%%% dado.
+% Función para pintar y formatear parámetros a partir de una estructura P.
+% Pinta parametro x frente a y a todas las temperaturas para un TES
+% dado.
 
-%xl = 'ai';
-%yl = 'M';
 
 if nargin>3
     opt = varargin{1};
@@ -26,7 +24,6 @@ for k = 1:2
         ax = axes;
     end    
     
-%     Field1 = fieldnames(P(1));
     Field = fieldnames(P(1).p(1));
     StrVar = {'x';'y'};
     for i = 1:length(StrVar)        
@@ -41,10 +38,6 @@ for k = 1:2
         
         eval([x_ini num2str(i) x_fin]);
         eval([y_ini num2str(i) y_fin]);
-        %x = eval(strcat('[','P(i).p.',xl,']'));
-        %y = eval(strcat('[','P(i).p.',yl,']'));
-        %     x = GetPparam(P(i).p,xl);
-        %     y = GetPparam(P(i).p,yl);
         h(i,k) = plot(ax,x,y,'.','ButtonDownFcn',{@Identify_Origin},'UserData',{P;i;TESDATA.circuit});hold(ax,'on');
         
     end
