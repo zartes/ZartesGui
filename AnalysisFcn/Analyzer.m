@@ -243,6 +243,7 @@ switch src.Label
             end
             set(handles.LoadedStr,'Visible','on')
             set(handles.Loaded_TES,'String',char(ListStr),'Value',handles.TES_ID,'Visible','on');
+                      
             
             Enabling(Session,handles.TES_ID);
             
@@ -301,6 +302,23 @@ switch src.Label
         
         handles.Session{handles.TES_ID}.TES = TES_Struct;
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.Constructor;
+        
+        % Searching for Circuir variable (inside session or in circuit)
+        d = dir([DataPath 'sesion.mat']);
+        circuit = [];
+        if ~isempty(d)
+            load([DataPath 'sesion.mat'],'circuit');
+            if ~isempty(circuit)
+                handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
+            end
+        else
+            d = dir([DataPath 'circuit.mat']);
+            load([DataPath 'circuit.mat'],'circuit');
+            if ~isempty(circuit)
+                handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
+            end
+        end
+        
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
         
     case 'TES Dimensions'
@@ -416,8 +434,8 @@ switch src.Label
             return;
         end
         Tbath = str2double(str(s))';
-        prompt = {'Enter the Rn range:'};
-        name = 'Rn range (0 < Rn < 1)';
+        prompt = {'Enter the %Rn range:'};
+        name = '%Rn range (0 < %Rn < 1)';
         numlines = [1 70];
         defaultanswer = {'0.5:0.05:0.8'};
         answer = inputdlg(prompt,name,numlines,defaultanswer);
@@ -428,26 +446,15 @@ switch src.Label
         indAxes = findobj('Type','Axes');
         delete(indAxes);
         str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
-        [s,~] = listdlg('PromptString','Select one or two model parameters:',...
-            'ListString',str);
-        if isempty(s)
-            return;
-        end
-        if length(s) == 1
-            param = str{s};
-            ButtonName = questdlg('What''s next?', ...
-                'ZarTES v1.0', ...
-                [param ' vs. Rn'], [param ' vs. Tbath'], [param ' vs. Rn']);
-            switch ButtonName
-                case [param ' vs. Tbath']
-                    prompt = {'Enter the Rn range:'};
-                    name = 'Rn range (0 < Rn < 1)';
-                    numlines = [1 70];
-                    defaultanswer = {'0.5:0.05:0.8'};
-                    answer = inputdlg(prompt,name,numlines,defaultanswer);
-                    Rn = eval(['[' answer{1} ']']);
-                    handles.Session{handles.TES_ID}.TES.PlotTESData(param,Rn,[],handles.Analyzer);
-                case [param ' vs. Rn']
+        
+        dummy = uimenu('Visible','off');
+        waitfor(GraphicTESData(str,dummy));
+        data = dummy.UserData;
+        
+        if ~isempty(data)
+            
+            switch data.case
+                case 1 % vs. Rn
                     str = cellstr(num2str(unique([[handles.Session{handles.TES_ID}.TES.PP.Tbath] ...
                         [handles.Session{handles.TES_ID}.TES.PN.Tbath]])'));
                     [s,~] = listdlg('PromptString','Select Tbath value/s:',...
@@ -457,22 +464,71 @@ switch src.Label
                         return;
                     end
                     Tbath = str2double(str(s))';
-                    handles.Session{handles.TES_ID}.TES.PlotTESData(param,[],Tbath,handles.Analyzer);
+                    handles.Session{handles.TES_ID}.TES.PlotTESData(data.param1,[],Tbath,handles.Analyzer);
+                case 2 % vs. Tbath
+                    prompt = {'Enter the %Rn range:'};
+                    name = '%Rn range (0 < %Rn < 1)';
+                    numlines = [1 70];
+                    defaultanswer = {'0.5:0.05:0.8'};
+                    answer = inputdlg(prompt,name,numlines,defaultanswer);
+                    Rn = eval(['[' answer{1} ']']);
+                    handles.Session{handles.TES_ID}.TES.PlotTESData(data.param1,Rn,[],handles.Analyzer);
+                case 3 % Param1 vs. Param2
+                    param = data.param1;
+                    param2 = data.param2;
+                    params = char([{param};{param2}]);
+                    handles.Session{handles.TES_ID}.TES.PlotTESData(params,[],[],handles.Analyzer);
             end
         else
-            %             case [param ' vs. param']
-            %                 str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
-            %                 [s,~] = listdlg('PromptString','Select a model parameter:',...
-            %                     'SelectionMode','single',...
-            %                     'ListString',str);
-            %                 if isempty(s)
-            %                     return;
-            %                 end
-            param = str{s(1)};
-            param2 = str{s(2)};
-            params = char([{param};{param2}]);
-            handles.Session{handles.TES_ID}.TES.PlotTESData(params,[],[],handles.Analyzer);
-        end % switch
+            return;
+        end
+%         
+%         
+%         [s,~] = listdlg('PromptString','Select one or two model parameters:',...
+%             'ListString',str);
+%         if isempty(s)
+%             return;
+%         end
+%         if length(s) == 1
+%             param = str{s};
+%             ButtonName = questdlg('What''s next?', ...
+%                 'ZarTES v1.0', ...
+%                 [param ' vs. Rn'], [param ' vs. Tbath'], [param ' vs. Rn']);
+%             switch ButtonName
+%                 case [param ' vs. Tbath']
+%                     prompt = {'Enter the %Rn range:'};
+%                     name = '%Rn range (0 < %Rn < 1)';
+%                     numlines = [1 70];
+%                     defaultanswer = {'0.5:0.05:0.8'};
+%                     answer = inputdlg(prompt,name,numlines,defaultanswer);
+%                     Rn = eval(['[' answer{1} ']']);
+%                     handles.Session{handles.TES_ID}.TES.PlotTESData(param,Rn,[],handles.Analyzer);
+%                 case [param ' vs. Rn']
+%                     str = cellstr(num2str(unique([[handles.Session{handles.TES_ID}.TES.PP.Tbath] ...
+%                         [handles.Session{handles.TES_ID}.TES.PN.Tbath]])'));
+%                     [s,~] = listdlg('PromptString','Select Tbath value/s:',...
+%                         'SelectionMode','multiple',...
+%                         'ListString',str);
+%                     if isempty(s)
+%                         return;
+%                     end
+%                     Tbath = str2double(str(s))';
+%                     handles.Session{handles.TES_ID}.TES.PlotTESData(param,[],Tbath,handles.Analyzer);
+%             end
+%         else
+%             %             case [param ' vs. param']
+%             %                 str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
+%             %                 [s,~] = listdlg('PromptString','Select a model parameter:',...
+%             %                     'SelectionMode','single',...
+%             %                     'ListString',str);
+%             %                 if isempty(s)
+%             %                     return;
+%             %                 end
+%             param = str{s(1)};
+%             param2 = str{s(2)};
+%             params = char([{param};{param2}]);
+%             handles.Session{handles.TES_ID}.TES.PlotTESData(params,[],[],handles.Analyzer);
+%         end % switch
         
 end
 guidata(src,handles);

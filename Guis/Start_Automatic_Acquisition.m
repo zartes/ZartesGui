@@ -155,7 +155,7 @@ while c
        c = false; 
     end
     j = max(mod(j+1,10),1);
-    if ishandle(h);
+    if ishandle(h)
         waitbar(j/10,h,['SetPt: ' num2str(Set_Pt) ' - M/C: ' num2str(T_MC)]);
     end
     pause(0.2);

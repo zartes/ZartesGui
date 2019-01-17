@@ -181,15 +181,19 @@ classdef TES_IVCurveSet
                     return;
                 end
             end
-            IVsPath = uigetdir(DataPath, 'Pick a Data path named IVs');
-            if IVsPath ~= 0
-                IVsPath = [IVsPath filesep];
+            if nargin ~= 4
+                IVsPath = uigetdir(DataPath, 'Pick a Data path named IVs');
+                if IVsPath ~= 0
+                    IVsPath = [IVsPath filesep];
+                else
+                    errordlg('Invalid Data path name!','ZarTES v1.0','modal');
+                    return;
+                end
+                obj(1).IVsetPath = IVsPath;
             else
-                errordlg('Invalid Data path name!','ZarTES v1.0','modal');
-                return;
+                IVsPath = DataPath;
+                obj(1).IVsetPath = DataPath;
             end
-            obj(1).IVsetPath = IVsPath;
-            
             StrRange = {'p';'n'};
             switch obj(1).range
                 case 'positive'
@@ -245,6 +249,7 @@ classdef TES_IVCurveSet
                 h = fig.subplots;
             end
             j = 1;
+            c = distinguishable_colors(length(obj));
             for i = 1:length(obj)
                 if obj(i).good
                     Ibias = obj(i).ibias;
@@ -255,7 +260,7 @@ classdef TES_IVCurveSet
                         h(1) = subplot(2,2,1);
                     end
                     h_ib(j) = plot(h(1),Ibias*1e6,Vout,'.--','DisplayName',num2str(obj(i).Tbath),...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file);
+                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
                     grid on,hold on
                     xlim(h(1),[min(0,sign(Ibias(1))*500) 500]) %%%Podemos controlar apariencia con esto. 300->500
                     xlabel(h(1),'Ibias(\muA)','fontweight','bold');ylabel(h(1),'Vout(V)','fontweight','bold');
@@ -265,7 +270,7 @@ classdef TES_IVCurveSet
                         h(3) = subplot(2,2,3);
                     end
                     h_ites(j) = plot(h(3),obj(i).vtes*1e6,obj(i).ites*1e6,'.--','DisplayName',num2str(obj(i).Tbath),...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file);
+                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
                     grid on,hold on
                     xlim(h(3),[min(0,sign(Ibias(1))*.5) .5])
                     xlabel(h(3),'V_{TES}(\muV)','fontweight','bold');ylabel(h(3),'Ites(\muA)','fontweight','bold');
@@ -275,7 +280,7 @@ classdef TES_IVCurveSet
                         h(2) = subplot(2,2,2);
                     end
                     h_ptes(j) = plot(h(2),obj(i).vtes*1e6,obj(i).ptes*1e12,'.--','DisplayName',num2str(obj(i).Tbath),...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file);
+                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
                     grid on,hold on
                     xlim(h(2),[min(0,sign(Ibias(1))*1.0) 1.0])%%%Podemos controlar apariencia con esto. 0.5->1.0
                     xlabel(h(2),'V_{TES}(\muV)','fontweight','bold');ylabel(h(2),'Ptes(pW)','fontweight','bold');
@@ -285,7 +290,7 @@ classdef TES_IVCurveSet
                         h(4) = subplot(2,2,4);
                     end
                     h_rtes(j) = plot(h(4),obj(i).rtes,obj(i).ptes*1e12,'.--','DisplayName',num2str(obj(i).Tbath),...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file);
+                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
                     grid on,hold on
                     xlim(h(4),[0 1]), ylim(h(4),[0 20]);
                     xlabel(h(4),'R_{TES}/R_n','fontweight','bold');ylabel(h(4),'Ptes(pW)','fontweight','bold');
@@ -296,7 +301,7 @@ classdef TES_IVCurveSet
             end
             axis(h,'tight');
             set([h_ib h_ites h_ptes h_rtes],'UserData',obj);
-            linkprop([h_ib h_ites h_ptes h_rtes],'Color');
+%             linkprop([h_ib h_ites h_ptes h_rtes],'Color');
             set(fig.hObject,'UserData',obj);
         end
         

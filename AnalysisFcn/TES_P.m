@@ -11,6 +11,7 @@ classdef TES_P
         ztes = {[]};
         fZ = {[]};
         ERP = {[]};
+        R2 = {[]};
         Filtered = {[]};
         fileNoise = {[]};
         NoiseModel = {[]};
@@ -130,7 +131,7 @@ classdef TES_P
                     else
                         if exist('Rn','var')
                             if Rn <= 0 || Rn > 1
-                                warndlg('Rn out of range, Rn must be among 0-1 values!','ZarTES v1.0');
+                                warndlg('%Rn out of range, %Rn must be among 0-1 values!','ZarTES v1.0');
                                 return;
                             end
                             Tbaths = [obj.Tbath];
@@ -146,7 +147,7 @@ classdef TES_P
                                 Rns(i,:) = rp(ind);
                             end
                         else
-                            warndlg('Rn value is missed!','ZarTES v1.0');
+                            warndlg('%Rn value is missed!','ZarTES v1.0');
                             return;
                         end
                     end

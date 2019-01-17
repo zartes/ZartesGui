@@ -22,7 +22,7 @@ function varargout = Obj_Properties(varargin)
 
 % Edit the above text to modify the response to help Obj_Properties
 
-% Last Modified by GUIDE v2.5 13-Jul-2018 11:49:11
+% Last Modified by GUIDE v2.5 14-Jan-2019 10:36:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -210,3 +210,13 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 delete(handles.figure1);
 
+% --- Executes when entered data in editable cell(s) in tabla.
+function tabla_CellEditCallback(hObject, eventdata, handles)
+% hObject    handle to tabla (see GCBO)
+% eventdata  structure with the following fields (see UITABLE)
+%	Indices: row and column indices of the cell(s) edited
+%	PreviousData: previous data for the cell(s) edited
+%	EditData: string(s) entered by the user
+%	NewData: EditData or its converted form set on the Data property. Empty if Data was not changed
+%	Error: error string when failed to convert EditData to appropriate value for Data
+% handles    structure with handles and user data (see GUIDATA)
