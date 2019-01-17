@@ -58,7 +58,7 @@ handles.output = hObject;
 handles.varargin = varargin;
 position = get(handles.figure1,'Position');
 set(handles.figure1,'Color',[200 200 200]/255,'Position',...
-    [0.05 0.5-position(4)/2 position(3) position(4)],...
+    [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
 % Updating the popup menu
@@ -130,8 +130,15 @@ function TBath_popup_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns TBath_popup contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from TBath_popup
 handles.Files_Ind = 1;
-% Previous_Callback(handles.Previous,[],handles);
-set([handles.Previous handles.Rewind],'Enable','off')
+if handles.Files_Ind == 1
+    set([handles.Forward handles.Next],'Enable','on');
+    set([handles.Rewind handles.Previous],'Enable','off');
+elseif handles.Files_Ind == handles.Nfiles
+    set([handles.Forward handles.Next],'Enable','off');
+    set([handles.Rewind handles.Previous],'Enable','on');
+else
+    set([handles.Rewind handles.Previous handles.Forward handles.Next],'Enable','on');
+end
 PlotTF_Noise(hObject,[],handles);
 handles = guidata(hObject);
 guidata(hObject,handles)
@@ -329,8 +336,13 @@ plot(hs,1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2,'ButtonDownFcn',{@DisplayResul
 legend(hs,'Experimental',eval(['handles.varargin{1}.P' StrCond '(ind_Tbath).ElecThermModel{handles.Files_Ind}']));
 
 axis(hs,'tight');
-title(hs,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
-if abs(OP.Z0-OP.Zinf) < 1.5e-3
+r0 = data{1}.p(handles.Files_Ind).rp;
+Z0 = data{1}.p(handles.Files_Ind).Z0;
+Zinf = data{1}.p(handles.Files_Ind).Zinf;
+title(hs,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'fontsize',12);
+% title(hs,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
+if abs(Z0-Zinf) < 1.5e-3
+% if abs(OP.Z0-OP.Zinf) < 1.5e-3
     set(get(findobj(hs,'type','axes'),'title'),'color','r');
 end
 hold(hs,'off');
@@ -359,7 +371,8 @@ FileName = FileName(find(FileName == filesep,1,'last')+1:end);
 Ib = sscanf(FileName,strcat(handles.varargin{1}.NoiseOpt.NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
 eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,handles.varargin{1}.IVset' StrCond '(ind_Tbath),handles.varargin{1}.P' StrCond '(ind_Tbath).p);']);
 if handles.varargin{1}.NoiseOpt.Mjo == 1
-    M = OP.M;
+%     M = OP.M;
+    M = data{1}.p(handles.Files_Ind).M;
 else
     M = 0;
 end
@@ -384,8 +397,8 @@ switch handles.varargin{1}.NoiseOpt.tipo
             loglog(hs1,f,totnoise*1e12,'b');
             h = findobj(hs1,'color','b');
         else
-            loglog(hs1,f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
-            legend(hs1,'Experimental','Exp\_Filtered','Jhonson','Phonon','Shunt','Total');            
+            loglog(hs1,f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,auxnoise.squidarray*1e12,f,totnoise*1e12);
+            legend(hs1,'Experimental','Exp\_Filtered','Jhonson','Phonon','Shunt','Squid','Total');            
             h = findobj(hs1,'displayname','Total');
         end
         ylabel(hs1,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold')
@@ -406,8 +419,8 @@ switch handles.varargin{1}.NoiseOpt.tipo
             loglog(hs1,f,totNEP*1e18,'b');hold(hs1,'on');grid(hs1,'on');
             h = findobj(hs1,'color','b');
         else
-            loglog(hs1,f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
-            legend(hs1,'Experimental','Exp\_Filtered','Jhonson','Phonon','Shunt','Total');
+            loglog(hs1,f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,auxnoise.squidarray*1e18./auxnoise.sI,f,(totNEP*1e18));
+            legend(hs1,'Experimental','Exp\_Filtered','Jhonson','Phonon','Shunt','Squid','Total');
             legend(hs1,'off');
             h = findobj(hs1,'DisplayName','Total');
         end
@@ -423,7 +436,8 @@ set(hs1,'FontSize',11,'FontWeight','bold');
 set(hs1,'LineWidth',2)
 set(hs1,'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-')
 set(hs1,'XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'})
-title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
+title(hs1,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'fontsize',12);
+% title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
 %         OP.Z0,OP.Zinf
 %debug
 if abs(OP.Z0-OP.Zinf) < 1.5e-3
@@ -488,6 +502,15 @@ function Noise_Name_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of Noise_Name as a double
 handles.Files_Ind = get(hObject,'Value');
 set(handles.TF_Name,'Value',handles.Files_Ind);
+if handles.Files_Ind == 1
+    set([handles.Forward handles.Next],'Enable','on');
+    set([handles.Rewind handles.Previous],'Enable','off');
+elseif handles.Files_Ind == handles.Nfiles
+    set([handles.Forward handles.Next],'Enable','off');
+    set([handles.Rewind handles.Previous],'Enable','on');
+else
+    set([handles.Rewind handles.Previous handles.Forward handles.Next],'Enable','on');
+end
 PlotTF_Noise(hObject,[],handles);
 guidata(hObject,handles);
 
@@ -516,7 +539,9 @@ TFParam = {['Tbath: ' num2str(data{1}.Tbath*1e3) 'mK'];...
     ['Electro-Thermal Model: ' data{1}.ElecThermModel{ind_orig}];...
     ['Residuo: ' num2str(data{1}.residuo(ind_orig))];...
     ['ERP: ' num2str(data{1}.ERP{ind_orig})];...
-    ['rp: ' num2str(data{1}.p(ind_orig).rp)];['L0: ' num2str(data{1}.p(ind_orig).L0)];...
+    ['R2: ' num2str(data{1}.R2{ind_orig})];...
+    ['rp: ' num2str(data{1}.p(ind_orig).rp)];
+    ['L0: ' num2str(data{1}.p(ind_orig).L0)];...
     ['alpha i: ' num2str(abs(data{1}.p(ind_orig).ai))];...
     ['beta i: ' num2str(data{1}.p(ind_orig).bi)];...
     ['tau0: ' num2str(data{1}.p(ind_orig).tau0)];...
@@ -527,7 +552,8 @@ TFParam = {['Tbath: ' num2str(data{1}.Tbath*1e3) 'mK'];...
 
 NoiseParam = {['Noise Model: ' data{1}.NoiseModel{ind_orig}];...
     ['ExRes: ' num2str(data{1}.p(ind_orig).ExRes)];...
-    ['ThRes: ' num2str(data{1}.p(ind_orig).ThRes)]; ['M: ' num2str(data{1}.p(ind_orig).M)];...
+    ['ThRes: ' num2str(data{1}.p(ind_orig).ThRes)]; 
+    ['M: ' num2str(data{1}.p(ind_orig).M)];...
     ['Mph: ' num2str(data{1}.p(ind_orig).Mph)]};
 
 
@@ -539,6 +565,10 @@ c1 = uimenu(cmenu,'Label',FileStrLabel);
 c2(1) = uimenu(c1,'Label','TF parameter analysis');
 for i = 1:length(TFParam)
     c3(i) = uimenu(c2(1),'Label',TFParam{i});
+    if i > 2
+        Str = TFParam{i}(1:strfind(TFParam{i},':')-1);        
+        c3_1(i) = uimenu(c3(i),'Label',[Str ' (Histogram)'],'Callback',{@HistFcn},'UserData',{data; ind_orig});
+    end
 end
 
 c2(2) = uimenu(c1,'Label','Noise parameter analysis');
@@ -602,3 +632,24 @@ if ~isempty([strfind(a(end).name,'Forward_Callback') strfind(a(end).name,'Rewind
     set([handles.Rewind handles.Forward],'UserData',1);
     guidata(hObject,handles);
 end
+
+function HistFcn(src,evnt)
+
+Str = src.Label;
+Str = Str(1:strfind(Str,'(')-2); 
+if strcmp(Str,'alpha i')
+    Str = 'ai';
+elseif strcmp(Str,'beta i')
+    Str = 'bi';
+elseif strcmp(Str,'tau_eff')
+    Str = 'taueff';
+end
+data = src.UserData;
+figure;
+try
+    hist(eval(['cell2mat(data{1}{1}.' Str ')']),20);
+catch
+    hist(eval(['[data{1}{1}.p.' Str ']']),20);
+end
+ylabel('Counts');
+xlabel(Str);

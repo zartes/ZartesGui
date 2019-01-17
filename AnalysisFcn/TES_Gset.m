@@ -4,15 +4,36 @@ classdef TES_Gset
     
     properties
         n;      % a.u.
+        n_CI;
         K;      % nW/K^n
+        K_CI;
         Tc;     % K
+        Tc_CI;
         G;      % pW/K
+        G_CI;
         rp;     % Normalized units
         model;
         ERP;    % Normalized units
+        R2;     % Determination coefficient
     end
     
     methods
+        
+        function obj = Constructor(obj)
+            % Function to generate the class with default values
+            n = [];      % a.u.
+            n_CI = [];
+            K = [];      % nW/K^n
+            K_CI = [];
+            Tc = [];     % K
+            Tc_CI = [];
+            G = [];      % pW/K
+            G_CI = [];
+            rp = [];     % Normalized units
+            model = [];
+            ERP = [];    % Normalized units
+            R2 = [];     % Determination coefficient            
+        end
         
         function ok = Filled(obj)
             % Function to check whether the class is filled or empty (all
