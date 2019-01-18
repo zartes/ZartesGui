@@ -482,54 +482,6 @@ switch src.Label
         else
             return;
         end
-%         
-%         
-%         [s,~] = listdlg('PromptString','Select one or two model parameters:',...
-%             'ListString',str);
-%         if isempty(s)
-%             return;
-%         end
-%         if length(s) == 1
-%             param = str{s};
-%             ButtonName = questdlg('What''s next?', ...
-%                 'ZarTES v1.0', ...
-%                 [param ' vs. Rn'], [param ' vs. Tbath'], [param ' vs. Rn']);
-%             switch ButtonName
-%                 case [param ' vs. Tbath']
-%                     prompt = {'Enter the %Rn range:'};
-%                     name = '%Rn range (0 < %Rn < 1)';
-%                     numlines = [1 70];
-%                     defaultanswer = {'0.5:0.05:0.8'};
-%                     answer = inputdlg(prompt,name,numlines,defaultanswer);
-%                     Rn = eval(['[' answer{1} ']']);
-%                     handles.Session{handles.TES_ID}.TES.PlotTESData(param,Rn,[],handles.Analyzer);
-%                 case [param ' vs. Rn']
-%                     str = cellstr(num2str(unique([[handles.Session{handles.TES_ID}.TES.PP.Tbath] ...
-%                         [handles.Session{handles.TES_ID}.TES.PN.Tbath]])'));
-%                     [s,~] = listdlg('PromptString','Select Tbath value/s:',...
-%                         'SelectionMode','multiple',...
-%                         'ListString',str);
-%                     if isempty(s)
-%                         return;
-%                     end
-%                     Tbath = str2double(str(s))';
-%                     handles.Session{handles.TES_ID}.TES.PlotTESData(param,[],Tbath,handles.Analyzer);
-%             end
-%         else
-%             %             case [param ' vs. param']
-%             %                 str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
-%             %                 [s,~] = listdlg('PromptString','Select a model parameter:',...
-%             %                     'SelectionMode','single',...
-%             %                     'ListString',str);
-%             %                 if isempty(s)
-%             %                     return;
-%             %                 end
-%             param = str{s(1)};
-%             param2 = str{s(2)};
-%             params = char([{param};{param2}]);
-%             handles.Session{handles.TES_ID}.TES.PlotTESData(params,[],[],handles.Analyzer);
-%         end % switch
-        
 end
 guidata(src,handles);
 
@@ -639,28 +591,17 @@ switch src.Label
         end
         indAxes = findobj('Type','Axes');
         delete(indAxes);
+        
         str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
-        [s,~] = listdlg('PromptString','Select one or two model parameters:',...
-            'ListString',str);
-        if isempty(s)
-            return;
-        end
-        if length(s) == 1
-            param = str{s};
-            ButtonName = questdlg('What''s next?', ...
-                'ZarTES v1.0', ...
-                [param ' vs. Rn'], [param ' vs. Tbath'], [param ' vs. Tbath']);
-            switch ButtonName
-                case [param ' vs. Rn']
-                    prompt = {'Enter the Rn range:'};
-                    name = 'Rn range (0 < Rn < 1)';
-                    numlines = [1 70];
-                    defaultanswer = {'0.5:0.05:0.8'};
-                    answer = inputdlg(prompt,name,numlines,defaultanswer);
-                    Rn = eval(['[' answer{1} ']']);
-                    Tbath = [];
+        dummy = uimenu('Visible','off');
+        waitfor(GraphicTESData(str,dummy));
+        data = dummy.UserData;
+        
+        if ~isempty(data)
+            
+            switch data.case
+                case 1 % vs. Rn
                     
-                case [param ' vs. Tbath']
                     TbathNums = [];
                     for i = s1
                         TbathNums = [TbathNums [handles.Session{i}.TES.PP.Tbath] ...
@@ -675,38 +616,74 @@ switch src.Label
                         return;
                     end
                     Tbath = str2double(str(s))';
-                    Rn = [];
-                otherwise
-                    return;
-            end
-            colors = distinguishable_colors(length(s1));
-            j = 1;
-            for i = s1
-                handles.Session{i}.TES.PlotTESData(param,Rn,Tbath,handles.Analyzer);
-                Lines = findobj('Type','Line');
-                for Ln = 1:length(Lines)
-                    if i == s1(1)
-                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
-                        Lines(Ln).UserData = i;
-                        Lines(Ln).Color = colors(j,:);
-                    else
-                        if ~isequal(Lines(Ln).UserData,i-1)
-                            Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
-                            Lines(Ln).UserData = i;
-                            Lines(Ln).Color = colors(j,:);
+                    Rn = [];                   
+                    
+                    handles.Session{handles.TES_ID}.TES.PlotTESData(data.param1,[],Tbath,handles.Analyzer);
+                    
+                    colors = distinguishable_colors(length(s1));
+                    j = 1;
+                    for i = s1
+                        handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);
+                        Lines = findobj('Type','Line');
+                        for Ln = 1:length(Lines)
+                            if i == s1(1)
+                                Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                Lines(Ln).UserData = i;
+                                Lines(Ln).Color = colors(j,:);
+                            else
+                                if ~isequal(Lines(Ln).UserData,i-1)
+                                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                    Lines(Ln).UserData = i;
+                                    Lines(Ln).Color = colors(j,:);
+                                end
+                            end
                         end
+                        j = j+1;
                     end
-                end
-                j = j+1;
+                    
+                case 2 % vs. Tbath
+                    prompt = {'Enter the %Rn range:'};
+                    name = '%Rn range (0 < %Rn < 1)';
+                    numlines = [1 70];
+                    defaultanswer = {'0.5:0.05:0.8'};
+                    answer = inputdlg(prompt,name,numlines,defaultanswer);
+                    Rn = eval(['[' answer{1} ']']);
+                    Tbath = [];
+                                                            
+                    colors = distinguishable_colors(length(s1));
+                    j = 1;
+                    for i = s1
+                        handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);
+                        Lines = findobj('Type','Line');
+                        for Ln = 1:length(Lines)
+                            if i == s1(1)
+                                Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                Lines(Ln).UserData = i;
+                                Lines(Ln).Color = colors(j,:);
+                            else
+                                if ~isequal(Lines(Ln).UserData,i-1)
+                                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                    Lines(Ln).UserData = i;
+                                    Lines(Ln).Color = colors(j,:);
+                                end
+                            end
+                        end
+                        j = j+1;
+                    end                    
+                    
+                case 3 % Param1 vs. Param2
+                    param = data.param1;
+                    param2 = data.param2;
+                    params = char([{param};{param2}]);
+                    for i = s1
+                        handles.Session{i}.TES.PlotTESData(params,[],[],handles.Analyzer);
+                    end
             end
         else
-            param = str{s(1)};
-            param2 = str{s(2)};
-            params = char([{param};{param2}]);
-            handles.Session{handles.TES_ID}.TES.PlotTESData(params,[],[],handles.Analyzer);
-            
-            
+            return;
         end
+        
+        
 end
 guidata(src,handles);
 

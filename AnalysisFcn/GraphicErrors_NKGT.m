@@ -1,20 +1,8 @@
 function GraphicErrors_NKGT(src,evnt)
-% Auxiliary function to handle right-click mouse options of ABCT representation
-% Last update: 14/11/2018
+% Auxiliary function to handle right-click mouse options of NKGT representation
+% Last update: 18/11/2018
 
-% h = findobj('Type','Line');
-% TempStr = [];
-% j = 1;
-% for i = 1:length(h)
-%     if ~isempty(strfind(h(i).DisplayName,'Positive'))
-%         Tag{j} = h(i).DisplayName(1:strfind(h(i).DisplayName,'mK')+1);
-% %         Tag2{j} = h(i).DisplayName(strfind(h(i).DisplayName,'mK')+3:end);
-%         j = j+1;
-%     end
-% end
-% TempStr = unique(Tag);
 StrIbias = {'Positive';'Negative'};
-
 
 cmenu = uicontextmenu('Visible','on');
 c0 = uimenu(cmenu,'Label','Show only');
@@ -25,8 +13,6 @@ c0_1(i+1) = uimenu(c0,'Label','All','Callback',{@Handle_Errors});
 
 Data = src.UserData;
 he = findobj('Type','ErrorBar','Visible','on');
-% VarVisible = Data.er(1).Visible;
-% if strcmp(VarVisible,'on')
 if ~isempty(he)
     StrLabel = 'Deactivate error bars';
 else
@@ -35,18 +21,6 @@ end
 
 
 c1 = uimenu(cmenu,'Label',StrLabel,'Callback',{@Handle_Errors},'UserData',Data);
-% 
-% try
-%     VarVisible = Data.h_bad(1).Visible;
-%     if strcmp(VarVisible,'on')
-%         StrLabel = 'Hide Filtered Data';
-%     else
-%         StrLabel = 'Show Filtered Data';
-%     end
-%     c2 = uimenu(cmenu,'Label',StrLabel,'Callback',{@Handle_Errors},'UserData',Data);
-% catch
-% end
-
 c3 = uimenu(cmenu,'Label','Hide Negative Ibias Data','Callback',...
     {@Handle_Errors},'UserData',Data);
 c4 = uimenu(cmenu,'Label','Show Negative Ibias Data','Callback',...
@@ -61,7 +35,6 @@ function Handle_Errors(src,evnt)
 str = get(src,'Label');
 if (~isempty(strfind(str,'Positive')))||(~isempty(strfind(str,'Negative')))
     TempStr = str;
-%     TempStr = str(1:strfind(str,'mK')+2);
 else
     TempStr = '';
 end
@@ -101,19 +74,12 @@ hpe = he(jpe);
 hne = he(jne);
 
 switch str
-%     case 'All'
-%         set([hp; hn],'Visible','on');
-%         set([hpe; hne; hf; hfe],'Visible','off');
     
     case 'Deactivate error bars'
         set([hpe; hne],'Visible','off');
         
         
     case 'Activate error bars'
-        
-%         if strcmp(hf(1).Visible,'on')
-%             set(hfe,'Visible','on');
-%         end
         for i = 1:length(hn)
             if strcmp(hn(i).Visible,'on')
                 set(hne(i),'Visible','on');
@@ -125,19 +91,6 @@ switch str
             end
         end
 
-
-%     case 'Hide Filtered Data'
-%         
-%         set([hf; hfe],'Visible','off');
-%         
-%         
-%     case 'Show Filtered Data'
-%         
-%         set(hf,'Visible','on');
-%         if strcmp(hpe(1).Visible,'on')
-%             set(hfe,'Visible','on');
-%         end
-        
         
     case 'Hide Negative Ibias Data'
         
@@ -156,14 +109,7 @@ switch str
     otherwise
         h = [findobj('Type','Line'); findobj('Type','ErrorBar')];
         set(h,'Visible','off');
-%         if ~isempty(strfind(str,'Pos'))
-            set([hp; hn],'Visible','on');
-%             set([hp; hpe],'Visible','on');
-%             set([hn; hne; hf; hfe],'Visible','off');
-%         elseif ~isempty(strfind(str,'Neg'))
-%             set([hn; hne],'Visible','on');
-%             set([hp; hpe; hf; hfe],'Visible','off');
-%         end
+        set([hp; hn],'Visible','on');
 end
 
 function ExportGraph(src,evnt)
