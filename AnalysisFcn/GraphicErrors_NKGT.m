@@ -117,7 +117,7 @@ function ExportGraph(src,evnt)
 
 h_axes = src.UserData;
 [FileName, PathName] = uiputfile('.txt', 'Select a file name for storing data');
-if isempty(FileName)
+if isequal(FileName,0)||isempty(FileName)
     return;
 end
 file = strcat([PathName FileName]);

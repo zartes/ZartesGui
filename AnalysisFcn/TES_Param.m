@@ -11,6 +11,22 @@ classdef TES_Param
     end
     
     methods
+        
+        function obj = Update(obj,data)
+            % Function to update the class values
+            
+            FN = properties(obj);
+            if nargin == 2
+                fieldNames = fieldnames(data);
+                for i = 1:length(fieldNames)
+                    if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
+                        eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
+                    end
+                end
+                
+            end
+        end
+        
         function ok = Filled(obj)
             % Function to check whether the class is filled or empty (all
             % fields must be filled to be considered as filled, except for sides)

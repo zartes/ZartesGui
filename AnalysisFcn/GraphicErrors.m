@@ -165,14 +165,7 @@ switch str
     otherwise
         h = [findobj('Type','Line'); findobj('Type','ErrorBar')];
         set(h,'Visible','off');
-%         if ~isempty(strfind(str,'Pos'))
-            set([hp; hn],'Visible','on');
-%             set([hp; hpe],'Visible','on');
-%             set([hn; hne; hf; hfe],'Visible','off');
-%         elseif ~isempty(strfind(str,'Neg'))
-%             set([hn; hne],'Visible','on');
-%             set([hp; hpe; hf; hfe],'Visible','off');
-%         end
+        set([hp; hn],'Visible','on');
 end
 
 function ExportGraph(src,evnt)
@@ -180,7 +173,7 @@ function ExportGraph(src,evnt)
 
 h_axes = src.UserData;
 [FileName, PathName] = uiputfile('.txt', 'Select a file name for storing data');
-if isempty(FileName)
+if isequal(FileName,0)||isempty(FileName)
     return;
 end
 file = strcat([PathName FileName]);

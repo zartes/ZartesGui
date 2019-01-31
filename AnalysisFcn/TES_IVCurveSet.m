@@ -93,38 +93,44 @@ classdef TES_IVCurveSet
             end
             h = waitbar(0,'Please wait...','Name','ZarTES v1.0 - Loading IV curves');
             pause(0.05);
+            iOK = 1;
             for i = 1:length(T)
-                
+                try
                 data = importdata(T{i});
+                catch
+                    data = fopen(T{i});
+                    continue;
+                end
                 if isstruct(data)
                     data = data.data;
                 end
                 j = size(data,2);
                 switch j
                     case 2
-                        obj(i).ibias = data(:,1)*1e-6;
+                        obj(iOK).ibias = data(:,1)*1e-6;
                         if data(1,1) == 0
-                            obj(i).vout = data(:,2)-data(1,2);
+                            obj(iOK).vout = data(:,2)-data(1,2);
                         else
-                            obj(i).vout = data(:,2)-data(end,2);
+                            obj(iOK).vout = data(:,2)-data(end,2);
                         end
                     case 4
-                        obj(i).ibias = data(:,2)*1e-6;
+                        obj(iOK).ibias = data(:,2)*1e-6;
                         if data(1,2) == 0
-                            obj(i).vout = data(:,4)-data(1,4);
+                            obj(iOK).vout = data(:,4)-data(1,4);
                         else
-                            obj(i).vout = data(:,4)-data(end,4);
+                            obj(iOK).vout = data(:,4)-data(end,4);
                         end
                 end
                 clear data;
                 
-                obj(i).good = 1;
-                obj(i).file = fileN{i};
-                obj(i).Tbath = sscanf(char(regexp(fileN{i},'\d+.?\d+mK*','match')),'%fmK')*1e-3;
-                obj(i).IVsetPath = path;
-                file_upd = fileN{i};
+                obj(iOK).good = 1;
+                obj(iOK).file = fileN{iOK};
+                obj(iOK).Tbath = sscanf(char(regexp(fileN{iOK},'\d+.?\d+mK*','match')),'%fmK')*1e-3;
+                obj(iOK).IVsetPath = path;
+                file_upd = fileN{iOK};
                 file_upd(file_upd == '_') = ' ';
-                waitbar(i/length(T),h,file_upd)
+                waitbar(iOK/length(T),h,file_upd)
+                iOK = iOK+1;
             end
             if ishandle(h)
                 close(h);
@@ -203,7 +209,12 @@ classdef TES_IVCurveSet
             end
             
             for j = 1:length(StrRange)
+                
                 eval([upper(StrRange{j}) 'files = ls(''' IVsPath '*_' StrRange{j} '_matlab.txt'');']);
+                
+                if isempty(eval([upper(StrRange{j}) 'files']))
+                    eval([upper(StrRange{j}) 'files = ls(''' IVsPath '*_' StrRange{j} '_*'');']);
+                end
                 % Erase those that are not valid
                 TempStr = nan(1,size(eval([upper(StrRange{j}) 'files']),1));
                 i = 1;
