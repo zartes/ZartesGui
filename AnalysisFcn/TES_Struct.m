@@ -330,9 +330,12 @@ classdef TES_Struct
                     rp = [Gset.rp];
                     [~,ind] = sort(rp);
                     val = eval(['[Gset.' StrField{j} '];']);
-                    val_CI = eval(['[Gset.' StrField{j} '_CI];']);
-                    er(j) = errorbar(h(j),rp(ind),val(ind),val_CI(ind),'color',color{k},...
-                        'Visible','off','DisplayName',[StrIbias{k} ' Error Bar'],'Clipping','on');
+                    try
+                        val_CI = eval(['[Gset.' StrField{j} '_CI];']);
+                        er(j) = errorbar(h(j),rp(ind),val(ind),val_CI(ind),'color',color{k},...
+                            'Visible','off','DisplayName',[StrIbias{k} ' Error Bar'],'Clipping','on');
+                    catch
+                    end
                     eval(['plot(h(j),rp(ind),val(ind),''' LineStr{k} ''','...
                         '''color'',color{k},''MarkerFaceColor'',color{k},''linewidth'',LS,''markersize'',MS,''Marker'','...
                         '''' Marker{k} ''',''DisplayName'',''' StrIbias{k} ''');']);
@@ -348,8 +351,12 @@ classdef TES_Struct
                     end
                 end
                 fig.subplots = h;
-                data.er = er;
-                set(h,'Visible','on','ButtonDownFcn',{@GraphicErrors_NKGT},'UserData',data,'fontsize',12,'linewidth',2,'fontweight','bold')
+                try
+                    data.er = er;
+                    set(h,'ButtonDownFcn',{@GraphicErrors_NKGT},'UserData',data,'fontsize',12,'linewidth',2,'fontweight','bold')
+                catch
+                end
+                set(h,'Visible','on');
             end
             if nargin < 2
                 warndlg('TESDATA.fitPvsTset must be firstly applied.','ZarTES v1.0')
@@ -487,12 +494,53 @@ classdef TES_Struct
                         end
                     end
                 end
+                
+                if isempty(dirs{1})
+                    DataPath = uigetdir(IVsetPath, 'Pick another Data path containing Temperature folders');
+                    if DataPath ~= 0
+                        DataPath = [DataPath filesep];
+                    else
+                        errordlg('Invalid Data path name!','ZarTES v1.0','modal');
+                        return;
+                    end
+                    
+                    if k1 == 1
+%                         indt = find(DataPath == filesep);
+%                         DataPath = DataPath(1:indt(end-1));
+                        str = dir([DataPath '*mK']);
+                    else
+%                         ind = find(DataPath == filesep);
+%                         DataPath = [DataPath(1:ind(end-1)) 'Negative Bias' filesep];
+                        str = dir([DataPath '*mK']);
+                    end
+                    k = 1;
+                    dirs = {[]};
+                    for jjj = 1:length(str)
+                        if str(jjj).isdir
+                            if isempty(strfind(str(jjj).name,'('))
+                                dirs{k} = [DataPath str(jjj).name]; %#ok<*PROP>
+                                k = k+1;
+                            end
+                        end
+                    end
+                    if isempty(dirs{1})
+                        errordlg('Invalid Data path name!','ZarTES v1.0','modal');
+                        return;
+                    end
+                end
+                
                 h_i = 1;
                 h = nan(1,50);
                 g = nan(1,50);
                 
                 H = multiwaitbar(2,[0 0],{'Folder(s)','File(s)'});
                 H.figure.Name = 'Z(w) Analysis';
+                H1 = multiwaitbar(2,[0 0],{'Folder(s)','File(s)'});
+                H1.figure.Name = 'Noise Analysis';
+                eval(['obj.P' StrRange{k1} ' = TES_P;']);
+                eval(['obj.P' StrRange{k1} ' = obj.P' StrRange{k1} '.Constructor;']);
+                
+                iOK = 1;
                 for i = 1:length(dirs)
                     %%%buscamos los ficheros a analizar en cada directorio.
                     D = [dirs{i} obj.TFOpt.TFBaseName];
@@ -507,6 +555,9 @@ classdef TES_Struct
                     indSep = find(dirs{i} == filesep);
                     Path = dirs{i}(indSep(end)+1:end);
                     Tbath = sscanf(Path,'%dmK');
+                    if isempty(Tbath)
+                        continue;
+                    end
                     %%%hacemos loop en cada fichero a analizar.
                     k = 1;
                     ImZmin = nan(1,length(filesZ));
@@ -527,27 +578,28 @@ classdef TES_Struct
                         if param.rp > 1 || param.rp < 0
                             continue;
                         end
+                        eval(['obj.P' StrRange{k1} '(iOK).Tbath = Tbath*1e-3;;']);
                         paramList = fieldnames(param);
                         for pm = 1:length(paramList)
                             eval(['obj.P' StrRange{k1} '(i).p(jj).' paramList{pm} ' = param.' paramList{pm} ';']);
                         end
-                        eval(['obj.P' StrRange{k1} '(i).CI{jj} = CI;']);
-                        eval(['obj.P' StrRange{k1} '(i).residuo(jj) = aux1;']);
-                        eval(['obj.P' StrRange{k1} '(i).fileZ(jj) = {[dirs{i} filesep filesZ{j1}]};']);
-                        eval(['obj.P' StrRange{k1} '(i).ElecThermModel(jj) = {StrModel};']);
-                        eval(['obj.P' StrRange{k1} '(i).ztes{jj} = ztes;']);
-                        eval(['obj.P' StrRange{k1} '(i).fZ{jj} = fZ;']);
-                        eval(['obj.P' StrRange{k1} '(i).ERP{jj} = ERP;']);
-                        eval(['obj.P' StrRange{k1} '(i).R2{jj} = R2;']);
+                        eval(['obj.P' StrRange{k1} '(iOK).CI{jj} = CI;']);
+                        eval(['obj.P' StrRange{k1} '(iOK).residuo(jj) = aux1;']);
+                        eval(['obj.P' StrRange{k1} '(iOK).fileZ(jj) = {[dirs{i} filesep filesZ{j1}]};']);
+                        eval(['obj.P' StrRange{k1} '(iOK).ElecThermModel(jj) = {StrModel};']);
+                        eval(['obj.P' StrRange{k1} '(iOK).ztes{jj} = ztes;']);
+                        eval(['obj.P' StrRange{k1} '(iOK).fZ{jj} = fZ;']);
+                        eval(['obj.P' StrRange{k1} '(iOK).ERP{jj} = ERP;']);
+                        eval(['obj.P' StrRange{k1} '(iOK).R2{jj} = R2;']);
                         
                         % Datos filtrados por valores negativos de C o
                         % alpha
                         if param.C < 0 || param.ai < 0
-                            eval(['obj.P' StrRange{k1} '(i).Filtered{jj} = 1;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
                         elseif ERP > 0.8
-                            eval(['obj.P' StrRange{k1} '(i).Filtered{jj} = 1;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
                         else
-                            eval(['obj.P' StrRange{k1} '(i).Filtered{jj} = 0;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 0;']);
                         end
                         % Datos filtrados por valores con ERP (Error
                         % Relativo Promedio) mayores de 0.8
@@ -590,10 +642,7 @@ classdef TES_Struct
                         
                         %%%Analizamos el ruido
                         if ~isempty(filesNoise)
-                            if i == 1 && j1 == 1
-                                H1 = multiwaitbar(2,[0 0],{Path,NameStr});
-                                H1.figure.Name = 'Noise Analysis';
-                            end
+                            
                             NameStr = filesNoise{j1};
                             NameStr(NameStr == '_') = ' ';
                             if ishandle(H1.figure)
@@ -605,21 +654,22 @@ classdef TES_Struct
                             FileName = [dirs{i} filesep filesNoise{j1}];
                             [RES, SimRes, M, Mph, fNoise, SigNoise] = obj.fitNoise(FileName, param);
                             
-                            eval(['obj.P' StrRange{k1} '(i).p(jj).ExRes = RES;']);
-                            eval(['obj.P' StrRange{k1} '(i).p(jj).ThRes = SimRes;']);
-                            eval(['obj.P' StrRange{k1} '(i).fileNoise(jj) = {FileName};']);
-                            eval(['obj.P' StrRange{k1} '(i).NoiseModel(jj) = {obj.NoiseOpt.NoiseModel};']);
-                            eval(['obj.P' StrRange{k1} '(i).fNoise{jj} = fNoise;']);
-                            eval(['obj.P' StrRange{k1} '(i).SigNoise{jj} = SigNoise;']);
-                            eval(['obj.P' StrRange{k1} '(i).p(jj).M = M;']);
-                            eval(['obj.P' StrRange{k1} '(i).p(jj).Mph = Mph;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).ExRes = RES;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).ThRes = SimRes;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).fileNoise(jj) = {FileName};']);
+                            eval(['obj.P' StrRange{k1} '(iOK).NoiseModel(jj) = {obj.NoiseOpt.NoiseModel};']);
+                            eval(['obj.P' StrRange{k1} '(iOK).fNoise{jj} = fNoise;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).SigNoise{jj} = SigNoise;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).M = M;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).Mph = Mph;']);
                             
                         end
                         h_i = h_i+1;
-                        jj = jj+1;
+                        jj = jj+1;                        
+                        
                     end
-                    eval(['obj.P' StrRange{k1} '(i).Tbath = Tbath*1e-3;;']);
                     
+                    iOK = iOK+1; 
                 end
                 eval(['dat.P = obj.P' StrRange{k1} ';']);
                 
@@ -1180,22 +1230,26 @@ classdef TES_Struct
                         
                         eval(['grid(h(' num2str(j) '),''on'');']);
                         eval(['hold(h(' num2str(j) '),''on'');']);
-                        eval(['er(ind) = errorbar(h(' num2str(j) '),' DataStr{j} ',' DataStr_CI{j} ',''color'',colors{k},''Visible'',''off'',''DisplayName'',''' NameStr ' Error Bar'',''Clipping'',''on'');']);
+                        try
+                            eval(['er(ind) = errorbar(h(' num2str(j) '),' DataStr{j} ',' DataStr_CI{j} ',''color'',colors{k},''Visible'',''off'',''DisplayName'',''' NameStr ' Error Bar'',''Clipping'',''on'');']);
+                        catch
+                        end
+                        try
                         eval(['h_ax(' num2str(i) ',' num2str(j) ') = ' PlotStr{j} '(h(' num2str(j) '),' DataStr{j} ...
                             ',''' MarkerStr{i} ''',''color'',colors{k},''linewidth'',LW1,''markersize'',MS,''DisplayName'',''' NameStr ''''...
                             ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}]);']);
                         eval(['set(h(' num2str(j) '),''fontsize'',11,''fontweight'',''bold'');']);
                         eval(['axis(h(' num2str(j) '),''tight'');']);
+                        catch
+                        end
                         try
                             eval(['erbad(ind) = errorbar(h(' num2str(j) '),' DataStrBad{j} ',' DataStrBad_CI{j} ',''Visible'',''off'',''color'',[1 1 1]*160/255,'...
                                 '''linestyle'',''none'',''DisplayName'',''Filtered Error Bar'',''Clipping'',''on'');']);
                             eval(['h_bad(ind) = ' PlotStr{j} '(h(' num2str(j) '),' DataStrBad{j} ...
                                 ',''' MarkerStr{i} ''',''color'',[1 1 1]*160/255,''markersize'',MS,''DisplayName'',''Filtered'''...
-                                ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}],''Visible'',''off'',''linestyle'',''none'');']);                           
-                            
+                                ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}],''Visible'',''off'',''linestyle'',''none'');']);                                                       
                         catch
-                        end
-                        
+                        end                        
                         
                         eval(['xlabel(h(' num2str(j) '),''R_{TES}/R_n'',''fontsize'',11,''fontweight'',''bold'');']);
                         eval(['ylabel(h(' num2str(j) '),''' YLabels{j} ''',''fontsize'',11,''fontweight'',''bold'');']);
@@ -1214,14 +1268,16 @@ classdef TES_Struct
                 xlim([0.15 0.9])
             end
             fig.hObject.Visible = 'on';
-            data.er = er;
+            
             try
+                data.er = er;
                 data.h_bad = h_bad;
                 data.erbad = erbad;
+                set(h,'ButtonDownFcn',{@GraphicErrors},'UserData',data,'fontsize',12,'linewidth',2,'fontweight','bold')
             catch
             end
+            set(h,'Visible','on')
             
-            set(h,'Visible','on','ButtonDownFcn',{@GraphicErrors},'UserData',data,'fontsize',12,'linewidth',2,'fontweight','bold')
         end
         
         function fig = PlotNoiseTbathRp(obj,Tbath,Rn,fig)
@@ -1248,8 +1304,12 @@ classdef TES_Struct
                         for i = 1:length(Rn)
                             [~,ind(i)] = min(abs(Rp-Rn(i)));
                         end
-                        eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileNoise(ind)]'';';]);
-                        eval(['N = length(files' StrCond{iP} ');']);
+                        try
+                            eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileNoise(ind)]'';';]);
+                            eval(['N = length(files' StrCond{iP} ');']);
+                        catch
+                            return;
+                        end
                     else
                         eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileNoise]'';';]);
                         eval(['N = length(files' StrCond{iP} ');']);
@@ -1387,7 +1447,11 @@ classdef TES_Struct
                     ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
                 else
                     for i = 1:length(Tbath)
-                        eval(['ind_TbathN(i) = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
+                        try
+                            eval(['ind_TbathN(i) = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
+                        catch
+                            return;
+                        end
                     end
                 end
                 for ind_Tbath = ind_TbathN
@@ -1398,8 +1462,12 @@ classdef TES_Struct
                         for i = 1:length(Rn)
                             [~,ind(i)] = min(abs(Rp-Rn(i)));
                         end
-                        eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ(ind)]'';';]);
-                        eval(['N = length(files' StrCond{iP} ');']);
+                        try
+                            eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ(ind)]'';';]);
+                            eval(['N = length(files' StrCond{iP} ');']);
+                        catch
+                            continue;
+                        end
                     else
                         eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ]'';';]);
                         eval(['N = length(files' StrCond{iP} ');']);

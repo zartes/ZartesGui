@@ -92,7 +92,17 @@ else
 end
 
 handles.Files_Ind = 1;
-PlotTF_Noise(hObject,[],handles);
+try
+    PlotTF_Noise(hObject,[],handles);
+    Ok = 1;
+catch
+    Ok = 0;
+end
+if ~Ok
+    warndlg('First use FitZset method!','ZarTES v1.0');
+    delete(handles.figure1);
+    return;
+end
 handles = guidata(hObject);
 set([handles.Previous handles.Rewind],'Enable','off')
     
@@ -112,14 +122,17 @@ function varargout = TF_Noise_Viewer_OutputFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Get default command line output from handles structure
-varargout{1} = handles.output;
-set(handles.figure1,'Visible','on');
-a_str = {'New Figure';'Open File';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
-for i = 1:length(a_str)
-    eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
-    a.Visible = 'off';
+try
+    varargout{1} = handles.output;
+    set(handles.figure1,'Visible','on');
+    a_str = {'New Figure';'Open File';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
+    for i = 1:length(a_str)
+        eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
+        a.Visible = 'off';
+    end
+    guidata(hObject,handles)
+catch
 end
-guidata(hObject,handles)
 
 % --- Executes on selection change in TBath_popup.
 function TBath_popup_Callback(hObject, eventdata, handles)
@@ -356,6 +369,7 @@ if src == handles.figure1||src == handles.TBath_popup
     set(handles.TF_Name,'String',FilesStr,'Value',1);
 end
 set(handles.TF_axes,'ButtonDownFcn',{@DisplayResults},'UserData',data);
+axis(handles.TF_axes,'tight');
 
 %% Noise is drawn
 cla(handles.Noise_axes);
@@ -453,6 +467,7 @@ if src == handles.figure1||src == handles.TBath_popup
     set(handles.Noise_Name,'String',FilesStr,'Value',1);
 end
 set(handles.Noise_axes,'ButtonDownFcn',{@HandleBoolComp},'UserData',handles.varargin{1});
+axis(handles.Noise_axes,'tight');
 guidata(src,handles);
     
 

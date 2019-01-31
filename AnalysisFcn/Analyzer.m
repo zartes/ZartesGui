@@ -568,18 +568,22 @@ switch src.Label
             Axes = findobj('Type','Axes');
             for k = 1:length(Axes)
                 USData{k} = Axes(k).UserData;
-                er{k} = [er{k} USData{k}.er];
-                h_bad{k} = [h_bad{k} USData{k}.h_bad];
-                erbad{k} = [erbad{k} USData{k}.erbad];
-                
-                data{k}.er = er{k};
-                data{k}.h_bad = h_bad{k};
-                data{k}.erbad = erbad{k};
+                try
+                    er{k} = [er{k} USData{k}.er];
+                    h_bad{k} = [h_bad{k} USData{k}.h_bad];
+                    erbad{k} = [erbad{k} USData{k}.erbad];
+                    
+                    data{k}.er = er{k};
+                    data{k}.h_bad = h_bad{k};
+                    data{k}.erbad = erbad{k};
+                    Axes(k).UserData = data{k};
+                catch
+                end
             end
         end
-        for k = 1:length(Axes)
-            Axes(k).UserData = data{k};
-        end
+%         for k = 1:length(Axes)
+%             Axes(k).UserData = data{k};
+%         end
         
     case 'Plot TESs Data'
         str = cellstr(handles.Loaded_TES.String);
@@ -825,13 +829,15 @@ function Analyzer_CloseRequestFcn(hObject, eventdata, handles)
 
 % Hint: delete(hObject) closes the figure
 
-ButtonName = questdlg('Do you want to save before exit?', ...
-    'ZarTES v1.0', ...
-    'Yes', 'No', 'Yes');
-switch ButtonName
-    case 'Yes'
-        handles.Session{handles.TES_ID}.TES.Save([handles.Session{handles.TES_ID}.Path 'TES_' handles.Session{handles.TES_ID}.Tag]);
-    case 'No'
+if handles.TES_ID ~= 0
+    ButtonName = questdlg('Do you want to save before exit?', ...
+        'ZarTES v1.0', ...
+        'Yes', 'No', 'Yes');
+    switch ButtonName
+        case 'Yes'
+            handles.Session{handles.TES_ID}.TES.Save([handles.Session{handles.TES_ID}.Path 'TES_' handles.Session{handles.TES_ID}.Tag]);
+        case 'No'
+    end
 end
 % rmvpath([pwd filesep 'AnalysisFcn']);
 delete(hObject);

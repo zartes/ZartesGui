@@ -5,7 +5,11 @@ function Identify_Origin(src,evnt)
 if evnt.Button == 3
     
     Data = src.UserData;
-    P = Data{1};
+    try
+        P = Data{1};
+    catch
+        return;
+    end
     N_meas = Data{2};
     P_Rango = Data{3};
     Circuit = Data{4};
@@ -26,15 +30,23 @@ if evnt.Button == 3
     Parent = src.Parent;
     Ylabel = Parent.YLabel.String;
     
+    try
     FileStr = P(N_meas).fileZ{jj(ind_orig)};
     FileStrLabel = ['..\Z(w)-' FileStr(strfind(FileStr,'TF'):end)];
-    
     data{1} = P(N_meas).ztes{jj(ind_orig)};
     data{2} = P(N_meas).fZ{jj(ind_orig)};
     data{3} = P(N_meas).fileNoise{jj(ind_orig)};
     data{4} = P(N_meas).fNoise{jj(ind_orig)};
     data{5} = P(N_meas).SigNoise{jj(ind_orig)};
     data{6} = Circuit;
+    catch
+        FileStrLabel = [];
+        data = [];
+        delete(hp);
+        return;
+    end
+    
+    
     
     TFParam = {['Tbath: ' num2str(P(N_meas).Tbath*1e3) 'mK'];...
         ['Residuo: ' num2str(P(N_meas).residuo(jj(ind_orig)))];...
@@ -50,34 +62,40 @@ if evnt.Button == 3
         ['Zinf: ' num2str(P(N_meas).p(jj(ind_orig)).Zinf)];...
         ['Z0: ' num2str(P(N_meas).p(jj(ind_orig)).Z0)]};
     
-    NoiseParam = {['ExRes: ' num2str(P(N_meas).p(jj(ind_orig)).ExRes)];...
-        ['ThRes: ' num2str(P(N_meas).p(jj(ind_orig)).ThRes)]; ['M: ' num2str(P(N_meas).p(jj(ind_orig)).M)];...
-        ['Mph: ' num2str(P(N_meas).p(jj(ind_orig)).Mph)]};
+    
     
     
     %% Añadir que se muestren todos los ruidos de la temperatura escogida
     
     cmenu = uicontextmenu('Visible','on');
-    c1 = uimenu(cmenu,'Label',FileStrLabel);
-    c2(1) = uimenu(c1,'Label','Z(w)-Noise Plots','Callback',...
-        {@ActionFcn},'UserData',data);
-    
+    if ~isempty(data)
+        c1 = uimenu(cmenu,'Label',FileStrLabel);
+        c2(1) = uimenu(c1,'Label','Z(w)-Noise Plots','Callback',...
+            {@ActionFcn},'UserData',data);
+    end
     c2(2) = uimenu(c1,'Label','TF parameter analysis');
     for i = 1:length(TFParam)
         c3(i) = uimenu(c2(2),'Label',TFParam{i});
     end
     
-    c2(3) = uimenu(c1,'Label','Noise parameter analysis');
-    for i = 1:length(NoiseParam)
-        c4(i) = uimenu(c2(3),'Label',NoiseParam{i});
+    try
+        NoiseParam = {['ExRes: ' num2str(P(N_meas).p(jj(ind_orig)).ExRes)];...
+            ['ThRes: ' num2str(P(N_meas).p(jj(ind_orig)).ThRes)]; ['M: ' num2str(P(N_meas).p(jj(ind_orig)).M)];...
+            ['Mph: ' num2str(P(N_meas).p(jj(ind_orig)).Mph)]};
+        c2(3) = uimenu(c1,'Label','Noise parameter analysis');
+        for i = 1:length(NoiseParam)
+            c4(i) = uimenu(c2(3),'Label',NoiseParam{i});
+        end
+    catch
     end
-    
-    if P(N_meas).Filtered{jj(ind_orig)} == 0
-        c2(4) = uimenu(c1,'Label','Filter out','Callback',...
-            {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
-    else
-        c2(4) = uimenu(c1,'Label','Unfilter','Callback',...
-            {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
+    if ~isempty(data)
+        if P(N_meas).Filtered{jj(ind_orig)} == 0
+            c2(4) = uimenu(c1,'Label','Filter out','Callback',...
+                {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
+        else
+            c2(4) = uimenu(c1,'Label','Unfilter','Callback',...
+                {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
+        end
     end
     
     set(src,'uicontextmenu',cmenu);
