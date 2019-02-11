@@ -420,7 +420,7 @@ classdef TES_Struct
             % If this data is available, then theoretical C value could
             % be analytically determined
             
-            prompt = {'Enter height value:','Enter width value:'};
+            prompt = {'Enter length value:','Enter width value:'};
             name = 'Provide TES dimension';
             numlines = [1 50; 1 50];
             defaultanswer = {'25e-6','25e-6'};
