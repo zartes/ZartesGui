@@ -55,6 +55,7 @@ function Analyzer_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for Analyzer
 handles.output = hObject;
 
+% handles.Analyzer = handles.Analyzer(1);
 position = get(handles.Analyzer,'Position');
 set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
@@ -75,7 +76,7 @@ MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'TF Sup
 % MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'Circuit Values'};
-MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters';'Change TES Thermal Parameters';'Get G(T)'};
+MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameter Values';'TES Thermal Parameters vs. %Rn';'Get G(T)'};
 MenuTES.SubMenu_2{IndMenu,4} = {'Load TF in Superconductor State (TFS)';'Check TFS'};
 MenuTES.SubMenu_2{IndMenu,5} = {'Fit Z(w)-Noise to ElectroThermal Model'};
 MenuTES.SubMenu_1{IndMenu,3} = {[]};
@@ -138,7 +139,7 @@ end
 % if handles.TES_ID == 0 then 'off'
 StrEnable = {'on';'off'};
 StrLabel = {'Save TES Data';'View';'Macro';'Summary';'TES Device';...
-    'IV-Curves';'Fit P vs. T';'TES Thermal Parameters';'Change TES Thermal Parameters';'Get G(T)';...
+    'IV-Curves';'Fit P vs. T';'TES Thermal Parameter Values';'TES Thermal Parameters vs. %Rn';'Get G(T)';...
     'TF Superconductor';'Z(w)-Noise Analysis';'Options'};
 for i = 1:length(StrLabel)
     h = findobj('Label',StrLabel{i},'Tag','Analyzer');
@@ -161,7 +162,14 @@ function varargout = Analyzer_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
+a_str = {'New Figure';'Open File';'Save Figure';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
+for i = 1:length(a_str)
+    eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
+    a.Visible = 'off';
+end
+
 set(handles.Analyzer,'Visible','on');
+
 
 % --- Executes on selection change in Loaded_TES.
 function Loaded_TES_Callback(hObject, eventdata, handles)
@@ -354,11 +362,11 @@ switch src.Label
         fig = handles.Analyzer;
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],[],fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
-    case 'TES Thermal Parameters'
+    case 'TES Thermal Parameter Values'
         indAxes = findobj('Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.TES.CheckValues;
-    case 'Change TES Thermal Parameters'
+    case 'TES Thermal Parameters vs. %Rn'
         fig.hObject = handles.Analyzer;
         indAxes = findobj('Type','Axes');
         delete(indAxes);
@@ -770,14 +778,14 @@ end
 % TES_Gset (GsetP o GsetN)
 %   Si están vacios (FitPset)
 if Session.TES.GsetP.Filled || Session.TES.GsetN.Filled
-    StrLabel_On = {'TES Thermal Parameters';'Change TES Thermal Parameters';'Get G(T)';...
+    StrLabel_On = {'TES Thermal Parameter Values';'TES Thermal Parameters vs. %Rn';'Get G(T)';...
         'View';'Plot NKGT Set'};
     for i = 1:length(StrLabel_On)
         h = findobj('Label',StrLabel_On{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
-    StrLabel_Off = {'TES Thermal Parameters';'Change TES Thermal Parameters';'Get G(T)';...
+    StrLabel_Off = {'TES Thermal Parameter Values';'TES Thermal Parameters vs. %Rn';'Get G(T)';...
         'View';'Plot NKGT Set'};
     for i = 1:length(StrLabel_Off)
         h = findobj('Label',StrLabel_Off{i},'Tag','Analyzer');

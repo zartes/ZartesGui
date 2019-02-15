@@ -397,8 +397,8 @@ auxnoise = handles.varargin{1}.noisesim(OP,M,f);
 switch handles.varargin{1}.NoiseOpt.tipo
     case 'current'
         
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r'); hold(hs1,'on');grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},20),'.-k'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r','DisplayName','Experimental'); hold(hs1,'on');grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},20),'.-k','DisplayName','Exp\_Filtered'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         
         if handles.varargin{1}.NoiseOpt.Mph == 0
             totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
@@ -408,7 +408,7 @@ switch handles.varargin{1}.NoiseOpt.tipo
         end
         
         if ~handles.varargin{1}.NoiseOpt.boolcomponents
-            loglog(hs1,f,totnoise*1e12,'b');
+            loglog(hs1,f,totnoise*1e12,'b','DisplayName','Total');
             h = findobj(hs1,'color','b');
         else
             loglog(hs1,f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,auxnoise.squidarray*1e12,f,totnoise*1e12);
