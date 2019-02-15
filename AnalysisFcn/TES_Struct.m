@@ -110,8 +110,8 @@ classdef TES_Struct
                 maxrange = ceil(min(maxrange)*1e3)/1e3;
                 warning off;
                 
-                prompt = {'Enter the %Rn range:'};
-                name = '%Rn range to automatically fit P(Tbath) data';
+                prompt = {'Enter the %Rn range (Initial:Step:Final):'};
+                name = '%Rn range to fit P vs. Tbath data (suggested values)';
                 numlines = [1 70];
                 defaultanswer = {[num2str(minrange) ':0.01:' num2str(maxrange)]};
                 answer = inputdlg(prompt,name,numlines,defaultanswer);
@@ -255,7 +255,7 @@ classdef TES_Struct
                 %%%p(1)=-K, p(2)=n, p(3)=P0=K*Tc^n, p(4)=Ic0. p(5)=Pnoise
                 P = p(1)*T(1,:).^p(2)+p(3)*(1-T(2,:)/p(4)).^(2*p(2)/3);%+p(5);
             elseif model > 2
-                error('wrong P(T) model?')
+                error('Wrong P(T) model?')
             end
         end
         
@@ -282,7 +282,7 @@ classdef TES_Struct
                 %param.Pnoise=fit(5);%%%efecto de posible fuente extra de ruido.
             end
             param.G = param.n*param.K*param.Tc^(param.n-1); 
-            param.G_CI = sqrt( ((param.K*param.Tc^(param.n - 1) + param.n*param.K*param.Tc^(param.n - 1)*log(param.Tc))*param.n_CI)^2 ...
+            param.G_CI = sqrt( ((param.K*param.Tc^(param.n - 1) + param.K*param.Tc^(param.n - 1)*param.n*log(param.Tc))*param.n_CI)^2 ...
                 + ((param.n*param.Tc^(param.n - 1))*param.K_CI)^2 ...
                 + ((param.n*param.K*param.Tc^(param.n - 2)*(param.n - 1))*param.Tc_CI)^2 );
                     
@@ -454,7 +454,7 @@ classdef TES_Struct
                     obj.TFOpt.TFBaseName = '\PXI_TF*';
                     obj.NoiseOpt.NoiseBaseName = '\PXI_noise*';%%%'\HP*'
             end
-            ButtonName = questdlg('Do you want to show the results?', ...
+            ButtonName = questdlg('Do you want to show the data and fits?', ...
                 'ZarTES v1.0', ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
