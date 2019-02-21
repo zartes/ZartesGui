@@ -103,22 +103,24 @@ classdef TES_P
                         [~,ind] = intersect(Tbaths,Tbath);
                         for i = 1:length(ind)
                             rp{i} = [obj(ind(i)).p.rp];
-                            rp{i} = rp{i}(cell2mat(obj(ind(i)).Filtered) == 1);
+                            rp{i} = rp{i}(cell2mat(obj(ind(i)).Filtered) == 0);
                             val{i} = eval(['[obj(ind(i)).p.' param '];']);
-                            val{i} = val{i}(cell2mat(obj(ind(i)).Filtered) == 1);
+                            val{i} = val{i}(cell2mat(obj(ind(i)).Filtered) == 0);
                         end
                     else
                         Tbath = [obj.Tbath];
                         for i = 1:length(Tbath)
                             rp{i} = [obj(i).p.rp];
-                            rp{i} = rp{i}(cell2mat(obj(i).Filtered) == 1);
+                            rp{i} = rp{i}(cell2mat(obj(i).Filtered) == 0);
                             val{i} = eval(['[obj(i).p.' param '];']);
-                            val{i} = val{i}(cell2mat(obj(i).Filtered) == 1);
+                            val{i} = val{i}(cell2mat(obj(i).Filtered) == 0);
                         end
                     end
                 else
-                    warndlg('param not valid!','ZarTES v1.0');
-                    return;
+                    if isempty(strfind(param,'_CI'))
+                        warndlg('param not valid!','ZarTES v1.0');
+                        return;
+                    end
                 end
             end
         end
@@ -154,10 +156,10 @@ classdef TES_P
                             Rns = nan(length(Tbaths),1);
                             for i = 1:length(Tbaths)
                                 rp = [obj(i).p.rp];
-                                rp = rp(cell2mat(obj(i).Filtered) == 1);
+                                rp = rp(cell2mat(obj(i).Filtered) == 0);
                                 [~,ind] = min(abs(rp-Rn));
                                 data = eval(['[obj(i).p.' param '];']);
-                                data = data(cell2mat(obj(i).Filtered) == 1);
+                                data = data(cell2mat(obj(i).Filtered) == 0);
                                 val(i,:) = data(ind);
                                 Rns(i,:) = rp(ind);
                             end

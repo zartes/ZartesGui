@@ -46,7 +46,7 @@ if evnt.Button == 3
         return;
     end
     
-    
+    try
     
     TFParam = {['Tbath: ' num2str(P(N_meas).Tbath*1e3) 'mK'];...
         ['Residuo: ' num2str(P(N_meas).residuo(jj(ind_orig)))];...
@@ -61,6 +61,19 @@ if evnt.Button == 3
         ['C: ' num2str(P(N_meas).p(jj(ind_orig)).C*1e15)];...
         ['Zinf: ' num2str(P(N_meas).p(jj(ind_orig)).Zinf)];...
         ['Z0: ' num2str(P(N_meas).p(jj(ind_orig)).Z0)]};
+    catch
+        TFParam = {['Tbath: ' num2str(P(N_meas).Tbath*1e3) 'mK'];...
+        ['Residuo: ' num2str(P(N_meas).residuo(jj(ind_orig)))];
+        ['rp: ' num2str(P(N_meas).p(jj(ind_orig)).rp)];
+        ['L0: ' num2str(P(N_meas).p(jj(ind_orig)).L0)];...
+        ['alpha i: ' num2str((P(N_meas).p(jj(ind_orig)).ai))];...
+        ['beta i: ' num2str(P(N_meas).p(jj(ind_orig)).bi)];...
+        ['tau0: ' num2str(P(N_meas).p(jj(ind_orig)).tau0)];...
+        ['tau_eff: ' num2str(P(N_meas).p(jj(ind_orig)).taueff*1e6)];...
+        ['C: ' num2str(P(N_meas).p(jj(ind_orig)).C*1e15)];...
+        ['Zinf: ' num2str(P(N_meas).p(jj(ind_orig)).Zinf)];...
+        ['Z0: ' num2str(P(N_meas).p(jj(ind_orig)).Z0)]};
+    end
     
     
     
@@ -97,6 +110,10 @@ if evnt.Button == 3
                 {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
         end
     end
+    
+    c2(5) = uimenu(c1,'Label','Change color','Callback',...
+        {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango;evnt.Source.DisplayName});
+    
     
     set(src,'uicontextmenu',cmenu);
     waitfor(cmenu,'Visible','off')
@@ -178,6 +195,19 @@ switch str
         indAxes = findobj('Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotABCT(fig);
+        
+    case 'Change color'
+        c = uisetcolor;
+        if ~isequal(c,0)
+            hl = findobj('DisplayName',Data{4});            
+            set(hl,'Color',c);
+            try
+                he = findobj('DisplayName',[Data{4} ' Error Bar']);
+                set(he,'Color',c);            
+            catch
+            end
+        end
+        
         
     otherwise
         

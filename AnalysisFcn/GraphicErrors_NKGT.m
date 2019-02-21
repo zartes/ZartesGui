@@ -80,15 +80,19 @@ switch str
         
         
     case 'Activate error bars'
-        for i = 1:length(hn)
-            if strcmp(hn(i).Visible,'on')
-                set(hne(i),'Visible','on');
+        try
+            for i = 1:length(hn)
+                if strcmp(hn(i).Visible,'on')
+                    set(hne(i),'Visible','on');
+                end
             end
-        end
-        for i = 1:length(hp)
-            if strcmp(hp(i).Visible,'on')
-                set(hpe(i),'Visible','on');
+            for i = 1:length(hp)
+                if strcmp(hp(i).Visible,'on')
+                    set(hpe(i),'Visible','on');
+                end
             end
+        catch
+            warndlg('No Confidence interval was computed','ZarTES v1.0');
         end
 
         
@@ -105,6 +109,28 @@ switch str
                 set(hne,'Visible','on');
             end
         end
+        
+    case 'Positive'
+        set(hp,'Visible','on');
+        set([hn hne],'Visible','off')
+        try
+            if strcmp(hpe(1).Visible,'on')||strcmp(hne(1).Visible,'on')
+                set(hpe,'Visible','on');
+            end
+        catch
+        end
+            
+    case 'Negative'
+        set(hn,'Visible','on');
+        set([hp hpe],'Visible','off')
+        try
+            if strcmp(hpe(1).Visible,'on')||strcmp(hne(1).Visible,'on')
+                set(hne,'Visible','on');
+            end
+        catch
+        end
+    case 'All'
+        set([hp hpe hn hne],'Visible','on');
         
     otherwise
         h = [findobj('Type','Line'); findobj('Type','ErrorBar')];

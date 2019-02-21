@@ -454,6 +454,26 @@ classdef TES_Struct
                     obj.TFOpt.TFBaseName = '\PXI_TF*';
                     obj.NoiseOpt.NoiseBaseName = '\PXI_noise*';%%%'\HP*'
             end
+            
+            prompt = {'Mimimum frequency value:','Maximum frequency value:'};
+            dlg_title = 'Frequency limitation for Z(w)-Noise analysis';
+            num_lines = [1 70];
+            defaultans = {'0','10000'};
+            answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+            
+            if ~isempty(answer)
+                minFreq = eval(answer{1});
+                maxFreq = eval(answer{2});
+                if ~isnumeric(minFreq)||~isnumeric(maxFreq)
+                    warndlg('Cancelled by user','ZarTES v1.0');
+                    return;
+                end
+            else
+                warndlg('Cancelled by user','ZarTES v1.0');
+                return;
+            end
+            FreqRange = [minFreq maxFreq];
+            
             ButtonName = questdlg('Do you want to show the data and fits?', ...
                 'ZarTES v1.0', ...
                 'Yes', 'No', 'Yes');
@@ -573,7 +593,7 @@ classdef TES_Struct
                         end
                         thefile = strcat(dirs{i},'\',filesZ{j1});
                         
-                        [param, ztes, fZ, ERP, R2, CI, aux1, StrModel, p0] = obj.FitZ(thefile);
+                        [param, ztes, fZ, ERP, R2, CI, aux1, StrModel, p0] = obj.FitZ(thefile,FreqRange);
                         
                         if param.rp > 1 || param.rp < 0
                             continue;
@@ -735,7 +755,7 @@ classdef TES_Struct
             end
         end
         
-        function [param, ztes, fZ, ERP, R2, CI, aux1, StrModel, p0] = FitZ(obj,FileName)
+        function [param, ztes, fZ, ERP, R2, CI, aux1, StrModel, p0] = FitZ(obj,FileName,FreqRange)
             % Function to fit Z(w) according to the selected
             % electro-thermal model
             
@@ -764,6 +784,7 @@ classdef TES_Struct
                 end
             end
             fS = obj.TFS.f;
+            fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
             try
                 eval(['[~,Tind] = find(abs([obj.P' CondStr '.Tbath]*1e3-Tbath)==0);']);
                 eval(['ztes = obj.P' CondStr '(Tind).ztes{IndFile};'])
@@ -772,9 +793,10 @@ classdef TES_Struct
                 end
             catch
                 data = importdata(FileName);
+                data = data(data(:,1) >= FreqRange(1) & data(:,1) <= FreqRange(2),:);
                 tf = data(:,2)+1i*data(:,3);
                 Rth = obj.circuit.Rsh+obj.circuit.Rpar+2*pi*obj.circuit.L*data(:,1)*1i;
-                ztes = (obj.TFS.tf./tf-1).*Rth;
+                ztes = (obj.TFS.tf(obj.TFS.f >= FreqRange(1) & obj.TFS.f <= FreqRange(2))./tf-1).*Rth;
             end
             
             Zinf = real(ztes(end));
@@ -2048,8 +2070,7 @@ classdef TES_Struct
                 param1 = deblank(param(1,:));
                 param2 = deblank(param(2,:));
                 
-                [valP1,valP2,TbathsP1,TbathsP2] = obj.PP.GetParamVsParam(param1,param2);
-                [valN1,valN2,TbathsN1,TbathsN2] = obj.PN.GetParamVsParam(param1,param2);
+                
                 
                 if (isempty(strfind(param1,'_CI')))&&(isempty(strfind(param2,'_CI')))
                     try
@@ -2058,6 +2079,8 @@ classdef TES_Struct
                     catch
                     end
                 end
+                [valP1,valP2,TbathsP1,TbathsP2] = obj.PP.GetParamVsParam(param1,param2);
+                [valN1,valN2,TbathsN1,TbathsN2] = obj.PN.GetParamVsParam(param1,param2);
                 if nargin < 5
                     fig = figure('Visible','on');
                 end

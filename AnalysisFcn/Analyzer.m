@@ -312,20 +312,37 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.Constructor;
         
         % Searching for Circuir variable (inside session or in circuit)
-        d = dir([DataPath 'sesion.mat']);
-        circuit = [];
-        if ~isempty(d)
-            load([DataPath 'sesion.mat'],'circuit');
-            if ~isempty(circuit)
-                handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
-            end
+        [filename, pathname] = uigetfile({'sesion.mat';'circuit.mat'}, 'Pick a MATLAB file');
+        if ~isequal(filename,0)
+            switch filename
+                case 'sesion.mat'
+                    load([pathname 'sesion.mat'],'circuit');
+                case 'circuit.mat'
+                    load([pathname 'circuit.mat'],'circuit');
+            end            
         else
-            d = dir([DataPath 'circuit.mat']);
-            load([DataPath 'circuit.mat'],'circuit');
-            if ~isempty(circuit)
-                handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
-            end
+            warndlg('Caution! Circuit parameters were not loaded, check it manually','ZarTES v1.0');
         end
+%             d = dir([DataPath 'sesion.mat']);
+%         circuit = [];
+%         if ~isempty(d)
+%             load([DataPath 'sesion.mat'],'circuit');
+%             if ~isempty(circuit)
+%                 handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
+%             end
+%         else
+%             [filename, pathname] = uigetfile({'sesion.m';'circuit.m'}, 'Pick a MATLAB code file');
+%             load([DataPath 'sesion.mat'],'circuit');
+%             if ~isempty(circuit)
+%                 handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
+%             end
+%             d = dir([DataPath 'circuit.mat']);
+%             load([DataPath 'circuit.mat'],'circuit');
+%             if ~isempty(circuit)
+%                 handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
+%             end
+%             
+%         end
         
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
         
