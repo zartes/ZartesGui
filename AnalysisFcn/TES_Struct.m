@@ -516,7 +516,11 @@ classdef TES_Struct
                 end
                 
                 if isempty(dirs{1})
-                    DataPath = uigetdir(IVsetPath, 'Pick another Data path containing Temperature folders');
+                    if k1 == 1
+                        DataPath = uigetdir(IVsetPath, 'Pick a Z(w)-Ruido path containing Temperature named folders (Positive Bias)');
+                    else
+                        DataPath = uigetdir(IVsetPath, 'Pick a Z(w)-Ruido path containing Temperature named folders (Negative Bias)');
+                    end
                     if DataPath ~= 0
                         DataPath = [DataPath filesep];
                     else
@@ -601,7 +605,7 @@ classdef TES_Struct
                         eval(['obj.P' StrRange{k1} '(iOK).Tbath = Tbath*1e-3;;']);
                         paramList = fieldnames(param);
                         for pm = 1:length(paramList)
-                            eval(['obj.P' StrRange{k1} '(i).p(jj).' paramList{pm} ' = param.' paramList{pm} ';']);
+                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).' paramList{pm} ' = param.' paramList{pm} ';']);
                         end
                         eval(['obj.P' StrRange{k1} '(iOK).CI{jj} = CI;']);
                         eval(['obj.P' StrRange{k1} '(iOK).residuo(jj) = aux1;']);
@@ -1241,7 +1245,11 @@ classdef TES_Struct
                     else
                         NameStr = [TbathStr 'NegIbias'];
                     end
-                    [rp,jj] = sort([P(i).p.rp]);
+                    try
+                        [rp,jj] = sort([P(i).p.rp]);
+                    catch
+                        continue;
+                    end
                     if isempty(P(i).Filtered{1})
                         P(i).Filtered(1:length(rp)) = {0};
                     end

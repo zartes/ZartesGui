@@ -69,9 +69,9 @@ classdef TES_IVCurveSet
             % Function to import I-V curves from files
             
             if ~exist('path','var')
-                [fileN,path] = uigetfile('C:\Documents and Settings\Usuario\Escritorio\Datos\2016\Noviembre\IVs\*','','multiselect','on');
+                [fileN,path] = uigetfile('C:\Documents and Settings\Usuario\Escritorio\Datos\2016\Noviembre\IVs\*.txt','','multiselect','on');
             elseif ~exist('fileN','var')
-                [fileN,path] = uigetfile([path '\*'],'','multiselect','on');
+                [fileN,path] = uigetfile([path '\*.txt'],'','multiselect','on');
             end
             
             T = strcat(path,fileN);
