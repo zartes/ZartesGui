@@ -254,8 +254,13 @@ else
         hObject.Enable = 'off';
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
-        handles.Squid.TES2NormalState(1);
         
+        if isequal(eventdata,-1)
+            handles.Squid.TES2NormalState(eventdata);
+        else
+            handles.Squid.TES2NormalState(1);
+        end
+        hObject.UserData = [];
         handles.Actions_Str.String = 'Electronic Magnicon: TES in Normal State';
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -586,7 +591,7 @@ catch
     handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
 end
-
+guidata(hObject,handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -1298,9 +1303,19 @@ function PXI_TF_Zw_Conf_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+hObject.UserData = [];
 waitfor(Conf_Setup_PXI(hObject,handles.PXI_TF_Zw_Menu.Value,handles));
+if ~isempty(hObject.UserData)
+    handles.PXI.ConfStructs = hObject.UserData;    
+    guidata(hObject,handles);
+end
 handles.Actions_Str.String = 'PXI: Configuration changes in Noise Mode';
 Actions_Str_Callback(handles.Actions_Str,[],handles);
+
+% waitfor(Conf_Setup(hObject,[],handles));
+
+
+
 
 % --- Executes on selection change in DSA_TF_Zw_Menu.
 function DSA_TF_Zw_Menu_Callback(hObject, eventdata, handles)
@@ -2106,7 +2121,7 @@ Error = abs(T_MC-Set_Pt)/T_MC*100;
 handles.Error_Measured.String = Error;
 
 RGB = [linspace(120,255,100)' sort(linspace(50,170,100),'descend')' 50*ones(100,1)]./255;
-handles.Temp_Color.BackgroundColor = RGB(min(ceil(Error),100),:);
+handles.Temp_Color.BackgroundColor = RGB(round(min(ceil(Error),100)),:);
 
 
 
@@ -2467,6 +2482,7 @@ if hObject.Value
     try
         handles.DSA.SourceOn;
         handles.DSA.WhiteNoise(excitacion);
+        pause(0.4);
     catch
         warndlg('External Source is not connected','ZarTES v1.0');
         hObject.BackgroundColor = handles.Disable_Color;
@@ -2652,7 +2668,7 @@ if isnan(SetPt)||isinf(SetPt)
     hObject.String = '---';
     return;
 else
-    if SetPt > 120*1e-3 % Por encima de 120mK
+    if SetPt > 500*1e-3 % Por encima de 120mK
         ButtonName = questdlg('Set Pt above 120 mK, are you sure to continue?','ZarTES v1.0','Yes','No','No');
         switch ButtonName
             case 'No'
@@ -2681,7 +2697,7 @@ pause(0.1)
 while strcmp(handles.vi_PromptForT.FPState,'eClosed')
     pause(0.1);
 end
-
+stop(handles.timer_T);
 start(handles.timer_T);
 waitfor(msgbox('Temperature was sucessfully set','ZarTES v1.0'));
 
@@ -2980,7 +2996,7 @@ else
                         IVmeasure.vout = Data(:,4)-Data(end,4);
                     end
             end
-            val = polyfit(IVmeasure.ibias(3:10),IVmeasure.vout(3:10),1); % First points avoided
+            val = polyfit(IVmeasure.ibias(1:3),IVmeasure.vout(1:3),1); % First points avoided
             mN = val(1);
             val = polyfit(IVmeasure.ibias(end-2:end),IVmeasure.vout(end-2:end),1);
             mS = val(1);
@@ -3023,7 +3039,7 @@ function Start_FieldRange_Callback(hObject, eventdata, handles)
 % hObject    handle to Start_FieldRange (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if isempty(handles.CurSource.ObjHandle)
+if isempty(handles.CurSour.ObjHandle)
     handles.Actions_Str.String = 'Current Source K220 Connection is missed. Check connection and initialize it from the MENU.';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
     hObject.Value = 0;
@@ -3328,6 +3344,17 @@ if nargin == 4
             set(handles.Result_Axes,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
                 'XTickLabelMode','auto','XTickMode','auto');
             
+        case 'IC_Range'
+                        
+            set([findobj(handles.Result_Axes1); findobj(handles.Result_Axes2); findobj(handles.Result_Axes3)],'Visible','off');
+            set(findobj(handles.Result_Axes),'Visible','on');
+            
+            plot(handles.Result_Axes,Data(:,2),Data(:,4),'Visible','on','Marker','o','Color',[0 0.447 0.741],'DisplayName',DataName);
+            xlabel(handles.Result_Axes,'Bfield(\mu A)','FontSize',12,'FontWeight','bold');
+            ylabel(handles.Result_Axes,'Icritical(\mu A)','LineWidth',2,'FontSize',12,'FontWeight','bold');
+            set(handles.Result_Axes,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
+                'XTickLabelMode','auto','XTickMode','auto');
+            
         case 'Start_FieldRange'
             
             set([findobj(handles.Result_Axes1); findobj(handles.Result_Axes2); findobj(handles.Result_Axes3)],'Visible','off');
@@ -3597,143 +3624,357 @@ clear FieldValues;
 FieldValues{1} = sort(unique(cell2mat(vals)),'ascend');
 
 
-Rf_popup = get(handles.SQ_Rf,'Value');
-set(handles.SQ_Rf,'Value',2); % 7e2 value
-SQ_Calibration_Callback(handles.SQ_Calibration,[],handles);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% (Codigo Carlos) %%%%%%%%%%%%%%%%%%
+
+% Ponemos el valor de corriente en la fuente
+handles.CurSource_I_Units.Value = 1;
+handles.CurSource_I.String = num2str(FieldValues{1}(1)*1e-6);  % Se pasan las corrientes en amperios
+handles.CurSource_Set_I.Value = 1;
+CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+handles.CurSource_OnOff.Value = 1;
+CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
 
 
-StrCond = {'p';'n'};
-Ibvalues_step = 0.25;
-
-%                 % Reset Closed Loop
 handles.SQ_Reset_Closed_Loop.Value = 1;
 SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
 
-for cond = 1:2
-    clear data;
+step = 0.1;
+
+for i = 1:length(FieldValues{1})
     
-    % Ponemos el valor de corriente en la fuente
     handles.CurSource_I_Units.Value = 1;
     handles.CurSource_I.String = num2str(FieldValues{1}(1)*1e-6);  % Se pasan las corrientes en amperios
     handles.CurSource_Set_I.Value = 1;
     CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-    handles.CurSource_OnOff.Value = 1;
-    CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
-    handles.SQ_Ibias.String = num2str(0);
-    handles.SQ_Ibias_Units.Value = 3;
-    handles.SQ_Set_I.Value = 1;
-    SQ_Set_I_Callback(handles.SQ_Set_I,[],handles);
-    % Reset Closed Loop
-    handles.SQ_Reset_Closed_Loop.Value = 1;
-    SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
-    pause(0.2)
-    LNCS = 0;
+    pause(1);
     
-    for j = 1:length(FieldValues{1})
-        clear data;
-        if LNCS
-            mag_ConnectLNCS(mag);
-            mag_setLNCSImag(mag,0);
-        end
-        Ibvalues = 0;
-        if j > 1
-            
-            handles.CurSource_I_Units.Value = 1;
-            handles.CurSource_I.String = num2str(FieldValues{1}(j)*1e-6);  % Se pasan las corrientes en amperios
-            handles.CurSource_Set_I.Value = 1;
-            CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-        end
-        
-        handles.SQ_Ibias.String = num2str(Ibvalues);
-        handles.SQ_Ibias_Units.Value = 3;
-        handles.SQ_Set_I.Value = 1;
-        SQ_Set_I_Callback(handles.SQ_Set_I,[],handles);
-        
-        % Read I real value
-        handles.SQ_Read_I.Value = 1;
-        SQ_Read_I_Callback(handles.SQ_Read_I,[],handles);
-        pause(0.4)
-        
-        jj = 1;
-        % Adquirimos Curvas I-V para determinar el Ibias crítica en el que pasa de superconductor a estado normal
-        handles.Multi_Read.Value = 1;
-        Multi_Read_Callback(handles.Multi_Read,[],handles);
-        c = true;
-        while c
-            if abs(Ibvalues) > 500 % Repetir la medida con la fuente de LNCS
-                clear IVmeasure;
-                j = j -1;
-                LNCS = 1;
-                break;
-            end
-            
-            handles.SQ_Ibias_Units.Value = 3;
-            handles.SQ_Set_I.Value = 1;
-            handles.Squid.Set_Current_Value(Ibvalues)
-            handles.SQ_Ibias.String = num2str(Ibvalues);
-            
-            [~, v] = handles.Multi.Read;
-            IVmeasure.vout(jj) = v.Value;
-            
-            a = handles.Squid.Read_Current_Value;
-            IVmeasure.ibias(jj) = a.Value;
-            pause(0.1)
-            
-            HL = findobj(handles.Result_Axes,'Type','Line');
-            delete(HL);
-            Data(:,2) = IVmeasure.ibias(1:jj);
-            Data(:,4) = IVmeasure.vout(1:jj);
-            DataName = '';
-            ManagingData2Plot(Data,DataName,handles,handles.Start_IVRange)
-            
-            if jj > 4 % Se descarta el primer valor
-                slope = median(diff(IVmeasure.vout(jj-3:jj))./diff(IVmeasure.ibias(jj-3:jj)*1e-6));
-                
-                if slope < handles.SetupTES.Circuit.mS.Value*0.8 % SlopeTH < 1 estado normal
-                    eval(['ICpairs(j).' StrCond{cond} ' = IVmeasure.ibias(jj-4);'])
-                    data(jj,2) = IVmeasure.ibias(jj);
-                    data(jj,4) = IVmeasure.vout(jj);
-                    clear IVmeasure;
-                    LNCS = 0;
-                    break;
-                else
-                    data(jj,2) = IVmeasure.ibias(jj);
-                    data(jj,4) = IVmeasure.vout(jj);
-                    jj = jj+1;
-                    if cond == 1
-                        Ibvalues = Ibvalues+Ibvalues_step;
-                    else
-                        Ibvalues = Ibvalues-Ibvalues_step;
-                    end
-                end
-                
-            else
-                jj = jj+1;
-                if cond == 1
-                    Ibvalues = Ibvalues+Ibvalues_step;
-                else
-                    Ibvalues = Ibvalues-Ibvalues_step;
-                end
-            end
-        end
-        ICpairs(j).B = FieldValues{1}(j);
-    end % End Bfield values
-    FileStr = ['ICpairs' num2str(Temp*1e3) 'mK.mat'];
-    save([handles.FieldFileDir FileStr],'ICpairs');
-    
-    file = strcat('Ic_',Temp*1e3,'mK_',StrCond{cond},'_matlab.txt');
-    save([handles.FieldFileDir file],'data','-ascii');
-    clear ICpairs IVmeasure
-end % End Cond (positive or negative ibias)
-
-if LNCS
-    mag_setLNCSImag(mag,0);
-    mag_DisconnectLNCS(mag);
+    if i < 4
+        i0 = [1 1];
+    else
+        mmp = (ICpairs(i-1).p-ICpairs(i-3).p)/(FieldValues{1}(i-1)-FieldValues{1}(i-3));
+        mmn = (ICpairs(i-1).n-ICpairs(i-3).n)/(FieldValues{1}(i-1)-FieldValues{1}(i-3));
+        icnext_p = ICpairs(i-1).p + mmp*(FieldValues{1}(i)-FieldValues{1}(i-1));
+        icnext_n = ICpairs(i-1).n + mmn*(FieldValues{1}(i)-FieldValues{1}(i-1));
+        ic0_p = 0.9*icnext_p;
+        ic0_n = 0.9*icnext_n;
+        tempvalues = 0:step:500;%%%array de barrido en corriente
+        ind_p = find(tempvalues <= abs(ic0_p));
+        ind_n = find(tempvalues <= abs(ic0_n));
+        i0 = [ind_p(end) ind_n(end)];%%%Calculamos el índice que corresponde a la corriente para empezar el barrido
+    end
+    try
+        aux = measure_IC_Pair_autom(step,i0,FieldValues{1}(i),handles);
+        ICpairs(i).p = aux.p;
+        ICpairs(i).n = aux.n;
+        ICpairs(i).B = FieldValues{1}(i);
+        step = max(0.1,aux.p/20);%por si es cero.
+    catch
+        pause(1);
+        ICpairs(i).p = nan;
+        ICpairs(i).n = nan;
+        ICpairs(i).B = FieldValues{1}(i);
+        %continue;
+    end
+    hf = findobj(handles.Result_Axes,'DisplayName','Final');
+    delete(hf);
+    plot(handles.Result_Axes,FieldValues{1}(1:i),[ICpairs.p],'o-',FieldValues{1}(1:i),[ICpairs.n],'o-','DisplayName','Final');    
 end
 
-% Desactivamos la salida de corriente de la fuente
+handles.CurSource_I_Units.Value = 1;
+handles.CurSource_I.String = num2str(0*1e-6);  % Se pasan las corrientes en amperios
+handles.CurSource_Set_I.Value = 1;
+CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
 handles.CurSource_OnOff.Value = 0;
 CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
 
-set(handles.SQ_Rf,'Value',Rf_popup); % 7e2 value
-SQ_Calibration_Callback(handles.SQ_Calibration,[],handles);
+
+Temp = str2double(handles.MCTemp.String);
+button = questdlg('Do you want to store this data?','ZarTES v1.0','Yes','No','Yes');
+switch button
+    case 'Yes'
+        FileStr = ['ICpairs' num2str(Temp*1e3) 'mK.mat'];
+        folder_name = uigetdir(pwd);
+        if ~isequal(folder_name,0)
+            uisave('ICpairs',[folder_name filesep FileStr]);
+            msgbox(['File named ' FileStr 'was saved'],'ZarTES v1.0');
+        else
+            warndlg('No path was selected','ZarTES v1.0');
+        end
+    otherwise
+end
+guidata(hObject,handles);
+
+
+function ICpair = measure_IC_Pair_autom(step,i0,B,handles)
+
+Ivalues = 0:step:500;
+Rf = handles.Circuit.Rf.Value;
+THR = 1;
+
+for jj = 1:2 % barrido positivo y negativo
+    
+    if jj == 2
+        Ivalues = -Ivalues;
+        IV = [];
+    end
+    
+    handles.SQ_Reset_Closed_Loop.Value = 1;
+    SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
+    
+    % Set Ibias to zero value in order to impose TES's Superconductor State
+    handles.SQ_Ibias_Units.Value = 3;
+    handles.SQ_Ibias.String = num2str(Ivalues(1));
+    handles.SQ_Set_I.Value = 1;
+    SQ_Set_I_Callback(handles.SQ_Set_I, [],handles);
+    
+    a = handles.Squid.Read_Current_Value;
+    IV.ic(1) = a.Value;
+    pause(1);
+    [~, v] = handles.Multi.Read;
+    IV.vc(1) = v.Value;
+    vout1 = IV.vc(1);
+    
+    HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
+    delete(HL);
+    clear Data
+    data(:,4) = IV.ic(1);
+    data(:,2) = B;
+    DataName = 'Temporal';
+    ManagingData2Plot(data,DataName,handles,handles.IC_Range)
+    
+    for i = i0(jj)+1:length(Ivalues)
+        % Set Ibias to zero value in order to impose TES's Superconductor State
+        handles.SQ_Ibias_Units.Value = 3;
+        handles.SQ_Ibias.String = num2str(Ivalues(i));
+        handles.SQ_Set_I.Value = 1;
+        SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
+        pause(0.5);
+        a = handles.Squid.Read_Current_Value;
+        IV.ic(i) = a.Value;
+        [~, v] = handles.Multi.Read;
+        IV.vc(i) = v.Value;
+        vout2 = IV.vc(i);
+        
+        HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
+        delete(HL);
+        clear Data
+        data(:,4) = IV.ic(i);
+        data(:,2) = B;
+        DataName = 'Temporal';
+        ManagingData2Plot(data,DataName,handles,handles.IC_Range)
+        
+        slope = (vout2 -vout1)/((Ivalues(i)-Ivalues(i-1))*1e-6)/Rf;
+        if slope < THR
+            break;
+        end
+        vout1 = vout2;
+    end
+    % Set Ibias to zero value in order to impose TES's Superconductor State
+    handles.SQ_Ibias_Units.Value = 3;
+    handles.SQ_Ibias.String = num2str(0);
+    handles.SQ_Set_I.Value = 1;
+    SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
+    
+    if jj == 1
+        ICpair.p = IV.ic(end-1);
+    elseif jj == 2
+        ICpair.n = IV.ic(end-1);
+    end
+end
+
+% 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% (Codigo Juan) %%%%%%%%%%%%%%%%%%
+% StrCond = {'p';'n'};
+% Ibvalues_step = 1;
+% 
+% %                 % Reset Closed Loop
+% handles.SQ_Reset_Closed_Loop.Value = 1;
+% SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
+% hold(handles.Result_Axes,'on');
+% for cond = 1:2
+%     clear data;
+%     
+%     % Ponemos el valor de corriente en la fuente
+%     handles.CurSource_I_Units.Value = 1;
+%     handles.CurSource_I.String = num2str(FieldValues{1}(1)*1e-6);  % Se pasan las corrientes en amperios
+%     handles.CurSource_Set_I.Value = 1;
+%     CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+%     handles.CurSource_OnOff.Value = 1;
+%     CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+%     
+%     LNCS = 0;
+%     Ibvalues = 0;
+%     
+%     j = 1;
+%     while j < length(FieldValues{1})-1
+%         % Reset Closed Loop
+%         handles.SQ_Reset_Closed_Loop.Value = 1;
+%         SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
+%         pause(0.2)
+%         handles.SQ_Reset_Closed_Loop.Value = 1;
+%         SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
+%         pause(0.2)
+%         clear data;
+%         if LNCS
+%             mag_ConnectLNCS(mag);
+%             mag_setLNCSImag(mag,0);
+%         end
+%         % Set Ibias to zero value in order to impose TES's Superconductor State
+%         handles.SQ_Ibias_Units.Value = 3;
+%         handles.SQ_Ibias.String = num2str(0);
+%         handles.SQ_Set_I.Value = 1;
+%         SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
+%         
+%         if Ibvalues ~= 0
+%             if cond == 1
+%                 Ibvalues = max(Ibvalues*0.60,0);
+%             else
+%                 Ibvalues = min(Ibvalues*0.60,0);
+%             end
+%             if abs(Ibvalues) < 20
+%                 Ibvalues = 0;
+%             end
+%         end
+%         if j > 1            
+%             handles.CurSource_I_Units.Value = 1;
+%             handles.CurSource_I.String = num2str(FieldValues{1}(j)*1e-6);  % Se pasan las corrientes en amperios
+%             handles.CurSource_Set_I.Value = 1;
+%             CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+%         end        
+%         
+%         handles.SQ_Ibias_Units.Value = 3;
+%         handles.SQ_Ibias.String = num2str(Ibvalues);
+%         handles.SQ_Set_I.Value = 1;
+%         SQ_Set_I_Callback(handles.SQ_Set_I,[],handles);
+%         
+%         
+%         jj = 1;
+%         % Adquirimos Curvas I-V para determinar el Ibias crítica en el que pasa de superconductor a estado normal
+% %         handles.Multi_Read.Value = 1;
+% %         Multi_Read_Callback(handles.Multi_Read,[],handles);
+%         bwhile = 0;
+%         c = true;
+%         while c
+%             
+%             if abs(Ibvalues) > 500 % Repetir la medida con la fuente de LNCS
+%                 eval(['ICpairs(j).' StrCond{cond} ' = IVmeasure.ibias(jj-1);'])
+%                 data(jj,4) = IVmeasure.ibias(jj-1);
+%                 data(jj,2) = FieldValues{1}(j);
+%                 clear IVmeasure;
+%                 LNCS = 0;
+%                 break;
+%             end
+%                         
+%             handles.SQ_Ibias_Units.Value = 3;
+%             handles.SQ_Ibias.String = num2str(Ibvalues);
+%             handles.SQ_Set_I.Value = 1;
+%             SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
+%             if jj == 1
+%                 pause(1.5);
+%             end
+%             Multi_Read_Callback(handles.Multi_Read, [], handles)
+%                                     
+%             a = handles.Squid.Read_Current_Value;
+%             IVmeasure.ibias(jj) = a.Value;
+%             pause(0.6);
+%             [~, v] = handles.Multi.Read;
+%             IVmeasure.vout(jj) = v.Value;            
+%             
+%             HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
+%             delete(HL);
+%             clear Data
+%             data(:,4) = IVmeasure.ibias(jj);
+%             data(:,2) = FieldValues{1}(j);
+%             DataName = 'Temporal';
+%             ManagingData2Plot(data,DataName,handles,handles.IC_Range)   
+%             
+%             if jj > 3 % Se descarta el primer valor
+%                 slope = median(diff(IVmeasure.vout(jj-2:jj))./diff(IVmeasure.ibias(jj-2:jj)*1e-6));
+%                 
+%                 if slope < handles.Circuit.mS.Value*0.5
+%                     if slope < 0
+%                         eval(['ICpairs(j).' StrCond{cond} ' = IVmeasure.ibias(jj-1);'])
+%                         
+%                         data(jj,4) = IVmeasure.ibias(jj);
+%                         data(jj,2) = FieldValues{1}(j);
+% 
+%                         clear IVmeasure;
+%                         LNCS = 0;
+%                         Ibvalues_step = 1;                                                
+%                         break;
+%                     else
+%                         if jj < 5
+%                             jj = 1;
+%                             clear IVmeasure;
+%                             Ibvalues_step = 0.01;
+%                             Ibvalues = 0;
+%                             LNCS = 0;
+%                             bwhile = 1;
+%                             break;                            
+%                         end
+%                         eval(['ICpairs(j).' StrCond{cond} ' = IVmeasure.ibias(jj-1);'])
+%                         data(jj,4) = IVmeasure.ibias(jj);
+%                         data(jj,2) = FieldValues{1}(j);                      
+%                         Ibvalues_step = 1;
+%                         clear IVmeasure;
+%                         LNCS = 0;                        
+%                         break;
+%                     end
+%                 else
+%                     data(jj,2) = IVmeasure.ibias(jj);
+%                     data(jj,4) = FieldValues{1}(j);
+%                     jj = jj+1;
+%                     
+%                     if cond == 1
+%                         Ibvalues = Ibvalues+Ibvalues_step;
+%                     else
+%                         Ibvalues = Ibvalues-Ibvalues_step;
+%                     end
+%                 end
+%                 
+%             else
+%                 jj = jj+1;
+%                 if cond == 1
+%                     Ibvalues = Ibvalues+Ibvalues_step;
+%                 else
+%                     Ibvalues = Ibvalues-Ibvalues_step;
+%                 end
+%             end
+%         end
+%         if bwhile
+%             continue;
+%         end
+%         ICpairs(j).B = FieldValues{1}(j);
+%         hf = findobj(handles.Result_Axes,'DisplayName','Final');
+%         delete(hf);
+%         plot(handles.Result_Axes,[ICpairs(1:j).B],eval(['[ICpairs(1:j).' StrCond{cond} ']']),'ro-','DisplayName','Final')
+%         j = j+1;
+%     end % End Bfield values
+%     Temp = str2double(handles.MCTemp.String);
+%     FileStr = ['ICpairs' num2str(Temp*1e3) 'mK.mat'];
+%     
+%     if isempty(handles.FieldFileDir)
+%         handles.FieldFileDir = uigetdir;
+%         while isequal(handles.FieldFileDir,0)
+%             FieldFileDir = uigetdir;
+%             handles.FieldFileDir = FieldFileDir;
+%         end
+%     end                            
+%     save([handles.FieldFileDir FileStr],'ICpairs');
+%     ICpairs = rmfield(ICpairs,'B');
+%     clear IVmeasure
+% end % End Cond (positive or negative ibias)
+% 
+% if LNCS
+%     mag_setLNCSImag(mag,0);
+%     mag_DisconnectLNCS(mag);
+% end
+% 
+% % Desactivamos la salida de corriente de la fuente
+% handles.CurSource_OnOff.Value = 0;
+% CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+% 
+% % set(handles.SQ_Rf,'Value',Rf_popup); % 7e2 value
+% % SQ_Calibration_Callback(handles.SQ_Calibration,[],handles);
+% 
+% guidata(hObject,handles);

@@ -21,10 +21,10 @@ function out = Put_TES_toNormal_State_CH(mag,signo)
 %%
 
 % Maximum value of the current to not exceed 
-% LNCS_ILimit = 5000; 
+LNCS_ILimit = 5000; 
 
 mag_ConnectLNCS(mag);
-status = mag_setLNCSImag(mag,signo*Ilimite);
+status = mag_setLNCSImag(mag,signo*LNCS_ILimit);
 if strcmp(status,'FAIL')
     mag_DisconnectLNCS(mag);
     out = 0;

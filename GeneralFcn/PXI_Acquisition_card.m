@@ -15,8 +15,8 @@ classdef PXI_Acquisition_card
             %%%% Horizontal Configuration
             
             obj.ConfStructs.Horizontal.SR = 2e5;
-            obj.ConfStructs.Horizontal.RL = 2e3;
-            obj.ConfStructs.Horizontal.RefPos = 20;
+            obj.ConfStructs.Horizontal.RL = 2e5;
+            obj.ConfStructs.Horizontal.RefPos = 10;
             
             %%%% Vertical Configuration
             obj.ConfStructs.Vertical.ChannelList = '0,1';
@@ -55,7 +55,7 @@ classdef PXI_Acquisition_card
             obj.Options.TimeOut = 10;
             obj.Options.channelList = '0,1';
             obj.Options.Skewness = 0.5;
-            obj.Options.NAvg = 5;
+            obj.Options.NAvg = 10;
         end % End of Fucntion Constructor
         
         function obj = Initialize(obj)
@@ -70,7 +70,8 @@ classdef PXI_Acquisition_card
             obj.Options.TimeOut = 10;
             obj.Options.channelList = '0,1';
             
-            obj.ConfStructs.Horizontal.RL = 2e6;
+            obj.ConfStructs.Horizontal.SR = 2e5;
+            obj.ConfStructs.Horizontal.RL = 2e5;
             pxi_ConfigureHorizontal(obj);    % ConfStructs.Horizontal
             
             obj.ConfStructs.Vertical.channelList = '0,1';
@@ -78,6 +79,9 @@ classdef PXI_Acquisition_card
             
             obj.ConfStructs.Trigger.Type = 6;
             pxi_ConfigureTrigger(obj);       % ConfStructs.Trigger
+            
+                       
+            
         end
         
         function obj = Noise_Configuration(obj)
