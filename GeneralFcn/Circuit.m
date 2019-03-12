@@ -18,7 +18,7 @@ classdef Circuit
             % Function to generate the class with default values
             
             obj.Rf = PhysicalMeasurement;            
-            obj.Rf.Value = [];
+            obj.Rf.Value = 1e4;
             obj.Rf.Units = 'Ohm';
             
             obj.Rpar = PhysicalMeasurement;            

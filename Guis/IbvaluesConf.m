@@ -170,9 +170,20 @@ Conf.IVcurves.SmartRange.On = 0;
 Conf.IVcurves.Manual.Values.p = 500:-5:0;
 Conf.IVcurves.Manual.Values.n = -500:5:0;
 
-
 Conf.TF.Zw.DSA.On = 1;
+Conf.TF.Zw.DSA.Method.Value = 1;
+Conf.TF.Zw.DSA.Method.String = 'Sweep Sine';
+Conf.TF.Zw.DSA.Exc.Units.String = 'mV';
+Conf.TF.Zw.DSA.Exc.Units.Value = 1;
+Conf.TF.Zw.DSA.Exc.Value = 20;
+
 Conf.TF.Zw.PXI.On = 1;
+Conf.TF.Zw.PXI.Method.Value = 1;
+Conf.TF.Zw.PXI.Method.String = 'White Noise';
+Conf.TF.Zw.PXI.Exc.Units.String = 'mV';
+Conf.TF.Zw.PXI.Exc.Units.Value = 1;
+Conf.TF.Zw.PXI.Exc.Value = 20;
+
 Conf.TF.Noise.DSA.On = 1;
 Conf.TF.Noise.PXI.On = 1;
 Conf.TF.rpp = [0.9:-0.05:0.2 0.19:-0.01:0.1];
@@ -226,9 +237,23 @@ Conf.IVcurves.Manual.Values.n = str2double(strsplit(S.Config.IVcurves.Manual.Val
 Conf.IVcurves.SmartRange.On = str2double(S.Config.IVcurves.SmartRange.On.Text);
 
 Conf.TF.Zw.DSA.On = str2double(S.Config.TF.Zw.DSA.On.Text);
-Conf.TF.Zw.PXI.On = str2double(S.Config.TF.Zw.PXI.On.Text);
+Conf.TF.Zw.DSA.Method.Value = str2double(Conf.TF.Zw.DSA.Method.Value.Text);
+Conf.TF.Zw.DSA.Method.String = Conf.TF.Zw.DSA.Method.String.Text;
+Conf.TF.Zw.DSA.Exc.Units.Value = str2double(Conf.TF.Zw.DSA.Exc.Units.Value.Text);
+Conf.TF.Zw.DSA.Exc.Units.String = Conf.TF.Zw.DSA.Exc.Units.String.Text;
+Conf.TF.Zw.DSA.Exc.Value = str2double(Conf.TF.Zw.DSA.Exc.Value.Text);
+
 Conf.TF.Noise.DSA.On = str2double(S.Config.TF.Noise.DSA.On.Text);
+
+Conf.TF.Zw.PXI.On = str2double(S.Config.TF.Zw.PXI.On.Text);
+Conf.TF.Zw.PXI.Method.Value = str2double(Conf.TF.Zw.DSA.Method.Value.Text);
+Conf.TF.Zw.PXI.Method.String = Conf.TF.Zw.DSA.Method.String.Text;
+Conf.TF.Zw.PXI.Exc.Units.Value = str2double(Conf.TF.Zw.DSA.Exc.Units.Value.Text);
+Conf.TF.Zw.PXI.Exc.Units.String = Conf.TF.Zw.DSA.Exc.Units.String.Text;
+Conf.TF.Zw.PXI.Exc.Value = str2double(Conf.TF.Zw.DSA.Exc.Value.Text);
+
 Conf.TF.Noise.PXI.On = str2double(S.Config.TF.Noise.PXI.On.Text);
+
 Conf.TF.rpp = str2double(strsplit(S.Config.TF.Zw.rpp.Text,' '));
 Conf.TF.rpn = str2double(strsplit(S.Config.TF.Zw.rpn.Text,' '));
 
@@ -312,11 +337,20 @@ AQ_IVs_Callback(handles.AQ_IVs, [], handles);
 
 handles.DSA_TF_Zw.Value = Conf.TF.Zw.DSA.On;
 DSA_TF_Zw_Callback(handles.DSA_TF_Zw,[],handles);
+handles.DSA_TF_Zw_Menu.Value = Conf.TF.Zw.DSA.Method.Value;
+handles.DSA_Input_Amp.String = num2str(Conf.TF.Zw.DSA.Exc.Value);
+handles.DSA_Input_Amp_Units.Value = Conf.TF.Zw.DSA.Exc.Units.Value;
+
 handles.PXI_TF_Zw.Value = Conf.TF.Zw.PXI.On;
 PXI_TF_Zw_Callback(handles.PXI_TF_Zw,[],handles);
+handles.PXI_TF_Zw_Menu.Value = Conf.TF.Zw.PXI.Method.Value;
+handles.PXI_Input_Amp.String = num2str(Conf.TF.Zw.PXI.Exc.Value);
+handles.PXI_Input_Amp_Units.Value = Conf.TF.Zw.PXI.Exc.Units.Value;
+
 
 handles.DSA_TF_Noise.Value = Conf.TF.Noise.DSA.On;
 DSA_TF_Noise_Callback(handles.DSA_TF_Noise,[],handles);
+
 handles.PXI_TF_Noise.Value = Conf.TF.Noise.PXI.On;
 PXI_TF_Noise_Callback(handles.PXI_TF_Noise,[],handles);
 
@@ -863,6 +897,7 @@ function DSA_TF_Conf_Callback(hObject, eventdata, handles)
 % hObject    handle to DSA_TF_Conf (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 waitfor(Conf_Setup(hObject,handles.Z_Method.Value,handles));
 
 pause();
@@ -1322,6 +1357,12 @@ function Refresh_Table_Callback(hObject, eventdata, handles)
 Temps = handles.Temp.Values;
 
 if ~isempty(Temps)
+    % IV Curves
+    if handles.AQ_IVs.Value
+        IV_Ticks(1:length(Temps),1) = {'Yes'};
+    else
+        IV_Ticks(1:length(Temps),1) = {'No'};
+    end
     % BField Scan
     if handles.BField_Scan.Value
         BScan(1:length(Temps),1) = {'Yes'};
@@ -1334,12 +1375,7 @@ if ~isempty(Temps)
     else
         ICField(1:length(Temps),1) = {'No'};
     end
-    % IV Curves
-    if handles.AQ_IVs.Value
-        IV_Ticks(1:length(Temps),1) = {'Yes'};
-    else
-        IV_Ticks(1:length(Temps),1) = {'No'};
-    end
+    
     % TF - Zw (DSA) or (PXI)
     if handles.DSA_TF_Zw.Value || handles.PXI_TF_Zw.Value
         TF_Zw_Ticks(1:length(Temps),1) = {'No'};
@@ -1369,7 +1405,7 @@ if ~isempty(Temps)
         Spectrum_Ticks(1:length(Temps),1) = {'No'};
     end
     
-    handles.Summary_Table.Data = [num2cell(Temps) BScan ICField IV_Ticks TF_Zw_Ticks TF_Noise_Ticks Pulse_Ticks Spectrum_Ticks];
+    handles.Summary_Table.Data = [num2cell(Temps) IV_Ticks BScan ICField TF_Zw_Ticks TF_Noise_Ticks Pulse_Ticks Spectrum_Ticks];
 else
     warndlg('No Temperature values selected!','ZarTES v1.0');
 end
@@ -1840,8 +1876,15 @@ function PXI_TF_Zw_Conf_Callback(hObject, eventdata, handles)
 % hObject    handle to PXI_TF_Zw_Conf (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+hObject.UserData = [];
 waitfor(Conf_Setup_PXI(hObject,[],handles.SetupTES));
+if ~isempty(hObject.UserData)
+    handles.SetupTES.PXI.ConfStructs = hObject.UserData;
+end
 guidata(hObject,handles);
+
+% waitfor(Conf_Setup_PXI(hObject,[],handles.SetupTES));
+% guidata(hObject,handles);
 
 % --- Executes on selection change in PXI_Input_Freq_Units.
 function PXI_Input_Freq_Units_Callback(hObject, eventdata, handles)
@@ -1923,7 +1966,11 @@ function PXI_TF_Noise_Conf_Callback(hObject, eventdata, handles)
 % hObject    handle to PXI_TF_Noise_Conf (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+hObject.UserData = [];
 waitfor(Conf_Setup_PXI(hObject,[],handles.SetupTES));
+if ~isempty(hObject.UserData)
+    handles.SetupTES.PXI.ConfStructs = hObject.UserData;
+end
 guidata(hObject,handles);
 
 
@@ -2185,7 +2232,17 @@ hObject.UserData = [];
 waitfor(Conf_Setup(hObject,[],handles));
 
 if ~isempty(hObject.UserData)
-    handles.Temp.Values = hObject.UserData{1};
+    button = questdlg('Set Mixing Chamber Temperatures (Ascend by default)',...
+        'ZarTES v1.0','Ascend','Descend','Ascend');
+    switch button
+        case 'Ascend'
+            handles.Temp.Values = sort(hObject.UserData{1},'ascend');
+        case 'Descend'
+            handles.Temp.Values = sort(hObject.UserData{1},'descend');
+        otherwise
+            handles.Temp.Values = sort(hObject.UserData{1},'ascend');
+    end    
+    Refresh_Table_Callback(handles.Refresh_Table,[],handles);
     guidata(hObject,handles);
 end
 
@@ -2374,7 +2431,24 @@ Conf.IVcurves.SmartRange.On = handles.SmartIbias.Value;
 %%%% Poner la configuracion para la characterización de Z(w)-Ruido y
 %%%% pulsos
 Conf.TF.Zw.DSA.On = handles.DSA_TF_Zw.Value;
+Conf.TF.Zw.DSA.Method.Value = handles.DSA_TF_Zw_Menu.Value;
+contents = cellstr(get(handles.DSA_TF_Zw_Menu,'String'));
+Conf.TF.Zw.DSA.Method.String = contents{get(handles.DSA_TF_Zw_Menu,'Value')};
+Conf.TF.Zw.DSA.Exc.Units.Value = handles.DSA_Input_Amp_Units.Value;
+contents = cellstr(get(handles.DSA_Input_Amp_Units,'String'));
+Conf.TF.Zw.DSA.Exc.Units.String = contents{get(handles.DSA_Input_Amp_Units,'Value')};
+Conf.TF.Zw.DSA.Exc.Value = str2double(handles.DSA_Input_Amp.String);
+
+
 Conf.TF.Zw.PXI.On = handles.PXI_TF_Zw.Value;
+Conf.TF.Zw.PXI.Method.Value = handles.PXI_TF_Zw_Menu.Value;
+contents = cellstr(get(handles.PXI_TF_Zw_Menu,'String'));
+Conf.TF.Zw.PXI.Method.String = contents{get(handles.PXI_TF_Zw_Menu,'Value')};
+Conf.TF.Zw.PXI.Exc.Units.Value = handles.PXI_Input_Amp_Units.Value;
+contents = cellstr(get(handles.PXI_Input_Amp_Units,'String'));
+Conf.TF.Zw.PXI.Exc.Units.String = contents{get(handles.PXI_Input_Amp_Units,'Value')};
+Conf.TF.Zw.PXI.Exc.Value = str2double(handles.PXI_Input_Amp.String);
+
 Conf.TF.Zw.rpp = handles.TF_Zw.rpp';
 Conf.TF.Zw.rpn = handles.TF_Zw.rpn';
 

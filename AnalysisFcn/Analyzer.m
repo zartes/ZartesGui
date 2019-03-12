@@ -22,7 +22,7 @@ function varargout = Analyzer(varargin)
 
 % Edit the above text to modify the response to help Analyzer
 
-% Last Modified by GUIDE v2.5 09-Nov-2018 13:03:32
+% Last Modified by GUIDE v2.5 07-Mar-2019 12:34:55
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -319,7 +319,8 @@ switch src.Label
                     load([pathname filename],'circuit');
                 case 'circuit.mat'
                     load([pathname filename],'circuit');
-            end            
+            end     
+            handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
         else
             warndlg('Caution! Circuit parameters were not loaded, check it manually','ZarTES v1.0');
         end
@@ -866,3 +867,31 @@ if handles.TES_ID ~= 0
 end
 % rmvpath([pwd filesep 'AnalysisFcn']);
 delete(hObject);
+
+
+% --- Executes on mouse press over figure background, over a disabled or
+% --- inactive control, or over an axes background.
+function Analyzer_WindowButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to Analyzer (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+switch eventdata.Source.SelectionType
+    case 'alt' % Botón derecho
+        cmenu = uicontextmenu('Visible','on');
+        c6 = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',hObject);
+        set(hObject,'uicontextmenu',cmenu);
+    case 'normal' % Botón izquierdo
+    case 'extend' % Pulsando Ruleta del raton
+end
+        
+function SaveGraph(src,evnt)
+ha = findobj(src.UserData.Parent,'Type','Axes');
+fg = figure;
+copyobj(ha,fg);
+[file,path] = uiputfile('*.fig','Save Graph name');
+if ~isequal(file,0)
+    hgsave(fg,[path filesep file]);
+end
+% pause;

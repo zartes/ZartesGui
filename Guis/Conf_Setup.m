@@ -276,30 +276,37 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(K)';'Step(K)';'Final Value(K)'};
         handles.Table.Data = {[]};
-        handles.Table.Data = num2cell(hndl.Temp.Values);
+%         handles.Table.Data = num2cell(hndl.Temp.Values);
+        handles.Table.Data = cell(1,3);
+        try
+            handles.Table.Data(1:size(hndl.Temp.Values,1),size(hndl.Temp.Values,2)) = num2cell(hndl.Temp.Values');
+        end
         handles.Options.Visible = 'off';
     case 'AQ_FieldScan_Set'
         set(handles.figure1,'Name','Set Field Value for Scan (max Vout)');
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
-        handles.Table.Data = {[]};
-        handles.Table.Data = hndl.FieldScan.BVvalue;
+        handles.Table.Data = cell(1,3);
+        handles.Table.Data(1:size(hndl.FieldScan.BVvalue,1),size(hndl.FieldScan.BVvalue,2)) = num2cell(hndl.FieldScan.BVvalue');
         handles.Options.Visible = 'off';
     case 'AQ_IC_Field_Set'
         set(handles.figure1,'Name','Set Field Values for Critical Currents');
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
-        handles.Table.Data = {[]};
-        handles.Table.Data = hndl.BFieldIC.BVvalue;
+        handles.Table.Data = cell(1,3);
+        try
+            handles.Table.Data(1:size(hndl.BFieldIC.BVvalue,1),size(hndl.BFieldIC.BVvalue,2)) = num2cell(hndl.BFieldIC.BVvalue');
+        catch
+        end
         handles.Options.Visible = 'off';
     case 'Ibias_Set'
         set(handles.figure1,'Name','Set Ibias Values for IV Curves');
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
-        handles.Table.Data = {[]};
+        handles.Table.Data = cell(1,3);
         handles.Table.Data = [hndl.IVcurves.Manual.Values.p; hndl.IVcurves.Manual.Values.n];
         handles.Options.Visible = 'off';
     case 'BFieldIC_Ibias'
@@ -307,7 +314,7 @@ switch varargin{1}.Tag
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
-        handles.Table.Data = {[]};
+        handles.Table.Data = cell(1,3);
         handles.Table.Data = [hndl.BFieldIC.IbiasValues.p; hndl.BFieldIC.IbiasValues.n];
         handles.Options.Visible = 'off';
     case 'AQ_TF_Rn_P_Set'
@@ -315,16 +322,16 @@ switch varargin{1}.Tag
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(%)';'Step(%)';'Final Value(%)'};
-        handles.Table.Data = {[]};
-        handles.Table.Data = hndl.TF_Zw.rpp;
+        handles.Table.Data = cell(1,3);
+        handles.Table.Data(1:size(hndl.TF_Zw.rpp,1),size(hndl.TF_Zw.rpp,2)) = num2cell(hndl.TF_Zw.rpp);
         handles.Options.Visible = 'off';
     case 'AQ_TF_Rn_N_Set'
         set(handles.figure1,'Name','Set % of Rn Values for Z(w) and Noise Adquisition');
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(%)';'Step(%)';'Final Value(%)'};
-        handles.Table.Data = {[]};
-        handles.Table.Data = hndl.TF_Zw.rpn;
+        handles.Table.Data = cell(1,3);
+        handles.Table.Data(1:size(hndl.TF_Zw.rpn,1),size(hndl.TF_Zw.rpn,2)) = num2cell(hndl.TF_Zw.rpn);
         handles.Options.Visible = 'off';
 end
 
@@ -352,7 +359,12 @@ function Add_Callback(hObject, eventdata, handles)
 % hObject    handle to Add (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.Table.Data = [handles.Table.Data; cell(1,size(handles.Table.Data,2))];
+if iscell(handles.Table.Data)
+    handles.Table.Data = [handles.Table.Data; cell(1,size(handles.Table.Data,2))];
+else
+    handles.Table.Data = [handles.Table.Data; NaN];
+end
+guidata(hObject,handles);
 
 % --- Executes on button press in Remove.
 function Remove_Callback(hObject, eventdata, handles)
@@ -362,7 +374,7 @@ function Remove_Callback(hObject, eventdata, handles)
 if size(handles.Table.Data,1) > 1
     handles.Table.Data(end,:) = [];
 end
-
+guidata(hObject,handles);
 
 % --- Executes on selection change in Options.
 function Options_Callback(hObject, eventdata, handles)
@@ -495,32 +507,53 @@ switch handles.varargin{1}.Tag
         
     case 'AQ_Temp_Set'
         Temp = ExtractFromTable(handles);
+        if size(Temp{1},2) > size(Temp{1},1)
+            Temp{1} = Temp{1}';
+        end
         handles.varargin{1}.UserData = Temp;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
         
     case 'AQ_FieldScan_Set'
         Val = ExtractFromTable(handles);
+        if size(Val{1},2) > size(Val{1},1)
+            Val{1} = Val{1}';
+        end
         handles.varargin{1}.UserData = Val;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
     case 'AQ_IC_Field_Set'
         Val = ExtractFromTable(handles);
+        if size(Val{1},2) > size(Val{1},1)
+            Val{1} = Val{1}';
+        end
         handles.varargin{1}.UserData = Val;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
     case 'Ibias_Set'
         Val = ExtractFromTable(handles);
+        if size(Val{1},2) > size(Val{1},1)
+            Val{1} = Val{1}';
+        end
         handles.varargin{1}.UserData = Val;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
     case 'BFieldIC_Ibias'
         Val = ExtractFromTable(handles);
+        if size(Val{1},2) > size(Val{1},1)
+            Val{1} = Val{1}';
+        end
         handles.varargin{1}.UserData = Val;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
     case 'AQ_TF_Rn_P_Set'
         rpp = ExtractFromTable(handles);
+        if size(rpp{1},2) > size(rpp{1},1)
+            rpp{1} = rpp{1}';
+        end
         handles.varargin{1}.UserData = rpp;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
         
     case 'AQ_TF_Rn_N_Set'
         rpn = ExtractFromTable(handles);
+        if size(rpn{1},2) > size(rpn{1},1)
+            rpn{1} = rpn{1}';
+        end
         handles.varargin{1}.UserData = rpn;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
         
@@ -550,13 +583,45 @@ switch handles.varargin{1}.Tag
         handles.ConfInstrs{handles.Options.Value} = handles.Table.Data;
         guidata(hObject,handles);
     case 'AQ_TF_Rn_P_Set'
+        if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
+        else
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
+        end
         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
             msgbox('Rn(%) Values must be between 0 and 1','ZarTES v1.0');
         end
     case 'AQ_TF_Rn_N_Set'
+        if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
+        else
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
+        end
         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
             msgbox('Rn(%) Values must be between 0 and 1','ZarTES v1.0');
         end
+    case 'AQ_Temp_Set'
+        if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
+        else
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
+        end
+            
+    case 'AQ_IC_Field_Set'
+        if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
+        else
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
+        end
+    case 'AQ_FieldScan_Set'
+        if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
+        else
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
+        end
+    otherwise
+        
+        
 end
 
 
@@ -566,9 +631,9 @@ function Value = ExtractFromTable(handles)
 if size(handles.Table.Data,2) > 1
     for i = 1:size(handles.Table.Data,1)
         if isnumeric(handles.Table.Data{i,1})
-            try
+            if ~isempty(handles.Table.Data{i,2})                
                 Value{i} = handles.Table.Data{i,1}:handles.Table.Data{i,2}:handles.Table.Data{i,3};
-            catch
+            else
                 Value{i} = handles.Table.Data{i,1};
             end
         elseif ischar(handles.Table.Data{i,1})

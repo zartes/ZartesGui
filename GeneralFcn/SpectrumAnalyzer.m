@@ -41,8 +41,8 @@ classdef SpectrumAnalyzer
             h = waitbar(0,'Digital Signal Analyzer Calibrating...','WindowStyle','Modal','Name','ZarTES v1.0');
             
             t = tic;
-            while toc(t) < 20
-                waitbar(toc(t)/20,h);
+            while toc(t) < 25
+                waitbar(toc(t)/25,h);
             end
             close(h);
         end

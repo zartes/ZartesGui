@@ -79,10 +79,10 @@ classdef ElectronicMagnicon
                 msgbox('Action stopped by user','ZarTES v1.0');
                 return;
             end
-            status = obj.CheckNormalState;% status == 1 Normal State reached % status == 0 Superconductor State
-            if status == 0
-                msgbox('Normal State was not reach','ZarTES v1.0');
-            end
+%             status = obj.CheckNormalState;% status == 1 Normal State reached % status == 0 Superconductor State
+%             if status == 0
+%                 msgbox('Normal State was not reach','ZarTES v1.0');
+%             end
 %             Ibias = 500;
 %             while status == 0
 %                 mag_ConnectLNCS(obj);

@@ -69,6 +69,7 @@ classdef TES_Struct
                 waitfor(helpdlg('Before closing this message, please check the IV curves','ZarTES v1.0'));
                 eval(['obj.IVset' StrRange{j} ' = get(figIV.hObject,''UserData'');']);
             end
+            
         end
         
         function obj = fitPvsTset(obj,perc,model,fig)
@@ -80,6 +81,7 @@ classdef TES_Struct
             if isempty(perc)
                 j = 1;
                 for i = 1:size(obj.IVsetP,2)+size(obj.IVsetN,2)
+                    try
                     if i <= size(obj.IVsetP,2)
                         diffptes = abs(diff(obj.IVsetP(j).ptes));
                         x = obj.IVsetP(j).rtes;
@@ -102,6 +104,10 @@ classdef TES_Struct
                         j = 1;
                     else
                         j = j+1;
+                    end
+                    catch
+                        minrange(i,1) = 10;
+                        maxrange(i,1) = 0;
                     end
                 end
                 minrange = minrange(minrange < 0.5);
@@ -159,7 +165,7 @@ classdef TES_Struct
                     SetIbias{1} = [];
                     for i = 1:length(IVTESset)
                         if IVTESset(i).good
-                            ind = find(IVTESset(i).rtes > 0.1 & IVTESset(i).rtes < 0.8);%%%algunas IVs fallan.
+                            ind = find(IVTESset(i).rtes > 0.05 & IVTESset(i).rtes < 0.9);%%%algunas IVs fallan.
                             if isempty(ind)
                                 continue;
                             end
@@ -180,6 +186,8 @@ classdef TES_Struct
                     
                     eval(['obj.Gset' StrRange{k} '(jj).rp = perc(jj);']);
                     eval(['obj.Gset' StrRange{k} '(jj).model = model;']);
+                                       
+                    
                     switch model
                         case 1
                             X0 = [-500 3 1];
@@ -201,6 +209,7 @@ classdef TES_Struct
                             plot(ax,log(auxtbath(2:end)),log(gbaux),'.-','Visible','off')
                     end
                     if model ~= 3
+                        
                         opts = optimset('Display','off');
                         
                         [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(@obj.fitP,X0,XDATA,Paux*1e12,LB,[],opts); %#ok<ASGLU>                        
@@ -272,7 +281,7 @@ classdef TES_Struct
             param.K = -rp(1);
             param.K_CI = abs(rp_CI(1));
             
-            param.Tc = (p(3)/-p(1))^(1/p(2));                
+            param.Tc = (rp(3)/-rp(1))^(1/rp(2));                
             param.Tc_CI = sqrt( (((rp(3)*(-rp(3)/rp(1))^(1/rp(2) - 1))/(rp(1)^2*rp(2)))*rp_CI(1))^2 ...
                 + ((-(log(-rp(3)/rp(1))*(-rp(3)/rp(1))^(1/rp(2)))/rp(2)^2)*rp_CI(2))^2 ...
                 + ((-(-rp(3)/rp(1))^(1/rp(2) - 1)/(rp(1)*rp(2)))*rp_CI(3))^2);
@@ -299,8 +308,9 @@ classdef TES_Struct
             color{1} = [0 0.447 0.741];
             color{2} = [1 0 0]; %#ok<NASGU>
             StrField = {'n';'Tc';'K';'G'};
-            StrMultiplier = {'1';'1';'1e-3';'1'}; %#ok<NASGU>
-            StrLabel = {'n';'Tc(K)';'K(nW/K^n)';'G(pW/K)'};
+            StrMultiplier = {'1';'1e3';'1e-12';'1e-12';}; %#ok<NASGU>
+%             StrMultiplier = {'1';'1';'1e-3';'1'}; %#ok<NASGU>
+            StrLabel = {'n';'Tc(mK)';'K(nW/K^n)';'G(pW/K)'};
             StrRange = {'P';'N'};
             StrIbias = {'Positive';'Negative'};
             Marker = {'o';'^'};
@@ -315,7 +325,7 @@ classdef TES_Struct
                 end
                 Gset = eval(['obj.Gset' StrRange{k}]);
                 try
-                    TES_OP_y = find([Gset.Tc] == obj.TES.Tc,1,'last');
+                    TES_OP_y = find([Gset.Tc] == obj.TES.Tc*1e-3,1,'last');
                 catch
                 end
                 if isfield(fig,'subplots')
@@ -329,9 +339,9 @@ classdef TES_Struct
                     end
                     rp = [Gset.rp];
                     [~,ind] = sort(rp);
-                    val = eval(['[Gset.' StrField{j} '];']);
+                    val = eval(['[Gset.' StrField{j} ']*' StrMultiplier{j} ';']);
                     try
-                        val_CI = eval(['[Gset.' StrField{j} '_CI];']);
+                        val_CI = eval(['[Gset.' StrField{j} '_CI]*' StrMultiplier{j} ';']);
                         er(j) = errorbar(h(j),rp(ind),val(ind),val_CI(ind),'color',color{k},...
                             'Visible','off','DisplayName',[StrIbias{k} ' Error Bar'],'Clipping','on');
                     catch
@@ -396,10 +406,10 @@ classdef TES_Struct
                 delete(IndxOP);
                 
                 StrField = {'n';'Tc';'K';'G'};
-                TESmult = {'1';'1';'1e-12';'1e-12';};
+                TESmult = {'1';'1e3';'1e-12';'1e-12';};
                 for i = 1:length(StrField)
-                    eval(['val = [obj.GsetP.' StrField{i} '];']);
-                    eval(['obj.TES.' StrField{i} ' = val(ind_rp)*' TESmult{i} ';']);
+                    eval(['val = [obj.GsetP.' StrField{i} ']*' TESmult{i} ';']);
+                    eval(['obj.TES.' StrField{i} ' = val(ind_rp);']);
                     
                     eval(['plot(h(i),obj.GsetP(ind_rp).rp,val(ind_rp),''.-'','...
                         '''color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'','...
@@ -410,6 +420,7 @@ classdef TES_Struct
                 end
                 uiwait(msgbox({['n: ' num2str(obj.TES.n)];['K: ' num2str(obj.TES.K)];...
                     ['Tc: ' num2str(obj.TES.Tc) 'mK'];['G: ' num2str(obj.TES.G)]},'TES Operating Point','modal'));
+                obj.TES.Tc = obj.TES.Tc*1e-3; 
                 
             end
         end
@@ -458,7 +469,7 @@ classdef TES_Struct
             prompt = {'Mimimum frequency value:','Maximum frequency value:'};
             dlg_title = 'Frequency limitation for Z(w)-Noise analysis';
             num_lines = [1 70];
-            defaultans = {'0','10000'};
+            defaultans = {'0','100000'};
             answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
             
             if ~isempty(answer)
@@ -633,7 +644,11 @@ classdef TES_Struct
                         if obj.TFOpt.boolShow
                             if jj == 1
                                 if nargin < 2
-                                    fig(i) = figure('Name',Path);
+                                    if k1 == 1
+                                        fig(i) = figure('Name',[Path 'Positive Ibias Range']);
+                                    else
+                                        fig(i) = figure('Name',[Path 'Negative Ibias Range']);
+                                    end
                                 else
                                     figure(fig);
                                     indAxes = findobj(fig,'Type','Axes');
@@ -644,7 +659,7 @@ classdef TES_Struct
                                 hold(ax,'on');
                             end
                             ind = 1:3:length(ztes);
-                            
+                            try
                             h(h_i) = plot(ax,1e3*ztes(ind),'.','color',[0 0.447 0.741],...
                                 'markerfacecolor',[0 0.447 0.741],'markersize',15,'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj}]);
                             %%% Paso marker de 'o' a '.'
@@ -656,6 +671,8 @@ classdef TES_Struct
                             g(h_i) = plot(ax,1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2,...
                                 'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj} ':fit']);hold(ax,'on');
                             set([h(h_i) g(h_i)],'UserData',[h(h_i) g(h_i)]);
+                            catch
+                            end
                         end
                         if k == 1 || jj == length(filesZ)
                             aux_str = strcat(num2str(round(param.rp*100)),'% R_n'); %#ok<NASGU>

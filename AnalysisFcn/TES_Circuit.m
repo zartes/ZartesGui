@@ -22,13 +22,13 @@ classdef TES_Circuit
             % Function to generate the class with default values
             
             obj.Rsh = 0.002;
-            obj.Rf = [];
-            obj.invMf = 33.45;
+            obj.Rf = 1e4;
+            obj.invMf = 66;
             obj.invMin = 24.1;
-            obj.Rpar = [];
-            obj.Rn = [];
-            obj.mS = [];
-            obj.mN = [];
+            obj.Rpar = 2.035e-05;
+            obj.Rn = 0.0232;
+            obj.mS = 8133;
+            obj.mN = 650.7;
             obj.L = 7.7e-08;
         end
         
@@ -268,9 +268,13 @@ classdef TES_Circuit
             mN1 = (prctile(Pendientes(Pendientes < Thres),75)-median(Pendientes(Pendientes < Thres)))/2+median(Pendientes(Pendientes < Thres));
             mS = median(Pendientes(Pendientes > Thres));
             
-            f = fittype('a*x');
-            [fit1,gof,fitinfo] = fit(cell2mat(indx'),cell2mat(indy'),f,'StartPoint',0);
-            mN = fit1.a;
+%             f = fittype('a*x');
+%             p = polyfit(cell2mat(indx'),cell2mat(indy'),1)
+%             mN = p;
+%             
+%             [fit1,gof,fitinfo] = fit(cell2mat(indx'),cell2mat(indy'),f,'StartPoint',0);
+%             mN = fit1.a;
+            mN = mN1;
             if nargin == 3
                 %                 plot(ax(1),sort(unique(cell2mat(indx')))*1e6,sort(unique(cell2mat(indx')))*mN1,'-g')
                 plot(ax(1),sort(unique(cell2mat(indx')))*1e6,sort(unique(cell2mat(indx')))*mN,'-m')

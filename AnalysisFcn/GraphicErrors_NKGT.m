@@ -27,6 +27,7 @@ c4 = uimenu(cmenu,'Label','Show Negative Ibias Data','Callback',...
     {@Handle_Errors},'UserData',Data);
 
 c5 = uimenu(cmenu,'Label','Export Graphic Data','Callback',{@ExportGraph},'UserData',src);
+c6 = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',src);
 
 set(src,'uicontextmenu',cmenu);
 
@@ -169,3 +170,12 @@ fprintf(fid,[LabelStr '\n']);
 save(file,'data','-ascii','-tabs','-append');
 fclose(fid);
 
+function SaveGraph(src,evnt)
+
+ha = findobj(src.UserData.Parent,'Type','Axes');
+fg = figure;
+copyobj(ha,fg);
+[file,path] = uiputfile('*.fig','Save Graph name');
+if ~isequal(file,0)
+    hgsave(fg,[path filesep file]);
+end

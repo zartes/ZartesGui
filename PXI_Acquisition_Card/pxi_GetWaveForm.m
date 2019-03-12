@@ -37,10 +37,11 @@ waveformArray = zeros(1,numSamples*numChannels);%%%Prealojamos espacio.
 %     waveformInfo(i).reserved1 = 0;
 %     waveformInfo(i).reserved2 = 0;
 % end 
+pxi.AbortAcquisition;
 try
     invoke(pxi.ObjHandle.Acquisition, 'initiateacquisition'); %%%Puede ir aquí o fuera.
 catch
-    pxi.AbortAcquisition;
+    
 end
 try
 [Wfm, WfmI] = invoke(pxi.ObjHandle.Acquisition, 'fetch',...
