@@ -7,7 +7,13 @@ classdef TES_Param
         K;
         Tc;
         G;
-        sides;
+        sides = [25e-6 25e-6];
+        gammaMo = 2e3;
+        gammaAu = 0.729e3;
+        rhoMo = 0.107;
+        rhoAu = 0.0983;
+        hMo = 55e-9;
+        hAu = 340e-9;
     end
     
     methods

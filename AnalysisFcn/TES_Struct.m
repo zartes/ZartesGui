@@ -308,7 +308,8 @@ classdef TES_Struct
             color{1} = [0 0.447 0.741];
             color{2} = [1 0 0]; %#ok<NASGU>
             StrField = {'n';'Tc';'K';'G'};
-            StrMultiplier = {'1';'1e3';'1e-12';'1e-12';}; %#ok<NASGU>
+%             StrMultiplier = {'1';'1e3';'1e-12';'1e-12';}; %#ok<NASGU>
+            StrMultiplier = {'1';'1e3';'1e-3';'1';};
 %             StrMultiplier = {'1';'1';'1e-3';'1'}; %#ok<NASGU>
             StrLabel = {'n';'Tc(mK)';'K(nW/K^n)';'G(pW/K)'};
             StrRange = {'P';'N'};
@@ -406,7 +407,8 @@ classdef TES_Struct
                 delete(IndxOP);
                 
                 StrField = {'n';'Tc';'K';'G'};
-                TESmult = {'1';'1e3';'1e-12';'1e-12';};
+%                 TESmult = {'1';'1e3';'1e-12';'1e-12';};
+                TESmult = {'1';'1e3';'1e-3';'1';};
                 for i = 1:length(StrField)
                     eval(['val = [obj.GsetP.' StrField{i} ']*' TESmult{i} ';']);
                     eval(['obj.TES.' StrField{i} ' = val(ind_rp);']);
@@ -418,9 +420,10 @@ classdef TES_Struct
                     
                     
                 end
-                uiwait(msgbox({['n: ' num2str(obj.TES.n)];['K: ' num2str(obj.TES.K)];...
-                    ['Tc: ' num2str(obj.TES.Tc) 'mK'];['G: ' num2str(obj.TES.G)]},'TES Operating Point','modal'));
+                uiwait(msgbox({['n: ' num2str(obj.TES.n)];['K: ' num2str(obj.TES.K) ' nW/K^n'];...
+                    ['Tc: ' num2str(obj.TES.Tc) ' mK'];['G: ' num2str(obj.TES.G) ' pW/K']},'TES Operating Point','modal'));
                 obj.TES.Tc = obj.TES.Tc*1e-3; 
+%                 obj.TES.K = obj.TES.K*1e-9;
                 
             end
         end
@@ -433,13 +436,26 @@ classdef TES_Struct
             
             prompt = {'Enter length value:','Enter width value:'};
             name = 'Provide TES dimension';
-            numlines = [1 50; 1 50];
-            defaultanswer = {'25e-6','25e-6'};
+            numlines = [1 50; 1 50; 1 50; 1 50];
+            defaultanswer = {'25e-6','25e-6';'55e-9','340e-9'};
             
             answer = inputdlg(prompt,name,numlines,defaultanswer);
             if ~isempty(answer)
                 obj.TES.sides = sqrt(str2double(answer{1})*str2double(answer{2}));
+                obj.TES.hMo = str2double(answer{1});
+                obj.TES.hAu = str2double(answer{2});
             end
+            
+%             prompt = {'Enter Mo thickness value:','Enter Au thickness value:'};
+%             name = 'Provide TES dimension';
+%             numlines = [1 50; 1 50];
+%             defaultanswer = {'55e-9','340e-9'};
+%             
+%             answer = inputdlg(prompt,name,numlines,defaultanswer);
+%             if ~isempty(answer)
+%                 obj.TES.hMo = str2double(answer{1});
+%                 obj.TES.hAu = str2double(answer{2});
+%             end
         end
         
         function obj = FitZset(obj,fig)
@@ -631,7 +647,9 @@ classdef TES_Struct
                         % alpha
                         if param.C < 0 || param.ai < 0
                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
-                        elseif ERP > 0.8
+%                         elseif ERP > 0.8
+%                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
+                        elseif R2 < 0.6
                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
                         else
                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 0;']);
@@ -846,7 +864,7 @@ classdef TES_Struct
                 [real(ztes) imag(ztes)],[],[],opts);%#ok<ASGLU> %%%uncomment for real parameters.
             MSE = (aux2'*aux2)/(length(fS)-length(p)); %#ok<NASGU>
             ci = nlparci(p,aux2,'jacobian',jacob);
-            CI = (ci(:,2)-ci(:,1))';
+            CI = (ci(:,2)-ci(:,1))';  
             p_CI = [p; CI];
             param = obj.GetModelParameters(p_CI,IV,Ib);
             fZ = obj.fitZ(p,fS);
@@ -884,7 +902,7 @@ classdef TES_Struct
             
             Rn = obj.circuit.Rn;
             T0 = obj.TES.Tc;
-            G0 = obj.TES.G;
+            G0 = obj.TES.G*1e-12;
             [iaux,ii] = unique(IVmeasure.ibias,'stable');
             vaux = IVmeasure.vout(ii);
             [m,i3] = min(diff(vaux)./diff(iaux)); %#ok<ASGLU>
@@ -1209,11 +1227,15 @@ classdef TES_Struct
             LW1 = 1;
             
             if ~isempty(obj.TES.sides)
-                gammas = [2 0.729]*1e3; %valores de gama para Mo y Au
-                rhoAs = [0.107 0.0983]; %valores de Rho/A para Mo y Au
+                gammas = [obj.TES.gammaMo obj.TES.gammaAu];
+%                 gammas = [2 0.729]*1e3; %valores de gama para Mo y Au
+                rhoAs = [obj.TES.rhoMo obj.TES.rhoAu];
+%                 rhoAs = [0.107 0.0983]; %valores de Rho/A para Mo y Au
                 %sides = [200 150 100]*1e-6 %lados de los TES
                 sides = obj.TES.sides;%sides = 100e-6;
-                hMo = 55e-9; hAu = 340e-9; %hAu = 1.5e-6;
+                hMo = obj.TES.hMo;
+                hAu = obj.TES.hAu;
+%                 hMo = 55e-9; hAu = 340e-9; %hAu = 1.5e-6;
                 %CN = (gammas.*rhoAs)*([hMo ;hAu]*sides.^2).*TES.Tc; %%%Calculo directo
                 CN = (gammas.*rhoAs).*([hMo hAu]*sides.^2).*obj.TES.Tc; %%%calculo de cada contribucion por separado.
                 CN = sum(CN);
@@ -1305,7 +1327,8 @@ classdef TES_Struct
                 end
                 
                 if ~isfield(fig,'subplots')
-                    semilogy(h(4),0.1:0.01:0.9,1./(0.1:0.01:0.9)-1,'r','linewidth',2,'DisplayName','Beta^{teo}');
+                    plot(h(4),0.1:0.01:0.9,1./(0.1:0.01:0.9)-1,'r','linewidth',2,'DisplayName','Beta^{teo}');
+                    set(h([2 4]),'YScale','log');
                     if ~isempty(obj.TES.sides)
                         plot(h(1),rpaux,CN*1e15*ones(1,length(rpaux)),'-.','color','r','linewidth',2,'DisplayName','{C_{LB}}^{teo}')
                         plot(h(1),rpaux,2.43*CN*1e15*ones(1,length(rpaux)),'-.','color','k','linewidth',2,'DisplayName','{C_{UB}}^{teo}')
