@@ -355,7 +355,7 @@ switch src.Label
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
     case 'Update Circuit Parameters (Slope IV-Curves)'
         fig = handles.Analyzer;
-        indAxes = findobj('Type','Axes','Tag','Analyzer');
+        indAxes = findobj(fig,'Type','Axes','Tag','Analyzer');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.IVcurveSlopesFromData(handles.Session{handles.TES_ID}.Path,fig);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
@@ -364,25 +364,26 @@ switch src.Label
         [handles.Session{handles.TES_ID}.TES.IVsetP, TempLims] = handles.Session{handles.TES_ID}.TES.IVsetP.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.Path);
         handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath, TempLims);
         fig.hObject = handles.Analyzer;
-        indAxes = findobj('Type','Axes');
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckIVCurvesVisually(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
     case 'Check IV-Curves'
         fig.hObject = handles.Analyzer;
-        indAxes = findobj('Type','Axes');
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckIVCurvesVisually(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
     case 'Fit P vs. T'
-        indAxes = findobj('Type','Axes');
-        delete(indAxes);
         fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);        
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],[],fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
     case 'TES Thermal Parameter Values'
-        indAxes = findobj('Type','Axes');
-        delete(indAxes);
+%         fig = handles.Analyzer;
+%         indAxes = findobj(fig,'Type','Axes');
+%         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.TES.CheckValues;
     case 'TES Thermal Parameters vs. %Rn'
         fig.hObject = handles.Analyzer;
@@ -393,17 +394,20 @@ switch src.Label
     case 'Get G(T)'
         handles.Session{handles.TES_ID}.TES.TES.G_calc;
     case 'Load TF in Superconductor State (TFS)'
-        indAxes = findobj('Type','Axes');
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.TFS = handles.Session{handles.TES_ID}.TES.TFS.TFfromFile(handles.Session{handles.TES_ID}.Path,handles.Analyzer);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
     case 'Check TFS'
-        indAxes = findobj('Type','Axes');
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.TFS = handles.Session{handles.TES_ID}.TES.TFS.CheckTF(handles.Analyzer);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
     case 'Fit Z(w)-Noise to ElectroThermal Model'
-        indAxes = findobj('Type','Axes');
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.FitZset;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
@@ -421,16 +425,17 @@ handles = guidata(src);
 switch src.Label
     case 'Plot NKGT Set'
         fig.hObject = handles.Analyzer;
-        indAxes = findobj('Type','Axes');
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotNKGTset(fig,1);
     case 'Plot ABCT Set'
         fig.hObject = handles.Analyzer;
-        indAxes = findobj('Type','Axes');
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotABCT(fig);
     case 'Plot Z(w) vs Rn'
-        indAxes = findobj('Type','Axes');
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         str = cellstr(num2str(unique([[handles.Session{handles.TES_ID}.TES.PP.Tbath] ...
             [handles.Session{handles.TES_ID}.TES.PN.Tbath]])'));
@@ -449,7 +454,8 @@ switch src.Label
         Rn = eval(['[' answer{1} ']']);
         handles.Session{handles.TES_ID}.TES.PlotTFTbathRp(Tbath,Rn);
     case 'Plot Noise vs Rn'
-        indAxes = findobj('Type','Axes');
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         str = cellstr(num2str(unique([[handles.Session{handles.TES_ID}.TES.PP.Tbath] ...
             [handles.Session{handles.TES_ID}.TES.PN.Tbath]])'));
@@ -469,7 +475,8 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES.PlotNoiseTbathRp(Tbath,Rn);
         
     case 'Plot TES Data'
-        indAxes = findobj('Type','Axes');
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
         
@@ -524,7 +531,7 @@ switch src.Label
             return;
         end
         fig.hObject = handles.Analyzer;
-        indAxes = findobj('Type','Axes');
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         
         colors = distinguishable_colors(length(s));
@@ -563,7 +570,7 @@ switch src.Label
             return;
         end
         fig.hObject = handles.Analyzer;
-        indAxes = findobj('Type','Axes');
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         
         er(1:4) = {[]};
@@ -619,8 +626,8 @@ switch src.Label
         if isempty(s1)
             return;
         end
-        indAxes = findobj('Type','Axes');
-        delete(indAxes);
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
         
         str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
         dummy = uimenu('Visible','off');
@@ -890,8 +897,9 @@ function SaveGraph(src,evnt)
 ha = findobj(src.UserData.Parent,'Type','Axes');
 fg = figure;
 copyobj(ha,fg);
-[file,path] = uiputfile('*.fig','Save Graph name');
+[file,path] = uiputfile('*.jpg','Save Graph name');
 if ~isequal(file,0)
-    hgsave(fg,[path filesep file]);
+    print(fg,'-djpeg',[path filesep file]);
+%     hgsave(fg,[path filesep file]);
 end
 % pause;
