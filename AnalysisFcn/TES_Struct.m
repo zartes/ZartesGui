@@ -72,6 +72,49 @@ classdef TES_Struct
             
         end
         
+        function model = BuildPTbModel(varargin)
+            
+            if nargin == 0
+                model.nombre = 'default';
+                model.function = @(p,T)(p(1)*T.^p(2)+p(3));
+                model.description = 'p(1)=-K p(2)=n p(3)=P0=k*Tc^n';
+                model.X0 = [-50 3 1];
+                model.LB = [-Inf 2 0];%%%lower bounds
+                model.UB = [];%%%upper bounds
+            elseif ischar(varargin{2})
+                switch varargin{2}
+                    case 'Tcdirect'
+                        model.nombre = 'Tcdirect';
+                        model.function = @(p,T)(p(1)*(p(3).^p(2)-T.^p(2)));
+                        model.description = 'p(1)=K p(2)=n p(3)=Tc';
+                        model.X0 = [50 3 0.1];
+                        model.LB = [0 2 0];%%%lower bounds
+                        model.UB = [];%%%upper bounds
+                    case 'GTcdirect'
+                        model.nombre = 'GTcdirect';
+                        model.function = @(p,T)(p(1)*(p(3).^p(2)-T.^p(2))./(p(2).*p(3).^(p(2)-1)));
+                        model.description = 'p(1)=G0 p(2)=n p(3)=Tc';
+                        model.X0 = [100 3 0.1];
+                        model.LB = [0 2 0];%%%lower bounds
+                        model.UB = [];%%%upper bounds
+                    case 'Ic0'
+                        model.nombre = 'Ic0';
+                        model.function = @(p,T)(p(1)*T(1,:).^p(2)+p(3)*(1-T(2,:)/p(4)).^(2*p(2)/3));%+p(5);
+                        model.description = 'p(1)=-K, p(2)=n, p(3)=P0=K*Tc^n, p(4)=Ic0';
+                        model.X0 = [-6500 3.03 13 1.9e4];
+                        model.LB = [-1e5 2 0 0];
+                        model.UB = [];
+                    case 'T2+T4'
+                        model.nombre = 'T2+T4';
+                        model.function = @(p,T)(p(1)*(p(3)^2-T.^2)+p(2)*(p(3)^4-T.^4));
+                        model.description = 'p(1)=A, p(2)=B, p(3)=Tc';
+                        model.X0 = [1 1 0.1];
+                        model.LB = [0 0 0];
+                        model.UB = [];
+                end
+            end
+        end
+            
         function obj = fitPvsTset(obj,perc,model,fig)
             % Function for fitting P-Tbath curves at Rn values.
             %
@@ -134,7 +177,8 @@ classdef TES_Struct
             end
             
             if isempty(model)
-                model = 1;
+                model = obj.BuildPTbModel('GTcdirect');
+%                 model = 1;
             end
             if isempty(fig)
                 fig = figure('Name','fitP vs. Tset');
@@ -185,40 +229,83 @@ classdef TES_Struct
                     Tbath(isnan(Tbath)) = [];
                     
                     eval(['obj.Gset' StrRange{k} '(jj).rp = perc(jj);']);
-                    eval(['obj.Gset' StrRange{k} '(jj).model = model;']);
-                                       
+                    eval(['obj.Gset' StrRange{k} '(jj).model = model.description;']);
+                                 
                     
-                    switch model
-                        case 1
-                            X0 = [-500 3 1];
-                            XDATA = Tbath;
-                            LB = [-Inf 2 0 ];%%%Uncomment for model1
-                        case 2
-                            X0 = [-6500 3.03 13 1.9e4];
-                            XDATA = [Tbath;Iaux*1e6];
-                            LB = [-1e5 2 0 0];
-                        case 3
-                            auxtbath = min(Tbath):1e-4:max(Tbath);
-                            auxptes = spline(Tbath,Paux,auxtbath);
-                            gbaux = abs(diff(auxptes)./diff(auxtbath));
-                            opts = optimset('Display','off');
-                            fit2 = lsqcurvefit(@(x,tbath)x(1)+x(2)*tbath,[3 2], log(auxtbath(2:end)),log(gbaux),[],opts); %#ok<NASGU>
-                            eval(['obj.Gset' StrRange{k} '(jj).n = (fit2(2)+1);']);
-                            eval(['obj.Gset' StrRange{k} '(jj).K = exp(fit2(1))/obj.Gset' StrRange{k} '(jj).n;']);
+                    
+                    if isnumeric(model)
+                        switch model
+                            case 1
+                                X0 = [-500 3 1];
+                                XDATA = Tbath;
+                                LB = [-Inf 2 0 ];%%%Uncomment for model1
+                            case 2
+                                X0 = [-6500 3.03 13 1.9e4];
+                                XDATA = [Tbath;Iaux*1e6];
+                                LB = [-1e5 2 0 0];
+                            case 3
+                                auxtbath = min(Tbath):1e-4:max(Tbath);
+                                auxptes = spline(Tbath,Paux,auxtbath);
+                                gbaux = abs(diff(auxptes)./diff(auxtbath));
+                                opts = optimset('Display','off');
+                                fit2 = lsqcurvefit(@(x,tbath)x(1)+x(2)*tbath,[3 2], log(auxtbath(2:end)),log(gbaux),[],opts); %#ok<NASGU>
+                                eval(['obj.Gset' StrRange{k} '(jj).n = (fit2(2)+1);']);
+                                eval(['obj.Gset' StrRange{k} '(jj).K = exp(fit2(1))/obj.Gset' StrRange{k} '(jj).n;']);
+                                
+                                plot(ax,log(auxtbath(2:end)),log(gbaux),'.-','Visible','off')
+                        end
+                        
+                        if model ~= 3
                             
-                            plot(ax,log(auxtbath(2:end)),log(gbaux),'.-','Visible','off')
-                    end
-                    if model ~= 3
+                            opts = optimset('Display','off');
+                            %X0=[50 3 0.1];XDATA=Tbath;LB=[0 2 0 ];%%%Conditions for p=[K n Tc].
+                            fitfun=@(x,y)obj.fitP(x,y,model);
+                                                    [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(fitfun,X0,XDATA,Paux*1e12,LB,[],opts); %#ok<ASGLU>
+%                             [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(fitfun,[50 3 0.1],XDATA,Paux*1e12,[0 2 0],[],opts); %#ok<ASGLU>
+                            
+                            %                         [beta,resid,J,Sigma] = nlinfit(XDATA,Paux*1e12,@obj.fitP,[-25 3 1]);
+                            %                         ci_beta = nlparci(beta,resid,'covar',Sigma);
+                            %                         ci = nlparci(beta,resid,'covar',sigma)
+                            ci = nlparci(fit,residual','jacobian',jacob);
+                            %                         CI = ((ci(:,2)-ci(:,1))'/2).*sign(fit);
+                            CI = diff(ci');
+                            fit_CI = [fit; CI];
+                            Gaux(jj) = obj.GetGfromFit(fit_CI);%#ok<AGROW,NASGU> %%antes se pasaba fitaux.
+                            ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA))./abs(Paux*1e12)))/length(Paux*1e12);
+                            R = corrcoef([obj.fitP(fit,XDATA)' Paux'*1e12]);
+                            R2 = R(1,2)^2;
+                            eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).n_CI = Gaux(jj).n_CI;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).K = Gaux(jj).K;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).K_CI = Gaux(jj).K_CI;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).Tc = Gaux(jj).Tc;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).Tc_CI = Gaux(jj).Tc_CI;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).G = Gaux(jj).G;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).G_CI = Gaux(jj).G_CI;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).ERP = ERP;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).R2 = R2;']);
+                            plot(ax,Tbath,obj.fitP(fit,XDATA),'LineStyle','-','Color',c(jj,:),'linewidth',1,'DisplayName',IVTESset(i).file,...
+                                'ButtonDownFcn',{@Identify_Origin_PT},'UserData',{k;jj;i;obj},'Visible','off');
+                        end
                         
+                    elseif isstruct(model)
+                        
+                        X0 = model.X0;
+                        LB = model.LB;
+                        XDATA = Tbath;
+                        if strcmp(model.nombre,'Ic0')
+                            XDATA = [Tbath;Iaux*1e6];
+                        end
                         opts = optimset('Display','off');
+                        fitfun = @(x,y)obj.fitP(x,y,model);                        
+                        [fit,~,aux2,~,~,~,auxJ] = lsqcurvefit(fitfun,X0,XDATA,Paux*1e12,LB,[],opts);
+                        ci = nlparci(fit,aux2,'jacobian',auxJ); %%%confidence intervals.
                         
-                        [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(@obj.fitP,X0,XDATA,Paux*1e12,LB,[],opts); %#ok<ASGLU>                        
-                        ci = nlparci(fit,residual','jacobian',jacob);
-                        CI = (ci(:,2)-ci(:,1))';
+                        CI = diff(ci');
                         fit_CI = [fit; CI];
-                        Gaux(jj) = obj.GetGfromFit(fit_CI);%#ok<AGROW,NASGU> %%antes se pasaba fitaux.
-                        ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA))./abs(Paux*1e12)))/length(Paux*1e12);
-                        R = corr([obj.fitP(fit,XDATA)' Paux'*1e12]);
+                        Gaux(jj) = obj.GetGfromFit(fit_CI',model);%#ok<AGROW,NASGU> %%antes se pasaba fitaux.
+                        ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,model))./abs(Paux*1e12)))/length(Paux*1e12);
+                        R = corrcoef([obj.fitP(fit,XDATA,model)' Paux'*1e12]);
                         R2 = R(1,2)^2;
                         eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
                         eval(['obj.Gset' StrRange{k} '(jj).n_CI = Gaux(jj).n_CI;']);
@@ -230,9 +317,18 @@ classdef TES_Struct
                         eval(['obj.Gset' StrRange{k} '(jj).G_CI = Gaux(jj).G_CI;']);
                         eval(['obj.Gset' StrRange{k} '(jj).ERP = ERP;']);
                         eval(['obj.Gset' StrRange{k} '(jj).R2 = R2;']);
-                        plot(ax,Tbath,obj.fitP(fit,XDATA),'LineStyle','-','Color',c(jj,:),'linewidth',1,'DisplayName',IVTESset(i).file,...
+                        plot(ax,Tbath,obj.fitP(fit,XDATA,model),'LineStyle','-','Color',c(jj,:),'linewidth',1,'DisplayName',IVTESset(i).file,...
                             'ButtonDownFcn',{@Identify_Origin_PT},'UserData',{k;jj;i;obj},'Visible','off');
+                        
+%                         plot(Tbath,obj.fitP(fit,XDATA,model),'-r','linewidth',1)
+%                         model.ci = ci;
+%                         Gaux(jj) = obj.GetGfromFit(fit,model);%%antes se pasaba fitaux.
+%                         auxxx(jj).ci = ci;
+%                         for ii = 1:length(ci) 
+%                             auxxx(jj).err(ii) = ci(ii,2)-ci(ii,1);
+%                         end
                     end
+                    
                     plot(ax,Tbath,Paux*1e12,'Marker','o','MarkerFaceColor',c(jj,:),'MarkerEdgeColor',c(jj,:),'DisplayName',['Rn(%): ' num2str(perc(jj))],...
                             'ButtonDownFcn',{@Identify_Origin_PT},'UserData',SetIbias,'LineStyle','none','Visible','off')
                     if ishandle(wb)
@@ -252,50 +348,162 @@ classdef TES_Struct
             set([haxes;hline],'Visible','on');
         end
         
-        function P = fitP(obj,p,T)
+        function P = fitP(obj,p,T,model)
             % Function to fit P(Tbath) data.
-            
-            [ii,~] = size(T);
-            model = ii;
-            if model == 1
-                %%%p(1)=a=-K, p(2)=n, p(3)=P0=K*Tc^n
-                P = p(1)*T.^p(2)+p(3);
-            elseif model == 2
-                %%%p(1)=-K, p(2)=n, p(3)=P0=K*Tc^n, p(4)=Ic0. p(5)=Pnoise
-                P = p(1)*T(1,:).^p(2)+p(3)*(1-T(2,:)/p(4)).^(2*p(2)/3);%+p(5);
-            elseif model > 2
-                error('Wrong P(T) model?')
+            if isnumeric(model)
+                %                 [ii,~] = size(T);
+                %                 model = ii;
+                if model == 1
+                    %%%p(1)=a=-K, p(2)=n, p(3)=P0=K*Tc^n
+                    P = p(1)*T.^p(2)+p(3);
+                    
+                    % %%%%Direct Tc fit p(1)=K, p(2)=n, p(3)=Tc
+%                     K = p(1);
+%                     n = p(2);
+%                     Tc = p(3);
+%                     P = K.*(Tc.^n-T.^n);
+                    %                 P = (p(1)./((p(3)*p(2))^(p(3)-1))).*((p(3)-T).^p(2));
+                    %                 P = (G*(Tc - T).^n)./(Tc^(n-1)*n);
+                    %                 P = p(1)*p(2)^p(3)-p(1)*T.^p(3);
+                elseif model == 2
+                    %%%p(1)=-K, p(2)=n, p(3)=P0=K*Tc^n, p(4)=Ic0. p(5)=Pnoise
+                    P = p(1)*T(1,:).^p(2)+p(3)*(1-T(2,:)/p(4)).^(2*p(2)/3);%+p(5);
+                elseif model > 2
+                    error('Wrong P(T) model?')
+                end
+            elseif isstruct(model)
+                f = model.function;
+                P = f(p,T);
             end
         end
         
-        function param = GetGfromFit(obj,p)
+        function param = GetGfromFit(obj,fit,model)
             % Function to get thermal parameters from fitting
             %             fit
-            % Model 1  p(1)=a=-K, p(2)=n, p(3)=P0=K*Tc^n
-            rp = p(1,:);
-            rp_CI = p(2,:);
             
-            param.n = rp(2);
-            param.n_CI = rp_CI(2);
-            
-            param.K = -rp(1);
-            param.K_CI = abs(rp_CI(1));
-            
-            param.Tc = (rp(3)/-rp(1))^(1/rp(2));                
-            param.Tc_CI = sqrt( (((rp(3)*(-rp(3)/rp(1))^(1/rp(2) - 1))/(rp(1)^2*rp(2)))*rp_CI(1))^2 ...
-                + ((-(log(-rp(3)/rp(1))*(-rp(3)/rp(1))^(1/rp(2)))/rp(2)^2)*rp_CI(2))^2 ...
-                + ((-(-rp(3)/rp(1))^(1/rp(2) - 1)/(rp(1)*rp(2)))*rp_CI(3))^2);
-            
-            if length(p) > 3
-                param.Ic = rp(4);%%%used in model2
-                %param.Pnoise=fit(5);%%%efecto de posible fuente extra de ruido.
-            end
-            param.G = param.n*param.K*param.Tc^(param.n-1); 
-            param.G_CI = sqrt( ((param.K*param.Tc^(param.n - 1) + param.K*param.Tc^(param.n - 1)*param.n*log(param.Tc))*param.n_CI)^2 ...
+            if nargin == 2  %%%usamos modelo por defecto.
+                param.n = fit(2,1);
+                param.n_CI = fit(2,2);
+                param.K = -fit(1,1);
+                param.K_CI = abs(fit(1,2));
+                param.P0 = fit(3,1);
+                param.P0_CI = fit(3,2);
+                param.Tc = (param.P0/param.K)^(1/param.n);
+                
+                param.Tc_CI = sqrt( (((param.P0*(-param.P0/param.K)^(1/param.n - 1))/(param.K^2*param.n))*param.K_CI(1))^2 ...
+                + ((-(log(-param.P0/param.K)*(-param.P0/param.K)^(1/param.n))/param.n^2)*param.n_CI(2))^2 ...
+                + ((-(-param.P0/param.K)^(1/param.n - 1)/(param.K*param.n))*param.P0_CI(3))^2);
+                
+                param.G = param.n*param.K*param.Tc^(param.n-1);
+                
+                param.G_CI = sqrt( ((param.K*param.Tc^(param.n - 1) + param.K*param.Tc^(param.n - 1)*param.n*log(param.Tc))*param.n_CI)^2 ...
                 + ((param.n*param.Tc^(param.n - 1))*param.K_CI)^2 ...
                 + ((param.n*param.K*param.Tc^(param.n - 2)*(param.n - 1))*param.Tc_CI)^2 );
-                    
-%             param.tau0_CI = sqrt(((param.L0-1)*rp_CI(3))^2 + ((rp(3))*param.L0_CI)^2 );
+            
+                param.G0 = param.G;                
+                param.G100 = param.n*param.K*0.1^(param.n-1);
+                
+            elseif nargin == 3
+                switch model.nombre
+                    case 'default'
+                        param.n = fit(2,1);
+                        param.n_CI = fit(2,2);
+                        param.K = -fit(1,1);
+                        param.K_CI = abs(fit(1,2));
+                        param.P0 = fit(3,1);
+                        param.P0_CI = fit(3,2);
+                        
+                        param.Tc = (param.P0/param.K)^(1/param.n);
+                        param.Tc_CI = sqrt( (((param.P0*(-param.P0/param.K)^(1/param.n - 1))/(param.K^2*param.n))*param.K_CI(1))^2 ...
+                            + ((-(log(-param.P0/param.K)*(-param.P0/param.K)^(1/param.n))/param.n^2)*param.n_CI(2))^2 ...
+                            + ((-(-param.P0/param.K)^(1/param.n - 1)/(param.K*param.n))*param.P0_CI(3))^2);
+                        
+                        param.G = param.n*param.K*param.Tc^(param.n-1);
+                        param.G_CI = sqrt( ((param.K*param.Tc^(param.n - 1) + param.K*param.Tc^(param.n - 1)*param.n*log(param.Tc))*param.n_CI)^2 ...
+                            + ((param.n*param.Tc^(param.n - 1))*param.K_CI)^2 ...
+                            + ((param.n*param.K*param.Tc^(param.n - 2)*(param.n - 1))*param.Tc_CI)^2 );
+                       
+                        param.G0 = param.G;
+                        param.G100 = param.n*param.K*0.1^(param.n-1);
+                        if isfield(model,'ci')
+                            param.Errn = model.ci(2,2)-model.ci(2,1);
+                            param.ErrK = model.ci(1,2)-model.ci(1,1);
+                        end
+                    case 'Tcdirect'
+                        param.n = fit(2,1);
+                        param.n_CI = fit(2,2);
+                        param.K = fit(1);
+                        param.K_CI = fit(1,2);
+                        param.Tc = fit(3,1);
+                        param.Tc_CI = fit(3,2);
+                        param.G = param.n*param.K*param.Tc^(param.n-1);
+                        param.G_CI = sqrt( ((param.K*param.Tc^(param.n - 1) + param.K*param.Tc^(param.n - 1)*param.n*log(param.Tc))*param.n_CI)^2 ...
+                            + ((param.n*param.Tc^(param.n - 1))*param.K_CI)^2 ...
+                            + ((param.n*param.K*param.Tc^(param.n - 2)*(param.n - 1))*param.Tc_CI)^2 );                        
+                        param.G0 = param.G;
+                        param.G100 = param.n*param.K*0.1^(param.n-1);
+                        if isfield(model,'ci')
+                            param.Errn = model.ci(2,2)-model.ci(2,1);
+                            param.ErrK = model.ci(1,2)-model.ci(1,1);
+                            param.ErrTc = model.ci(3,2)-model.ci(3,1);
+                        end
+                    case 'GTcdirect'
+                        param.n = fit(2,1);
+                        param.n_CI = fit(2,2);                                                
+                        param.Tc = fit(3,1);
+                        param.Tc_CI = fit(3,2);  
+                        param.G = fit(1,1);
+                        param.G_CI = fit(1,2);
+                        param.K = param.G/(param.n*param.Tc.^(param.n-1));
+                        param.K_CI = sqrt( ((param.Tc^(1 - param.n)/param.n)*param.G_CI)^2 + ...
+                           ((-(param.G*(param.n - 1))/(param.Tc^param.n*param.n))*param.Tc_CI)^2 + ...
+                           ((- (param.G*param.Tc^(1 - param.n))/param.n^2 - (param.G*param.Tc^(1 - param.n)*log(param.Tc))/param.n)*param.n_CI)^2); % To be computed
+                        
+                        param.G0 = param.G;
+                        param.G100 = param.n*param.K*0.1^(param.n-1);
+                        if isfield(model,'ci')
+                            param.Errn = model.ci(2,2)-model.ci(2,1);
+                            param.ErrG = model.ci(1,2)-model.ci(1,1);
+                            param.ErrTc = model.ci(3,2)-model.ci(3,1);
+                        end
+                    case 'Ic0'
+                        param.n = fit(2,1);
+                        param.n_CI = fit(2,2);   
+                        param.K = -fit(1,1);
+                        param.K_CI = fit(1,2);   
+                        param.P0 = fit(3,1);
+                        param.P0_CI = fit(3,2);
+                        
+                        param.Tc = (param.P0/param.K)^(1/param.n);
+                        param.Tc_CI = sqrt( (((param.P0*(-param.P0/param.K)^(1/param.n - 1))/(param.K^2*param.n))*param.K_CI(1))^2 ...
+                            + ((-(log(-param.P0/param.K)*(-param.P0/param.K)^(1/param.n))/param.n^2)*param.n_CI(2))^2 ...
+                            + ((-(-param.P0/param.K)^(1/param.n - 1)/(param.K*param.n))*param.P0_CI(3))^2);
+                        
+                        param.Ic = fit(4,1);
+                        param.Ic_CI = fit(4,2);
+                        %param.Pnoise=fit(5);%%%efecto de posible fuente extra de ruido.
+                        param.G = param.n*param.K*param.Tc^(param.n-1);
+                        param.G_CI = sqrt( ((param.K*param.Tc^(param.n - 1) + param.K*param.Tc^(param.n - 1)*param.n*log(param.Tc))*param.n_CI)^2 ...
+                            + ((param.n*param.Tc^(param.n - 1))*param.K_CI)^2 ...
+                            + ((param.n*param.K*param.Tc^(param.n - 2)*(param.n - 1))*param.Tc_CI)^2 );      
+                        
+                        param.G0 = param.G;
+                        param.G100 = param.n*param.K*0.1^(param.n-1);
+                    case 'T2T4'
+                        param.A = fit(1,1);
+                        param.A_CI = fit(1,2);
+                        param.B = fit(2,1);
+                        param.B_CI = fit(2,2);
+                        param.Tc = fit(3,1);
+                        param.Tc_CI = fit(3,2);
+                        param.G = 2*param.Tc.*(param.A+2*param.B*param.Tc.^2);
+                        param.G_CI = sqrt( ((12*param.B*param.Tc^2 + 2*param.A)*param.Tc_CI)^2 + ...
+                            ((2*param.Tc)*param.A_CI)^2 + ...
+                            ((4*param.Tc^3)*param.B_CI)^2 );  %To be computed
+                        param.G0 = param.G;
+                        param.G_100 = 2*0.1.*(param.A+2*param.B*0.1.^2);
+                end
+            end
         end
         
         function obj = plotNKGTset(obj,fig,opt)
@@ -434,10 +642,10 @@ classdef TES_Struct
             % If this data is available, then theoretical C value could
             % be analytically determined
             
-            prompt = {'Enter length value:','Enter width value:'};
+            prompt = {'Enter length value:','Enter width value:','Enter Mo thickness value:','Enter Au thickness value:'};
             name = 'Provide TES dimension';
-            numlines = [1 50; 1 50; 1 50; 1 50];
-            defaultanswer = {'25e-6','25e-6';'55e-9','340e-9'};
+            numlines = 1;
+            defaultanswer = {'25e-6','25e-6','55e-9','340e-9'};
             
             answer = inputdlg(prompt,name,numlines,defaultanswer);
             if ~isempty(answer)
@@ -1237,7 +1445,7 @@ classdef TES_Struct
                 hAu = obj.TES.hAu;
 %                 hMo = 55e-9; hAu = 340e-9; %hAu = 1.5e-6;
                 %CN = (gammas.*rhoAs)*([hMo ;hAu]*sides.^2).*TES.Tc; %%%Calculo directo
-                CN = (gammas.*rhoAs).*([hMo hAu]*sides.^2).*obj.TES.Tc; %%%calculo de cada contribucion por separado.
+                CN = (gammas.*rhoAs).*([hMo hAu].*sides.^2).*obj.TES.Tc; %%%calculo de cada contribucion por separado.
                 CN = sum(CN);
                 rpaux = 0.1:0.01:0.9;
             end

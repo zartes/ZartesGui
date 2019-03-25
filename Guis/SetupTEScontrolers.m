@@ -22,7 +22,7 @@ function varargout = SetupTEScontrolers(varargin)
 
 % Edit the above text to modify the response to help SetupTEScontrolers
 
-% Last Modified by GUIDE v2.5 03-Jan-2019 10:53:37
+% Last Modified by GUIDE v2.5 20-Mar-2019 12:48:37
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,7 +54,7 @@ function SetupTEScontrolers_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for SetupTEScontrolers
 handles.output = hObject;
-set(handles.SetupTES,'Units','Normalized');
+set(handles.SetupTES,'Units','Normalized','Visible','off');
 position = get(handles.SetupTES,'Position');
 set(handles.SetupTES,'Position',...
     [0.05 0.5-position(4)/2 position(3) position(4)],...
@@ -165,7 +165,8 @@ for i = 1:length(a_str)
     eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
     a.Visible = 'off';
 end
-set(handles.SetupTES,'Visible','on');
+
+
 pause(0.5);
 
 handles.EnableStr = {'off';'on'};
@@ -221,6 +222,8 @@ handles.LoadData.RTs = {[]};
 handles.SQ_Calibration.Value = 1;
 SQ_Calibration_Callback(handles.SQ_Calibration, [], handles)
 
+
+
 % Update handles structure
 guidata(hObject, handles);
 
@@ -237,6 +240,10 @@ function varargout = SetupTEScontrolers_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
+set(handles.SetupTES,'Visible','on');
+waitfor(warndlg('Please, check the circuit values','ZarTES v1.0'));
+Obj_Properties(handles.Menu_Circuit);
+
 
 % --- Executes on button press in SQ_TES2NormalState.
 function SQ_TES2NormalState_Callback(hObject, eventdata, handles)

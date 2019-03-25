@@ -2190,11 +2190,89 @@ function Save_Conf_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-s.Config = GenerateConf(handles);
-[FileName,PathName,~] = uiputfile('.\*.xml','Select a file or a new file name for save current configuration');
-if ~isempty(FileName)
-    struct2xml(s,[PathName FileName]);
+
+Conf.Temps.Values = handles.Temp.Values';
+Conf.Temps.File = [handles.TempDir handles.TempName];
+
+Conf.FieldScan.On = handles.BField_Scan.Value;
+Conf.FieldScan.Rn = str2double(handles.Field_Rn.String);
+Conf.FieldScan.BVvalues = handles.FieldScan.BVvalue';
+
+Conf.BFieldIC.On = handles.BField_IC.Value;
+Conf.BFieldIC.BVvalues = handles.BFieldIC.BVvalue';
+Conf.BFieldIC.IbiasValues.p = handles.BFieldIC.IbiasValues.p';
+Conf.BFieldIC.IbiasValues.n = handles.BFieldIC.IbiasValues.n';
+
+Conf.BField.FromScan = handles.FromFieldScan.Value;
+Conf.BField.Symmetric = handles.Field_Symmetric.Value;
+Conf.BField.P = str2double(handles.AQ_Field.String);
+Conf.BField.N = str2double(handles.AQ_Field_Negative.String);
+
+%% Configuración del Panel de Ibias
+
+Conf.IVcurves.On = handles.AQ_IVs.Value;
+Conf.IVcurves.Manual.On = handles.ManualIbias.Value;
+Conf.IVcurves.Manual.Values.p = handles.IVcurves.Manual.Values.p';
+Conf.IVcurves.Manual.Values.n = handles.IVcurves.Manual.Values.n';
+Conf.IVcurves.SmartRange.On = handles.SmartIbias.Value;
+
+%%%% Poner la configuracion para la characterización de Z(w)-Ruido y
+%%%% pulsos
+Conf.TF.Zw.DSA.On = handles.DSA_TF_Zw.Value;
+Conf.TF.Zw.DSA.Method.Value = handles.DSA_TF_Zw_Menu.Value;
+contents = cellstr(get(handles.DSA_TF_Zw_Menu,'String'));
+Conf.TF.Zw.DSA.Method.String = contents{get(handles.DSA_TF_Zw_Menu,'Value')};
+Conf.TF.Zw.DSA.Exc.Units.Value = handles.DSA_Input_Amp_Units.Value;
+contents = cellstr(get(handles.DSA_Input_Amp_Units,'String'));
+Conf.TF.Zw.DSA.Exc.Units.String = contents{get(handles.DSA_Input_Amp_Units,'Value')};
+Conf.TF.Zw.DSA.Exc.Value = str2double(handles.DSA_Input_Amp.String);
+
+
+Conf.TF.Zw.PXI.On = handles.PXI_TF_Zw.Value;
+Conf.TF.Zw.PXI.Method.Value = handles.PXI_TF_Zw_Menu.Value;
+contents = cellstr(get(handles.PXI_TF_Zw_Menu,'String'));
+Conf.TF.Zw.PXI.Method.String = contents{get(handles.PXI_TF_Zw_Menu,'Value')};
+Conf.TF.Zw.PXI.Exc.Units.Value = handles.PXI_Input_Amp_Units.Value;
+contents = cellstr(get(handles.PXI_Input_Amp_Units,'String'));
+Conf.TF.Zw.PXI.Exc.Units.String = contents{get(handles.PXI_Input_Amp_Units,'Value')};
+Conf.TF.Zw.PXI.Exc.Value = str2double(handles.PXI_Input_Amp.String);
+
+Conf.TF.Zw.rpp = handles.TF_Zw.rpp';
+Conf.TF.Zw.rpn = handles.TF_Zw.rpn';
+
+
+Conf.TF.Noise.DSA.On = handles.DSA_TF_Noise.Value;
+Conf.TF.Noise.PXI.On = handles.PXI_TF_Noise.Value;
+
+Conf.Pulse.PXI.On = handles.PXI_Pulse.Value;
+Conf.Pulse.PXI.NCounts = str2double(handles.PulseNCounts.String);
+
+Conf.Spectrum.PXI.On = handles.AQ_Spectrum.Value;
+Conf.Spectrum.PXI.Rn = str2double(handles.Spectrum_Rn.String);
+Conf.Spectrum.PXI.NCounts = str2double(handles.Spectrum_NCounts.String);
+
+
+%%%% Refresh Summary Table
+
+StrSummary = handles.Summary_Table.ColumnName;
+for j = 1:size(handles.Summary_Table.Data,1)
+    for i = 1:size(handles.Summary_Table.Data,2)
+        eval(['Conf.Summary.' StrSummary{i} num2str(j) ' = handles.Summary_Table.Data{j,i};']);
+    end
 end
+
+s.Config = Conf;
+
+if isempty(eventdata)
+    [FileName,PathName,~] = uiputfile('.\*.xml','Select a file or a new file name for save current configuration');
+    if ~isempty(FileName)
+        struct2xml(s,[PathName FileName]);
+    end
+else    
+    struct2xml(s,[eventdata filesep 'Conf_File.xml']);
+end
+    
+
 
 
 % --- Executes on button press in AQ_TF_Rn_P_Set.
@@ -2403,75 +2481,7 @@ end
 
 function Conf = GenerateConf(handles)
 
-Conf.Temps.Values = handles.Temp.Values';
-Conf.Temps.File = [handles.TempDir handles.TempName];
 
-Conf.FieldScan.On = handles.BField_Scan.Value;
-Conf.FieldScan.Rn = str2double(handles.Field_Rn.String);
-Conf.FieldScan.BVvalues = handles.FieldScan.BVvalue';
-
-Conf.BFieldIC.On = handles.BField_IC.Value;
-Conf.BFieldIC.BVvalues = handles.BFieldIC.BVvalue';
-Conf.BFieldIC.IbiasValues.p = handles.BFieldIC.IbiasValues.p';
-Conf.BFieldIC.IbiasValues.n = handles.BFieldIC.IbiasValues.n';
-
-Conf.BField.FromScan = handles.FromFieldScan.Value;
-Conf.BField.Symmetric = handles.Field_Symmetric.Value;
-Conf.BField.P = str2double(handles.AQ_Field.String);
-Conf.BField.N = str2double(handles.AQ_Field_Negative.String);
-
-%% Configuración del Panel de Ibias
-
-Conf.IVcurves.On = handles.AQ_IVs.Value;
-Conf.IVcurves.Manual.On = handles.ManualIbias.Value;
-Conf.IVcurves.Manual.Values.p = handles.IVcurves.Manual.Values.p';
-Conf.IVcurves.Manual.Values.n = handles.IVcurves.Manual.Values.n';
-Conf.IVcurves.SmartRange.On = handles.SmartIbias.Value;
-
-%%%% Poner la configuracion para la characterización de Z(w)-Ruido y
-%%%% pulsos
-Conf.TF.Zw.DSA.On = handles.DSA_TF_Zw.Value;
-Conf.TF.Zw.DSA.Method.Value = handles.DSA_TF_Zw_Menu.Value;
-contents = cellstr(get(handles.DSA_TF_Zw_Menu,'String'));
-Conf.TF.Zw.DSA.Method.String = contents{get(handles.DSA_TF_Zw_Menu,'Value')};
-Conf.TF.Zw.DSA.Exc.Units.Value = handles.DSA_Input_Amp_Units.Value;
-contents = cellstr(get(handles.DSA_Input_Amp_Units,'String'));
-Conf.TF.Zw.DSA.Exc.Units.String = contents{get(handles.DSA_Input_Amp_Units,'Value')};
-Conf.TF.Zw.DSA.Exc.Value = str2double(handles.DSA_Input_Amp.String);
-
-
-Conf.TF.Zw.PXI.On = handles.PXI_TF_Zw.Value;
-Conf.TF.Zw.PXI.Method.Value = handles.PXI_TF_Zw_Menu.Value;
-contents = cellstr(get(handles.PXI_TF_Zw_Menu,'String'));
-Conf.TF.Zw.PXI.Method.String = contents{get(handles.PXI_TF_Zw_Menu,'Value')};
-Conf.TF.Zw.PXI.Exc.Units.Value = handles.PXI_Input_Amp_Units.Value;
-contents = cellstr(get(handles.PXI_Input_Amp_Units,'String'));
-Conf.TF.Zw.PXI.Exc.Units.String = contents{get(handles.PXI_Input_Amp_Units,'Value')};
-Conf.TF.Zw.PXI.Exc.Value = str2double(handles.PXI_Input_Amp.String);
-
-Conf.TF.Zw.rpp = handles.TF_Zw.rpp';
-Conf.TF.Zw.rpn = handles.TF_Zw.rpn';
-
-
-Conf.TF.Noise.DSA.On = handles.DSA_TF_Noise.Value;
-Conf.TF.Noise.PXI.On = handles.PXI_TF_Noise.Value;
-
-Conf.Pulse.PXI.On = handles.PXI_Pulse.Value;
-Conf.Pulse.PXI.NCounts = str2double(handles.PulseNCounts.String);
-
-Conf.Spectrum.PXI.On = handles.AQ_Spectrum.Value;
-Conf.Spectrum.PXI.Rn = str2double(handles.Spectrum_Rn.String);
-Conf.Spectrum.PXI.NCounts = str2double(handles.Spectrum_NCounts.String);
-
-
-%%%% Refresh Summary Table
-
-StrSummary = handles.Summary_Table.ColumnName;
-for j = 1:size(handles.Summary_Table.Data,1)
-    for i = 1:size(handles.Summary_Table.Data,2)
-        eval(['Conf.Summary.' StrSummary{i} num2str(j) ' = handles.Summary_Table.Data{j,i};']);
-    end
-end
 
 % --- Executes on button press in AQ_Pause.
 function AQ_Pause_Callback(hObject, eventdata, handles)
@@ -2483,8 +2493,9 @@ Active_Color = [120 170 50]/255;
 Disable_Color = [204 204 204]/255;
 if hObject.Value
     hObject.BackgroundColor = Active_Color;
-    pause on;
-else
-    pause off;
+    msgbox('Press F5 to continue!','ZarTES v1.0')
+    keyboard;
+    
     hObject.BackgroundColor = Disable_Color;
+    hObject.Value = 1;
 end

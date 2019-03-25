@@ -1,15 +1,68 @@
 function Start_Automatic_Acquisition(handles, SetupTES, Conf)
 
 
-handles.AQ_dir = uigetdir(pwd, 'Select a path for storing acquisition data');
-if ~ischar(handles.AQ_dir)
+handles.Enfriada_dir = uigetdir(pwd, 'Select a path for storing acquisition data');
+if ~ischar(handles.Enfriada_dir)
     return;
 end
-% Guardamos la configuracion en un .mat
+SlashInd = strfind(handles.Enfriada_dir,filesep);
+YearStr = handles.Enfriada_dir(SlashInd(end-1)+1:SlashInd(end)-1);
+MonthStr = handles.Enfriada_dir(SlashInd(end)+1:end);
+ExcelEnfriada = ['Summary_' YearStr '_' MonthStr '.xls'];
+
+% Guardamos la configuracion en un .mat o en xml
 if SetupTES.CurSource_OnOff.Value
     Conf.BField.P = str2double(SetupTES.CurSource_I.String); % Amperios
     Conf.BField.N = str2double(SetupTES.CurSource_I.String); % Amperios
 end
+
+% Comprobar el número de RUN
+dRUN = dir(handles.Enfriada_dir);
+j = 0;
+for i = 1:length(dRUN)
+    if dRUN(i).isdir
+        if ~isempty(strfind(upper(dRUN(i).name),'RUN'))
+            j = j + 1;
+        end
+    end
+end
+j = j + 1;
+b = num2str(j);
+a = '000';
+a(end-length(b)+1:end) = b;
+handles.AQ_dir = [handles.Enfriada_dir filesep 'RUN' a];
+[Succ, Message] = mkdir(handles.AQ_dir);
+if ~Succ
+    warndlg(Message,'ZarTES v1.0');
+    msgbox('Acquisition Aborted','ZarTES v1.0');
+    return;
+end
+
+prompt = {'Insert a comment'};
+name = ['Acquisition RUN' a];
+numlines = [1 50];
+defaultanswer = {'No comment'};
+
+answer = inputdlg(prompt,name,numlines,defaultanswer);
+if isempty(answer)
+    answer{1} = '';
+elseif isempty(answer{1})
+    answer{1} = '';
+end
+
+if exist([handles.Enfriada_dir filesep ExcelEnfriada],'file')
+    num = xlsread([handles.Enfriada_dir filesep ExcelEnfriada],2);
+    d = {str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
+    xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
+else
+    d = {'ID_Enfriada','ID_SQUID','ID_TES','Date'};
+    xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 1, 'A1')
+    d = {'ID_RUN','FieldB pos(A)','FieldB neg(A)','Comment'; str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
+    xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2, 'A1')
+end
+
+IbvaluesConf('Save_Conf_Callback',handles.Save_Conf,handles.AQ_dir,guidata(handles.Save_Conf));
+
 save([handles.AQ_dir filesep 'Conf_Acq.mat'],'Conf');
 circuit = TES_Circuit;
 circuit = circuit.Update(SetupTES.Circuit);
@@ -20,17 +73,17 @@ save([handles.AQ_dir filesep 'circuit.mat'],'circuit');
 PathStr = {'Barrido_Campo';'ICs';'IVs';'Negative_Bias'};
 for i = 1:length(PathStr)
     if i == 1 && ~Conf.FieldScan.On % Solo se genera el directorio si se necesita
-        break;
+        continue;
     end
     if i == 2 && ~Conf.BFieldIC.On % Solo se genera el directorio si se necesita
-        break;
+        continue;
     end
     if i == 3 && ~Conf.IVcurves.On % Solo se genera el directorio si se necesita
-        break;
+        continue;
     end
-    if i == 4 && (~Conf.TF.Zw.DSA.On || ~Conf.TF.Zw.PXI.On ||... % Solo se genera el directorio si se necesita
+    if i == 4 && ~(~Conf.TF.Zw.DSA.On || ~Conf.TF.Zw.PXI.On ||... % Solo se genera el directorio si se necesita
             ~Conf.TF.Noise.DSA.On || ~Conf.TF.Noise.PXI.On || ~Conf.Pulse.PXI.On || ~Conf.Spectrum.PXI.On)
-        break;
+        continue;
     end
         
     eval(['handles.' PathStr{i} '_Dir = [handles.AQ_dir filesep ''' PathStr{i} ''' filesep];']);
@@ -39,6 +92,7 @@ for i = 1:length(PathStr)
         if ~Succ
             warndlg(Message,'ZarTES v1.0');
             msgbox('Acquisition Aborted','ZarTES v1.0');
+            return;
         end
     end
 end
@@ -582,7 +636,6 @@ V = data(:,4);
 file = strcat('BVscan',num2str(Temp*1e3),'mK');
 save([handles.Barrido_Campo_Dir file],'B','V');
 
-
 function I_Criticas_Carlos(Temp,BfieldValues,Conf,SetupTES,handles)
 
 figure(SetupTES.SetupTES)
@@ -641,7 +694,7 @@ for i = 1:length(BfieldValues)
     save([handles.Barrido_Campo_Dir FileStr],'ICpairs');
     hf = findobj(SetupTES.Result_Axes,'DisplayName','Final');
     delete(hf);
-    plot(SetupTES.Result_Axes,BfieldValues(1:i),[ICpairs.p],'o-',BfieldValues(1:i),[ICpairs.n],'o-','DisplayName','Final'));
+    plot(SetupTES.Result_Axes,BfieldValues(1:i),[ICpairs.p],'o-',BfieldValues(1:i),[ICpairs.n],'o-','DisplayName','Final');
 end
 
 SetupTES.CurSource_I_Units.Value = 1;
@@ -948,7 +1001,6 @@ end
 % Desactivamos la salida de corriente de la fuente
 SetupTES.CurSource_OnOff.Value = 0;
 SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
-
 
 function Medir_Zw_Noise(Temp,Opt,IZvalues,Path,Conf,SetupTES,handles)
 

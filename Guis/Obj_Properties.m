@@ -180,8 +180,26 @@ end
 
 handles1 = guidata(handles.Obj.Parent.Parent);
 handles1.Circuit = handles.Obj.UserData;
+
+FieldStr = fieldnames(handles1.Circuit);
+for i = 1:length(FieldStr)
+    eval(['circuit.' FieldStr{i} ' = handles1.Circuit.' FieldStr{i} '.Value;']);
+end
+for j = 1:length(handles1.d)
+    if handles1.d(j).isdir
+        if strcmp(handles1.d(j).name,'GeneralFcn')
+            save([handles1.MainDir handles1.d(j).name filesep 'CircuitDefault.mat'],'circuit');
+            break;
+        end
+    end
+end
+            
 guidata(handles.Obj.Parent.Parent,handles1);
+
+
+
 uiwait(msgbox('Properties were successfully saved!','ZarTES v.1'));
+
 
 delete(handles.figure1);
 
