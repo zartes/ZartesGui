@@ -312,7 +312,7 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.Constructor;
         
         % Searching for Circuir variable (inside session or in circuit)
-        [filename, pathname] = uigetfile({'sesion*';'circuit*'}, 'Pick a MATLAB file refering to sesion or circuit values');
+        [filename, pathname] = uigetfile({'sesion*';'circuit*'}, 'Pick a MATLAB file refering to sesion or circuit values',[Session.Path 'sesion.mat']);
         if ~isequal(filename,0)
             switch filename
                 case 'sesion.mat'
@@ -321,6 +321,7 @@ switch src.Label
                     load([pathname filename],'circuit');
             end     
             handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
+            handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;            
         else
             warndlg('Caution! Circuit parameters were not loaded, check it manually','ZarTES v1.0');
         end

@@ -108,6 +108,8 @@ classdef TES_Circuit
                 pre_Rf = [];
                 return;
             end
+            wb = waitbar(0,'Please wait...');
+            
             if (iscell(T))
                 for i = 1:length(T)
                     data = importdata(T{i});
@@ -144,6 +146,13 @@ classdef TES_Circuit
                     end
                     pre_Rf(i) = str2double(file{i}(ind_i+5:ind_f-1))*1000;
                     
+                    if ishandle(wb)
+                        waitbar(i/length(T),wb,['Loading IV curves in progress: ' num2str(auxS.Tbath) ' mK']);
+                    end
+                    
+                end
+                if ishandle(wb)
+                    delete(wb);
                 end
             else
                 data=importdata(T);
@@ -179,6 +188,8 @@ classdef TES_Circuit
                     ind_f = strfind(file,'K_up_');
                 end
                 pre_Rf = str2double(file(ind_i+5:ind_f-1))*1000;
+                
+                
             end
             pre_Rf = unique(pre_Rf);
             if length(pre_Rf) > 1

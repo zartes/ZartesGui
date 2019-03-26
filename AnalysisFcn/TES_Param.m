@@ -7,6 +7,7 @@ classdef TES_Param
         K;
         Tc;
         G;
+        G100;
         sides = [25e-6 25e-6];
         gammaMo = 2e3;
         gammaAu = 0.729e3;
@@ -75,10 +76,12 @@ classdef TES_Param
                         return;
                     end
                 end
+                G_new = obj.n*obj.K*1e3*Temp^(obj.n-1);
+                uiwait(msgbox(['G(' num2str(Temp) ') = ' num2str(G_new)],'ZarTES v1.0','modal'));
             end
             try
-                G_new = obj.n*obj.K*Temp^(obj.n-1);
-                uiwait(msgbox(['G(' num2str(Temp) ') = ' num2str(G_new)],'ZarTES v1.0','modal'));
+                G_new = obj.n*obj.K*1e3*Temp^(obj.n-1);
+                
             catch
                 disp('TES values are empty.')
             end

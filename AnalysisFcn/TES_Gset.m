@@ -11,6 +11,7 @@ classdef TES_Gset
         Tc_CI;
         G;      % pW/K
         G_CI;
+        G100;
         rp;     % Normalized units
         model;
         ERP;    % Normalized units
@@ -29,6 +30,7 @@ classdef TES_Gset
             Tc_CI = [];
             G = [];      % pW/K
             G_CI = [];
+            G100 = [];
             rp = [];     % Normalized units
             model = [];
             ERP = [];    % Normalized units
