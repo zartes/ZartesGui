@@ -94,10 +94,6 @@ catch
     
 end
 
-ax = handles.Result_Axes;
-data = imread('athena-mission.jpg');
-image(data);
-ax.Visible = 'off';
 
 % Set correct paths (addition)
 handles.CurrentPath = pwd;
@@ -241,6 +237,10 @@ function varargout = SetupTEScontrolers_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 set(handles.SetupTES,'Visible','on');
+ax = handles.Result_Axes;
+data = imread('athena-mission.jpg');
+image(data);
+ax.Visible = 'off';
 waitfor(warndlg('Please, check the circuit values','ZarTES v1.0'));
 Obj_Properties(handles.Menu_Circuit);
 
@@ -264,9 +264,19 @@ else
         
         if isequal(eventdata,-1)
             handles.Squid.TES2NormalState(eventdata);
+            handles.SQ_Ibias_Units.Value = 3;            
+            handles.SQ_Ibias.String = '-500';
         else
             handles.Squid.TES2NormalState(1);
+            handles.SQ_Ibias_Units.Value = 3;            
+            handles.SQ_Ibias.String = '500';
         end
+        handles.SQ_Read_I.Value = 1;
+        SQ_Read_I_Callback(handles.SQ_Read_I,[],handles);
+        
+        handles.Multi_Read.Value = 1;
+        Multi_Read_Callback(handles.Multi_Read,[],handles);
+        
         hObject.UserData = [];
         handles.Actions_Str.String = 'Electronic Magnicon: TES in Normal State';
         Actions_Str_Callback(handles.Actions_Str,[],handles);
