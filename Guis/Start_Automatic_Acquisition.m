@@ -11,10 +11,14 @@ MonthStr = handles.Enfriada_dir(SlashInd(end)+1:end);
 ExcelEnfriada = ['Summary_' YearStr '_' MonthStr '.xls'];
 
 % Guardamos la configuracion en un .mat o en xml
-if SetupTES.CurSource_OnOff.Value
-    Conf.BField.P = str2double(SetupTES.CurSource_I.String); % Amperios
-    Conf.BField.N = str2double(SetupTES.CurSource_I.String); % Amperios
-end
+
+% if SetupTES.CurSource_OnOff.Value
+%     Conf.BField.P = str2double(SetupTES.CurSource_I.String); % Amperios
+%     Conf.BField.N = str2double(SetupTES.CurSource_I.String); % Amperios
+% else
+    Conf.BField.P = str2double(handles.AQ_Field.String); % Amperios
+    Conf.BField.N = str2double(handles.AQ_Field_Negative.String); % Amperios
+% end
 
 % Comprobar el número de RUN
 dRUN = dir(handles.Enfriada_dir);
@@ -30,12 +34,33 @@ j = j + 1;
 b = num2str(j);
 a = '000';
 a(end-length(b)+1:end) = b;
-handles.AQ_dir = [handles.Enfriada_dir filesep 'RUN' a];
-[Succ, Message] = mkdir(handles.AQ_dir);
-if ~Succ
-    warndlg(Message,'ZarTES v1.0');
-    msgbox('Acquisition Aborted','ZarTES v1.0');
-    return;
+
+merg = 0;
+if j ~= 1
+    ButtonName = questdlg('How to proceed?', ...
+        'RUN Management', ...
+        'New', 'Merge', 'New');
+    switch ButtonName
+        case 'Merge'
+            handles.AQ_dir = uigetdir([handles.Enfriada_dir filesep], 'Pick a RUN Directory');
+            merg = 1;
+        case 'New'
+            handles.AQ_dir = [handles.Enfriada_dir filesep 'RUN' a];
+            [Succ, Message] = mkdir(handles.AQ_dir);
+            if ~Succ
+                warndlg(Message,'ZarTES v1.0');
+                msgbox('Acquisition Aborted','ZarTES v1.0');
+                return;
+            end
+    end
+else
+    handles.AQ_dir = [handles.Enfriada_dir filesep 'RUN' a];
+    [Succ, Message] = mkdir(handles.AQ_dir);
+    if ~Succ
+        warndlg(Message,'ZarTES v1.0');
+        msgbox('Acquisition Aborted','ZarTES v1.0');
+        return;
+    end
 end
 
 prompt = {'Insert a comment'};
@@ -52,25 +77,39 @@ end
 
 if exist([handles.Enfriada_dir filesep ExcelEnfriada],'file')
     num = xlsread([handles.Enfriada_dir filesep ExcelEnfriada],2);
-    d = {str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
-    xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
+    if ~merg
+        d = {str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
+        xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
+    else   % Añadir la parte del mergin
+        
+    end
 else
-    d = {'ID_Enfriada','ID_SQUID','ID_TES','Date'};
+    d = {'ID_Enfriada','ID_SQUID','ID_TES','Date','Rsh','L','invMf','invMin'};
     xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 1, 'A1')
     d = {'ID_RUN','FieldB pos(A)','FieldB neg(A)','Comment'; str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
     xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2, 'A1')
 end
 
-IbvaluesConf('Save_Conf_Callback',handles.Save_Conf,handles.AQ_dir,guidata(handles.Save_Conf));
+if ~merg
+    IbvaluesConf('Save_Conf_Callback',handles.Save_Conf,handles.AQ_dir,guidata(handles.Save_Conf));
+    save([handles.AQ_dir filesep 'Conf_Acq.mat'],'Conf');
+else  % Añadir la parte del mergin
+    
+end
 
-save([handles.AQ_dir filesep 'Conf_Acq.mat'],'Conf');
 circuit = TES_Circuit;
 circuit = circuit.Update(SetupTES.Circuit);
 save([handles.AQ_dir filesep 'circuit.mat'],'circuit');
 
+fid = fopen([handles.AQ_dir filesep 'Readme.txt'],'a+');
+fprintf(fid,[answer{1} '\n']);
+fclose(fid);
+   
+
+
 % Generamos las carpetas donde iran las medidas
 
-PathStr = {'Barrido_Campo';'ICs';'IVs';'Negative_Bias'};
+PathStr = {'Barrido_Campo';'Barrido_Campo';'IVs';'Negative_Bias'};
 for i = 1:length(PathStr)
     if i == 1 && ~Conf.FieldScan.On % Solo se genera el directorio si se necesita
         continue;
@@ -85,8 +124,10 @@ for i = 1:length(PathStr)
             ~Conf.TF.Noise.DSA.On || ~Conf.TF.Noise.PXI.On || ~Conf.Pulse.PXI.On || ~Conf.Spectrum.PXI.On)
         continue;
     end
+    PathName = PathStr{i};
+    PathName(PathStr{i} == '_') = ' ';
         
-    eval(['handles.' PathStr{i} '_Dir = [handles.AQ_dir filesep ''' PathStr{i} ''' filesep];']);
+    eval(['handles.' PathStr{i} '_Dir = [handles.AQ_dir filesep ''' PathName ''' filesep];']);
     if exist(eval(['handles.' PathStr{i} '_Dir']),'dir') == 0
         [Succ, Message] = mkdir(eval(['handles.' PathStr{i} '_Dir']));
         if ~Succ
@@ -97,19 +138,36 @@ for i = 1:length(PathStr)
     end
 end
 
+% Por ahora el campo óptimo es simétrico siempre y a una corriente fija
+% para todas las temperaturas.
 
-for NSummary = 1:size(Conf.Summary,1)
+SetupTES.CurSource_I_Units.Value = 1;
+SetupTES.CurSource_I.String = num2str(Conf.BField.P*1e-6);  % Se pasan las corrientes en amperios
+SetupTES.CurSource_Set_I.Value = 1;
+SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
+SetupTES.CurSource_OnOff.Value = 1;
+SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
+
+
+for NSummary = 1:size(Conf.Summary,1)          
+    
+    % Verificar que todas las cosas se han medido en cada temperatura para
+    % pasar a la siguiente
     
     Temp = Conf.Summary{NSummary,1};    
     AjustarTemperatura(Temp,Conf,SetupTES,handles)
     
-    if strcmp(Conf.Summary{NSummary,2},'Yes')    % Si se mide o on             
-        [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles);       
+    if strcmp(Conf.Summary{NSummary,2},'Yes')    % Si se mide o on 
+        handles.Summary_Table.Data{NSummary,2} = 'Running';        
+        [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles);  
+        handles.Summary_Table.Data{NSummary,2} = 'Done'; 
         Conf.Summary{NSummary,2} = 'Done';
     end
     
     if strcmp(Conf.Summary{NSummary,3},'Yes')    % Si se mide o on
+        handles.Summary_Table.Data{NSummary,3} = 'Running'; 
         Bfield = FieldScan(Temp,Conf,SetupTES,handles);  % Se obtiene Bfield.p y Bfield.n
+        handles.Summary_Table.Data{NSummary,3} = 'Done'; 
         Conf.Summary{NSummary,3} = 'Done';
     elseif ~Conf.BField.FromScan
         Bfield.p = Conf.BField.P;
@@ -120,21 +178,26 @@ for NSummary = 1:size(Conf.Summary,1)
     end
     
     if strcmp(Conf.Summary{NSummary,4},'Yes')    % Si se mide o on
-        
+        handles.Summary_Table.Data{NSummary,4} = 'Running'; 
 %         I_Criticas(Temp,Conf.BFieldIC.BVvalues,Conf,SetupTES,handles);
         I_Criticas_Carlos(Temp,Conf.BFieldIC.BVvalues,Conf,SetupTES,handles);
+        handles.Summary_Table.Data{NSummary,4} = 'Done';
         Conf.Summary{NSummary,4} = 'Done';
     end    
     
     if strcmp(Conf.Summary{NSummary,5},'Yes') && strcmp(Conf.Summary{NSummary,6},'Yes')    % Si se mide o on
         Opt = 3; % Zw y Ruido (3)
+        handles.Summary_Table.Data{NSummary,5} = 'Running';
+        handles.Summary_Table.Data{NSummary,6} = 'Running'; 
     elseif strcmp(Conf.Summary{NSummary,5},'Yes') && strcmp(Conf.Summary{NSummary,6},'No')
         Opt = 1; % Sólo Zw (1)
+        handles.Summary_Table.Data{NSummary,5} = 'Running'; 
     elseif strcmp(Conf.Summary{NSummary,5},'No') && strcmp(Conf.Summary{NSummary,6},'Yes')
         Opt = 2; % Sólo Ruido (2)
+        handles.Summary_Table.Data{NSummary,6} = 'Running'; 
     end
     if strcmp(Conf.Summary{NSummary,5},'Yes') || strcmp(Conf.Summary{NSummary,6},'Yes')
-        
+                        
         handles.Positive_Path = [handles.AQ_dir filesep num2str(Temp*1e3,'%1.1f') 'mK' filesep];
         if exist(handles.Positive_Path,'dir') == 0
             [Succ, Message] = mkdir(handles.Positive_Path);
@@ -159,23 +222,30 @@ for NSummary = 1:size(Conf.Summary,1)
         IZvalues.N = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
         
         IZvalues.P(IZvalues.P > 500) = 500;
+        IZvalues.P(IZvalues.P < 0) = [];
         IZvalues.N(IZvalues.N < -500) = -500;
+        IZvalues.N(IZvalues.N > 0) = [];
         
         Medir_Zw_Noise(Temp,Opt,IZvalues.P,handles.Positive_Path,Conf,SetupTES,handles);
         Medir_Zw_Noise(Temp,Opt,IZvalues.N,handles.Negative_Path,Conf,SetupTES,handles);
         
         if strcmp(Conf.Summary{NSummary,5},'Yes') && strcmp(Conf.Summary{NSummary,6},'Yes')    % Si se mide o on
+            handles.Summary_Table.Data{NSummary,5} = 'Done';
+            handles.Summary_Table.Data{NSummary,6} = 'Done';
             Conf.Summary{NSummary,5} = 'Done';
             Conf.Summary{NSummary,6} = 'Done';
         elseif strcmp(Conf.Summary{NSummary,5},'Yes') && strcmp(Conf.Summary{NSummary,6},'No')
             Conf.Summary{NSummary,5} = 'Done';
+            handles.Summary_Table.Data{NSummary,5} = 'Done';
         elseif strcmp(Conf.Summary{NSummary,5},'No') && strcmp(Conf.Summary{NSummary,6},'Yes')
             Conf.Summary{NSummary,6} = 'Done';
+            handles.Summary_Table.Data{NSummary,6} = 'Done';
         end
     end
     
     
     if strcmp(Conf.Summary{NSummary,7},'Yes')    % Si se mide o on
+        handles.Summary_Table.Data{NSummary,7} = 'Running';
         handles.Positive_Pulse_Path = [handles.AQ_dir filesep num2str(Temp*1e3,'%1.1f') 'mK' filesep 'Pulsos' filesep];
         if exist(handles.Positive_Pulse_Path,'dir') == 0
             [Succ, Message] = mkdir(handles.Positive_Pulse_Path);
@@ -195,6 +265,7 @@ for NSummary = 1:size(Conf.Summary,1)
         Medir_Pulsos(Temp,Conf,IZvalues.P,handles.Positive_Path,SetupTES,handles);
         Medir_Pulsos(Temp,Conf,IZvalues.N,handles.Negative_Pulse_Path,SetupTES,handles);
         Conf.Summary{NSummary,7} = 'Done';
+        handles.Summary_Table.Data{NSummary,7} = 'Done';
         
         %         %%%% Falta la parte de medir N Pulsos a un Rn dado
         %         IZvalues.P = BuildIbiasFromRp(IVsetP,Conf.Pulse.PXI.Rn);
@@ -203,6 +274,35 @@ for NSummary = 1:size(Conf.Summary,1)
     end
     
 end
+
+% Ponemos la temperatura a la que dejamos la mixing
+
+FinalT = str2double(handles.FinalMCT.String);
+
+SetupTES.vi_IGHFrontPanel.FPState = 4;
+pause(0.1)
+SetupTES.vi_IGHFrontPanel.FPState = 1;
+pause(0.1)
+SetupTES.vi_IGHFrontPanel.SetControlValue('Settings',1);
+pause(1.5)
+SetupTES.vi_IGHChangeSettings.SetControlValue('Set Point Dialog',1);
+pause(0.1)
+while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
+    pause(0.1);
+end
+SetupTES.vi_PromptForT.SetControlValue('Set T',FinalT)%
+pause(0.4)
+SetupTES.vi_PromptForT.SetControlValue('Set T',FinalT)%
+pause(0.1)
+SetupTES.vi_PromptForT.SetControlValue('OK',1)
+pause(0.1)
+while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
+    pause(0.1);
+end
+stop(SetupTES.timer_T);
+start(SetupTES.timer_T);
+msgbox('Acquisition complete!','ZarTES v1.0')
+
 
 function AjustarTemperatura(Temp,Conf,SetupTES,handles)
 
@@ -249,11 +349,32 @@ while c
         SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
     catch
     end
-    
-    if nanmedian(Error) < 0.4  % Cuando la temperatura alcanza un valor con un error relativo menor al 0.4%
-        waitbar(1,h,'5 mins remaining for safety');
-        pause(60*5);
+    if nanmedian(Error) < 0.05
         c = false;
+    else
+        if nanmedian(Error) < 0.4  % Cuando la temperatura alcanza un valor con un error relativo menor al 0.4%
+            h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name','ZarTES v1.0');
+            pause(1);
+            tfin = 70;
+            tic;
+            waitbar(0/tfin,h,'5 mins remaining for safety');
+            t  = toc;
+            while tfin-t > 0       
+                if ishandle(h)
+                    mins = floor((tfin-t)/60);
+                    secs = ((tfin-t)/60-floor((tfin-t)/60))*60;
+                    if mins ~= 0
+                        waitbar(t/tfin,h,[num2str(mins,'%1.0f') ' min ' num2str(secs,'%1.0f') ' s remaining for safety']);
+                    else
+                        waitbar(t/tfin,h,[num2str(secs,'%1.0f') ' s remaining for safety']);
+                    end
+                end            
+                %                 pause(60*5);
+                pause(0.5);
+                t  = toc;
+            end
+            c = false;
+        end
     end
     j = max(mod(j+1,10),1);
     if ishandle(h)
@@ -396,6 +517,7 @@ for IB = 1:2 % Positive 1, Negative 2
     clear data;
     data(:,2) = IVmeasure.ibias;
     data(:,4) = IVmeasure.vout-IVmeasure.vout(end);  % Centramos la IV en 0,0.
+    IVmeasure.vout = data(:,4)';
     
     if IBvals(1) > 0
         pol = 'p';
@@ -426,9 +548,9 @@ for IB = 1:2 % Positive 1, Negative 2
     %     IVmeasure.vout = IVmeasure.vout-IVmeasure.vout(end);
     
     IVCurveSet = IVCurveSet.Update(IVmeasure);
-    TESDATA.circuit.mN = nanmedian(diff(IVmeasure.vout(1:3))./diff(IVmeasure.ibias(1:3)));
-    TESDATA.circuit.mS = nanmedian(diff(IVmeasure.vout(end-3:end))./diff(IVmeasure.ibias(end-3:end)));
-    TESDATA.circuit = TESDATA.circuit.RnRparCalc;
+%     TESDATA.circuit.mN = nanmedian(diff(IVmeasure.vout(1:3))./diff(IVmeasure.ibias(1:3)));
+%     TESDATA.circuit.mS = nanmedian(diff(IVmeasure.vout(end-3:end))./diff(IVmeasure.ibias(end-3:end)));
+%     TESDATA.circuit = TESDATA.circuit.RnRparCalc;
     TESDATA.TES.n = [];
     if IB == 1
         IVsetP = IVCurveSet.GetIVTES(TESDATA);
@@ -439,7 +561,7 @@ for IB = 1:2 % Positive 1, Negative 2
         IVsetN.IVsetPath = handles.IVs_Dir;
         IVsetP.range = [Ibvalues.n 0];
     end
-    
+    clear IVmeasure;
 end
 
 function OptField = FieldScan(Temp,Conf,SetupTES,handles)
@@ -639,6 +761,10 @@ save([handles.Barrido_Campo_Dir file],'B','V');
 function I_Criticas_Carlos(Temp,BfieldValues,Conf,SetupTES,handles)
 
 figure(SetupTES.SetupTES)
+cla(SetupTES.Result_Axes);
+hold(SetupTES.Result_Axes,'on');
+xlabel(SetupTES.Result_Axes,'Bfield(uA)');
+ylabel(SetupTES.Result_Axes,'Ibias(uA)');
 % Ponemos el valor de corriente en la fuente
 SetupTES.CurSource_I_Units.Value = 1;
 SetupTES.CurSource_I.String = num2str(BfieldValues(1)*1e-6);  % Se pasan las corrientes en amperios
@@ -657,7 +783,7 @@ step = 0.1;
 for i = 1:length(BfieldValues)
     
     SetupTES.CurSource_I_Units.Value = 1;
-    SetupTES.CurSource_I.String = num2str(BfieldValues(1)*1e-6);  % Se pasan las corrientes en amperios
+    SetupTES.CurSource_I.String = num2str(BfieldValues(i)*1e-6);  % Se pasan las corrientes en amperios
     SetupTES.CurSource_Set_I.Value = 1;
     SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
     pause(1);
@@ -674,14 +800,18 @@ for i = 1:length(BfieldValues)
         tempvalues = 0:step:500;%%%array de barrido en corriente
         ind_p = find(tempvalues <= abs(ic0_p));
         ind_n = find(tempvalues <= abs(ic0_n));
-        i0 = [ind_p(end) ind_n(end)];%%%Calculamos el índice que corresponde a la corriente para empezar el barrido
+        try
+            i0 = [ind_p(end) ind_n(end)];%%%Calculamos el índice que corresponde a la corriente para empezar el barrido
+        catch
+            i0 = [1 1];
+        end
     end
     try
         aux = measure_IC_Pair_autom(step,i0,BfieldValues(i),SetupTES);
         ICpairs(i).p = aux.p;
         ICpairs(i).n = aux.n;
         ICpairs(i).B = BfieldValues(i);
-        step = max(0.1,aux.p/20);%por si es cero.
+        step = min(2,max(0.1,aux.p/20));%por si es cero.
     catch
         warning('error de lectura')
         pause(1)
@@ -690,12 +820,19 @@ for i = 1:length(BfieldValues)
         ICpairs(i).B = BfieldValues(i);
         %continue;
     end
-    FileStr = ['ICpairs' num2str(Temp*1e3) 'mK.mat'];
-    save([handles.Barrido_Campo_Dir FileStr],'ICpairs');
-    hf = findobj(SetupTES.Result_Axes,'DisplayName','Final');
+    
+    hf = findobj(SetupTES.Result_Axes,'DisplayName','Temporal');
     delete(hf);
-    plot(SetupTES.Result_Axes,BfieldValues(1:i),[ICpairs.p],'o-',BfieldValues(1:i),[ICpairs.n],'o-','DisplayName','Final');
+    HL = findobj(SetupTES.Result_Axes,'DisplayName','Final_Temporal');
+    delete(HL);
+    plot(SetupTES.Result_Axes,BfieldValues(1:i),[ICpairs.p],'ro-',BfieldValues(1:i),[ICpairs.n],'ro-','DisplayName','Final');
 end
+FileStr = ['ICpairs' num2str(Temp*1e3,'%1.1f') 'mK.mat'];
+save([handles.ICs_Dir FileStr],'ICpairs');
+data(:,1) = ICpairs(i).B;
+data(:,2) = ICpairs(i).p;
+data(:,3) = ICpairs(i).n;
+save([handles.ICs_Dir 'ICpairs' num2str(Temp*1e3,'%1.1f') '.txt'],'data','-ascii');
 
 SetupTES.CurSource_I_Units.Value = 1;
 SetupTES.CurSource_I.String = num2str(0*1e-6);  % Se pasan las corrientes en amperios
@@ -734,10 +871,10 @@ for jj = 1:2 % barrido positivo y negativo
     IV.vc(1) = v.Value;
     vout1 = IV.vc(1);
     
-    HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
-    delete(HL);
+%     HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
+%     delete(HL);
     DataName = 'Temporal';
-    plot(SetupTES.Result_Axes,B,IV.ic(1),'o-','DisplayName',DataName);
+    plot(SetupTES.Result_Axes,B,IV.ic(1),'bo-','DisplayName',DataName);
     
     for i = i0(jj)+1:length(Ivalues)
         % Set Ibias to zero value in order to impose TES's Superconductor State
@@ -752,10 +889,10 @@ for jj = 1:2 % barrido positivo y negativo
         IV.vc(i) = v.Value;
         vout2 = IV.vc(i);
     
-        HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
-        delete(HL);
+%         HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
+%         delete(HL);
         DataName = 'Temporal';
-        plot(SetupTES.Result_Axes,B,IV.ic(i),'o-','DisplayName',DataName);    
+        plot(SetupTES.Result_Axes,B,IV.ic(i),'bo-','DisplayName',DataName);    
         
         slope = (vout2 -vout1)/((Ivalues(i)-Ivalues(i-1))*1e-6)/Rf;
         if slope < THR
@@ -774,6 +911,9 @@ for jj = 1:2 % barrido positivo y negativo
     elseif jj == 2
         ICpair.n = IV.ic(end-1);
     end
+    HL = findobj(SetupTES.Result_Axes,'DisplayName','Temporal');
+    delete(HL);
+    plot(SetupTES.Result_Axes,B,IV.ic(end-1),'ro-','DisplayName','Final_Temporal');  
 end
 
 function I_Criticas(Temp,BfieldValues,Conf,SetupTES,handles)
@@ -1016,6 +1156,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
     
     for i = 1:length(IZvalues)
         % For para cada IZvalue (Ibias)
+        try
         
         % Reseteamos el lazo
         % Reset Closed Loop
@@ -1036,6 +1177,9 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
         SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
         pause(0.1);
         Itxt = SetupTES.SQ_realIbias.String;
+        catch
+            continue;
+        end
         
         if Opt == 1 || Opt == 3 % Se mide el Zw
             
@@ -1048,7 +1192,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
                             IbvaluesConf('DSA_Input_Amp_Callback',handles.DSA_Input_Amp,[],handles);
                             Amp = round(str2double(handles.DSA_Input_Amp.String));
                         else
-                            Amp = round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String));
+                            Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)));
                         end
                         SetupTES.DSA = SetupTES.DSA.SineSweeptMode(Amp);
                         
@@ -1061,7 +1205,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
                             IbvaluesConf('DSA_Input_Amp_Callback',handles.DSA_Input_Amp,[],handles);
                             Amp = round(str2double(handles.DSA_Input_Amp.String));
                         else
-                            Amp = round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String));
+                            Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)));
                         end
                         SetupTES.DSA = SetupTES.DSA.FixedSine(Amp,Freq);
                         
@@ -1071,7 +1215,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
                             IbvaluesConf('DSA_Input_Amp_Callback',handles.DSA_Input_Amp,[],handles);
                             Amp = round(str2double(handles.DSA_Input_Amp.String));
                         else
-                            Amp = round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String));
+                            Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)));
                         end
                         SetupTES.DSA = SetupTES.DSA.WhiteNoise(Amp);
                         
@@ -1108,7 +1252,7 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
     
     for i = 1:length(IZvalues)
         % For para cada IZvalue (Ibias)
-        
+        try
         % Reseteamos el lazo
         % Reset Closed Loop
         SetupTES.SQ_Reset_Closed_Loop.Value = 1;
@@ -1128,6 +1272,9 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
         SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
         pause(0.1);
         Itxt = SetupTES.SQ_realIbias.String;
+        catch
+            continue;
+        end
         
         % Reseteamos el lazo
         % Reset Closed Loop
@@ -1142,7 +1289,7 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
                 
                 if handles.PXI_Input_Amp_Units == 4 % Porcentaje de Ibias
                     %                 Ireal = SetupTES.Squid.Read_Current_Value; % Devuelve el valor siempre en uA
-                    excitacion = round(IZvalues(i)*1e1*str2double(handles.PXI_Input_Amp.String));
+                    excitacion = abs(round(IZvalues(i)*1e1*str2double(handles.PXI_Input_Amp.String)));
                 else
                     handles.PXI_Input_Amp_Units.Value = 2;
                     excitacion = round(str2double(handles.PXI_Input_Amp.String));

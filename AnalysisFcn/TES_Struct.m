@@ -14,7 +14,7 @@ classdef TES_Struct
         PP;
         PN;
         TES;
-        JohnsonExcess = [1e4 4.5e4];
+        JohnsonExcess = [2e2 4.5e4];
         PhononExcess = [1e2 1e3];
         rtesLB = 0.05;
         rtesUB = 0.9;
@@ -82,7 +82,7 @@ classdef TES_Struct
         
         function model = BuildPTbModel(varargin)
             
-            if nargin == 0
+            if nargin == 1
                 model.nombre = 'default';
                 model.function = @(p,T)(p(1)*T.^p(2)+p(3));
                 model.description = 'p(1)=-K p(2)=n p(3)=P0=k*Tc^n';
@@ -291,6 +291,9 @@ classdef TES_Struct
                         
                     elseif isstruct(model)
                         
+                        
+                        
+                        
                         X0 = model.X0;
                         LB = model.LB;
                         XDATA = Tbath;
@@ -309,7 +312,7 @@ classdef TES_Struct
                         R = corrcoef([obj.fitP(fit,XDATA,model)' Paux'*1e12]);
                         R2 = R(1,2)^2;
                         eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
-                        eval(['obj.Gset' StrRange{k} '(jj).n_CI = Gaux(jj).n_CI;']);
+                        eval(['obj.Gset' StrRange{k} '(jj).n_CI = Gaux(jj).n_CI;']);  
                         eval(['obj.Gset' StrRange{k} '(jj).K = Gaux(jj).K;']);
                         eval(['obj.Gset' StrRange{k} '(jj).K_CI = Gaux(jj).K_CI;']);
                         eval(['obj.Gset' StrRange{k} '(jj).Tc = Gaux(jj).Tc;']);
@@ -319,8 +322,27 @@ classdef TES_Struct
                         eval(['obj.Gset' StrRange{k} '(jj).G100 = Gaux(jj).G100;']);
                         eval(['obj.Gset' StrRange{k} '(jj).ERP = ERP;']);
                         eval(['obj.Gset' StrRange{k} '(jj).R2 = R2;']);
+                        
                         plot(ax,Tbath,obj.fitP(fit,XDATA,model),'LineStyle','-','Color',c(jj,:),'linewidth',1,'DisplayName',IVTESset(i).file,...
                             'ButtonDownFcn',{@Identify_Origin_PT},'UserData',{k;jj;i;obj},'Visible','off');
+                        
+%                         model = obj.BuildPTbModel;
+%                         X0 = model.X0;
+%                         LB = model.LB;
+%                         XDATA = Tbath;                        
+%                         opts = optimset('Display','off');
+%                         fitfun = @(x,y)obj.fitP(x,y,model);                        
+%                         [fit,~,aux2,~,~,~,auxJ] = lsqcurvefit(fitfun,X0,XDATA,Paux*1e12,LB,[],opts);
+%                         ci = nlparci(fit,aux2,'jacobian',auxJ); %%%confidence intervals.
+%                         
+%                         CI = diff(ci');
+%                         fit_CI = [fit; CI];
+%                         Gaux2(jj) = obj.GetGfromFit(fit_CI',model);%#ok<AGROW,
+%                         eval(['obj.Gset' StrRange{k} '(jj).K = Gaux2(jj).K;']);
+%                         eval(['obj.Gset' StrRange{k} '(jj).K_CI = Gaux2(jj).K_CI;']);
+%                         model = obj.BuildPTbModel('GTcdirect');
+                        
+                        
                         
                     end
                     
@@ -374,9 +396,9 @@ classdef TES_Struct
                 param.P0_CI = fit(3,2);
                 param.Tc = (param.P0/param.K)^(1/param.n);
                 
-                param.Tc_CI = sqrt( (((param.P0*(-param.P0/param.K)^(1/param.n - 1))/(param.K^2*param.n))*param.K_CI(1))^2 ...
-                + ((-(log(-param.P0/param.K)*(-param.P0/param.K)^(1/param.n))/param.n^2)*param.n_CI(2))^2 ...
-                + ((-(-param.P0/param.K)^(1/param.n - 1)/(param.K*param.n))*param.P0_CI(3))^2);
+                param.Tc_CI = sqrt( (((param.P0*(-param.P0/param.K)^(1/param.n - 1))/(param.K^2*param.n))*param.K_CI)^2 ...
+                + ((-(log(-param.P0/param.K)*(-param.P0/param.K)^(1/param.n))/param.n^2)*param.n_CI)^2 ...
+                + ((-(-param.P0/param.K)^(1/param.n - 1)/(param.K*param.n))*param.P0_CI)^2);
                 
                 param.G = param.n*param.K*param.Tc^(param.n-1);
                 
@@ -397,10 +419,10 @@ classdef TES_Struct
                         param.P0 = fit(3,1);
                         param.P0_CI = fit(3,2);
                         
-                        param.Tc = (param.P0/param.K)^(1/param.n);
-                        param.Tc_CI = sqrt( (((param.P0*(-param.P0/param.K)^(1/param.n - 1))/(param.K^2*param.n))*param.K_CI(1))^2 ...
-                            + ((-(log(-param.P0/param.K)*(-param.P0/param.K)^(1/param.n))/param.n^2)*param.n_CI(2))^2 ...
-                            + ((-(-param.P0/param.K)^(1/param.n - 1)/(param.K*param.n))*param.P0_CI(3))^2);
+                        param.Tc = (param.P0/param.K)^(1/param.n);                           
+                        param.Tc_CI = sqrt( (((param.P0*(-param.P0/param.K)^(1/param.n - 1))/(param.K^2*param.n))*param.K_CI)^2 ...
+                            + ((-(log(-param.P0/param.K)*(-param.P0/param.K)^(1/param.n))/param.n^2)*param.n_CI)^2 ...
+                            + ((-(-param.P0/param.K)^(1/param.n - 1)/(param.K*param.n))*param.P0_CI)^2);
                         
                         param.G = param.n*param.K*param.Tc^(param.n-1);
                         param.G_CI = sqrt( ((param.K*param.Tc^(param.n - 1) + param.K*param.Tc^(param.n - 1)*param.n*log(param.Tc))*param.n_CI)^2 ...
@@ -459,9 +481,9 @@ classdef TES_Struct
                         param.P0_CI = fit(3,2);
                         
                         param.Tc = (param.P0/param.K)^(1/param.n);
-                        param.Tc_CI = sqrt( (((param.P0*(-param.P0/param.K)^(1/param.n - 1))/(param.K^2*param.n))*param.K_CI(1))^2 ...
-                            + ((-(log(-param.P0/param.K)*(-param.P0/param.K)^(1/param.n))/param.n^2)*param.n_CI(2))^2 ...
-                            + ((-(-param.P0/param.K)^(1/param.n - 1)/(param.K*param.n))*param.P0_CI(3))^2);
+                        param.Tc_CI = sqrt( (((param.P0*(-param.P0/param.K)^(1/param.n - 1))/(param.K^2*param.n))*param.K_CI)^2 ...
+                            + ((-(log(-param.P0/param.K)*(-param.P0/param.K)^(1/param.n))/param.n^2)*param.n_CI)^2 ...
+                            + ((-(-param.P0/param.K)^(1/param.n - 1)/(param.K*param.n))*param.P0_CI)^2);
                         
                         param.Ic = fit(4,1);
                         param.Ic_CI = fit(4,2);
@@ -537,6 +559,7 @@ classdef TES_Struct
                         val_CI = eval(['[Gset.' StrField{j} '_CI]*' StrMultiplier{j} ';']);
                         er(j) = errorbar(h(j),rp(ind),val(ind),val_CI(ind),'color',color{k},...
                             'Visible','off','DisplayName',[StrIbias{k} ' Error Bar'],'Clipping','on');
+                        set(get(get(er(j),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                     catch
                     end
                     eval(['plot(h(j),rp(ind),val(ind),''' LineStr{k} ''','...
@@ -635,9 +658,10 @@ classdef TES_Struct
             
             answer = inputdlg(prompt,name,numlines,defaultanswer);
             if ~isempty(answer)
-                obj.TES.sides = sqrt(str2double(answer{1})*str2double(answer{2}));
-                obj.TES.hMo = str2double(answer{1});
-                obj.TES.hAu = str2double(answer{2});
+                obj.TES.sides(1) = str2double(answer{1});
+                obj.TES.sides(2) = str2double(answer{2});
+                obj.TES.hMo = str2double(answer{3});
+                obj.TES.hAu = str2double(answer{4});
             end
             
 %             prompt = {'Enter Mo thickness value:','Enter Au thickness value:'};
@@ -740,9 +764,9 @@ classdef TES_Struct
                     if k1 == 1
                         DataPath = uigetdir(IVsetPath, 'Pick a Z(w)-Ruido path containing Temperature named folders (Positive Bias)');
                     else
-                        dirIndx = strfind(obj.PP.fileNoise{1},filesep);
-                        obj.PP.fileNoise{1}(1:dirIndx(end-1))
-                        DataPath = uigetdir(obj.PP.fileNoise{1}(1:dirIndx(end-1)), 'Pick a Z(w)-Ruido path containing Temperature named folders (Negative Bias)');
+                        dirIndx = strfind(obj.PP(1).fileNoise{1},filesep);
+                        obj.PP(1).fileNoise{1}(1:dirIndx(end-1))
+                        DataPath = uigetdir(obj.PP(1).fileNoise{1}(1:dirIndx(end-1)), 'Pick a Z(w)-Ruido path containing Temperature named folders (Negative Bias)');
                     end
                     if DataPath ~= 0
                         DataPath = [DataPath filesep];
@@ -820,8 +844,11 @@ classdef TES_Struct
                             H.figure.Name = 'ZarTES v1.0';
                         end
                         thefile = strcat(dirs{i},'\',filesZ{j1});
-                        
-                        [param, ztes, fZ, ERP, R2, CI, aux1, StrModel, p0] = obj.FitZ(thefile,FreqRange);
+%                         try
+                            [param, ztes, fZ, ERP, R2, CI, aux1, StrModel, p0] = obj.FitZ(thefile,FreqRange);
+%                         catch
+%                             continue;
+%                         end
                         
                         if param.rp > obj.ZwrpUB || param.rp < obj.ZwrpLB
                             continue;
@@ -1002,7 +1029,7 @@ classdef TES_Struct
             Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
             Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
             % Buscamos si es Ibias positivos o negativos
-            if ~isempty(strfind(Path,'Negative Bias'))
+            if ~isempty(strfind(Path,'Negative Bias')) %#ok<STREMP>
                 [~,Tind] = min(abs([obj.IVsetN.Tbath]*1e3-Tbath));
                 IV = obj.IVsetN(Tind);
                 CondStr = 'N';
@@ -1030,10 +1057,13 @@ classdef TES_Struct
                 end
             catch
                 data = importdata(FileName);
-                data = data(data(:,1) >= FreqRange(1) & data(:,1) <= FreqRange(2),:);
-                tf = data(:,2)+1i*data(:,3);
-                Rth = obj.circuit.Rsh+obj.circuit.Rpar+2*pi*obj.circuit.L*data(:,1)*1i;
-                ztes = (obj.TFS.tf(obj.TFS.f >= FreqRange(1) & obj.TFS.f <= FreqRange(2))./tf-1).*Rth;
+                IndFs = find(data(:,2) ~= 0);
+                data = data(data(IndFs,1) >= FreqRange(1) & data(IndFs,1) <= FreqRange(2),:);
+                tf = data(IndFs,2)+1i*data(IndFs,3);
+                Rth = obj.circuit.Rsh+obj.circuit.Rpar+2*pi*obj.circuit.L*data(IndFs,1)*1i;
+                fS = obj.TFS.f(IndFs);
+                fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
+                ztes = (obj.TFS.tf(fS >= FreqRange(1) & fS <= FreqRange(2))./tf-1).*Rth;
             end
             
             Zinf = real(ztes(end));
@@ -1107,13 +1137,14 @@ classdef TES_Struct
             
             %%%% Modificado por Juan %%%%%
             
-            CompStr = {'>';'';'<'};
-            if eval(['Ib' CompStr{median(sign(iaux))+2} 'iaux(1:i3)'])
-                P = polyfit(iaux(i3+1:end),vaux(i3+1:end),1);
-                Vout = polyval(P,Ib);
-            else
+%             CompStr = {'>';'';'<'};
+%             if eval(['Ib' CompStr{median(sign(iaux))+2} 'iaux(1:i3)'])
+%                 P = polyfit(iaux(i3+1:end),vaux(i3+1:end),1);
+%                 Vout = polyval(P,Ib);
+%             else
                 Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
-            end
+%             end
+%             Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
             IVaux.ibias = Ib;
             IVaux.vout = Vout;
             IVaux.Tbath = IVmeasure.Tbath;
@@ -1206,25 +1237,35 @@ classdef TES_Struct
             NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
             RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./medfilt1(real(NEP),20).^2))/2/1.609e-19;
             
-            %%%Excess noise trials.
-            %%%Johnson Excess
-            findx = find(noisedata{1}(:,1) > obj.JohnsonExcess(1) & noisedata{1}(:,1) < obj.JohnsonExcess(1));
-            xdata = noisedata{1}(findx,1);
-            ydata = medfilt1(real(NEP(findx))*1e18,20);
-            if isempty(findx)||sum(ydata == Inf) %%%1Z1_23A @70mK 1er punto da error.
-                M = 0;
-            else
-                M = (lsqcurvefit(@(x,xdata) obj.noisesim(OP,x,xdata),0,xdata,ydata,[],[],optimset('Display','off')))*1e18;
-            end
-            %%%phonon Excess
-            findx = find(noisedata{1}(:,1) > obj.PhononExcess(1) & noisedata{1}(:,1) < obj.PhononExcess(2));
-            ydata = median(real(NEP(findx))*1e18);
-            if isempty(findx)||sum(ydata == inf)
-                Mph = 0;
-            else
-                ymod = median(ppval(spline(f,SimulatedNoise.NEP*1e18),noisedata{1}(findx,1)));
-                Mph = sqrt(ydata/ymod-1);
-            end
+            
+            findx = find(fNoise > 2e2 & fNoise < 10e4);
+            xdata = fNoise(findx);
+            ydata = medfilt1(NEP(findx)*1e18,40);
+            opts = optimset('Display','off');
+            maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(x,xdata,OP),[0 0],xdata,ydata,[],[],opts);
+            M = maux(2);
+            Mph = maux(1);
+            
+            
+%             %%%Excess noise trials.
+%             %%%Johnson Excess
+%             findx = find(SigNoise > obj.JohnsonExcess(1) & SigNoise < obj.JohnsonExcess(2));
+%             xdata = fNoise(findx);
+%             ydata = medfilt1(real(NEP(findx))*1e18,20);
+%             if isempty(findx)||sum(ydata == Inf) %%%1Z1_23A @70mK 1er punto da error.
+%                 M = 0;
+%             else
+%                 M = (lsqcurvefit(@(x,xdata) obj.fitnoise(OP,x,xdata),0,xdata,ydata,[],[],optimset('Display','off')))*1e18;
+%             end
+%             %%%phonon Excess
+%             findx = find(SigNoise > obj.PhononExcess(1) & SigNoise < obj.PhononExcess(2));
+%             ydata = median(real(NEP(findx))*1e18);
+%             if isempty(findx)||sum(ydata == inf)
+%                 Mph = 0;
+%             else
+%                 ymod = median(ppval(spline(f,SimulatedNoise.NEP*1e18),SigNoise(findx)));
+%                 Mph = sqrt(ydata/ymod-1);
+%             end
         end
         
         function noise = noisesim(obj,OP,M,f)
@@ -1350,6 +1391,183 @@ classdef TES_Struct
             end
         end
         
+        function NEP = fitjohnson(obj,M,f,OP)
+            
+            Kb = 1.38e-23;
+            
+            
+            Circuit = obj.circuit;
+            TES = obj.TES;
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            G = TES.G;
+            T0 = TES.Tc;
+            Rn = Circuit.Rn;
+            n = TES.n;
+            
+            Rs=Circuit.Rsh;
+            Rpar=Circuit.Rpar;
+            L=Circuit.L;
+            
+            alfa=OP.ai;
+            bI=OP.bi;
+            RL=Rs+Rpar;
+            R0=OP.R0;
+            beta=(R0-Rs)/(R0+Rs);
+            %T0=OP.T0;
+            Ts=OP.Tbath;
+            P0=OP.P0;
+            I0=OP.I0;
+            V0=OP.V0;
+            L0=P0*alfa/(G*T0);
+            C=OP.C;
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            tau=C/G;
+            taueff = tau/(1+beta*L0);
+            tauI=tau/(1-L0);
+            tau_el=L/(RL+R0*(1+bI));
+            
+            t=Ts/T0;
+            F=(t^(n+2)+1)/2;%%%specular limit
+            
+            sI=-(1/(I0*R0))*(L/(tau_el*R0*L0)+(1-RL/R0)-L*tau*(2*pi*f).^2/(L0*R0)+1i*(2*pi*f)*L*tau*(1/tauI+1/tau_el)/(R0*L0)).^-1;
+            stfn=4*Kb*T0^2*G*abs(sI).^2*F*(1+M(1)^2);
+            stes=4*Kb*T0*I0^2*R0*(1+2*bI)*(1+4*pi^2*f.^2*tau^2).*abs(sI).^2/L0^2*(1+M(2)^2);
+            ssh=4*Kb*Ts*I0^2*RL*(L0-1)^2*(1+4*pi^2*f.^2*tau^2/(1-L0)^2).*abs(sI).^2/L0^2; %Load resistor Noise
+            NEP=1e18*sqrt(stes+stfn+ssh)./abs(sI);
+        end
+        
+        function OutNoise = fitnoise(obj,OP,M,f)
+            
+            % %%%funcion para tratar de ajustar el excess jhonson noise
+            % auxnoise=noisesim('irwin',TES,OP,circuit,M);
+            % ff=logspace(0,6,1000);
+            % for i=1:length(f)
+            % findx(i)= find((abs(ff-f(i)))==(min(abs(ff-f(i)))));
+            % end
+            % noise=auxnoise.sum(findx);
+            % size(noise)
+            
+            
+            %%%TES,OP,circuit
+            gamma = 0.5;
+            Kb = 1.38e-23;
+            
+            model = 'irwin';
+%             if nargin == 2
+%                 C=2.3e-15;%p220
+%                 L=77e-9;%400e-9;%inductancia. arbitrario.
+%                 G=310e-12;%1.7e-12;% p220 maria.
+%                 alfa=1;%arbitrario.
+%                 bI=0.96;%p220
+%                 n=3.2;
+%                 Rn=15e-3;%32.7e-3;%p220.
+%                 Rs=1e-3;%Rshunt.
+%                 Rpar=0.12e-3;%0.11e-3;%R parasita.
+%                 RL=Rs+Rpar;
+%                 R0=0.00000001*Rn;%pto. operacion.
+%                 %R0=0.5*Rn;
+%                 R0=Rn;
+%                 beta=(R0-Rs)/(R0+Rs);
+%                 T0=0.06;%0.42;%0.07
+%                 Ts=0.06;%0.20;
+%                 %P0=77e-15;
+%                 %I0=(P0/R0)^.5;
+%                 I0=50e-6;%1uA. deducido de valores de p220.
+%                 V0=I0*R0;%
+%                 P0=I0*V0;
+%                 L0=P0*alfa/(G*T0);
+%             else
+                TES = obj.TES;
+%                 TES=varargin{1};
+%                 OP=varargin{2};
+                Circuit = obj.circuit;
+%                 Circuit=varargin{3};
+                %C=TES.OP.C;
+                C=OP.C;
+                L=Circuit.L;
+                G=TES.G;
+                %alfa=TES.OP.ai;
+                alfa=OP.ai;
+                %bI=TES.OP.bi;
+                bI=OP.bi;
+                Rn=Circuit.Rn;
+                Rs=Circuit.Rsh;
+                Rpar=Circuit.Rpar;
+                RL=Rs+Rpar;
+                R0=OP.R0;
+                beta=(R0-Rs)/(R0+Rs);
+                %T0=OP.T0;
+                T0=TES.Tc;
+                Ts=OP.Tbath;
+                P0=OP.P0;
+                I0=OP.I0;
+                V0=OP.V0;
+                L0=P0*alfa/(G*T0);
+                n=TES.n;
+%             end
+            
+            tau=C/G;
+            taueff=tau/(1+beta*L0);
+            tauI=tau/(1-L0);
+            tau_el=L/(RL+R0*(1+bI));
+            
+            %f=1:1e6;
+            %f=logspace(0,6,1000);
+            if strcmp(model,'wouter')
+                %%%ecuaciones 2.25-2.27 Tesis de Wouter.
+                i_ph=sqrt(4*gamma*Kb*T0^2*G)*alfa*I0*R0./(G*T0*(R0+Rs)*(1+beta*L0)*sqrt(1+4*pi^2*taueff^2.*f.^2));
+                i_jo=sqrt(4*Kb*T0*R0)*sqrt(1+4*pi^2*tau^2.*f.^2)./((R0+Rs)*(1+beta*L0)*sqrt(1+4*pi^2*taueff^2.*f.^2))*(1+M^2);
+                i_sh=sqrt(4*Kb*Ts*Rs)*sqrt((1-L0)^2+4*pi^2*tau^2.*f.^2)./((R0+Rs)*(1+beta*L0)*sqrt(1+4*pi^2*taueff^2.*f.^2));%%%
+                noise.ph=i_ph; noise.jo=i_jo;noise.sh=i_sh; noise.sum=i_ph+i_jo+i_sh;
+                
+            elseif strcmp(model,'irwin')
+                %%% ecuaciones capitulo Irwin
+                
+                sI=-(1/(I0*R0))*(L/(tau_el*R0*L0)+(1-RL/R0)-L*tau*(2*pi*f).^2/(L0*R0)+1i*(2*pi*f)*L*tau*(1/tauI+1/tau_el)/(R0*L0)).^-1;%funcion de transferencia.
+                
+                t=Ts/T0;
+                %n=3.1;
+                %F=t^(n+1)*(t^(n+2)+1)/2;%F de boyle y rogers. n= exponente de la ley de P(T). El primer factor viene de la pag22 del cap de Irwin.
+                %F=t^(n+1)*(n+1)*(t^(2*n+3)-1)/((2*n+3)*(t^(n+1)-1));%F de Mather. La
+                %diferencia entre las dos fórmulas es menor del 1%.
+                F=(t^(n+2)+1)/2;%%%specular limit. OJO! la expresion que usaba de Irwin no tiende a 1/2!!!
+                stfn=4*Kb*T0^2*G*abs(sI).^2*F*1;%(1+M(2)^2);%Thermal Fluctuation Noise
+                ssh=4*Kb*Ts*I0^2*RL*(L0-1)^2*(1+4*pi^2*f.^2*tau^2/(1-L0)^2).*abs(sI).^2/L0^2; %Load resistor Noise
+                %M=1.8;
+                stes=4*Kb*T0*I0^2*R0*(1+2*bI)*(1+4*pi^2*f.^2*tau^2).*abs(sI).^2/L0^2*(1+M(1)^2);%%%Johnson noise at TES.
+                smax=4*Kb*T0^2*G.*abs(sI).^2;
+                sfaser=0;%21/(2*pi^2)*((6.626e-34)^2/(1.602e-19)^2)*(10e-9)*P0/R0^2/(2.25e-8)/(1.38e-23*T0);%%%eq22 faser
+                
+                
+                % NEP=sqrt(stfn+ssh+stes)./abs(sI);
+                % Res=2.35/sqrt(trapz(f,1./NEP.^2))/2/1.609e-19;%resolución en eV. Tesis Wouter (2.37).
+                % M=1.;
+                
+                %stes=stes*M^2;
+                i_ph=sqrt(stfn);
+                i_jo=sqrt(stes);
+                i_sh=sqrt(ssh);
+                %G*5e-8
+                %(n*TES.K*Ts.^n)*5e-6
+                i_temp=(n*TES.K*Ts.^n)*0e-6*abs(sI);%%%ruido en Tbath.(5e-4=200uK, 5e-5=20uK, 5e-6=2uK)
+                %NEP=sqrt(smax+ssh+stes)./abs(sI);%%%Si ajusto s�lo Mjo forzando Mph para stfn=smax.
+                NEP=sqrt(stfn+ssh+stes)./abs(sI);
+                
+                i_squid=3e-12;
+                noise.ph=i_ph;noise.jo=i_jo;noise.sh=i_sh;noise.sum=sqrt(smax+stes+ssh+i_temp.^2+sfaser+i_squid^2);%noise.sum=i_ph+i_jo+i_sh;
+                noise.sI=abs(sI);
+                noise.NEP=NEP;
+                noise.max=sqrt(smax);
+                %noise.Res=Res;
+                noise.tbath=i_temp;
+                OutNoise=noise.NEP*1e18;
+            else
+                error('no valid model')
+            end
+        end
+        
         function Ites = V2I(obj,vout)
             % Function to convert Vout values to Ites
             
@@ -1437,7 +1655,7 @@ classdef TES_Struct
                 hAu = obj.TES.hAu;
 %                 hMo = 55e-9; hAu = 340e-9; %hAu = 1.5e-6;
                 %CN = (gammas.*rhoAs)*([hMo ;hAu]*sides.^2).*TES.Tc; %%%Calculo directo
-                CN = (gammas.*rhoAs).*([hMo hAu].*sides.^2).*obj.TES.Tc; %%%calculo de cada contribucion por separado.
+                CN = (gammas.*rhoAs).*([hMo hAu].*sides(1)*sides(2)).*obj.TES.Tc; %%%calculo de cada contribucion por separado.
                 CN = sum(CN);
                 rpaux = 0.1:0.01:0.9;
             end
@@ -1456,6 +1674,9 @@ classdef TES_Struct
             
             StrRange = {'P';'N'};
             ind = 1;
+            
+            colors = distinguishable_colors((length(obj.PP)+length(obj.PN)));
+            ind_color = 1;
             for k = 1:2
                 if isempty(eval(['obj.P' StrRange{k} '.Tbath']))
                     continue;
@@ -1472,7 +1693,7 @@ classdef TES_Struct
                 else
                     h = fig.subplots;
                 end
-                for i = 1:length(P)
+                for i = 1:length(P)                                        
                     if mod(i,2)
                         MarkerStr(i) = {'.-'};
                     else
@@ -1501,13 +1722,14 @@ classdef TES_Struct
                         eval(['hold(h(' num2str(j) '),''on'');']);
                         try
                             eval(['er(ind) = errorbar(h(' num2str(j) '),'...
-                                DataStr{j} ',' DataStr_CI{j} ',''color'',colors{k},''Visible'',''' errorOpt ''',''DisplayName'','''...
+                                DataStr{j} ',' DataStr_CI{j} ',''color'',[colors(ind_color,:)],''Visible'',''' errorOpt ''',''DisplayName'','''...
                                 NameStr ' Error Bar'',''Clipping'',''on'');']);
+                            set(get(get(er(ind),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         catch
                         end
                         try
                         eval(['h_ax(' num2str(i) ',' num2str(j) ') = ' PlotStr{j} '(h(' num2str(j) '),' DataStr{j} ...
-                            ',''' MarkerStr{i} ''',''color'',colors{k},''linewidth'',LW1,''markersize'',MS,''DisplayName'',''' NameStr ''''...
+                            ',''' MarkerStr{i} ''',''color'',[colors(ind_color,:)],''linewidth'',LW1,''markersize'',MS,''DisplayName'',''' NameStr ''''...
                             ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}]);']);
                         eval(['set(h(' num2str(j) '),''fontsize'',11,''fontweight'',''bold'');']);
                         eval(['axis(h(' num2str(j) '),''tight'');']);
@@ -1516,9 +1738,11 @@ classdef TES_Struct
                         try
                             eval(['erbad(ind) = errorbar(h(' num2str(j) '),' DataStrBad{j} ',' DataStrBad_CI{j} ',''Visible'',''off'',''color'',[1 1 1]*160/255,'...
                                 '''linestyle'',''none'',''DisplayName'',''Filtered Error Bar'',''Clipping'',''on'');']);
+                            set(get(get(erbad(ind),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                             eval(['h_bad(ind) = ' PlotStr{j} '(h(' num2str(j) '),' DataStrBad{j} ...
                                 ',''' MarkerStr{i} ''',''color'',[1 1 1]*160/255,''markersize'',MS,''DisplayName'',''Filtered'''...
                                 ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}],''Visible'',''off'',''linestyle'',''none'');']);                                                       
+                            set(get(get(h_bad(ind),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         catch
                         end                        
                         
@@ -1526,14 +1750,18 @@ classdef TES_Struct
                         eval(['ylabel(h(' num2str(j) '),''' YLabels{j} ''',''fontsize'',11,''fontweight'',''bold'');']);
                         ind = ind+1;
                     end
+                    ind_color = ind_color+1;
                 end
                 
                 if ~isfield(fig,'subplots')
-                    plot(h(4),0.1:0.01:0.9,1./(0.1:0.01:0.9)-1,'r','linewidth',2,'DisplayName','Beta^{teo}');
+                    teob = plot(h(4),0.1:0.01:0.9,1./(0.1:0.01:0.9)-1,'-.r','linewidth',2,'DisplayName','Beta^{teo}');
+                    set(get(get(teob,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                     set(h([2 4]),'YScale','log');
                     if ~isempty(obj.TES.sides)
-                        plot(h(1),rpaux,CN*1e15*ones(1,length(rpaux)),'-.','color','r','linewidth',2,'DisplayName','{C_{LB}}^{teo}')
-                        plot(h(1),rpaux,2.43*CN*1e15*ones(1,length(rpaux)),'-.','color','k','linewidth',2,'DisplayName','{C_{UB}}^{teo}')
+                        teo(1) = plot(h(1),rpaux,CN*1e15*ones(1,length(rpaux)),'-.r','linewidth',2,'DisplayName','{C_{LB}}^{teo}');
+                        set(get(get(teo(1),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+                        teo(2) = plot(h(1),rpaux,2.43*CN*1e15*ones(1,length(rpaux)),'-.r','linewidth',2,'DisplayName','{C_{UB}}^{teo}');
+                        set(get(get(teo(2),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                     end
                 end
                 fig.subplots = h;
@@ -1767,8 +1995,8 @@ classdef TES_Struct
                     for i = 1:N
                         eval(['FileName = files' StrCond{iP} '{i};']);
                         FileName = FileName(find(FileName == filesep,1,'last')+1:end);
-                        if ~isempty(strfind(upper(FileName),'TF_PXI_'))
-                            Ib = sscanf(FileName,'TF_PXI_%fuA.txt')*1e-6;
+                        if ~isempty(strfind(upper(FileName),'PXI_TF'))
+                            Ib = sscanf(FileName,'PXI_TF_%fuA.txt')*1e-6;
                         else
                             Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
                         end
@@ -2206,7 +2434,9 @@ classdef TES_Struct
         function fig = PlotTESData(obj,param,Rn,Tbath,fig)
             % Function to visualize TES data: param vs Tbath, param vs Rn,
             % param1 vs param2
-            
+            if nargin == 5
+                delete([findobj(fig,'Type','Line'); findobj(fig,'Type','ErrorBar')]);
+            end
             if ~ischar(param)
                 warndlg('param must be string','ZarTES v1.0');
                 return;
@@ -2273,6 +2503,7 @@ classdef TES_Struct
                         try
                             eval(['e = errorbar(ax,Tbath' StrRange{k} ',val' StrRange{k} ',val' StrRange{k} '_CI,''LineStyle'',''-.'',''Marker'',''' StrMarker{k} ''''...
                                 ',''DisplayName'',''' StrCond{k} ' Ibias'',''Visible'',''off'');']);
+                            set(get(get(e,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         catch
                         end
                         for n = 1:length(h)
@@ -2317,6 +2548,7 @@ classdef TES_Struct
                     StrCond = {'Positive';'Negative'};
                     for k = 1:2
                         for i = 1:eval(['length(Tbath' StrRange{k} ')'])
+                            try
                             if strcmp(param,'ai')||strcmp(param,'ai_CI')||strcmp(param,'C')||strcmp(param,'C_CI')
                                 eval(['val' StrRange{k} '{i} = abs(val' StrRange{k} '{i});']);
                                 if strcmp(param,'ai')||strcmp(param,'ai_CI')
@@ -2334,12 +2566,15 @@ classdef TES_Struct
                                 Ylabel = param;
                             end
                             
-                            eval(['plot(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},''LineStyle'',''-.'',''Marker'',''o'''...
+                            eval(['h = plot(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},''LineStyle'',''-.'',''Marker'',''o'''...
                                 ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias'']);']);
                             
                             try
-                                eval(['errorbar(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},val' StrRange{k} '_CI{i},''LineStyle'',''-.'',''Marker'',''o'''...
-                                    ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'');']);
+                                eval(['e = errorbar(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},val' StrRange{k} '_CI{i},''LineStyle'',''-.'',''Marker'',''o'''...
+                                    ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'',''Color'',h.Color);']);
+                                set(get(get(e,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+                            catch
+                            end
                             catch
                             end
                         end
@@ -2416,11 +2651,12 @@ classdef TES_Struct
                         else
                             Ylabel = param2;
                         end
-                        eval(['plot(ax,val' StrRange{k} '2{i},val' StrRange{k} '1{i},''LineStyle'',''none'',''Marker'',''o'''...
+                        eval(['h = plot(ax,val' StrRange{k} '2{i},val' StrRange{k} '1{i},''LineStyle'',''-.'',''Marker'',''o'''...
                             ',''DisplayName'',[''T_{bath}: '' num2str(Tbaths' StrRange{k} '1(i)*1e3) '' mK - ' StrCond{k} ' Ibias'']);']);
                         try
-                            eval(['errorbar(ax,val' StrRange{k} '2{i},val' StrRange{k} '1{i},val' StrRange{k} '1_CI{i}/2,val' StrRange{k} '1_CI{i}/2,val' StrRange{k} '2_CI{i}/2,val' StrRange{k} '2_CI{i}/2,''LineStyle'',''none'',''Marker'',''o'''...
-                                ',''DisplayName'',[''T_{bath}: '' num2str(Tbaths' StrRange{k} '1(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'');']);
+                            eval(['e = errorbar(ax,val' StrRange{k} '2{i},val' StrRange{k} '1{i},val' StrRange{k} '1_CI{i}/2,val' StrRange{k} '1_CI{i}/2,val' StrRange{k} '2_CI{i}/2,val' StrRange{k} '2_CI{i}/2,''LineStyle'',''none'',''Marker'',''o'''...
+                                ',''DisplayName'',[''T_{bath}: '' num2str(Tbaths' StrRange{k} '1(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'',''Color'',h.Color);']);
+                            set(get(get(e,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         catch
                         end
                     end

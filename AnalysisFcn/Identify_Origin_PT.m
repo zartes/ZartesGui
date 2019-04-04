@@ -59,6 +59,7 @@ if evnt.Button == 3
     for i = 1:length(hps)
         hp(i) = plot(hps(i),XData(ind_orig),eval(['P(N_meas).p(jj(ind_orig)).' StrParam{i}]),'.',...
             'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'markersize',15);
+        set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
     end
     
     % Identificar el subplot

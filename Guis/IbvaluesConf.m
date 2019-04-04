@@ -22,7 +22,7 @@ function varargout = IbvaluesConf(varargin)
 
 % Edit the above text to modify the response to help IbvaluesConf
 
-% Last Modified by GUIDE v2.5 21-Dec-2018 14:40:29
+% Last Modified by GUIDE v2.5 29-Mar-2019 14:20:13
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -237,20 +237,20 @@ Conf.IVcurves.Manual.Values.n = str2double(strsplit(S.Config.IVcurves.Manual.Val
 Conf.IVcurves.SmartRange.On = str2double(S.Config.IVcurves.SmartRange.On.Text);
 
 Conf.TF.Zw.DSA.On = str2double(S.Config.TF.Zw.DSA.On.Text);
-Conf.TF.Zw.DSA.Method.Value = str2double(Conf.TF.Zw.DSA.Method.Value.Text);
-Conf.TF.Zw.DSA.Method.String = Conf.TF.Zw.DSA.Method.String.Text;
-Conf.TF.Zw.DSA.Exc.Units.Value = str2double(Conf.TF.Zw.DSA.Exc.Units.Value.Text);
-Conf.TF.Zw.DSA.Exc.Units.String = Conf.TF.Zw.DSA.Exc.Units.String.Text;
-Conf.TF.Zw.DSA.Exc.Value = str2double(Conf.TF.Zw.DSA.Exc.Value.Text);
+Conf.TF.Zw.DSA.Method.Value = str2double(S.Config.TF.Zw.DSA.Method.Value.Text);
+Conf.TF.Zw.DSA.Method.String = S.Config.TF.Zw.DSA.Method.String.Text;
+Conf.TF.Zw.DSA.Exc.Units.Value = str2double(S.Config.TF.Zw.DSA.Exc.Units.Value.Text);
+Conf.TF.Zw.DSA.Exc.Units.String = S.Config.TF.Zw.DSA.Exc.Units.String.Text;
+Conf.TF.Zw.DSA.Exc.Value = str2double(S.Config.TF.Zw.DSA.Exc.Value.Text);
 
 Conf.TF.Noise.DSA.On = str2double(S.Config.TF.Noise.DSA.On.Text);
 
 Conf.TF.Zw.PXI.On = str2double(S.Config.TF.Zw.PXI.On.Text);
-Conf.TF.Zw.PXI.Method.Value = str2double(Conf.TF.Zw.DSA.Method.Value.Text);
-Conf.TF.Zw.PXI.Method.String = Conf.TF.Zw.DSA.Method.String.Text;
-Conf.TF.Zw.PXI.Exc.Units.Value = str2double(Conf.TF.Zw.DSA.Exc.Units.Value.Text);
-Conf.TF.Zw.PXI.Exc.Units.String = Conf.TF.Zw.DSA.Exc.Units.String.Text;
-Conf.TF.Zw.PXI.Exc.Value = str2double(Conf.TF.Zw.DSA.Exc.Value.Text);
+Conf.TF.Zw.PXI.Method.Value = str2double(S.Config.TF.Zw.DSA.Method.Value.Text);
+Conf.TF.Zw.PXI.Method.String = S.Config.TF.Zw.DSA.Method.String.Text;
+Conf.TF.Zw.PXI.Exc.Units.Value = str2double(S.Config.TF.Zw.DSA.Exc.Units.Value.Text);
+Conf.TF.Zw.PXI.Exc.Units.String = S.Config.TF.Zw.DSA.Exc.Units.String.Text;
+Conf.TF.Zw.PXI.Exc.Value = str2double(S.Config.TF.Zw.DSA.Exc.Value.Text);
 
 Conf.TF.Noise.PXI.On = str2double(S.Config.TF.Noise.PXI.On.Text);
 
@@ -283,9 +283,9 @@ for n = 1:length(SummaryFields)
     end
     
 end
-Update_Setup(Conf,handles);
+Update_Setup(Conf,handles,1);
 
-function Update_Setup(Conf,handles)
+function Update_Setup(Conf,handles,opt)
 
 if isempty(Conf.Temps.File)
     handles.Temp_Manual.Value = 1;
@@ -315,7 +315,7 @@ handles.AQ_Field_Negative.String = num2str(Conf.BField.N);
 FromFieldScan_Callback(handles.FromFieldScan,[],handles);
 
 
-handles.BFieldIC.Value = Conf.BFieldIC.On;
+handles.BField_IC.Value = Conf.BFieldIC.On;
 
 handles.BFieldIC.BVvalue = Conf.BFieldIC.BVvalue';
 handles.BFieldIC.IbiasValues.p = Conf.BFieldIC.IbiasValues.p';
@@ -324,6 +324,7 @@ BField_IC_Callback(handles.BField_IC,[],handles);
 
 
 handles.AQ_IVs.Value = Conf.IVcurves.On;
+AQ_IVs_Callback(handles.AQ_IVs, [], handles);
 handles.ManualIbias.Value = Conf.IVcurves.Manual.On;
 
 handles.IVcurves.Manual.Values.p = Conf.IVcurves.Manual.Values.p';
@@ -333,7 +334,7 @@ ManualIbias_Callback(handles.ManualIbias,[],handles);
 
 handles.SmartIbias.Value = Conf.IVcurves.SmartRange.On;
 SmartIbias_Callback(handles.SmartIbias,[],handles);
-AQ_IVs_Callback(handles.AQ_IVs, [], handles);
+
 
 handles.DSA_TF_Zw.Value = Conf.TF.Zw.DSA.On;
 DSA_TF_Zw_Callback(handles.DSA_TF_Zw,[],handles);
@@ -366,8 +367,9 @@ handles.Spectrum_Rn.String = num2str(Conf.Spectrum.PXI.Rn);
 handles.Spectrum_NCounts.String = num2str(Conf.Spectrum.PXI.NCounts);
 AQ_Spectrum_Callback(handles.AQ_Spectrum,[],handles);
 
-
-Refresh_Table_Callback(handles.Refresh_Table,[],handles);
+if nargin < 3
+    Refresh_Table_Callback(handles.Refresh_Table,[],handles);
+end
 guidata(handles.figure1,handles);
 
 
@@ -2263,13 +2265,13 @@ end
 
 s.Config = Conf;
 
-if isempty(eventdata)
-    [FileName,PathName,~] = uiputfile('.\*.xml','Select a file or a new file name for save current configuration');
-    if ~isempty(FileName)
-        struct2xml(s,[PathName FileName]);
-    end
-else    
+if ischar(eventdata)
     struct2xml(s,[eventdata filesep 'Conf_File.xml']);
+elseif isempty(eventdata)||strcmp(eventdata.EventName,'Action')
+    [FileName,PathName,~] = uiputfile('.\*.xml','Select a file or a new file name for save current configuration');
+    if ~isequal(FileName,0)
+        struct2xml(s,[PathName FileName]);
+    end    
 end
     
 
@@ -2498,4 +2500,37 @@ if hObject.Value
     
     hObject.BackgroundColor = Disable_Color;
     hObject.Value = 1;
+end
+
+
+
+function FinalMCT_Callback(hObject, eventdata, handles)
+% hObject    handle to FinalMCT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of FinalMCT as text
+%        str2double(get(hObject,'String')) returns contents of FinalMCT as a double
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value < 0
+        set(hObject,'String','0');
+    end
+    if value > 1
+        set(hObject,'String','0');
+    end        
+else
+    set(hObject,'String','0');
+end
+
+% --- Executes during object creation, after setting all properties.
+function FinalMCT_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to FinalMCT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end

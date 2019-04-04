@@ -135,7 +135,7 @@ classdef TES_Circuit
                             end
                     end
                     
-                    auxS.Tbath = sscanf(char(regexp(file{i},'\d+.?\d+mK*','match')),'%fmK')*1e-3; %%%ojo al %d o %0.1f
+                    auxS.Tbath = sscanf(char(regexp(file{i},'\d+.?\d+mK*','match')),'%fmK'); %%%ojo al %d o %0.1f
                     % Añadido para identificar de donde procede la informacion
                     auxS.file = file{i};
                     IVset(i) = auxS;
