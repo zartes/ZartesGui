@@ -22,7 +22,7 @@ for i = 1:length(TempStr)
 end
 c0_1(i+1) = uimenu(c0,'Label','All','Callback',{@Handle_Errors});
 
-he = findobj('Type','ErrorBar','Visible','on');
+he = findobj(src,'Type','ErrorBar','-and','Visible','on');
 Data = src.UserData;
 % VarVisible = Data.er(1).Visible;
 
@@ -55,6 +55,8 @@ c4 = uimenu(cmenu,'Label','Show Negative Ibias Data','Callback',...
 c5 = uimenu(cmenu,'Label','Export Graphic Data','Callback',{@ExportGraph},'UserData',src);
 c6 = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',src);
 
+c7 = uimenu(cmenu,'Label','Link all x axes','Callback',{@ManagingAxes},'UserData',src);
+
 set(src,'uicontextmenu',cmenu);
 
 function Handle_Errors(src,evnt)
@@ -73,8 +75,9 @@ h = findobj('Type','Line');
 jp = [];
 jn = [];
 jf = [];
+jteo = [];
 for i = 1:length(h)
-    Tag = [h(i).DisplayName];
+    Tag = [h(i).DisplayName];    
     if ~isempty(strfind(Tag,[TempStr '-PosIbias']))
         jp = [jp i] ;
     end
@@ -84,11 +87,17 @@ for i = 1:length(h)
     if ~isempty(strfind(Tag,'Filtered'))
         jf = [jf i] ;
     end
+    if ~isempty(strfind(Tag,[TempStr 'teo']))
+        jteo = [jteo i] ;
+    end
 end
 hp = h(jp);
 hn = h(jn);
 hf = h(jf);
-
+hteo = h(jteo);
+for i = 1:length(hteo)
+     set(get(get(hteo(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+end
 % Positive Ibias Error bars
 he = findobj('Type','ErrorBar');
 jpe = [];
@@ -110,36 +119,66 @@ hpe = he(jpe);
 hne = he(jne);
 hfe = he(jfe);
 
+
 switch str
     case 'All'
         set([hp; hn],'Visible','on');
         set([hpe; hne; hf; hfe],'Visible','off');
+        for i = 1:max([length(hp) length(hn)])
+            try
+                set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+            end
+            try
+                set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+            end            
+        end
     
     case 'Deactivate error bars'
         set([hpe; hne; hfe],'Visible','off');
-        
+%         for i = 1:max([length(hpe) length(hne) length(hfe)])
+%             try
+%                 set(get(get(hpe(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+%             end
+%             try
+%                 set(get(get(hne(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+%             end
+%             try
+%                 set(get(get(hfe(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+%             end                
+%         end
         
     case 'Activate error bars'
         
         if strcmp(hf(1).Visible,'on')
             set(hfe,'Visible','on');
         end
-        for i = 1:length(hn)
-            if strcmp(hn(i).Visible,'on')
-                set(hne(i),'Visible','on');
+        for i = 1:max([length(hn) length(hp)])
+            try
+                if strcmp(hn(i).Visible,'on')
+                    set(hne(i),'Visible','on');
+%                     set(get(get(hne(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+                end
+            end      
+            try
+                if strcmp(hp(i).Visible,'on')
+                    set(hpe(i),'Visible','on');
+%                     set(get(get(hpe(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+                end
             end
-        end
-        for i = 1:length(hp)
-            if strcmp(hp(i).Visible,'on')
-                set(hpe(i),'Visible','on');
-            end
-        end
+        end        
 
 
     case 'Hide Filtered Data'
         
         set([hf; hfe],'Visible','off');
-        
+%         for i = 1:max([length(hf) length(hfe)])
+%             try
+%                 set(get(get(hf(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+%             end
+%             try
+%                 set(get(get(hfe(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+%             end                
+%         end
         
     case 'Show Filtered Data'
         
@@ -152,6 +191,9 @@ switch str
     case 'Hide Negative Ibias Data'
         
         set([hn; hne],'Visible','off');
+        for i = 1:length(hn)
+            set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        end
         
         
     case 'Show Negative Ibias Data'
@@ -162,11 +204,26 @@ switch str
                 set(hne,'Visible','on');
             end
         end
+        for i = 1:length(hn)
+            set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+        end
         
     otherwise
         h = [findobj('Type','Line'); findobj('Type','ErrorBar')];
         set(h,'Visible','off');
+        for i = 1:length(h)
+            set(get(get(h(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        end
         set([hp; hn],'Visible','on');
+        for i = 1:max([length(hp) length(hn)])
+            try
+                set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+            end
+            try
+                set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+            end
+                
+        end
 end
 
 function ExportGraph(src,evnt)
@@ -202,10 +259,19 @@ fclose(fid);
 
 function SaveGraph(src,evnt)
 
-ha = findobj(src.UserData.Parent,'Type','Axes');
+ha = findobj(src.UserData.Parent,'Type','Axes','Visible','on');
 fg = figure;
 copyobj(ha,fg);
+for i = 1:length(ha)
+    hdl = findobj(ha(i),'Visible','off');
+    delete(hdl);
+end
 [file,path] = uiputfile('*.jpg','Save Graph name');
 if ~isequal(file,0)
     print(fg,'-djpeg',[path filesep file]);
 end
+
+function ManagingAxes(src,evnt)
+
+ha = findobj(src.UserData.Parent,'Type','Axes');
+linkaxes(ha,'x');

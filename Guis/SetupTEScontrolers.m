@@ -22,7 +22,7 @@ function varargout = SetupTEScontrolers(varargin)
 
 % Edit the above text to modify the response to help SetupTEScontrolers
 
-% Last Modified by GUIDE v2.5 20-Mar-2019 12:48:37
+% Last Modified by GUIDE v2.5 03-Apr-2019 10:51:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -42,7 +42,6 @@ else
     gui_mainfcn(gui_State, varargin{:});
 end
 % End initialization code - DO NOT EDIT
-
 
 % --- Executes just before SetupTEScontrolers is made visible.
 function SetupTEScontrolers_OpeningFcn(hObject, eventdata, handles, varargin)
@@ -222,10 +221,8 @@ SQ_Calibration_Callback(handles.SQ_Calibration, [], handles)
 
 % Update handles structure
 guidata(hObject, handles);
-
 % UIWAIT makes SetupTEScontrolers wait for user response (see UIRESUME)
 % uiwait(handles.SetupTES);
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = SetupTEScontrolers_OutputFcn(hObject, eventdata, handles)
@@ -236,14 +233,297 @@ function varargout = SetupTEScontrolers_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-set(handles.SetupTES,'Visible','on');
+set(handles.SetupTES,'ButtonDownFcn',{@SaveMenuGraph});
 ax = handles.Result_Axes;
 data = imread('athena-mission.jpg');
+figure(handles.SetupTES);
 image(data);
 ax.Visible = 'off';
+set(handles.SetupTES,'Visible','on');
 waitfor(warndlg('Please, check the circuit values','ZarTES v1.0'));
 Obj_Properties(handles.Menu_Circuit);
+guidata(hObject,handles);
 
+
+%%%%%%%%%%%%%%%%%%%%%% OTHER FUNCTIONALITIES  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function handles = Menu_Generation(handles)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Initialization of classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+handles.Circuit = Circuit;
+handles.Circuit = handles.Circuit.Constructor;
+handles.menu(1) = uimenu('Parent',handles.SetupTES,'Label',...
+    'Circuit');
+handles.Menu_Circuit = uimenu('Parent',handles.menu(1),'Label',...
+    'Circuit Properties','Callback',{@Obj_Properties},'UserData',handles.Circuit);
+
+handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
+handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
+
+instrreset;
+% Menu is generated here
+handles.menu(2) = uimenu('Parent',handles.SetupTES,'Label',...
+    'Devices');
+
+for i = 1:size(handles.HndlStr,1)
+    eval(['handles.' handles.HndlStr{i,1} '=' handles.HndlStr{i,2} ';']);
+    eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Constructor;']);
+    eval(['handles.Devices.' handles.HndlStr{i,1} ' = 1;']); % By default all are activated
+    eval(['handles.Menu_' handles.HndlStr{i,1} ' = uimenu(''Parent'',handles.menu(2),''Label'','...
+        '[''&' handles.HndlStr{i,2} ''']);']);
+    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
+    jj = 1;
+    % The firts menu is the one uses for initialize the device
+    % connection
+    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+        ''' Initialize '',''Callback'',{@Obj_Actions},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
+    jj = jj + 1;
+    for j = 1:size(Mthds,1) %#ok<USENS>
+        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
+            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+                '''' Mthds{j} ''',''Callback'',{@Obj_Actions},''UserData'',handles.' handles.HndlStr{i,1} ',''Enable'',''off'');']);
+            jj = jj + 1;
+        end
+    end
+    if ~strcmp(handles.HndlStr(:,1),'PXI')
+        eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+            '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Obj_Properties},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
+    else
+        eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
+            '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Conf_Setup_PXI},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
+    end
+    
+end
+
+
+%%%%%%% Start Acquisition
+handles.menu(3) = uimenu('Parent',handles.SetupTES,'Label',...
+    'Acquisition');
+handles.Menu_ACQ_Conf = uimenu('Parent',handles.menu(3),'Label',...
+    'Configuration Panel','Callback',{@IbvaluesConf},'Separator','on');
+
+handles.menu(4) = uimenu('Parent',handles.SetupTES,'Label',...
+    'Help');
+handles.Menu_Guide = uimenu('Parent',handles.menu(4),'Label',...
+    'User Guide','Callback',{@UserGuide});
+handles.Menu_About = uimenu('Parent',handles.menu(4),'Label',...
+    'About','Callback',{@About});
+
+function UserGuide(src,evnt)
+winopen('SetupTESControlers_UserGuide.pdf');
+
+function About(src,evnt)
+fig = figure('Visible','off','NumberTitle','off','Name','ZarTES v1.0','MenuBar','none','Units','Normalized');
+ax = axes;
+data = imread('ICMA-CSIC.jpg');
+image(data)
+ax.Visible = 'off';
+fig.Position = [0.35 0.35 0.3 0.22];
+fig.Visible = 'on';
+
+function ACQ_Ibias(src,evnt)
+
+handles = guidata(src);
+waitfor(IbvaluesConf(src));
+handles.Ibias = src.UserData;
+guidata(src,handles)
+
+function handles = Menu_Update(DevicesOn,handles)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for i = 1:length(DevicesOn)
+    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
+    jj = 2;
+    for j = 1:size(Mthds,1) %#ok<USENS>
+        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
+            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
+            if DevicesOn(i)
+                eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''on'';']);
+            else
+                eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''off'';']);
+            end
+            jj = jj + 1;
+        end
+    end
+    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
+end
+
+function Obj_Actions(src,evnt)
+handles  = guidata(src);
+if ~isempty(strfind(src.Label,'Initialize')) % Device are checked if they are initialize.  If so, they are not initialize again.
+    Parent = evnt.Source.Parent.Label(2:end); % First character is reserved for &
+    switch Parent
+        case 'Multimeter'
+            if ~isempty(handles.Multi.ObjHandle)
+                return;
+            else
+                handles.Multi = handles.Multi.Initialize;
+                handles.DevStrOn(1) = 1;
+            end
+        case 'ElectronicMagnicon'
+            if ~isempty(handles.Squid.ObjHandle)
+                return;
+            else
+                handles.Squid = handles.Squid.Initialize;
+                handles.DevStrOn(2) = 1;
+            end
+        case 'SpectrumAnalyzer'
+            if ~isempty(handles.DS.ObjHandle)
+                return;
+            else
+                handles.DSA = handles.DSA.Initialize;
+                handles.DevStrOn(3) = 1;
+            end
+        case 'PXI_Acquisition_card'
+            if ~isempty(handles.PXI.ObjHandle)
+                return;
+            else
+                handles.PXI = handles.PXI.Initialize;
+                handles.DevStrOn(4) = 1;
+            end
+        case 'CurrentSource'
+            if ~isempty(handles.CurSour.ObjHandle)
+                return;
+            else
+                handles.CurSour = handles.CurSour.Initialize;
+                handles.DevStrOn(5) = 1;
+            end
+            
+        otherwise
+    end
+    handles = Menu_Update(handles.DevStrOn,handles);  % Sub_menus are now available.
+else
+    try
+        eval(['[a, b] = src.UserData.' src.Label]);
+    catch
+    end
+end
+
+
+guidata(src,handles);
+
+function Edit_Protect(hObject)
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value <= 0
+        set(hObject,'String','1');
+    end
+else
+    set(hObject,'String','1');
+end
+
+function Actions_Str_Callback(hObject, eventdata, handles)
+warning off;
+fprintf(handles.LogFID,[hObject.String '\n']);
+warning on;
+% --- Executes during object deletion, before destroying properties.
+function SetupTES_DeleteFcn(hObject, eventdata, handles)
+% hObject    handle to SetupTES (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Cerrar el archivo log creado en los cambios de String de Actions_Str.
+try
+    fprintf(handles.LogFID,['Session ends: ' datestr(now) '\n']);
+    fclose(handles.LogFID);
+    buttonquest = questdlg('Do you want to erase Log File?','ZarTES v1.0','Yes','No','No');
+    switch buttonquest
+        case 'Yes'
+            delete(handles.LogName);
+    end
+catch
+end
+try
+    handles.vi.Abort;
+    stop(handles.timer);
+catch
+end
+try
+    stop(handles.timer_T);
+end
+delete(timerfind('Name','TEStimer'));
+try
+    for i = 1:length(handles.DevStrOn)
+        if handles.DevStrOn(i)
+            try
+                eval(['handles.' handles.HndlStr{i,1} '.Destructor;']);
+            catch
+            end
+        end
+    end
+catch
+end
+
+try
+    for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
+        if handles.d(i).isdir
+            rmpath([handles.MainDir handles.d(i).name])
+        end
+    end
+catch
+end
+% --- Executes on button press in Stop.
+function Stop_Callback(hObject, eventdata, handles)
+% hObject    handle to Stop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+Active_Color = [120 170 50]/255;
+% Gray color - Disable elements
+Disable_Color = [204 204 204]/255;
+if hObject.Value
+    hObject.BackgroundColor = Active_Color;
+else
+    hObject.BackgroundColor = Disable_Color;
+end
+guidata(hObject,handles);
+
+%%%%%%%%%%%%%%%%%%  RIGHT BUTTON GRAPH FUNCTIONS   %%%%%%%%%%%%%%%%%%%%%%%%
+
+function SaveMenuGraph(src,evnt)
+cmenu = uicontextmenu('Visible','on');
+c = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',src);
+set(src,'uicontextmenu',cmenu);
+
+function SaveGraph(src,evnt)
+
+ha = findobj(src.UserData.Parent,'Type','Axes','Visible','on');
+if ~isempty(ha)
+    fg = figure;
+    copyobj(ha,fg);
+end
+
+
+%%%%%%%%%%%%%%%%%%  ELECTRONIC MAGNICON FUNCTIONS  %%%%%%%%%%%%%%%%%%%%%%%%
+
+% --- Executes on selection change in SQ_Source.
+function SQ_Source_Callback(hObject, eventdata, handles)
+% hObject    handle to SQ_Source (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hints: contents = cellstr(get(hObject,'String')) returns SQ_Source contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from SQ_Source
+if isempty(handles.Squid.ObjHandle)
+    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+else
+    warndlg('Change this parameter consistently with the SQUID Device!','ZarTES v1.0');
+    handles.Squid.SourceCH = hObject.Value;
+    handles.Actions_Str.String = ['Electronic Magnicon: Channel Source ' num2str(handles.Squid.SourceCH)];
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    guidata(hObject,handles);
+end
+
+% --- Executes during object creation, after setting all properties.
+function SQ_Source_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to SQ_Source (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
 
 % --- Executes on button press in SQ_TES2NormalState.
 function SQ_TES2NormalState_Callback(hObject, eventdata, handles)
@@ -264,11 +544,11 @@ else
         
         if isequal(eventdata,-1)
             handles.Squid.TES2NormalState(eventdata);
-            handles.SQ_Ibias_Units.Value = 3;            
+            handles.SQ_Ibias_Units.Value = 3;
             handles.SQ_Ibias.String = '-500';
         else
             handles.Squid.TES2NormalState(1);
-            handles.SQ_Ibias_Units.Value = 3;            
+            handles.SQ_Ibias_Units.Value = 3;
             handles.SQ_Ibias.String = '500';
         end
         handles.SQ_Read_I.Value = 1;
@@ -362,6 +642,24 @@ else
         
     end
 end
+guidata(hObject,handles);
+
+% --- Executes on button press in LNCS_Active.
+function LNCS_Active_Callback(hObject, eventdata, handles)
+% hObject    handle to LNCS_Active (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of LNCS_Active
+
+if hObject.Value
+    handles.Squid.Set_Current_Value(0);
+    handles.Squid.Connect_LNCS;
+else
+    handles.Squid.Set_Current_Value_LNCS(0);
+    handles.Squid.Disconnect_LNCS;
+end
+
 guidata(hObject,handles);
 
 % --- Executes on button press in SQ_Set_I.
@@ -610,7 +908,6 @@ catch
 end
 guidata(hObject,handles);
 
-
 % --- Executes during object creation, after setting all properties.
 function SQ_Rf_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to SQ_Rf (see GCBO)
@@ -725,8 +1022,377 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+% --- Executes on button press in SQ_RangeIbias.
+function SQ_RangeIbias_Callback(hObject, eventdata, handles)
+% hObject    handle to SQ_RangeIbias (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
-%%%%%%%%%%%%%%%%%%  FIELD SETUP FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Llama a un pequeño gui para dar valor inicial, final y resolucion
+
+hObject.UserData = [];
+waitfor(Conf_Setup(hObject));
+if ~isempty(hObject.UserData)
+    handles.IbiasRange = hObject.UserData;
+    guidata(hObject,handles);
+end
+
+% --- Executes on button press in Start_IVRange.
+function Start_IVRange_Callback(hObject, eventdata, handles)
+% hObject    handle to Start_IVRange (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if isempty(handles.Squid.ObjHandle)
+    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    hObject.Value = 0;
+else
+    if hObject.Value
+        hObject.BackgroundColor = handles.Active_Color;  % Green Color
+        hObject.Enable = 'off';
+        
+        if ~isempty(handles.TestData.IVs)
+            ButtonName = questdlg('Do you want to erase current I-V Curve test values?', ...
+                'ZarTES v1.0', ...
+                'Yes', 'No', 'Yes');
+            switch ButtonName
+                case 'Yes'
+                    handles.TestData.IVs = [];
+            end % switch
+        end
+        
+        if size(handles.IbiasRange,2) > 1
+            for i = 1:size(handles.IbiasRange,1)
+                if isnumeric(handles.IbiasRange{i,1})
+                    Ibias{i} = handles.IbiasRange{i,1}:handles.IbiasRange{i,2}:handles.IbiasRange{i,3};
+                elseif ischar(handles.IbiasRange{i,1})
+                    Ibias{i} = str2double(handles.IbiasRange{i,1}):str2double(handles.IbiasRange{i,2}):str2double(handles.IbiasRange{i,3});
+                end
+            end
+        else
+            Ibias{1} = cell2mat(handles.IbiasRange);
+        end
+        vals = Ibias;
+        clear Ibias;
+        if median(sign(cell2mat(vals))) == 1
+            Ibias{1} = sort(unique(cell2mat(vals)),'descend');
+        else
+            Ibias{1} = sort(unique(cell2mat(vals)),'ascend');
+        end
+        
+        % Poner el valor en el sitio que le corresponde
+        for i = 1:length(Ibias)
+            hnd = guidata(handles.Stop);
+            if hnd.Value == 1
+                handles.Stop.Value = 0;
+                Stop_Callback(handles.Stop,[],handles);
+                break;
+            end
+            xlim(handles.Result_Axes,[min(Ibias{i}) max(Ibias{i})]);
+            for j = 1:length(Ibias{i})
+                handles.SQ_Ibias.String = Ibias{i}(j);
+                handles.SQ_Set_I.Value = 1;
+                SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
+                if i == 1 && j == 1
+                    pause(2);
+                end
+                pause(1)
+                if ~handles.LNCS_Active.Value
+                    Ireal = handles.Squid.Read_Current_Value;
+                else
+                    Ireal = handles.Squid.Read_Current_Value_LNCS;
+                end
+                [handles.Multi, vout] = handles.Multi.Read;
+                handles.TestData.IVs = [handles.TestData.IVs; Ireal.Value vout.Value];
+                
+                
+                clear Data
+                % Dejamos esta parte para no superponer lineas repetidas
+                % aunque esté seleccionado el Hold on
+                HL = findobj(handles.Result_Axes,'Type','Line');
+                delete(HL);
+                Data(:,2) = handles.TestData.IVs(:,1);
+                Data(:,4) = handles.TestData.IVs(:,2);
+                DataName = '';
+                ManagingData2Plot(Data,DataName,handles,hObject);
+                
+            end
+            
+            try
+            j = size(Data,2);
+            switch j
+                case 2
+                    IVmeasure.ibias = Data(:,2)*1e-6;
+                    if Data(1,1) == 0
+                        IVmeasure.vout = Data(:,4)-Data(1,4);
+                    else
+                        IVmeasure.vout = Data(:,4)-Data(end,4);
+                    end
+                case 4
+                    IVmeasure.ibias = Data(:,2)*1e-6;
+                    if Data(1,2) == 0
+                        IVmeasure.vout = Data(:,4)-Data(1,4);
+                    else
+                        IVmeasure.vout = Data(:,4)-Data(end,4);
+                    end
+            end
+            val = polyfit(IVmeasure.ibias(1:3),IVmeasure.vout(1:3),1); % First points avoided
+            mN = val(1);
+            val = polyfit(IVmeasure.ibias(end-2:end),IVmeasure.vout(end-2:end),1);
+            mS = val(1);
+            
+            Rpar = (handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mS*handles.Circuit.invMin.Value)-1)*handles.Circuit.Rsh.Value;
+            Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-Rpar);
+            
+            ButtonName = questdlg(['Do you want to update Circuit values from the ones extracted from IV curve: mN = '...
+                num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)], ...
+                'ZarTES v1.0', ...
+                'Yes', 'No', 'Yes');
+            switch ButtonName
+                case 'Yes'
+                    handles.Circuit.mN.Value = mN;
+                    handles.Circuit.mS.Value = mS;
+                    handles.Circuit.Rpar.Value = Rpar;
+                    handles.Circuit.Rn.Value = Rn;
+                    handles.Menu_Circuit.UserData = handles.Circuit;
+                    Obj_Properties(handles.Menu_Circuit);
+            end % switch                        
+            
+                        
+            ButtonName = questdlg('Do you want to store the IV-Curve for further analysis?','ZarTES v1.0',...
+                'Yes','No','Yes');
+            switch ButtonName
+                case 'Yes'
+                    TMC = num2str(str2double(handles.T_MC.String)*1e3,'%1.1f');
+                    if sign(Ibias) < 0
+                        filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_n_matlab.txt'];
+                    else
+                        filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_p_matlab.txt'];
+                    end
+                    
+                    [filename, pathname] = uiputfile( ...
+                        {[filename '.txt']}, ...
+                        'Save as');
+                    if ~isequal(pathname,0)
+                        Data(:,4) = Data(:,4)-Data(end,4);
+                        save([pathname filename],'Data','-ascii')
+                    end
+                    
+                otherwise
+                    if isempty(handles.IVset)
+                        handles.SQ_Rn.Enable = 'off';
+                    end
+                    return;
+            end
+            TESDATA.circuit = TES_Circuit;
+            TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
+            IVCurveSet = TES_IVCurveSet;
+            IVCurveSet = IVCurveSet.Update(IVmeasure);
+            TESDATA.TES.n = [];
+            handles.IVset = IVCurveSet.GetIVTES(TESDATA);
+            handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');            
+            handles.SQ_Rn.Enable = 'on';
+            
+            end
+            
+            guidata(hObject,handles);
+
+        end
+        pause(0.6);
+        hObject.BackgroundColor = handles.Disable_Color;
+        hObject.Value = 0;
+        hObject.Enable = 'on';
+    else
+        hObject.BackgroundColor = handles.Disable_Color;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Action of the device (including line)
+        handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
+    end
+end
+guidata(hObject,handles);
+
+% --- Executes on button press in SQ_SetRnBias.
+function SQ_SetRnBias_Callback(hObject, eventdata, handles)
+% hObject    handle to SQ_SetRnBias (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if isempty(handles.Squid.ObjHandle)
+    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    hObject.Value = 0;
+else
+    if hObject.Value
+        hObject.BackgroundColor = handles.Active_Color;  % Green Color
+        hObject.Enable = 'off';
+        
+        handles.SQ_TES2NormalState.Value = 1;
+        SQ_TES2NormalState_Callback(handles.SQ_TES2NormalState,[],handles);
+        
+        handles.SQ_Closed_Loop.Value = 1;
+        SQ_Closed_Loop_Callback(handles.SQ_Closed_Loop,[],handles);
+        
+        handles.SQ_Ibias_Units.Value = 3;
+        SQ_Ibias_Units_Callback(handles.SQ_Ibias_Units,[],handles);
+        handles.SQ_Ibias.String = handles.SQ_Rn_Ibias.String;
+        Ibvalue = str2double(handles.SQ_Ibias.String);
+        pause(0.3);
+        
+        if ~handles.LNCS_Active.Value
+            handles.Squid.Set_Current_Value(Ibvalue)  % uA.
+        else
+            handles.Squid.Set_Current_Value_LNCS(Ibvalue);
+        end
+        
+        handles.Actions_Str.String = ['Electronic Magnicon: I bias set to ' num2str(Ibvalue) ' uA'];
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
+        
+        handles.SQ_Read_I.Value = 1;
+        SQ_Read_I_Callback(handles.SQ_Read_I,[],handles);
+        
+        handles.Multi_Read.Value = 1;
+        Multi_Read_Callback(handles.Multi_Read,[],handles);
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        hObject.BackgroundColor = handles.Disable_Color;
+        hObject.Value = 0;
+        hObject.Enable = 'on';
+    end
+end
+
+
+function SQ_Rn_Callback(hObject, eventdata, handles)
+% hObject    handle to SQ_Rn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of SQ_Rn as text
+%        str2double(get(hObject,'String')) returns contents of SQ_Rn as a double
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if (value < 0|| value > 1)
+        set(hObject,'String','0.5');
+    end
+else
+    set(hObject,'String','0.5');
+end
+
+if ~isempty(handles.IVset)
+    if abs(handles.IVset.Tbath-handles.MCTemp.String) < 0.002        
+        
+        Ibias = BuildIbiasFromRp(handles.IVset,str2double(handles.SQ_Rn.String));  %%%%%%
+        handles.SQ_Rn_Ibias.String = num2str(Ibias);
+        handles.SQ_SetRnBias.Enable = 'on';
+        
+    else
+        handles.SQ_SetRnBias.Enable = 'off';
+        warndlg('Not available for the current Mixing Chamber Temperature. To enable please acquire an IV curve.','ZarTES v1.0');        
+    end    
+else
+    handles.SQ_SetRnBias.Enable = 'off';
+end
+
+% --- Executes during object creation, after setting all properties.
+function SQ_Rn_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to SQ_Rn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function SQ_Rn_Ibias_Callback(hObject, eventdata, handles)
+% hObject    handle to SQ_Rn_Ibias (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% --- Executes during object creation, after setting all properties.
+
+function SQ_Rn_Ibias_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to SQ_Rn_Ibias (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on button press in Squid_Pulse_Input.
+function Squid_Pulse_Input_Callback(hObject, eventdata, handles)
+% hObject    handle to Squid_Pulse_Input (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Squid_Pulse_Input
+if isempty(handles.Squid.ObjHandle)
+    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    hObject.Value = 0;
+else
+    if hObject.Value
+        hObject.BackgroundColor = handles.Active_Color;
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Action of the device (including line)
+        % Pulse Configuration Mode
+        % Pulse On
+        
+        status = handles.Squid.Cal_Pulse_ON;
+        if strcmp(status,'OK')
+            handles.Actions_Str.String = 'Electronic Magnicon: PULSE MODE ON';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+        else
+            hObject.BackgroundColor = handles.Disable_Color;
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            handles.Actions_Str.String = 'Electronic Magnicon: Unsuccessful read: A timeout occurred before the Terminator was reached.';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+        end
+    else
+        hObject.BackgroundColor = handles.Disable_Color;
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Action of the device (including line)
+        % Pulse Off
+        status = handles.Squid.Cal_Pulse_OFF;
+        if strcmp(status,'OK')
+            handles.Actions_Str.String = 'Electronic Magnicon: PULSE MODE OFF';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+        else
+            hObject.BackgroundColor = handles.Disable_Color;
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            handles.Actions_Str.String = 'Electronic Magnicon: Unsuccessful read: A timeout occurred before the Terminator was reached.';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    end
+end
+
+% --- Executes on button press in Squid_Pulse_Input_Conf.
+function Squid_Pulse_Input_Conf_Callback(hObject, eventdata, handles)
+% hObject    handle to Squid_Pulse_Input_Conf (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+hObject.UserData = [];
+waitfor(Conf_Setup(hObject,[],handles));
+if ~isempty(hObject.UserData)
+    handles.Squid.PulseAmp.Value = hObject.UserData{1,2};
+    handles.Squid.PulseDT.Value = hObject.UserData{2,2};
+    handles.Squid.PulseDuration.Value = hObject.UserData{3,2};
+    handles.Squid.RL.Value = hObject.UserData{4,2};
+    handles.Actions_Str.String = 'Electronic Magnicon: Configuration Pulse Input Mode changed';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    guidata(hObject,handles);
+end
+
+%%%%%%%%%%%%%%%%%%  FIELD SETUP FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 % --- Executes on button press in CurSource_OnOff.
@@ -982,8 +1648,354 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+% --- Executes on button press in CurSource_Range.
+function CurSource_Range_Callback(hObject, eventdata, handles)
+% hObject    handle to CurSource_Range (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+hObject.UserData = [];
+waitfor(Conf_Setup(hObject));
+if ~isempty(hObject.UserData)
+    handles.FieldRange = hObject.UserData;
+    guidata(hObject,handles);
+end
 
-%%%%%%%%%%%%%%%%%%  MULTIMETER FUNCTIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%
+% --- Executes on button press in Start_FieldRange.
+function Start_FieldRange_Callback(hObject, eventdata, handles)
+% hObject    handle to Start_FieldRange (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if isempty(handles.CurSour.ObjHandle)
+    handles.Actions_Str.String = 'Current Source K220 Connection is missed. Check connection and initialize it from the MENU.';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    hObject.Value = 0;
+else
+    if hObject.Value
+        hObject.BackgroundColor = handles.Active_Color;  % Green Color
+        hObject.Enable = 'off';
+        
+        handles.SQ_Reset_Closed_Loop.Value = 1;
+        SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
+                
+        if size(handles.FieldRange,2) > 1
+            for i = 1:size(handles.FieldRange,1)
+                if isnumeric(handles.FieldRange{i,1})
+                    FieldValues{i} = handles.FieldRange{i,1}:handles.FieldRange{i,2}:handles.FieldRange{i,3};
+                elseif ischar(handles.FieldRange{i,1})
+                    FieldValues{i} = str2double(handles.FieldRange{i,1}):str2double(handles.FieldRange{i,2}):str2double(handles.FieldRange{i,3});
+                end
+            end
+        else
+            FieldValues{1} = cell2mat(handles.FieldRange);
+        end
+        vals = FieldValues;
+        clear FieldValues;
+        FieldValues{1} = sort(unique(cell2mat(vals)),'ascend');
+        
+        if ~isempty(handles.TestData.VField)
+            ButtonName = questdlg('Do you want to erase current Field Scan?', ...
+                'ZarTES v1.0', ...
+                'Yes', 'No', 'Yes');
+            switch ButtonName
+                case 'Yes'
+                    handles.TestData.VField = [];
+            end % switch
+        end
+        
+        % Poner el valor en el sitio que le corresponde
+        % Se activa la salida de la fuente de intensidad
+        handles.CurSource_OnOff.Value = 1;
+        CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+        
+        set([handles.Result_Axes1 handles.Result_Axes2 handles.Result_Axes3],'Visible','off');
+        
+        for i = 1:length(FieldValues)
+            hnd = guidata(handles.Stop);
+            if hnd.Value == 1
+                handles.Stop.Value = 0;
+                Stop_Callback(handles.Stop,[],handles);
+                break;
+            end
+            xlim(handles.Result_Axes,[min(FieldValues{i}) max(FieldValues{i})]);
+            for j = 1:length(FieldValues{i})
+                
+                handles.CurSource_I.String = FieldValues{i}(j)*1e-6;
+                handles.CurSource_I_Units.Value = 1;
+                CurSource_I_Units_Callback(handles.CurSource_I_Units,[],handles);
+                
+                handles.CurSource_Set_I.Value = 1;
+                CurSource_Set_I_Callback(handles.CurSource_Set_I, [], handles);
+                if i == 1 && j == 1
+                    pause(2);
+                end
+                pause(0.5)
+                averages = 1;
+                for i_av = 1:averages
+                    handles.Multi_Read.Value = 1;
+                    Multi_Read_Callback(handles.Multi_Read,[],handles);
+                    aux1{i_av} = str2double(handles.Multi_Value.String);
+                    if i_av == averages
+                        vout = mean(cell2mat(aux1));
+                    end
+                end
+                handles.TestData.VField = [handles.TestData.VField; FieldValues{i}(j) vout];
+                
+                clear Data
+                HL = findobj(handles.Result_Axes,'Type','Line');
+                delete(HL);
+                Data(:,2) = handles.TestData.VField(:,1);
+                Data(:,5) = handles.TestData.VField(:,2);
+                DataName = '';
+                ManagingData2Plot(Data,DataName,handles,hObject)
+                % Tendríamos que pintar los valores cada vez que se están
+                % registrando.
+                
+            end
+        end        
+        
+        handles.CurSource_OnOff.Value = 0;
+        CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+        
+        try
+            ButtonName = questdlg('Do you want to save the current Field Scan?','ZarTES v1.0',...
+                'Yes','No','Yes');
+            switch ButtonName
+                case 'Yes'
+                    TMC = num2str(str2double(handles.T_MC.String)*1e3,'%1.1f');
+                    Ibias = handles.SQ_realIbias.String;
+                    
+                    filename = ['BVScan_' TMC ,'mK_Ibias' Ibias '.txt'];
+                    
+                    [filename, pathname] = uiputfile( ...
+                        {[filename '.txt']}, ...
+                        'Save as');
+                    if ~isequal(pathname,0)
+                        save([pathname filename],'Data','-ascii')
+                    end
+                    
+                otherwise
+            end
+        end
+        
+        pause(0.6);
+        hObject.BackgroundColor = handles.Disable_Color;
+        hObject.Value = 0;
+        hObject.Enable = 'on';
+    else
+        hObject.BackgroundColor = handles.Disable_Color;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Action of the device (including line)
+        handles.Actions_Str.String = 'Current Source K220 Connection is missed. Check connection and initialize it from the MENU.';
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
+        
+    end
+end
+guidata(hObject,handles);
+
+% --- Executes on button press in IC_Range.
+function IC_Range_Callback(hObject, eventdata, handles)
+% hObject    handle to IC_Range (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+cla(handles.Result_Axes);
+hold(handles.Result_Axes,'on');
+xlabel(handles.Result_Axes,'Bfield(uA)');
+ylabel(handles.Result_Axes,'Ibias(uA)');
+set(handles.Result_Axes,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
+                'XTickLabelMode','auto','XTickMode','auto');
+if size(handles.FieldRange,2) > 1
+    for i = 1:size(handles.FieldRange,1)
+        if isnumeric(handles.FieldRange{i,1})
+            FieldValues{i} = handles.FieldRange{i,1}:handles.FieldRange{i,2}:handles.FieldRange{i,3};
+        elseif ischar(handles.FieldRange{i,1})
+            FieldValues{i} = str2double(handles.FieldRange{i,1}):str2double(handles.FieldRange{i,2}):str2double(handles.FieldRange{i,3});
+        end
+    end
+else
+    FieldValues{1} = cell2mat(handles.FieldRange);
+end
+vals = FieldValues;
+clear FieldValues;
+FieldValues{1} = sort(unique(cell2mat(vals)),'ascend');
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% (Codigo Carlos) %%%%%%%%%%%%%%%%%%
+
+% Ponemos el valor de corriente en la fuente
+handles.CurSource_I_Units.Value = 1;
+handles.CurSource_I.String = num2str(FieldValues{1}(1)*1e-6);  % Se pasan las corrientes en amperios
+handles.CurSource_Set_I.Value = 1;
+CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+handles.CurSource_OnOff.Value = 1;
+CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+
+
+handles.SQ_Reset_Closed_Loop.Value = 1;
+SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
+
+step = 15;
+
+for i = 1:length(FieldValues{1})
+    
+    hnd = guidata(handles.Stop);
+    if hnd.Value == 1
+        handles.Stop.Value = 0;
+        Stop_Callback(handles.Stop,[],handles);
+        break;
+    end
+    
+    handles.CurSource_I_Units.Value = 1;
+    handles.CurSource_I.String = num2str(FieldValues{1}(i)*1e-6);  % Se pasan las corrientes en amperios
+    handles.CurSource_Set_I.Value = 1;
+    CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+    pause(1);
+    
+    if i < 4
+        i0 = [1 1];
+    else
+        mmp = (ICpairs(i-1).p-ICpairs(i-3).p)/(FieldValues{1}(i-1)-FieldValues{1}(i-3));
+        mmn = (ICpairs(i-1).n-ICpairs(i-3).n)/(FieldValues{1}(i-1)-FieldValues{1}(i-3));
+        icnext_p = ICpairs(i-1).p + mmp*(FieldValues{1}(i)-FieldValues{1}(i-1));
+        icnext_n = ICpairs(i-1).n + mmn*(FieldValues{1}(i)-FieldValues{1}(i-1));
+        ic0_p = 0.9*icnext_p;
+        ic0_n = 0.9*icnext_n;
+        tempvalues = 0:step:500;%%%array de barrido en corriente
+        ind_p = find(tempvalues <= abs(ic0_p));
+        ind_n = find(tempvalues <= abs(ic0_n));
+        try
+            i0 = [ind_p(end) ind_n(end)];%%%Calculamos el índice que corresponde a la corriente para empezar el barrido
+        catch
+            i0 = [1 1];
+        end
+    end
+    try
+        aux = measure_IC_Pair_autom(step,i0,FieldValues{1}(i),handles);
+        ICpairs(i).p = aux.p;
+        ICpairs(i).n = aux.n;
+        ICpairs(i).B = FieldValues{1}(i);
+        step = max(0.1,aux.p/20);%por si es cero.
+    catch
+        pause(1);
+        ICpairs(i).p = nan;
+        ICpairs(i).n = nan;
+        ICpairs(i).B = FieldValues{1}(i);
+        %continue;
+    end
+    hf = findobj(handles.Result_Axes,'DisplayName','Final_Temporal');
+    delete(hf);
+    plot(handles.Result_Axes,FieldValues{1}(1:i),[ICpairs.p],'ro-',FieldValues{1}(1:i),[ICpairs.n],'ro-','DisplayName','Final');
+    
+end
+
+handles.CurSource_I_Units.Value = 1;
+handles.CurSource_I.String = num2str(0*1e-6);  % Se pasan las corrientes en amperios
+handles.CurSource_Set_I.Value = 1;
+CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+handles.CurSource_OnOff.Value = 0;
+CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+
+try
+    Temp = str2double(handles.MCTemp.String);
+    button = questdlg('Do you want to store this Critical Current plot?','ZarTES v1.0','Yes','No','Yes');
+    switch button
+        case 'Yes'
+            FileStr = ['ICpairs' num2str(Temp*1e3,'%1.1') 'mK.txt'];
+            [FileStr, pathname] = uiputfile( ...
+                {[FileStr '.txt']}, ...
+                'Save as');
+            if ~isequal(pathname,0)
+                Data(:,1) = [ICpairs.B];
+                Data(:,2) = [ICpairs.p];
+                Data(:,3) = [ICpairs.n];
+                save([pathname FileStr],'Data','-ascii')
+                uisave('ICpairs',[pathname filesep FileStr(1:end-4)]);
+            end
+            if ~isequal(folder_name,0)
+                
+                msgbox(['File named ' FileStr 'was saved'],'ZarTES v1.0');
+            else
+                warndlg('No path was selected','ZarTES v1.0');
+            end
+        otherwise
+    end
+end
+guidata(hObject,handles);
+
+
+function ICpair = measure_IC_Pair_autom(step,i0,B,handles)
+
+Ivalues = 0:step:500;
+Rf = handles.Circuit.Rf.Value;
+THR = 1;
+
+for jj = 1:2 % barrido positivo y negativo
+    
+    if jj == 2
+        Ivalues = -Ivalues;
+        IV = [];
+    end
+    
+    handles.SQ_Reset_Closed_Loop.Value = 1;
+    SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
+    
+    % Set Ibias to zero value in order to impose TES's Superconductor State
+    handles.SQ_Ibias_Units.Value = 3;
+    handles.SQ_Ibias.String = num2str(Ivalues(1));
+    handles.SQ_Set_I.Value = 1;
+    SQ_Set_I_Callback(handles.SQ_Set_I, [],handles);
+    
+    a = handles.Squid.Read_Current_Value;
+    IV.ic(1) = a.Value;
+    pause(1);
+    [~, v] = handles.Multi.Read;
+    IV.vc(1) = v.Value;
+    vout1 = IV.vc(1);
+           
+    DataName = 'Temporal';
+    plot(handles.Result_Axes,B,IV.ic(1),'bo-','DisplayName',DataName);
+    
+    for i = i0(jj)+1:length(Ivalues)
+        % Set Ibias to zero value in order to impose TES's Superconductor State
+        handles.SQ_Ibias_Units.Value = 3;
+        handles.SQ_Ibias.String = num2str(Ivalues(i));
+        handles.SQ_Set_I.Value = 1;
+        SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
+        pause(0.5);
+        a = handles.Squid.Read_Current_Value;
+        IV.ic(i) = a.Value;
+        [~, v] = handles.Multi.Read;
+        IV.vc(i) = v.Value;
+        vout2 = IV.vc(i);
+        
+        DataName = 'Temporal';
+        plot(handles.Result_Axes,B,IV.ic(i),'bo-','DisplayName',DataName);
+        
+        slope = (vout2 -vout1)/((Ivalues(i)-Ivalues(i-1))*1e-6)/Rf;
+        if slope < THR
+            break;
+        end
+        vout1 = vout2;
+    end
+    % Set Ibias to zero value in order to impose TES's Superconductor State
+    handles.SQ_Ibias_Units.Value = 3;
+    handles.SQ_Ibias.String = num2str(0);
+    handles.SQ_Set_I.Value = 1;
+    SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
+    
+    if jj == 1
+        ICpair.p = IV.ic(end-1);
+        
+    elseif jj == 2
+        ICpair.n = IV.ic(end-1);            
+    end
+    HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
+    delete(HL);
+    plot(handles.Result_Axes,B,IV.ic(end-1),'ro-','DisplayName','Final_Temporal');
+end
+
+
+
+%%%%%%%%%%%%%%%%%%  MULTIMETER FUNCTIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Executes on button press in Multi_Read.
 function Multi_Read_Callback(hObject, eventdata, handles)
@@ -1016,6 +2028,7 @@ else
 end
 guidata(hObject,handles);
 
+
 function Multi_Value_Callback(hObject, eventdata, handles)
 % hObject    handle to Multi_Value (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1033,6 +2046,10 @@ function Multi_Value_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+
+%%%%%%%%%%%%%%%%%%  DIGITAL SIGNAL ANALYZER FUNCTIONS  %%%%%%%%%%%%%%%%%%%%
 
 function DSA_Input_Amp_Callback(hObject, eventdata, handles)
 % hObject    handle to DSA_Input_Amp (see GCBO)
@@ -1082,18 +2099,21 @@ function DSA_Input_Amp_Units_Callback(hObject, eventdata, handles)
 Amp = str2double(handles.DSA_Input_Amp.String);
 OldValue = hObject.UserData;
 NewValue = hObject.Value;
-
-switch OldValue-NewValue
-    case -2
-        Amp = Amp/1e-06;
-    case -1
-        Amp = Amp/1e-03;
-    case 0
-        Amp = Amp/1;
-    case 1
-        Amp = Amp/1e03;
-    case 2
-        Amp = Amp/1e06;
+if NewValue ~= 4
+    switch OldValue-NewValue
+        case -2
+            Amp = Amp/1e-06;
+        case -1
+            Amp = Amp/1e-03;
+        case 0
+            Amp = Amp/1;
+        case 1
+            Amp = Amp/1e03;
+        case 2
+            Amp = Amp/1e06;
+    end
+else
+    Amp = 0.05;
 end
 handles.DSA_Input_Amp.String = num2str(Amp);
 hObject.UserData = NewValue;
@@ -1196,113 +2216,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
-function PXI_Input_Amp_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_Input_Amp (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% Hints: get(hObject,'String') returns contents of PXI_Input_Amp as text
-%        str2double(get(hObject,'String')) returns contents of PXI_Input_Amp as a double
-value = str2double(get(hObject,'String'));
-if ~isempty(value)&&~isnan(value)
-    if value <= 0
-        set(hObject,'String','100');
-        handles.PXI_Input_Amp_Units.Value = 2;
-        PXI_Input_Amp_Callback(hObject, [], handles)
-    end
-else
-    set(hObject,'String','100');
-    handles.PXI_Input_Amp_Units.Value = 2;
-    PXI_Input_Amp_Callback(hObject, [], handles)
-end
-contents = cellstr(handles.PXI_Input_Amp_Units.String);
-handles.Actions_Str.String = ['Digital Signal Analyzer HP3562A: Noise Mode  Amp '...
-    handles.PXI_Input_Amp.String ' ' contents{handles.PXI_Input_Amp_Units.Value}];
-Actions_Str_Callback(handles.Actions_Str,[],handles);
-
-% --- Executes during object creation, after setting all properties.
-function PXI_Input_Amp_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to PXI_Input_Amp (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes on selection change in PXI_Input_Amp_Units.
-function PXI_Input_Amp_Units_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_Input_Amp_Units (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% Hints: contents = cellstr(get(hObject,'String')) returns PXI_Input_Amp_Units contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from PXI_Input_Amp_Units
-
-Amp = str2double(handles.PXI_Input_Amp.String);
-OldValue = hObject.UserData;
-NewValue = hObject.Value;
-
-switch OldValue-NewValue
-    case -2
-        Amp = Amp/1e-06;
-    case -1
-        Amp = Amp/1e-03;
-    case 0
-        Amp = Amp/1;
-    case 1
-        Amp = Amp/1e03;
-    case 2
-        Amp = Amp/1e06;
-end
-handles.PXI_Input_Amp.String = num2str(Amp);
-hObject.UserData = NewValue;
-contents = cellstr(handles.PXI_Input_Amp_Units.String);
-handles.Actions_Str.String = ['PXI: TF Z(w) - Mode  Amp '...
-    handles.PXI_Input_Amp.String ' ' contents{handles.PXI_Input_Amp_Units.Value}];
-Actions_Str_Callback(handles.Actions_Str,[],handles);
-
-% --- Executes during object creation, after setting all properties.
-function PXI_Input_Amp_Units_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to PXI_Input_Amp_Units (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on selection change in SQ_Source.
-function SQ_Source_Callback(hObject, eventdata, handles)
-% hObject    handle to SQ_Source (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% Hints: contents = cellstr(get(hObject,'String')) returns SQ_Source contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from SQ_Source
-if isempty(handles.Squid.ObjHandle)
-    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-else
-    warndlg('Change this parameter consistently with the SQUID Device!','ZarTES v1.0');
-    handles.Squid.SourceCH = hObject.Value;
-    handles.Actions_Str.String = ['Electronic Magnicon: Channel Source ' num2str(handles.Squid.SourceCH)];
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    guidata(hObject,handles);
-end
-
-% --- Executes during object creation, after setting all properties.
-function SQ_Source_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to SQ_Source (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 % --- Executes on button press in DSA_TF_Zw_Conf.
 function DSA_TF_Zw_Conf_Callback(hObject, eventdata, handles)
 % hObject    handle to DSA_TF_Zw_Conf (see GCBO)
@@ -1313,26 +2226,6 @@ waitfor(Conf_Setup(hObject,handles.DSA_TF_Zw_Menu.Value,handles));
 handles.Actions_Str.String = 'Digital Signal Analyzer: Configuration changes in TF Mode';
 Actions_Str_Callback(handles.Actions_Str,[],handles);
 DSA_TF_Zw_Menu_Callback(handles.DSA_TF_Zw_Menu,[],handles);
-
-% --- Executes on button press in PXI_TF_Zw_Conf.
-function PXI_TF_Zw_Conf_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_TF_Zw_Conf (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-hObject.UserData = [];
-waitfor(Conf_Setup_PXI(hObject,handles.PXI_TF_Zw_Menu.Value,handles));
-if ~isempty(hObject.UserData)
-    handles.PXI.ConfStructs = hObject.UserData;    
-    guidata(hObject,handles);
-end
-handles.Actions_Str.String = 'PXI: Configuration changes in Noise Mode';
-Actions_Str_Callback(handles.Actions_Str,[],handles);
-
-% waitfor(Conf_Setup(hObject,[],handles));
-
-
-
 
 % --- Executes on selection change in DSA_TF_Zw_Menu.
 function DSA_TF_Zw_Menu_Callback(hObject, eventdata, handles)
@@ -1395,7 +2288,6 @@ switch hObject.Value
         set([handles.DSA_Input_Freq handles.DSA_Input_Freq_Units],'Enable','off');
 end
 
-
 % --- Executes during object creation, after setting all properties.
 function DSA_TF_Zw_Menu_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to DSA_TF_Zw_Menu (see GCBO)
@@ -1406,907 +2298,6 @@ function DSA_TF_Zw_Menu_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-% --- Executes on selection change in PXI_TF_Zw_Menu.
-function PXI_TF_Zw_Menu_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_TF_Zw_Menu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% Hints: contents = cellstr(get(hObject,'String')) returns PXI_TF_Zw_Menu contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from PXI_TF_Zw_Menu
-if hObject.Value == 1
-    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','off');
-else
-    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','on');
-end
-% --- Executes during object creation, after setting all properties.
-function PXI_TF_Zw_Menu_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to PXI_TF_Zw_Menu (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function Actions_Str_Callback(hObject, eventdata, handles)
-warning off;
-fprintf(handles.LogFID,[hObject.String '\n']);
-warning on;
-
-% --- Executes during object deletion, before destroying properties.
-function SetupTES_DeleteFcn(hObject, eventdata, handles)
-% hObject    handle to SetupTES (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Cerrar el archivo log creado en los cambios de String de Actions_Str.
-try
-    fprintf(handles.LogFID,['Session ends: ' datestr(now) '\n']);
-    fclose(handles.LogFID);
-    buttonquest = questdlg('Do you want to erase Log File?','ZarTES v1.0','Yes','No','No');
-    switch buttonquest
-        case 'Yes'
-            delete(handles.LogName);
-    end
-catch
-end
-try
-    handles.vi.Abort;
-    stop(handles.timer);
-catch
-end
-try
-    stop(handles.timer_T);
-end
-delete(timerfind('Name','TEStimer'));
-try
-    for i = 1:length(handles.DevStrOn)
-        if handles.DevStrOn(i)
-            try
-                eval(['handles.' handles.HndlStr{i,1} '.Destructor;']);
-            catch
-            end
-        end
-    end
-catch
-end
-
-try
-    for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
-        if handles.d(i).isdir
-            rmpath([handles.MainDir handles.d(i).name])
-        end
-    end
-catch
-end
-
-
-
-%%%%%%%%%%%%%%%%%%%%%% OTHER FUNCTIONALITIES  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function handles = Menu_Generation(handles)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Initialization of classes
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-handles.Circuit = Circuit;
-handles.Circuit = handles.Circuit.Constructor;
-handles.menu(1) = uimenu('Parent',handles.SetupTES,'Label',...
-    'Circuit');
-handles.Menu_Circuit = uimenu('Parent',handles.menu(1),'Label',...
-    'Circuit Properties','Callback',{@Obj_Properties},'UserData',handles.Circuit);
-
-handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
-handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
-
-instrreset;
-% Menu is generated here
-handles.menu(2) = uimenu('Parent',handles.SetupTES,'Label',...
-    'Devices');
-
-for i = 1:size(handles.HndlStr,1)
-    eval(['handles.' handles.HndlStr{i,1} '=' handles.HndlStr{i,2} ';']);
-    eval(['handles.' handles.HndlStr{i,1} '= handles.' handles.HndlStr{i,1} '.Constructor;']);
-    eval(['handles.Devices.' handles.HndlStr{i,1} ' = 1;']); % By default all are activated
-    eval(['handles.Menu_' handles.HndlStr{i,1} ' = uimenu(''Parent'',handles.menu(2),''Label'','...
-        '[''&' handles.HndlStr{i,2} ''']);']);
-    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
-    jj = 1;
-    % The firts menu is the one uses for initialize the device
-    % connection
-    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
-        ''' Initialize '',''Callback'',{@Obj_Actions},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
-    jj = jj + 1;
-    for j = 1:size(Mthds,1) %#ok<USENS>
-        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
-            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ')  = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
-                '''' Mthds{j} ''',''Callback'',{@Obj_Actions},''UserData'',handles.' handles.HndlStr{i,1} ',''Enable'',''off'');']);
-            jj = jj + 1;
-        end
-    end
-    if ~strcmp(handles.HndlStr(:,1),'PXI')
-        eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
-            '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Obj_Properties},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
-    else
-        eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ') = uimenu(''Parent'',handles.Menu_' handles.HndlStr{i,1} ',''Label'','...
-            '''' handles.HndlStr{i,2} ' Properties'',''Callback'',{@Conf_Setup_PXI},''UserData'',handles.' handles.HndlStr{i,1} ',''Separator'',''on'');']);
-    end
-    
-end
-
-
-%%%%%%% Start Acquisition
-handles.menu(3) = uimenu('Parent',handles.SetupTES,'Label',...
-    'Acquisition');
-handles.Menu_ACQ_Conf = uimenu('Parent',handles.menu(3),'Label',...
-    'Configuration Panel','Callback',{@IbvaluesConf},'Separator','on');
-
-handles.menu(4) = uimenu('Parent',handles.SetupTES,'Label',...
-    'Help');
-handles.Menu_Guide = uimenu('Parent',handles.menu(4),'Label',...
-    'User Guide','Callback',{@UserGuide});
-handles.Menu_About = uimenu('Parent',handles.menu(4),'Label',...
-    'About','Callback',{@About});
-
-function UserGuide(src,evnt)
-winopen('SetupTESControlers_UserGuide.pdf');
-
-function About(src,evnt)
-fig = figure('Visible','off','NumberTitle','off','Name','ZarTES v1.0','MenuBar','none','Units','Normalized');
-ax = axes;
-data = imread('ICMA-CSIC.jpg');
-image(data)
-ax.Visible = 'off';
-fig.Position = [0.35 0.35 0.3 0.22];
-fig.Visible = 'on';
-
-
-
-function ACQ_Ibias(src,evnt)
-
-handles = guidata(src);
-waitfor(IbvaluesConf(src));
-handles.Ibias = src.UserData;
-guidata(src,handles)
-
-function handles = Menu_Update(DevicesOn,handles)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-for i = 1:length(DevicesOn)
-    eval(['Mthds = methods(handles.' handles.HndlStr{i,1} ');']);
-    jj = 2;
-    for j = 1:size(Mthds,1) %#ok<USENS>
-        if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
-            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
-            if DevicesOn(i)
-                eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''on'';']);
-            else
-                eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''off'';']);
-            end
-            jj = jj + 1;
-        end
-    end
-    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
-end
-
-function Obj_Actions(src,evnt)
-handles  = guidata(src);
-if ~isempty(strfind(src.Label,'Initialize')) % Device are checked if they are initialize.  If so, they are not initialize again.
-    Parent = evnt.Source.Parent.Label(2:end); % First character is reserved for &
-    switch Parent
-        case 'Multimeter'
-            if ~isempty(handles.Multi.ObjHandle)
-                return;
-            else
-                handles.Multi = handles.Multi.Initialize;
-                handles.DevStrOn(1) = 1;
-            end
-        case 'ElectronicMagnicon'
-            if ~isempty(handles.Squid.ObjHandle)
-                return;
-            else
-                handles.Squid = handles.Squid.Initialize;
-                handles.DevStrOn(2) = 1;
-            end
-        case 'SpectrumAnalyzer'
-            if ~isempty(handles.DS.ObjHandle)
-                return;
-            else
-                handles.DSA = handles.DSA.Initialize;
-                handles.DevStrOn(3) = 1;
-            end
-        case 'PXI_Acquisition_card'
-            if ~isempty(handles.PXI.ObjHandle)
-                return;
-            else
-                handles.PXI = handles.PXI.Initialize;
-                handles.DevStrOn(4) = 1;
-            end
-        case 'CurrentSource'
-            if ~isempty(handles.CurSour.ObjHandle)
-                return;
-            else
-                handles.CurSour = handles.CurSour.Initialize;
-                handles.DevStrOn(5) = 1;
-            end
-            
-        otherwise
-    end
-    handles = Menu_Update(handles.DevStrOn,handles);  % Sub_menus are now available.
-else
-    try
-        eval(['[a, b] = src.UserData.' src.Label]);
-    catch
-    end
-end
-
-
-guidata(src,handles);
-
-function Edit_Protect(hObject)
-value = str2double(get(hObject,'String'));
-if ~isempty(value)&&~isnan(value)
-    if value <= 0
-        set(hObject,'String','1');
-    end
-else
-    set(hObject,'String','1');
-end
-
-
-
-% --- Executes on button press in Check_Plot.
-function Check_Plot_Callback(hObject, eventdata, handles)
-% hObject    handle to Check_Plot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% Hint: get(hObject,'Value') returns toggle state of Check_Plot
-if ~isempty(handles.FileName)
-    handles.Draw_Select.Visible = 'on';
-else % Test Values
-    if handles.TestPlot.Value
-        handles.Draw_Select.Visible = 'off';
-    end
-end
-guidata(hObject,handles);
-
-
-
-% --- Executes on selection change in Draw_Select.
-function Draw_Select_Callback(hObject, eventdata, handles)
-% hObject    handle to Draw_Select (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns Draw_Select contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from Draw_Select
-
-
-if handles.Draw_Select.Value == 1
-    handles.Area_Plot.Enable = 'on';
-else
-    handles.Area_Plot.Enable = 'off';
-end
-
-
-DataStr = {'IVs';'TF';'Noise';'Pulse';'RTs'};
-if handles.TestPlot.Value
-    eval(['Data = handles.TestData.' DataStr{handles.Draw_Select.Value}]);
-elseif handles.FilePlot.Value
-    LoadedFileList = handles.List_Files.String;
-    if iscell(handles.FileName)
-        if strcmp(LoadedFileList{handles.List_Files.Value},'All')
-            handles.Hold_Plot.Value = 1;
-            Hold_Plot_Callback(handles.Hold_Plot,[],handles);
-            for i = 1:length(handles.FileName)
-                Data = [];
-                DataName = handles.FileName{i};
-                try
-                    eval(['Data = handles.LoadData.' DataStr{handles.Draw_Select.Value} '{' num2str(i) '};']);
-                catch
-                    if i == 1
-                        warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
-                        return;
-                    end
-                end
-                if isempty(Data)&&length(eval(['handles.LoadData.' DataStr{handles.Draw_Select.Value}]))==1
-                    warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
-                    return;
-                elseif ~isempty(Data)
-                    switch handles.Draw_Select.Value
-                        case 1 % IV
-                            ManagingData2Plot(Data,DataName,handles,handles.Start_IVRange);
-                        case 2 % Zw
-                            if ~isempty(strfind(upper(DataName),'PXI'))
-                                ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Zw_Read);
-                            else
-                                ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Zw_Read);
-                            end
-                        case 3 % Noise
-                            if ~isempty(strfind(upper(DataName),'PXI'))
-                                ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Noise_Read);
-                            else
-                                ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Noise_Read);
-                            end
-                        case 4 % Pulse
-                            ManagingData2Plot(Data,DataName,handles,handles.PXI_Pulse_Read);
-                        case 5 % RTs
-                            
-                    end
-                end
-            end
-        else
-            Data = [];
-            DataName = handles.FileName{handles.List_Files.Value-1};
-            if ~isempty(strfind(DataName,'mK_Rf'))
-                handles.Draw_Select.Value = 1;
-            elseif ~isempty(strfind(DataName,'TF'))
-                handles.Draw_Select.Value = 2;
-            elseif ~isempty(strfind(upper(DataName),'NOISE'))
-                handles.Draw_Select.Value = 3;
-            elseif ~isempty(strfind(upper(DataName),'PULSO'))
-                handles.Draw_Select.Value = 4;
-            else
-                handles.Draw_Select.Value = 5;
-            end
-            
-            try
-                eval(['Data = handles.LoadData.' DataStr{handles.Draw_Select.Value} '{' num2str(handles.List_Files.Value-1) '};']);
-            catch
-                warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
-                return;
-            end
-            if isempty(Data)
-                warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
-                return;
-            elseif iscell(Data) && length(Data) == 1 && isempty(Data{1})
-                warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
-                return;
-            end
-            switch handles.Draw_Select.Value
-                case 1 % IV
-                    ManagingData2Plot(Data,DataName,handles,handles.Start_IVRange);
-                case 2 % Zw
-                    if ~isempty(strfind(upper(DataName),'PXI'))
-                        ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Zw_Read);
-                    else
-                        ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Zw_Read);
-                    end
-                case 3 % Noise
-                    if ~isempty(strfind(upper(DataName),'PXI'))
-                        ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Noise_Read);
-                    else
-                        ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Noise_Read);
-                    end
-                case 4 % Pulse
-                    ManagingData2Plot(Data,DataName,handles,handles.PXI_Pulse_Read);
-                case 5 % RTs
-                    
-            end
-        end
-    else
-        Data = [];
-        try
-            eval(['Data = handles.LoadData.' DataStr{handles.Draw_Select.Value} ';']);
-        catch
-            warndlg(['No data of ' DataStr{handles.Draw_Select.Value} ' were loaded'],'ZarTES v1.0');
-            return;
-        end
-        if isempty(Data)
-            warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
-            return;
-        elseif iscell(Data) && length(Data) == 1 && isempty(Data{1})
-            warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
-            return;
-        end
-        switch handles.Draw_Select.Value
-            case 1 % IV
-                ManagingData2Plot(Data,handles.FileName,handles,handles.Start_IVRange);
-            case 2 % Zw
-                if ~isempty(strfind(upper(handles.FileName),'PXI'))
-                    ManagingData2Plot(Data,handles.FileName,handles,handles.PXI_TF_Zw_Read);
-                else
-                    ManagingData2Plot(Data,handles.FileName,handles,handles.DSA_TF_Zw_Read);
-                end
-            case 3 % Noise
-                if ~isempty(strfind(upper(handles.FileName),'PXI'))
-                    ManagingData2Plot(Data,handles.FileName,handles,handles.PXI_TF_Noise_Read);
-                else
-                    ManagingData2Plot(Data,handles.FileName,handles,handles.DSA_TF_Noise_Read);
-                end
-            case 4 % Pulse
-                ManagingData2Plot(Data,handles.FileName,handles,handles.PXI_Pulse_Read);
-            case 5 % RTs
-                
-        end
-    end
-    
-end
-Check_Plot_Callback(handles.Check_Plot,[],handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function Draw_Select_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Draw_Select (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in FilePlot.
-function FilePlot_Callback(hObject, eventdata, handles)
-% hObject    handle to FilePlot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of FilePlot
-if (hObject.Value||handles.GraphPlot.Value)
-    handles.Browse_File.Enable = 'on';
-else
-    handles.Browse_File.Enable = 'off';
-end
-guidata(hObject,handles);
-
-% --- Executes on button press in GraphPlot.
-function GraphPlot_Callback(hObject, eventdata, handles)
-% hObject    handle to GraphPlot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of GraphPlot
-if (hObject.Value||handles.FilePlot.Value)
-    handles.Browse_File.Enable = 'on';
-else
-    handles.Browse_File.Enable = 'off';
-end
-guidata(hObject,handles);
-
-
-% --- Executes on button press in Hold_Plot.
-function Hold_Plot_Callback(hObject, eventdata, handles)
-% hObject    handle to Hold_Plot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of Hold_Plot
-Str = {'';'1';'2';'3'};
-if hObject.Value
-    for i = 1:4
-        eval(['hold(handles.Result_Axes' Str{i} ',''on'');']);
-    end
-else
-    for i = 1:4
-        eval(['hold(handles.Result_Axes' Str{i} ',''off'');']);
-    end
-end
-guidata(hObject,handles);
-
-% --- Executes on button press in Zoom_Plot.
-function Zoom_Plot_Callback(hObject, eventdata, handles)
-% hObject    handle to Zoom_Plot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of Zoom_Plot
-Str = {'';'1';'2';'3'};
-if hObject.Value
-    for i = 1:4
-        eval(['zoom(handles.Result_Axes' Str{i} ',''on'');']);
-    end
-else
-    for i = 1:4
-        eval(['zoom(handles.Result_Axes' Str{i} ',''off'');']);
-    end
-end
-guidata(hObject,handles);
-
-
-
-% --- Executes on button press in Browse_File.
-function Browse_File_Callback(hObject, eventdata, handles)
-% hObject    handle to Browse_File (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-if handles.FilePlot.Value
-    [FileName, FileDir] = uigetfile({'*.txt','Example file (*.txt)';...
-        '*.dat','Example file (*.dat)'},...
-        'MultiSelect','on','Select File(s)',handles.FileDir);
-    if ~isempty(FileName)&&~isequal(FileName,0)
-        handles.FileDir = FileDir;
-        handles.FileName = FileName;
-        handles.Datos = {[]};
-        handles.LoadData.IVs = [];
-        handles.LoadData.Noise = {[]};
-        handles.LoadData.TF = {[]};
-        handles.LoadData.Pulse = {[]};
-        handles.LoadData.RTs = [];
-        if iscell(FileName)
-            handles.Actions_Str.String = 'Graphical Representation: MultiSelection';
-            handles.List_Files.String = [{'All'} FileName]';
-            handles.List_Files.Value = 1;
-            set([handles.LoadFiles_Str handles.List_Files],'Visible','on');
-        else
-            handles.Actions_Str.String = ['Graphical Representation: ' FileDir FileName ];
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-            handles.List_Files.String = FileName;
-            handles.List_Files.Value = 1;
-            set([handles.LoadFiles_Str handles.List_Files],'Visible','on');
-        end
-        
-        if handles.FilePlot.Value
-            if iscell(handles.FileName)
-                handles.Hold_Plot.Value = 1;
-                Hold_Plot_Callback(handles.Hold_Plot,[],handles);
-                h = waitbar(0,'Please wait... loading Files');
-                for i = 1:length(handles.FileName)
-                    fid = fopen([handles.FileDir handles.FileName{i}]);
-                    Data = importdata([handles.FileDir handles.FileName{i}]);
-                    fclose(fid);
-                    
-                    if ~isempty(strfind(handles.FileName{i},'mK_Rf'))
-                        handles.LoadData.IVs{i} = Data;
-                        handles.Draw_Select.Value = 1;
-                    elseif ~isempty(strfind(handles.FileName{i},'TF_'))
-                        handles.LoadData.TF{i} = Data;
-                        handles.Draw_Select.Value = 2;
-                    elseif ~isempty(strfind(upper(handles.FileName{i}),'_NOISE'))
-                        handles.LoadData.Noise{i} = Data;
-                        handles.Draw_Select.Value = 3;
-                    elseif ~isempty(strfind(upper(handles.FileName{i}),'_PULSO'))
-                        handles.LoadData.Pulse{i} = Data;
-                        handles.Draw_Select.Value = 4;
-                    end
-                    handles.Datos{i} = Data;
-                    waitbar(i/length(handles.FileName),h)
-                end
-                close(h);
-            else
-                fid = fopen([handles.FileDir handles.FileName]);
-                Data = importdata([handles.FileDir handles.FileName]);
-                fclose(fid);
-                if ~isempty(strfind(handles.FileName,'mK_Rf'))
-                    handles.LoadData.IVs = Data;
-                    handles.Draw_Select.Value = 1;
-                elseif ~isempty(strfind(handles.FileName,'TF_'))
-                    handles.LoadData.TF = Data;
-                    handles.Draw_Select.Value = 2;
-                elseif ~isempty(strfind(upper(handles.FileName),'_NOISE'))
-                    handles.LoadData.Noise = Data;
-                    handles.Draw_Select.Value = 3;
-                elseif ~isempty(strfind(upper(handles.FileName),'_PULSO'))
-                    handles.LoadData.Pulse = Data;
-                    handles.Draw_Select.Value = 4;
-                end
-                handles.Datos = Data;
-            end
-            set(handles.Draw_Select,'Visible','on');
-            Draw_Select_Callback(handles.Draw_Select,[],handles);
-            
-        end
-        if handles.Check_Plot.Value
-            Check_Plot_Callback(handles.Check_Plot,[],handles);
-        end
-    else
-        handles.FileDir = [];
-        handles.FileName = [];
-        handles.Actions_Str.String = 'Graphical Representation: No file selected';
-        Actions_Str_Callback(handles.Actions_Str,[],handles);
-        set([handles.LoadFiles_Str handles.List_Files],'Visible','off');
-    end
-    
-    
-end
-
-guidata(hObject, handles);
-
-
-% --- Executes on button press in TestPlot.
-function TestPlot_Callback(hObject, eventdata, handles)
-% hObject    handle to TestPlot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of TestPlot
-% if (handles.FilePlot.Value||handles.GraphPlot.Value)
-if handles.FilePlot.Value
-    handles.Browse_File.Enable = 'on';
-else
-    handles.Browse_File.Enable = 'off';
-end
-
-if hObject.Value  % Current values acquired
-    
-    switch size(handles.TestData,2)
-        case 2 % Noise
-            handles.TestData.Noise = Data;
-        case 3 % TF
-            handles.TestData.TF = Data;
-        case 4 % I-Vs
-            handles.TestData.IVs = Data;
-        otherwise
-    end
-    ManagingData2Plot(handles.TestData,[],handles);
-end
-
-guidata(hObject,handles);
-
-% --- Executes on button press in Clear_Plot.
-function Clear_Plot_Callback(hObject, eventdata, handles)
-% hObject    handle to Clear_Plot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of Clear_Plot
-hObject.Enable = 'off';
-CH = findobj(handles.Result_Axes,'Type','Line');
-delete(CH);
-CH = findobj(handles.Result_Axes1,'Type','Line');
-delete(CH);
-CH = findobj(handles.Result_Axes2,'Type','Line');
-delete(CH);
-CH = findobj(handles.Result_Axes3,'Type','Line');
-delete(CH);
-handles.Check_Plot.Value = 0;
-Check_Plot_Callback(handles.Check_Plot,[],handles);
-hObject.Enable = 'on';
-guidata(hObject,handles);
-
-
-% --- Executes on selection change in List_Files.
-function List_Files_Callback(hObject, eventdata, handles)
-% hObject    handle to List_Files (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns List_Files contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from List_Files
-%
-Draw_Select_Callback(handles.Draw_Select,[],handles);
-Check_Plot_Callback(handles.Check_Plot,[],handles);
-guidata(hObject,handles);
-
-% --- Executes during object creation, after setting all properties.
-function List_Files_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to List_Files (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in SQ_RangeIbias.
-function SQ_RangeIbias_Callback(hObject, eventdata, handles)
-% hObject    handle to SQ_RangeIbias (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% Llama a un pequeño gui para dar valor inicial, final y resolucion
-
-hObject.UserData = [];
-waitfor(Conf_Setup(hObject));
-if ~isempty(hObject.UserData)
-    handles.IbiasRange = hObject.UserData;
-    guidata(hObject,handles);
-end
-
-
-% --- Executes on button press in Grid_Plot.
-function Grid_Plot_Callback(hObject, eventdata, handles)
-% hObject    handle to Grid_Plot (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of Grid_Plot
-Str = {'';'1';'2';'3'};
-if hObject.Value
-    for i = 1:4
-        eval(['grid(handles.Result_Axes' Str{i} ',''on'');']);
-    end
-else
-    for i = 1:4
-        eval(['grid(handles.Result_Axes' Str{i} ',''off'');']);
-    end
-end
-guidata(hObject,handles);
-
-
-function update_Temp_display(src,evnt)
-
-handles = src.UserData;
-T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
-handles.MCTemp.String = num2str(T_MC);
-
-function update_Temp_Color(src,evnt)
-
-handles = src.UserData;
-T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
-Set_Pt = str2double(handles.SetPt.String);
-
-Error = abs(T_MC-Set_Pt)/T_MC*100;
-handles.Error_Measured.String = Error;
-
-RGB = [linspace(120,255,100)' sort(linspace(50,170,100),'descend')' 50*ones(100,1)]./255;
-handles.Temp_Color.BackgroundColor = RGB(round(min(ceil(Error),100)),:);
-
-
-
-% --- Executes on button press in CurSource_Range.
-function CurSource_Range_Callback(hObject, eventdata, handles)
-% hObject    handle to CurSource_Range (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-hObject.UserData = [];
-waitfor(Conf_Setup(hObject));
-if ~isempty(hObject.UserData)
-    handles.FieldRange = hObject.UserData;
-    guidata(hObject,handles);
-end
-
-
-% --- Executes on button press in PXI_Pulse_Read.
-function PXI_Pulse_Read_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_Pulse_Read (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if isempty(handles.PXI.ObjHandle)
-    handles.Actions_Str.String = 'PXI Acquisition Card Connection is missed. Check connection and initialize it from the MENU.';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    hObject.Value = 0;
-else
-    if hObject.Value
-        hObject.BackgroundColor = handles.Active_Color;  % Green Color
-        hObject.Enable = 'off';
-        pause(0.05);
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Action of the device (including line)
-        
-        handles.PXI.AbortAcquisition;
-        handles.PXI = handles.PXI.Pulses_Configuration;
-        warning off;
-        set(get(handles.PXI.ObjHandle,'triggering'),'trigger_source','NISCOPE_VAL_EXTERNAL');
-        [data, WfmI, TimeLapsed] = handles.PXI.Get_Wave_Form;   % Las adquisiciones se guardan en una variable TestData.Pulses
-        
-        %         actualSR = get(get(handles.PXI.ObjHandle,'horizontal'),'Actual_Sample_Rate');
-        
-        if ~TimeLapsed
-            
-            ManagingData2Plot(data,'',handles,hObject);
-            
-            handles.Actions_Str.String = 'PXI Acquisition Card: Acquisition of pulse system response';
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-            
-            % Updated TestData.Pulses
-            if isempty(handles.TestData.Pulses{1})
-                handles.TestData.Pulses{1} = data;
-            else
-                handles.TestData.Pulses{length(handles.TestData.Pulses)} = data;
-            end
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            pause(0.5);
-        else
-            warndlg('No Data for Acquisition was found, change Trigger Settings','ZarTES v1.0');
-        end
-        hObject.BackgroundColor = handles.Disable_Color;
-        hObject.Value = 0;
-        hObject.Enable = 'on';
-        
-    end
-end
-
-% --- Executes on button press in PXI_Pulse_Conf.
-function PXI_Pulse_Conf_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_Pulse_Conf (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-waitfor(Conf_Setup_PXI(hObject,handles.PXI_TF_Zw_Menu.Value,handles));
-if ~isempty(hObject.UserData)
-    handles.PXI.ConfStructs = hObject.UserData;
-    handles.Actions_Str.String = 'PXI Acquisition Card: Configuration changes';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    guidata(hObject,handles);
-end
-
-
-% --- Executes on button press in PXI_TF_Noise_Conf.
-function PXI_TF_Noise_Conf_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_TF_Noise_Conf (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-waitfor(Conf_Setup_PXI(hObject,[],handles));
-if ~isempty(hObject.UserData)
-    handles.PXI.ConfStructs = hObject.UserData;
-    handles.Actions_Str.String = 'PXI Acquisition Card: Configuration changes';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    guidata(hObject,handles);
-end
-
-% --- Executes on button press in PXI_TF_Noise_Read.
-function PXI_TF_Noise_Read_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_TF_Noise_Read (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-if (isempty(handles.PXI.ObjHandle))
-    handles.Actions_Str.String = 'PXI Acquisition Card Connection is missed. Check connection and initialize it from the MENU.';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    hObject.Value = 0;
-end
-
-if hObject.Value
-    hObject.BackgroundColor = handles.Active_Color;  % Green Color
-    hObject.Enable = 'off';
-    pause(0.1);
-    if isempty(handles.Circuit.Rf.Value)
-        SQ_Rf_Callback(handles.SQ_Rf,[],handles);
-    end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Action of the device (including line)
-    handles.PXI.AbortAcquisition;
-    handles.PXI = handles.PXI.Noise_Configuration;
-    handles.Actions_Str.String = 'PXI Acquisition Card: Noise Mode ON';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    
-    [data, WfmI] = handles.PXI.Get_Wave_Form;
-    [psd,freq] = PSD(data);
-    clear datos;
-    datos(:,1) = freq;
-    datos(:,2) = sqrt(psd);
-    n_avg = handles.PXI.Options.NAvg;
-    for jj = 1:n_avg-1%%%Ya hemos adquirido una.
-        [data, WfmI] = handles.PXI.Get_Wave_Form;
-        [psd,freq] = PSD(data);
-        aux(:,1) = freq;
-        aux(:,2) = sqrt(psd);
-        datos(:,2) = datos(:,2)+aux(:,2);
-    end
-    datos(:,2) = datos(:,2)/n_avg;
-    handles.PXI_Noise_Data = datos;
-    
-    if ~isempty(handles.PXI_Noise_Data)
-        if isempty(handles.TestData.Noise.PXI{1})
-            handles.TestData.Noise.PXI{1} = handles.PXI_Noise_Data;
-        else
-            if ~isnumeric(eventdata)
-                ButtonName = questdlg('Do you want to erase current Noise (PXI) test values?', ...
-                    'ZarTES v1.0', ...
-                    'Yes', 'No', 'Yes');
-                switch ButtonName
-                    case 'Yes'
-                        handles.TestData.Noise.PXI = {[]};
-                end % switch
-            end
-            handles.TestData.Noise.PXI{length(handles.TestData.Noise.PXI)+1} = handles.PXI_Noise_Data;
-        end
-        
-        clear Data;
-        DataName = ' ';
-        Data(:,1) = handles.TestData.Noise.PXI{end}(:,1);
-        Data(:,2) = handles.TestData.Noise.PXI{end}(:,2);
-        
-        ManagingData2Plot(Data,DataName,handles,hObject)
-        
-    end
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    hObject.BackgroundColor = handles.Disable_Color;
-    hObject.Value = 0;
-    hObject.Enable = 'on';
-end
-
-
 
 % --- Executes on button press in DSA_TF_Noise_Conf.
 function DSA_TF_Noise_Conf_Callback(hObject, eventdata, handles)
@@ -2319,7 +2310,6 @@ if ~isempty(hObject.UserData)
     Actions_Str_Callback(handles.Actions_Str,[],handles);
     guidata(hObject,handles);
 end
-
 
 % --- Executes on button press in DSA_TF_Noise_Read.
 function DSA_TF_Noise_Read_Callback(hObject, eventdata, handles)
@@ -2463,6 +2453,215 @@ if hObject.Value
     hObject.Enable = 'on';
 end
 
+
+
+
+%%%%%%%%%%%%%%%%%%  PXI ACQUISITION CARD FUNCTIONS  %%%%%%%%%%%%%%%%%%%%%%%
+
+
+function PXI_Input_Amp_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_Input_Amp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hints: get(hObject,'String') returns contents of PXI_Input_Amp as text
+%        str2double(get(hObject,'String')) returns contents of PXI_Input_Amp as a double
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value <= 0
+        set(hObject,'String','100');
+        handles.PXI_Input_Amp_Units.Value = 2;
+        PXI_Input_Amp_Callback(hObject, [], handles)
+    end
+else
+    set(hObject,'String','100');
+    handles.PXI_Input_Amp_Units.Value = 2;
+    PXI_Input_Amp_Callback(hObject, [], handles)
+end
+contents = cellstr(handles.PXI_Input_Amp_Units.String);
+handles.Actions_Str.String = ['Digital Signal Analyzer HP3562A: Noise Mode  Amp '...
+    handles.PXI_Input_Amp.String ' ' contents{handles.PXI_Input_Amp_Units.Value}];
+Actions_Str_Callback(handles.Actions_Str,[],handles);
+
+% --- Executes during object creation, after setting all properties.
+function PXI_Input_Amp_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PXI_Input_Amp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on selection change in PXI_Input_Amp_Units.
+function PXI_Input_Amp_Units_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_Input_Amp_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hints: contents = cellstr(get(hObject,'String')) returns PXI_Input_Amp_Units contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from PXI_Input_Amp_Units
+
+Amp = str2double(handles.PXI_Input_Amp.String);
+OldValue = hObject.UserData;
+NewValue = hObject.Value;
+if NewValue ~= 4
+    switch OldValue-NewValue
+        case -2
+            Amp = Amp/1e-06;
+        case -1
+            Amp = Amp/1e-03;
+        case 0
+            Amp = Amp/1;
+        case 1
+            Amp = Amp/1e03;
+        case 2
+            Amp = Amp/1e06;
+    end
+else
+    Amp = 0.05;
+end
+handles.PXI_Input_Amp.String = num2str(Amp);
+hObject.UserData = NewValue;
+contents = cellstr(handles.PXI_Input_Amp_Units.String);
+handles.Actions_Str.String = ['PXI: TF Z(w) - Mode  Amp '...
+    handles.PXI_Input_Amp.String ' ' contents{handles.PXI_Input_Amp_Units.Value}];
+Actions_Str_Callback(handles.Actions_Str,[],handles);
+
+% --- Executes during object creation, after setting all properties.
+function PXI_Input_Amp_Units_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PXI_Input_Amp_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on selection change in PXI_Input_Freq_Units.
+function PXI_Input_Freq_Units_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_Input_Freq_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns PXI_Input_Freq_Units contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from PXI_Input_Freq_Units
+
+Freq = str2double(handles.PXI_Input_Freq.String);
+OldValue = hObject.UserData;
+NewValue = hObject.Value;
+
+switch OldValue-NewValue
+    case -2
+        Freq = Freq/1e-06;
+    case -1
+        Freq = Freq/1e-03;
+    case 0
+        Freq = Freq/1;
+    case 1
+        Freq = Freq/1e03;
+    case 2
+        Freq = Freq/1e06;
+end
+handles.PXI_Input_Freq.String = num2str(Freq);
+hObject.UserData = NewValue;
+contents1 = cellstr(handles.PXI_Input_Amp_Units.String);
+contents2 = cellstr(handles.PXI_Input_Freq_Units.String);
+handles.Actions_Str.String = ['PXI: TF - Z(w): Mode Sine  Amp '...
+    handles.PXI_Input_Amp.String ' ' contents1{handles.PXI_Input_Amp_Units.Value} ' Freq ' ...
+    handles.PXI_Input_Freq.String ' ' contents2{handles.PXI_Input_Freq_Units.Value}];
+Actions_Str_Callback(handles.Actions_Str,[],handles);
+
+% --- Executes during object creation, after setting all properties.
+function PXI_Input_Freq_Units_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PXI_Input_Freq_Units (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function PXI_Input_Freq_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_Input_Freq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of PXI_Input_Freq as text
+%        str2double(get(hObject,'String')) returns contents of PXI_Input_Freq as a double
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value <= 0
+        set(hObject,'String','1');
+        handles.PXI_Input_Freq_Units.Value = 1;
+        PXI_Input_Freq_Callback(hObject, [], handles)
+    end
+else
+    set(hObject,'String','1');
+    handles.PXI_Input_Freq_Units.Value = 1;
+    PXI_Input_Freq_Callback(hObject, [], handles)
+end
+contents1 = cellstr(handles.PXI_Input_Amp_Units.String);
+contents2 = cellstr(handles.PXI_Input_Freq_Units.String);
+handles.Actions_Str.String = ['PXI: TF Mode Sine  Amp '...
+    handles.PXI_Input_Amp.String ' ' contents1{handles.PXI_Input_Amp_Units.Value} ' Freq ' ...
+    handles.PXI_Input_Freq.String ' ' contents2{handles.PXI_Input_Freq_Units.Value}];
+Actions_Str_Callback(handles.Actions_Str,[],handles);
+
+% --- Executes during object creation, after setting all properties.
+function PXI_Input_Freq_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PXI_Input_Freq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on button press in PXI_TF_Zw_Conf.
+function PXI_TF_Zw_Conf_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_TF_Zw_Conf (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+hObject.UserData = [];
+waitfor(Conf_Setup_PXI(hObject,handles.PXI_TF_Zw_Menu.Value,handles));
+if ~isempty(hObject.UserData)
+    handles.PXI.ConfStructs = hObject.UserData;    
+    guidata(hObject,handles);
+end
+handles.Actions_Str.String = 'PXI: Configuration changes in Noise Mode';
+Actions_Str_Callback(handles.Actions_Str,[],handles);
+
+% --- Executes on selection change in PXI_TF_Zw_Menu.
+function PXI_TF_Zw_Menu_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_TF_Zw_Menu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hints: contents = cellstr(get(hObject,'String')) returns PXI_TF_Zw_Menu contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from PXI_TF_Zw_Menu
+if hObject.Value == 1
+    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','off');
+else
+    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','on');
+end
+
+% --- Executes during object creation, after setting all properties.
+function PXI_TF_Zw_Menu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PXI_TF_Zw_Menu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
 % --- Executes on button press in PXI_TF_Zw_Read.
 function PXI_TF_Zw_Read_Callback(hObject, eventdata, handles)
 % hObject    handle to PXI_TF_Zw_Read (see GCBO)
@@ -2565,92 +2764,155 @@ if hObject.Value
     hObject.Enable = 'on';
 end
 
-% --- Executes on selection change in PXI_Input_Freq_Units.
-function PXI_Input_Freq_Units_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_Input_Freq_Units (see GCBO)
+% --- Executes on button press in PXI_TF_Noise_Conf.
+function PXI_TF_Noise_Conf_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_TF_Noise_Conf (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+waitfor(Conf_Setup_PXI(hObject,[],handles));
+if ~isempty(hObject.UserData)
+    handles.PXI.ConfStructs = hObject.UserData;
+    handles.Actions_Str.String = 'PXI Acquisition Card: Configuration changes';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    guidata(hObject,handles);
+end
+
+% --- Executes on button press in PXI_TF_Noise_Read.
+function PXI_TF_Noise_Read_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_TF_Noise_Read (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns PXI_Input_Freq_Units contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from PXI_Input_Freq_Units
-
-Freq = str2double(handles.PXI_Input_Freq.String);
-OldValue = hObject.UserData;
-NewValue = hObject.Value;
-
-switch OldValue-NewValue
-    case -2
-        Freq = Freq/1e-06;
-    case -1
-        Freq = Freq/1e-03;
-    case 0
-        Freq = Freq/1;
-    case 1
-        Freq = Freq/1e03;
-    case 2
-        Freq = Freq/1e06;
-end
-handles.PXI_Input_Freq.String = num2str(Freq);
-hObject.UserData = NewValue;
-contents1 = cellstr(handles.PXI_Input_Amp_Units.String);
-contents2 = cellstr(handles.PXI_Input_Freq_Units.String);
-handles.Actions_Str.String = ['PXI: TF - Z(w): Mode Sine  Amp '...
-    handles.PXI_Input_Amp.String ' ' contents1{handles.PXI_Input_Amp_Units.Value} ' Freq ' ...
-    handles.PXI_Input_Freq.String ' ' contents2{handles.PXI_Input_Freq_Units.Value}];
-Actions_Str_Callback(handles.Actions_Str,[],handles);
-
-% --- Executes during object creation, after setting all properties.
-function PXI_Input_Freq_Units_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to PXI_Input_Freq_Units (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+if (isempty(handles.PXI.ObjHandle))
+    handles.Actions_Str.String = 'PXI Acquisition Card Connection is missed. Check connection and initialize it from the MENU.';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    hObject.Value = 0;
 end
 
-
-
-function PXI_Input_Freq_Callback(hObject, eventdata, handles)
-% hObject    handle to PXI_Input_Freq (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of PXI_Input_Freq as text
-%        str2double(get(hObject,'String')) returns contents of PXI_Input_Freq as a double
-value = str2double(get(hObject,'String'));
-if ~isempty(value)&&~isnan(value)
-    if value <= 0
-        set(hObject,'String','1');
-        handles.PXI_Input_Freq_Units.Value = 1;
-        PXI_Input_Freq_Callback(hObject, [], handles)
+if hObject.Value
+    hObject.BackgroundColor = handles.Active_Color;  % Green Color
+    hObject.Enable = 'off';
+    pause(0.1);
+    if isempty(handles.Circuit.Rf.Value)
+        SQ_Rf_Callback(handles.SQ_Rf,[],handles);
     end
-else
-    set(hObject,'String','1');
-    handles.PXI_Input_Freq_Units.Value = 1;
-    PXI_Input_Freq_Callback(hObject, [], handles)
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Action of the device (including line)
+    handles.PXI.AbortAcquisition;
+    handles.PXI = handles.PXI.Noise_Configuration;
+    handles.Actions_Str.String = 'PXI Acquisition Card: Noise Mode ON';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    
+    [data, WfmI] = handles.PXI.Get_Wave_Form;
+    [psd,freq] = PSD(data);
+    clear datos;
+    datos(:,1) = freq;
+    datos(:,2) = sqrt(psd);
+    n_avg = handles.PXI.Options.NAvg;
+    for jj = 1:n_avg-1%%%Ya hemos adquirido una.
+        [data, WfmI] = handles.PXI.Get_Wave_Form;
+        [psd,freq] = PSD(data);
+        aux(:,1) = freq;
+        aux(:,2) = sqrt(psd);
+        datos(:,2) = datos(:,2)+aux(:,2);
+    end
+    datos(:,2) = datos(:,2)/n_avg;
+    handles.PXI_Noise_Data = datos;
+    
+    if ~isempty(handles.PXI_Noise_Data)
+        if isempty(handles.TestData.Noise.PXI{1})
+            handles.TestData.Noise.PXI{1} = handles.PXI_Noise_Data;
+        else
+            if ~isnumeric(eventdata)
+                ButtonName = questdlg('Do you want to erase current Noise (PXI) test values?', ...
+                    'ZarTES v1.0', ...
+                    'Yes', 'No', 'Yes');
+                switch ButtonName
+                    case 'Yes'
+                        handles.TestData.Noise.PXI = {[]};
+                end % switch
+            end
+            handles.TestData.Noise.PXI{length(handles.TestData.Noise.PXI)+1} = handles.PXI_Noise_Data;
+        end
+        
+        clear Data;
+        DataName = ' ';
+        Data(:,1) = handles.TestData.Noise.PXI{end}(:,1);
+        Data(:,2) = handles.TestData.Noise.PXI{end}(:,2);
+        
+        ManagingData2Plot(Data,DataName,handles,hObject)
+        
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    hObject.BackgroundColor = handles.Disable_Color;
+    hObject.Value = 0;
+    hObject.Enable = 'on';
 end
-contents1 = cellstr(handles.PXI_Input_Amp_Units.String);
-contents2 = cellstr(handles.PXI_Input_Freq_Units.String);
-handles.Actions_Str.String = ['PXI: TF Mode Sine  Amp '...
-    handles.PXI_Input_Amp.String ' ' contents1{handles.PXI_Input_Amp_Units.Value} ' Freq ' ...
-    handles.PXI_Input_Freq.String ' ' contents2{handles.PXI_Input_Freq_Units.Value}];
-Actions_Str_Callback(handles.Actions_Str,[],handles);
 
-% --- Executes during object creation, after setting all properties.
-function PXI_Input_Freq_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to PXI_Input_Freq (see GCBO)
+% --- Executes on button press in PXI_Pulse_Read.
+function PXI_Pulse_Read_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_Pulse_Read (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+% handles    structure with handles and user data (see GUIDATA)
+if isempty(handles.PXI.ObjHandle)
+    handles.Actions_Str.String = 'PXI Acquisition Card Connection is missed. Check connection and initialize it from the MENU.';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    hObject.Value = 0;
+else
+    if hObject.Value
+        hObject.BackgroundColor = handles.Active_Color;  % Green Color
+        hObject.Enable = 'off';
+        pause(0.05);
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Action of the device (including line)
+        
+        handles.PXI.AbortAcquisition;
+        handles.PXI = handles.PXI.Pulses_Configuration;
+        warning off;
+        set(get(handles.PXI.ObjHandle,'triggering'),'trigger_source','NISCOPE_VAL_EXTERNAL');
+        [data, WfmI, TimeLapsed] = handles.PXI.Get_Wave_Form;   % Las adquisiciones se guardan en una variable TestData.Pulses
+        
+        %         actualSR = get(get(handles.PXI.ObjHandle,'horizontal'),'Actual_Sample_Rate');
+        
+        if ~TimeLapsed
+            
+            ManagingData2Plot(data,'',handles,hObject);
+            
+            handles.Actions_Str.String = 'PXI Acquisition Card: Acquisition of pulse system response';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+            
+            % Updated TestData.Pulses
+            if isempty(handles.TestData.Pulses{1})
+                handles.TestData.Pulses{1} = data;
+            else
+                handles.TestData.Pulses{length(handles.TestData.Pulses)} = data;
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            pause(0.5);
+        else
+            warndlg('No Data for Acquisition was found, change Trigger Settings','ZarTES v1.0');
+        end
+        hObject.BackgroundColor = handles.Disable_Color;
+        hObject.Value = 0;
+        hObject.Enable = 'on';
+        
+    end
 end
 
+% --- Executes on button press in PXI_Pulse_Conf.
+function PXI_Pulse_Conf_Callback(hObject, eventdata, handles)
+% hObject    handle to PXI_Pulse_Conf (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+waitfor(Conf_Setup_PXI(hObject,handles.PXI_TF_Zw_Menu.Value,handles));
+if ~isempty(hObject.UserData)
+    handles.PXI.ConfStructs = hObject.UserData;
+    handles.Actions_Str.String = 'PXI Acquisition Card: Configuration changes';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    guidata(hObject,handles);
+end
 
 % --- Executes on button press in Pulse_Cont.
 function Pulse_Cont_Callback(hObject, eventdata, handles)
@@ -2668,160 +2930,6 @@ while hObject.UserData
     PXI_Pulse_Read_Callback(handles.PXI_Pulse_Read,[],handles);
 end
 hObject.BackgroundColor = handles.Disable_Color;
-
-
-function SetPt_Callback(hObject, eventdata, handles)
-% hObject    handle to SetPt (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of SetPt as text
-%        str2double(get(hObject,'String')) returns contents of SetPt as a double
-
-SetPt = str2double(hObject.String);
-
-if isnan(SetPt)||isinf(SetPt)
-    warndlg('Invalid Set Pt value','ZarTES v1.0');
-    hObject.String = '---';
-    return;
-else
-    if SetPt > 500*1e-3 % Por encima de 120mK
-        ButtonName = questdlg('Set Pt above 120 mK, are you sure to continue?','ZarTES v1.0','Yes','No','No');
-        switch ButtonName
-            case 'No'
-                return;
-        end
-    end
-end
-
-handles.vi_IGHFrontPanel.FPState = 4;
-pause(0.1)
-handles.vi_IGHFrontPanel.FPState = 1;
-pause(0.1)
-handles.vi_IGHFrontPanel.SetControlValue('Settings',1);
-pause(1.5)
-handles.vi_IGHChangeSettings.SetControlValue('Set Point Dialog',1);
-pause(0.1)
-while strcmp(handles.vi_PromptForT.FPState,'eClosed')
-    pause(0.1);
-end
-handles.vi_PromptForT.SetControlValue('Set T',SetPt)%
-pause(0.4)
-handles.vi_PromptForT.SetControlValue('Set T',SetPt)%
-pause(0.1)
-handles.vi_PromptForT.SetControlValue('OK',1)
-pause(0.1)
-while strcmp(handles.vi_PromptForT.FPState,'eClosed')
-    pause(0.1);
-end
-stop(handles.timer_T);
-start(handles.timer_T);
-waitfor(msgbox('Temperature was sucessfully set','ZarTES v1.0'));
-
-guidata(hObject,handles);
-
-
-% --- Executes on button press in Temp_Color.
-function Temp_Color_Callback(hObject, eventdata, handles)
-% hObject    handle to Temp_Color (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-function Temp_Error_Callback(hObject, eventdata, handles)
-% hObject    handle to Temp_Error (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of Temp_Error as text
-%        str2double(get(hObject,'String')) returns contents of Temp_Error as a double
-value = str2double(get(hObject,'String'));
-if ~isempty(value)&&~isnan(value)
-    if value <= 0||value > 100
-        set(hObject,'String','5');
-    end
-else
-    set(hObject,'String','5');
-end
-
-
-% --- Executes during object creation, after setting all properties.
-function Temp_Error_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Temp_Error (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes during object creation, after setting all properties.
-function Error_Measured_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Temp_Error (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function CurSource_Field_Rn_Callback(hObject, eventdata, handles)
-% hObject    handle to CurSource_Field_Rn (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of CurSource_Field_Rn as text
-%        str2double(get(hObject,'String')) returns contents of CurSource_Field_Rn as a double
-value = str2double(get(hObject,'String'));
-if ~isempty(value)&&~isnan(value)
-    if (value < 0|| value > 1)
-        set(hObject,'String','0.5');
-    end
-else
-    set(hObject,'String','0.5');
-end
-
-% --- Executes during object creation, after setting all properties.
-function CurSource_Field_Rn_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to CurSource_Field_Rn (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function CurSource_Field_Ibias_Callback(hObject, eventdata, handles)
-% hObject    handle to CurSource_Field_Ibias (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of CurSource_Field_Ibias as text
-%        str2double(get(hObject,'String')) returns contents of CurSource_Field_Ibias as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function CurSource_Field_Ibias_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to CurSource_Field_Ibias (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 % --- Executes on button press in SavePulses.
 function SavePulses_Callback(hObject, eventdata, handles)
@@ -2886,453 +2994,10 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in LNCS_Active.
-function LNCS_Active_Callback(hObject, eventdata, handles)
-% hObject    handle to LNCS_Active (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of LNCS_Active
-
-if hObject.Value
-    handles.Squid.Set_Current_Value(0);
-    handles.Squid.Connect_LNCS;
-else
-    handles.Squid.Set_Current_Value_LNCS(0);
-    handles.Squid.Disconnect_LNCS;
-end
-
-guidata(hObject,handles);
 
 
-% --- Executes on button press in Field_Rn_Active.
-function Field_Rn_Active_Callback(hObject, eventdata, handles)
-% hObject    handle to Field_Rn_Active (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of Field_Rn_Active
-if hObject.Value
-    handles.CurSource_Field_Rn.Enable = 'on';
-else
-    handles.CurSource_Field_Rn.Enable = 'off';
-end
-guidata(hObject,handles);
-
-
-% --- Executes on button press in Start_IVRange.
-function Start_IVRange_Callback(hObject, eventdata, handles)
-% hObject    handle to Start_IVRange (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if isempty(handles.Squid.ObjHandle)
-    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    hObject.Value = 0;
-else
-    if hObject.Value
-        hObject.BackgroundColor = handles.Active_Color;  % Green Color
-        hObject.Enable = 'off';
-        
-        if ~isempty(handles.TestData.IVs)
-            ButtonName = questdlg('Do you want to erase current I-V Curve test values?', ...
-                'ZarTES v1.0', ...
-                'Yes', 'No', 'Yes');
-            switch ButtonName
-                case 'Yes'
-                    handles.TestData.IVs = [];
-            end % switch
-        end
-        
-        if size(handles.IbiasRange,2) > 1
-            for i = 1:size(handles.IbiasRange,1)
-                if isnumeric(handles.IbiasRange{i,1})
-                    Ibias{i} = handles.IbiasRange{i,1}:handles.IbiasRange{i,2}:handles.IbiasRange{i,3};
-                elseif ischar(handles.IbiasRange{i,1})
-                    Ibias{i} = str2double(handles.IbiasRange{i,1}):str2double(handles.IbiasRange{i,2}):str2double(handles.IbiasRange{i,3});
-                end
-            end
-        else
-            Ibias{1} = cell2mat(handles.IbiasRange);
-        end
-        vals = Ibias;
-        clear Ibias;
-        if median(sign(cell2mat(vals))) == 1
-            Ibias{1} = sort(unique(cell2mat(vals)),'descend');
-        else
-            Ibias{1} = sort(unique(cell2mat(vals)),'ascend');
-        end
-        
-        % Poner el valor en el sitio que le corresponde
-        for i = 1:length(Ibias)
-            xlim(handles.Result_Axes,[min(Ibias{i}) max(Ibias{i})]);
-            for j = 1:length(Ibias{i})
-                handles.SQ_Ibias.String = Ibias{i}(j);
-                handles.SQ_Set_I.Value = 1;
-                SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
-                if i == 1 && j == 1
-                    pause(2);
-                end
-                pause(1)
-                if ~handles.LNCS_Active.Value
-                    Ireal = handles.Squid.Read_Current_Value;
-                else
-                    Ireal = handles.Squid.Read_Current_Value_LNCS;
-                end
-                [handles.Multi, vout] = handles.Multi.Read;
-                handles.TestData.IVs = [handles.TestData.IVs; Ireal.Value vout.Value];
-                
-                
-                clear Data
-                % Dejamos esta parte para no superponer lineas repetidas
-                % aunque esté seleccionado el Hold on
-                HL = findobj(handles.Result_Axes,'Type','Line');
-                delete(HL);
-                Data(:,2) = handles.TestData.IVs(:,1);
-                Data(:,4) = handles.TestData.IVs(:,2);
-                DataName = '';
-                ManagingData2Plot(Data,DataName,handles,hObject);
-                
-            end
-            
-            
-            j = size(Data,2);
-            switch j
-                case 2
-                    IVmeasure.ibias = Data(:,2)*1e-6;
-                    if Data(1,1) == 0
-                        IVmeasure.vout = Data(:,4)-Data(1,4);
-                    else
-                        IVmeasure.vout = Data(:,4)-Data(end,4);
-                    end
-                case 4
-                    IVmeasure.ibias = Data(:,2)*1e-6;
-                    if Data(1,2) == 0
-                        IVmeasure.vout = Data(:,4)-Data(1,4);
-                    else
-                        IVmeasure.vout = Data(:,4)-Data(end,4);
-                    end
-            end
-            val = polyfit(IVmeasure.ibias(1:3),IVmeasure.vout(1:3),1); % First points avoided
-            mN = val(1);
-            val = polyfit(IVmeasure.ibias(end-2:end),IVmeasure.vout(end-2:end),1);
-            mS = val(1);
-            handles.Circuit.mN.Value = mN;
-            handles.Circuit.mS.Value = mS;
-            handles.Circuit.Rpar.Value = (handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(handles.Circuit.mS.Value*handles.Circuit.invMin.Value)-1)*handles.Circuit.Rsh.Value;
-            handles.Circuit.Rn.Value = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(handles.Circuit.mN.Value*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-handles.Circuit.Rpar.Value);
-            
-            ButtonName = questdlg('Do you want to store the IV-Curve for further analysis?','ZarTES v1.0',...
-                'Yes','No','Yes');
-            switch ButtonName
-                case 'Yes'
-                otherwise
-                    return;
-            end
-            TESDATA.circuit = TES_Circuit;
-            TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
-            IVCurveSet = TES_IVCurveSet;
-            IVCurveSet = IVCurveSet.Update(IVmeasure);
-            TESDATA.TES.n = [];
-            handles.IVset = IVCurveSet.GetIVTES(TESDATA);
-            handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
-        end
-        pause(0.6);
-        hObject.BackgroundColor = handles.Disable_Color;
-        hObject.Value = 0;
-        hObject.Enable = 'on';
-    else
-        hObject.BackgroundColor = handles.Disable_Color;
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Action of the device (including line)
-        handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
-        Actions_Str_Callback(handles.Actions_Str,[],handles);
-    end
-end
-guidata(hObject,handles);
-
-% --- Executes on button press in Start_FieldRange.
-function Start_FieldRange_Callback(hObject, eventdata, handles)
-% hObject    handle to Start_FieldRange (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if isempty(handles.CurSour.ObjHandle)
-    handles.Actions_Str.String = 'Current Source K220 Connection is missed. Check connection and initialize it from the MENU.';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    hObject.Value = 0;
-else
-    if hObject.Value
-        hObject.BackgroundColor = handles.Active_Color;  % Green Color
-        hObject.Enable = 'off';
-        
-        %%% Obtener el valor de Ibias acorde con el Rn que le hemos pedido.
-        % Usar la IV si existe y si no entonces tenemos que registrar una IV.
-        if handles.Field_Rn_Active.Value  % Activado el Rn/RTES para calcular el valor de Ibias;
-            %Si está desactivado se usa la configuración de Ibias que tenga el sistema
-            
-            if isempty(handles.IVset)
-                figure(handles.SetupTES)
-                % Ponemos el Squid en Estado Normal
-                handles.SQ_TES2NormalState.Value = 1;
-                SQ_TES2NormalState_Callback(handles.SQ_TES2NormalState,sign(1),handles);
-                % Reset Closed Loop
-                handles.SQ_Reset_Closed_Loop.Value = 1;
-                SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
-                
-                % Adquirimos una Curva I-V para determinar la Ibias acorde con el Rn
-                Ibvalues = [500:-30:110 108:-2:0];
-                for i = 1:length(Ibvalues)
-                    handles.SQ_Ibias.String = num2str(Ibvalues(i));
-                    handles.SQ_Ibias_Units.Value = 3;
-                    handles.SQ_Set_I.Value = 1;
-                    SQ_Set_I_Callback(handles.SQ_Set_I,[],handles);
-                    
-                    averages = 5;
-                    for i_av = 1:averages
-                        handles.Multi_Read.Value = 1;
-                        Multi_Read_Callback(handles.Multi_Read,[],handles);
-                        aux1{i_av} = str2double(handles.Multi_Value.String);
-                        if i_av == averages
-                            IVmeasure.vout(i) = mean(cell2mat(aux1));
-                        end
-                    end
-                    % Read I real value
-                    handles.SQ_Read_I.Value = 1;
-                    SQ_Read_I_Callback(handles.SQ_Read_I,[],handles);
-                    IVmeasure.ibias(i) = str2double(handles.SQ_realIbias.String);
-                    
-                    % Actualizamos el gráfico
-                    clear Data
-                    % Dejamos esta parte para no superponer lineas repetidas
-                    % aunque esté seleccionado el Hold on
-                    HL = findobj(handles.Result_Axes,'Type','Line');
-                    delete(HL);
-                    Data(:,2) = IVmeasure.ibias(1:i);
-                    Data(:,4) = IVmeasure.vout(1:i);
-                    DataName = '';
-                    ManagingData2Plot(Data,DataName,handles,hObject)
-                    
-                end
-                IVmeasure.Tbath = str2double(handles.MCTemp.String)*1e-3;
-                data(:,1) = IVmeasure.ibias;
-                data(:,2) = IVmeasure.vout;
-                
-                j = size(data,2);
-                switch j
-                    case 2
-                        IVmeasure.ibias = data(:,1)*1e-6;
-                        if data(1,1) == 0
-                            IVmeasure.vout = data(:,2)-data(1,2);
-                        else
-                            IVmeasure.vout = data(:,2)-data(end,2);
-                        end
-                    case 4
-                        IVmeasure.ibias = data(:,2)*1e-6;
-                        if data(1,2) == 0
-                            IVmeasure.vout = data(:,4)-data(1,4);
-                        else
-                            IVmeasure.vout = data(:,4)-data(end,4);
-                        end
-                end
-                
-                %% Calcular el valor de Ib de acuerdo con Rn
-                val = polyfit(IVmeasure.ibias(1:10),IVmeasure.vout(1:10),1);
-                mN = val(1);
-                val = polyfit(IVmeasure.ibias(end-2:end),IVmeasure.vout(end-2:end),1);
-                mS = val(1);
-                handles.Circuit.mN.Value = mN;
-                handles.Circuit.mS.Value = mS;
-                handles.Circuit.Rpar.Value =(handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(handles.Circuit.mS.Value*handles.Circuit.invMin.Value)-1)*handles.Circuit.Rsh.Value;
-                handles.Circuit.Rn.Value=(handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(handles.Circuit.mN.Value*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-handles.Circuit.Rpar.Value);
-                
-                TESDATA.circuit = TES_Circuit;
-                TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
-                IVCurveSet = TES_IVCurveSet;
-                IVCurveSet = IVCurveSet.Update(IVmeasure);
-                TESDATA.TES.n = [];
-                IVset = IVCurveSet.GetIVTES(TESDATA);
-            else
-                figure(handles.SetupTES)
-                IVset = handles.IVset;
-            end
-            
-            clear data;
-            Conf.Ibias = BuildIbiasFromRp(IVset,str2double(handles.CurSource_Field_Rn.String));  %%%%%%
-            handles.CurSource_Field_Ibias.String = num2str(Conf.Ibias);
-            
-            % Ponemos el Squid en Estado Normal
-            handles.SQ_TES2NormalState.Value = 1;
-            SQ_TES2NormalState_Callback(handles.SQ_TES2NormalState,sign(1),handles);
-            % Reset Closed Loop
-            handles.SQ_Reset_Closed_Loop.Value = 1;
-            SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
-            
-            handles.SQ_Ibias.String = num2str(Conf.Ibias);
-            handles.SQ_Ibias_Units.Value = 3;
-            handles.SQ_Set_I.Value = 1;
-            SQ_Set_I_Callback(handles.SQ_Set_I,[],handles);
-            
-            pause(0.2);
-            
-        else
-            % Reset Closed Loop
-            handles.SQ_Reset_Closed_Loop.Value = 1;
-            SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
-        end
-        
-        if size(handles.FieldRange,2) > 1
-            for i = 1:size(handles.FieldRange,1)
-                if isnumeric(handles.FieldRange{i,1})
-                    FieldValues{i} = handles.FieldRange{i,1}:handles.FieldRange{i,2}:handles.FieldRange{i,3};
-                elseif ischar(handles.FieldRange{i,1})
-                    FieldValues{i} = str2double(handles.FieldRange{i,1}):str2double(handles.FieldRange{i,2}):str2double(handles.FieldRange{i,3});
-                end
-            end
-        else
-            FieldValues{1} = cell2mat(handles.FieldRange);
-        end
-        vals = FieldValues;
-        clear FieldValues;
-        FieldValues{1} = sort(unique(cell2mat(vals)),'ascend');
-        
-        if ~isempty(handles.TestData.VField)
-            ButtonName = questdlg('Do you want to erase current Field Scan?', ...
-                'ZarTES v1.0', ...
-                'Yes', 'No', 'Yes');
-            switch ButtonName
-                case 'Yes'
-                    handles.TestData.VField = [];
-            end % switch
-        end
-        
-        % Poner el valor en el sitio que le corresponde
-        % Se activa la salida de la fuente de intensidad
-        handles.CurSource_OnOff.Value = 1;
-        CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
-        
-        set([handles.Result_Axes1 handles.Result_Axes2 handles.Result_Axes3],'Visible','off');
-        
-        for i = 1:length(FieldValues)
-            xlim(handles.Result_Axes,[min(FieldValues{i}) max(FieldValues{i})]);
-            for j = 1:length(FieldValues{i})
-                
-                handles.CurSource_I.String = FieldValues{i}(j)*1e-6;
-                handles.CurSource_I_Units.Value = 1;
-                CurSource_I_Units_Callback(handles.CurSource_I_Units,[],handles);
-                
-                handles.CurSource_Set_I.Value = 1;
-                CurSource_Set_I_Callback(handles.CurSource_Set_I, [], handles);
-                if i == 1 && j == 1
-                    pause(2);
-                end
-                pause(0.5)
-                averages = 1;
-                for i_av = 1:averages
-                    handles.Multi_Read.Value = 1;
-                    Multi_Read_Callback(handles.Multi_Read,[],handles);
-                    aux1{i_av} = str2double(handles.Multi_Value.String);
-                    if i_av == averages
-                        vout = mean(cell2mat(aux1));
-                    end
-                end
-                handles.TestData.VField = [handles.TestData.VField; FieldValues{i}(j) vout];
-                
-                clear Data
-                HL = findobj(handles.Result_Axes,'Type','Line');
-                delete(HL);
-                Data(:,2) = handles.TestData.VField(:,1);
-                Data(:,5) = handles.TestData.VField(:,2);
-                DataName = '';
-                ManagingData2Plot(Data,DataName,handles,hObject)
-                % Tendríamos que pintar los valores cada vez que se están
-                % registrando.
-                
-            end
-        end
-        pause(0.6);
-        hObject.BackgroundColor = handles.Disable_Color;
-        hObject.Value = 0;
-        hObject.Enable = 'on';
-    else
-        hObject.BackgroundColor = handles.Disable_Color;
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Action of the device (including line)
-        handles.Actions_Str.String = 'Current Source K220 Connection is missed. Check connection and initialize it from the MENU.';
-        Actions_Str_Callback(handles.Actions_Str,[],handles);
-        
-    end
-end
-guidata(hObject,handles);
-
-
-% --- Executes on button press in Squid_Pulse_Input.
-function Squid_Pulse_Input_Callback(hObject, eventdata, handles)
-% hObject    handle to Squid_Pulse_Input (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of Squid_Pulse_Input
-if isempty(handles.Squid.ObjHandle)
-    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    hObject.Value = 0;
-else
-    if hObject.Value
-        hObject.BackgroundColor = handles.Active_Color;
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Action of the device (including line)
-        % Pulse Configuration Mode
-        % Pulse On
-        
-        status = handles.Squid.Cal_Pulse_ON;
-        if strcmp(status,'OK')
-            handles.Actions_Str.String = 'Electronic Magnicon: PULSE MODE ON';
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-        else
-            hObject.BackgroundColor = handles.Disable_Color;
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            handles.Actions_Str.String = 'Electronic Magnicon: Unsuccessful read: A timeout occurred before the Terminator was reached.';
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-        end
-    else
-        hObject.BackgroundColor = handles.Disable_Color;
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Action of the device (including line)
-        % Pulse Off
-        status = handles.Squid.Cal_Pulse_OFF;
-        if strcmp(status,'OK')
-            handles.Actions_Str.String = 'Electronic Magnicon: PULSE MODE OFF';
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-        else
-            hObject.BackgroundColor = handles.Disable_Color;
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            handles.Actions_Str.String = 'Electronic Magnicon: Unsuccessful read: A timeout occurred before the Terminator was reached.';
-            Actions_Str_Callback(handles.Actions_Str,[],handles);
-        end
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    end
-end
-
-% --- Executes on button press in Squid_Pulse_Input_Conf.
-function Squid_Pulse_Input_Conf_Callback(hObject, eventdata, handles)
-% hObject    handle to Squid_Pulse_Input_Conf (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-hObject.UserData = [];
-waitfor(Conf_Setup(hObject,[],handles));
-if ~isempty(hObject.UserData)
-    handles.Squid.PulseAmp.Value = hObject.UserData{1,2};
-    handles.Squid.PulseDT.Value = hObject.UserData{2,2};
-    handles.Squid.PulseDuration.Value = hObject.UserData{3,2};
-    handles.Squid.RL.Value = hObject.UserData{4,2};
-    handles.Actions_Str.String = 'Electronic Magnicon: Configuration Pulse Input Mode changed';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-    guidata(hObject,handles);
-end
-
+%%%%%%%%%%%%%%%%%%  GRAPHS FUNCTIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function ManagingData2Plot(Data,DataName,handles,hObject)
 handles = guidata(handles.SetupTES);
@@ -3618,380 +3283,564 @@ else
     end
 end
 
-
-% --- Executes on button press in IC_Range.
-function IC_Range_Callback(hObject, eventdata, handles)
-% hObject    handle to IC_Range (see GCBO)
+% --- Executes on button press in Check_Plot.
+function Check_Plot_Callback(hObject, eventdata, handles)
+% hObject    handle to Check_Plot (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-if size(handles.FieldRange,2) > 1
-    for i = 1:size(handles.FieldRange,1)
-        if isnumeric(handles.FieldRange{i,1})
-            FieldValues{i} = handles.FieldRange{i,1}:handles.FieldRange{i,2}:handles.FieldRange{i,3};
-        elseif ischar(handles.FieldRange{i,1})
-            FieldValues{i} = str2double(handles.FieldRange{i,1}):str2double(handles.FieldRange{i,2}):str2double(handles.FieldRange{i,3});
-        end
+% Hint: get(hObject,'Value') returns toggle state of Check_Plot
+if ~isempty(handles.FileName)
+    handles.Draw_Select.Visible = 'on';
+else % Test Values
+    if handles.TestPlot.Value
+        handles.Draw_Select.Visible = 'off';
     end
-else
-    FieldValues{1} = cell2mat(handles.FieldRange);
-end
-vals = FieldValues;
-clear FieldValues;
-FieldValues{1} = sort(unique(cell2mat(vals)),'ascend');
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% (Codigo Carlos) %%%%%%%%%%%%%%%%%%
-
-% Ponemos el valor de corriente en la fuente
-handles.CurSource_I_Units.Value = 1;
-handles.CurSource_I.String = num2str(FieldValues{1}(1)*1e-6);  % Se pasan las corrientes en amperios
-handles.CurSource_Set_I.Value = 1;
-CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-handles.CurSource_OnOff.Value = 1;
-CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
-
-
-handles.SQ_Reset_Closed_Loop.Value = 1;
-SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
-
-step = 0.1;
-
-for i = 1:length(FieldValues{1})
-    
-    handles.CurSource_I_Units.Value = 1;
-    handles.CurSource_I.String = num2str(FieldValues{1}(1)*1e-6);  % Se pasan las corrientes en amperios
-    handles.CurSource_Set_I.Value = 1;
-    CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-    pause(1);
-    
-    if i < 4
-        i0 = [1 1];
-    else
-        mmp = (ICpairs(i-1).p-ICpairs(i-3).p)/(FieldValues{1}(i-1)-FieldValues{1}(i-3));
-        mmn = (ICpairs(i-1).n-ICpairs(i-3).n)/(FieldValues{1}(i-1)-FieldValues{1}(i-3));
-        icnext_p = ICpairs(i-1).p + mmp*(FieldValues{1}(i)-FieldValues{1}(i-1));
-        icnext_n = ICpairs(i-1).n + mmn*(FieldValues{1}(i)-FieldValues{1}(i-1));
-        ic0_p = 0.9*icnext_p;
-        ic0_n = 0.9*icnext_n;
-        tempvalues = 0:step:500;%%%array de barrido en corriente
-        ind_p = find(tempvalues <= abs(ic0_p));
-        ind_n = find(tempvalues <= abs(ic0_n));
-        i0 = [ind_p(end) ind_n(end)];%%%Calculamos el índice que corresponde a la corriente para empezar el barrido
-    end
-    try
-        aux = measure_IC_Pair_autom(step,i0,FieldValues{1}(i),handles);
-        ICpairs(i).p = aux.p;
-        ICpairs(i).n = aux.n;
-        ICpairs(i).B = FieldValues{1}(i);
-        step = max(0.1,aux.p/20);%por si es cero.
-    catch
-        pause(1);
-        ICpairs(i).p = nan;
-        ICpairs(i).n = nan;
-        ICpairs(i).B = FieldValues{1}(i);
-        %continue;
-    end
-    hf = findobj(handles.Result_Axes,'DisplayName','Final');
-    delete(hf);
-    plot(handles.Result_Axes,FieldValues{1}(1:i),[ICpairs.p],'o-',FieldValues{1}(1:i),[ICpairs.n],'o-','DisplayName','Final');    
-end
-
-handles.CurSource_I_Units.Value = 1;
-handles.CurSource_I.String = num2str(0*1e-6);  % Se pasan las corrientes en amperios
-handles.CurSource_Set_I.Value = 1;
-CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-handles.CurSource_OnOff.Value = 0;
-CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
-
-
-Temp = str2double(handles.MCTemp.String);
-button = questdlg('Do you want to store this data?','ZarTES v1.0','Yes','No','Yes');
-switch button
-    case 'Yes'
-        FileStr = ['ICpairs' num2str(Temp*1e3) 'mK.mat'];
-        folder_name = uigetdir(pwd);
-        if ~isequal(folder_name,0)
-            uisave('ICpairs',[folder_name filesep FileStr]);
-            msgbox(['File named ' FileStr 'was saved'],'ZarTES v1.0');
-        else
-            warndlg('No path was selected','ZarTES v1.0');
-        end
-    otherwise
 end
 guidata(hObject,handles);
 
+% --- Executes on selection change in Draw_Select.
+function Draw_Select_Callback(hObject, eventdata, handles)
+% hObject    handle to Draw_Select (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
-function ICpair = measure_IC_Pair_autom(step,i0,B,handles)
+% Hints: contents = cellstr(get(hObject,'String')) returns Draw_Select contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Draw_Select
 
-Ivalues = 0:step:500;
-Rf = handles.Circuit.Rf.Value;
-THR = 1;
 
-for jj = 1:2 % barrido positivo y negativo
-    
-    if jj == 2
-        Ivalues = -Ivalues;
-        IV = [];
-    end
-    
-    handles.SQ_Reset_Closed_Loop.Value = 1;
-    SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
-    
-    % Set Ibias to zero value in order to impose TES's Superconductor State
-    handles.SQ_Ibias_Units.Value = 3;
-    handles.SQ_Ibias.String = num2str(Ivalues(1));
-    handles.SQ_Set_I.Value = 1;
-    SQ_Set_I_Callback(handles.SQ_Set_I, [],handles);
-    
-    a = handles.Squid.Read_Current_Value;
-    IV.ic(1) = a.Value;
-    pause(1);
-    [~, v] = handles.Multi.Read;
-    IV.vc(1) = v.Value;
-    vout1 = IV.vc(1);
-    
-    HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
-    delete(HL);
-    clear Data
-    data(:,4) = IV.ic(1);
-    data(:,2) = B;
-    DataName = 'Temporal';
-    ManagingData2Plot(data,DataName,handles,handles.IC_Range)
-    
-    for i = i0(jj)+1:length(Ivalues)
-        % Set Ibias to zero value in order to impose TES's Superconductor State
-        handles.SQ_Ibias_Units.Value = 3;
-        handles.SQ_Ibias.String = num2str(Ivalues(i));
-        handles.SQ_Set_I.Value = 1;
-        SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
-        pause(0.5);
-        a = handles.Squid.Read_Current_Value;
-        IV.ic(i) = a.Value;
-        [~, v] = handles.Multi.Read;
-        IV.vc(i) = v.Value;
-        vout2 = IV.vc(i);
-        
-        HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
-        delete(HL);
-        clear Data
-        data(:,4) = IV.ic(i);
-        data(:,2) = B;
-        DataName = 'Temporal';
-        ManagingData2Plot(data,DataName,handles,handles.IC_Range)
-        
-        slope = (vout2 -vout1)/((Ivalues(i)-Ivalues(i-1))*1e-6)/Rf;
-        if slope < THR
-            break;
+if handles.Draw_Select.Value == 1
+    handles.Area_Plot.Enable = 'on';
+else
+    handles.Area_Plot.Enable = 'off';
+end
+
+
+DataStr = {'IVs';'TF';'Noise';'Pulse';'RTs'};
+if handles.TestPlot.Value
+    eval(['Data = handles.TestData.' DataStr{handles.Draw_Select.Value}]);
+elseif handles.FilePlot.Value
+    LoadedFileList = handles.List_Files.String;
+    if iscell(handles.FileName)
+        if strcmp(LoadedFileList{handles.List_Files.Value},'All')
+            handles.Hold_Plot.Value = 1;
+            Hold_Plot_Callback(handles.Hold_Plot,[],handles);
+            for i = 1:length(handles.FileName)
+                Data = [];
+                DataName = handles.FileName{i};
+                try
+                    eval(['Data = handles.LoadData.' DataStr{handles.Draw_Select.Value} '{' num2str(i) '};']);
+                catch
+                    if i == 1
+                        warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                        return;
+                    end
+                end
+                if isempty(Data)&&length(eval(['handles.LoadData.' DataStr{handles.Draw_Select.Value}]))==1
+                    warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                    return;
+                elseif ~isempty(Data)
+                    switch handles.Draw_Select.Value
+                        case 1 % IV
+                            ManagingData2Plot(Data,DataName,handles,handles.Start_IVRange);
+                        case 2 % Zw
+                            if ~isempty(strfind(upper(DataName),'PXI'))
+                                ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Zw_Read);
+                            else
+                                ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Zw_Read);
+                            end
+                        case 3 % Noise
+                            if ~isempty(strfind(upper(DataName),'PXI'))
+                                ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Noise_Read);
+                            else
+                                ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Noise_Read);
+                            end
+                        case 4 % Pulse
+                            ManagingData2Plot(Data,DataName,handles,handles.PXI_Pulse_Read);
+                        case 5 % RTs
+                            
+                    end
+                end
+            end
+        else
+            Data = [];
+            DataName = handles.FileName{handles.List_Files.Value-1};
+            if ~isempty(strfind(DataName,'mK_Rf'))
+                handles.Draw_Select.Value = 1;
+            elseif ~isempty(strfind(DataName,'TF'))
+                handles.Draw_Select.Value = 2;
+            elseif ~isempty(strfind(upper(DataName),'NOISE'))
+                handles.Draw_Select.Value = 3;
+            elseif ~isempty(strfind(upper(DataName),'PULSO'))
+                handles.Draw_Select.Value = 4;
+            else
+                handles.Draw_Select.Value = 5;
+            end
+            
+            try
+                eval(['Data = handles.LoadData.' DataStr{handles.Draw_Select.Value} '{' num2str(handles.List_Files.Value-1) '};']);
+            catch
+                warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                return;
+            end
+            if isempty(Data)
+                warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                return;
+            elseif iscell(Data) && length(Data) == 1 && isempty(Data{1})
+                warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                return;
+            end
+            switch handles.Draw_Select.Value
+                case 1 % IV
+                    ManagingData2Plot(Data,DataName,handles,handles.Start_IVRange);
+                case 2 % Zw
+                    if ~isempty(strfind(upper(DataName),'PXI'))
+                        ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Zw_Read);
+                    else
+                        ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Zw_Read);
+                    end
+                case 3 % Noise
+                    if ~isempty(strfind(upper(DataName),'PXI'))
+                        ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Noise_Read);
+                    else
+                        ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Noise_Read);
+                    end
+                case 4 % Pulse
+                    ManagingData2Plot(Data,DataName,handles,handles.PXI_Pulse_Read);
+                case 5 % RTs
+                    
+            end
         end
-        vout1 = vout2;
+    else
+        Data = [];
+        try
+            eval(['Data = handles.LoadData.' DataStr{handles.Draw_Select.Value} ';']);
+        catch
+            warndlg(['No data of ' DataStr{handles.Draw_Select.Value} ' were loaded'],'ZarTES v1.0');
+            return;
+        end
+        if isempty(Data)
+            warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+            return;
+        elseif iscell(Data) && length(Data) == 1 && isempty(Data{1})
+            warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+            return;
+        end
+        switch handles.Draw_Select.Value
+            case 1 % IV
+                ManagingData2Plot(Data,handles.FileName,handles,handles.Start_IVRange);
+            case 2 % Zw
+                if ~isempty(strfind(upper(handles.FileName),'PXI'))
+                    ManagingData2Plot(Data,handles.FileName,handles,handles.PXI_TF_Zw_Read);
+                else
+                    ManagingData2Plot(Data,handles.FileName,handles,handles.DSA_TF_Zw_Read);
+                end
+            case 3 % Noise
+                if ~isempty(strfind(upper(handles.FileName),'PXI'))
+                    ManagingData2Plot(Data,handles.FileName,handles,handles.PXI_TF_Noise_Read);
+                else
+                    ManagingData2Plot(Data,handles.FileName,handles,handles.DSA_TF_Noise_Read);
+                end
+            case 4 % Pulse
+                ManagingData2Plot(Data,handles.FileName,handles,handles.PXI_Pulse_Read);
+            case 5 % RTs
+                
+        end
     end
-    % Set Ibias to zero value in order to impose TES's Superconductor State
-    handles.SQ_Ibias_Units.Value = 3;
-    handles.SQ_Ibias.String = num2str(0);
-    handles.SQ_Set_I.Value = 1;
-    SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
     
-    if jj == 1
-        ICpair.p = IV.ic(end-1);
-    elseif jj == 2
-        ICpair.n = IV.ic(end-1);
+end
+Check_Plot_Callback(handles.Check_Plot,[],handles);
+
+% --- Executes during object creation, after setting all properties.
+function Draw_Select_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Draw_Select (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on button press in FilePlot.
+function FilePlot_Callback(hObject, eventdata, handles)
+% hObject    handle to FilePlot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of FilePlot
+if (hObject.Value||handles.GraphPlot.Value)
+    handles.Browse_File.Enable = 'on';
+else
+    handles.Browse_File.Enable = 'off';
+end
+guidata(hObject,handles);
+
+% --- Executes on button press in GraphPlot.
+function GraphPlot_Callback(hObject, eventdata, handles)
+% hObject    handle to GraphPlot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of GraphPlot
+if (hObject.Value||handles.FilePlot.Value)
+    handles.Browse_File.Enable = 'on';
+else
+    handles.Browse_File.Enable = 'off';
+end
+guidata(hObject,handles);
+
+% --- Executes on button press in Hold_Plot.
+function Hold_Plot_Callback(hObject, eventdata, handles)
+% hObject    handle to Hold_Plot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Hold_Plot
+Str = {'';'1';'2';'3'};
+if hObject.Value
+    for i = 1:4
+        eval(['hold(handles.Result_Axes' Str{i} ',''on'');']);
+    end
+else
+    for i = 1:4
+        eval(['hold(handles.Result_Axes' Str{i} ',''off'');']);
+    end
+end
+guidata(hObject,handles);
+
+% --- Executes on button press in Zoom_Plot.
+function Zoom_Plot_Callback(hObject, eventdata, handles)
+% hObject    handle to Zoom_Plot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Zoom_Plot
+Str = {'';'1';'2';'3'};
+if hObject.Value
+    for i = 1:4
+        eval(['zoom(handles.Result_Axes' Str{i} ',''on'');']);
+    end
+else
+    for i = 1:4
+        eval(['zoom(handles.Result_Axes' Str{i} ',''off'');']);
+    end
+end
+guidata(hObject,handles);
+
+% --- Executes on button press in Grid_Plot.
+function Grid_Plot_Callback(hObject, eventdata, handles)
+% hObject    handle to Grid_Plot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Grid_Plot
+Str = {'';'1';'2';'3'};
+if hObject.Value
+    for i = 1:4
+        eval(['grid(handles.Result_Axes' Str{i} ',''on'');']);
+    end
+else
+    for i = 1:4
+        eval(['grid(handles.Result_Axes' Str{i} ',''off'');']);
+    end
+end
+guidata(hObject,handles);
+
+% --- Executes on button press in Clear_Plot.
+function Clear_Plot_Callback(hObject, eventdata, handles)
+% hObject    handle to Clear_Plot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Clear_Plot
+hObject.Enable = 'off';
+CH = findobj(handles.Result_Axes,'Type','Line');
+delete(CH);
+CH = findobj(handles.Result_Axes1,'Type','Line');
+delete(CH);
+CH = findobj(handles.Result_Axes2,'Type','Line');
+delete(CH);
+CH = findobj(handles.Result_Axes3,'Type','Line');
+delete(CH);
+handles.Check_Plot.Value = 0;
+Check_Plot_Callback(handles.Check_Plot,[],handles);
+hObject.Enable = 'on';
+guidata(hObject,handles);
+
+% --- Executes on button press in Browse_File.
+function Browse_File_Callback(hObject, eventdata, handles)
+% hObject    handle to Browse_File (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if handles.FilePlot.Value
+    [FileName, FileDir] = uigetfile({'*.txt','Example file (*.txt)';...
+        '*.dat','Example file (*.dat)'},...
+        'MultiSelect','on','Select File(s)',handles.FileDir);
+    if ~isempty(FileName)&&~isequal(FileName,0)
+        handles.FileDir = FileDir;
+        handles.FileName = FileName;
+        handles.Datos = {[]};
+        handles.LoadData.IVs = [];
+        handles.LoadData.Noise = {[]};
+        handles.LoadData.TF = {[]};
+        handles.LoadData.Pulse = {[]};
+        handles.LoadData.RTs = [];
+        if iscell(FileName)
+            handles.Actions_Str.String = 'Graphical Representation: MultiSelection';
+            handles.List_Files.String = [{'All'} FileName]';
+            handles.List_Files.Value = 1;
+            set([handles.LoadFiles_Str handles.List_Files],'Visible','on');
+        else
+            handles.Actions_Str.String = ['Graphical Representation: ' FileDir FileName ];
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+            handles.List_Files.String = FileName;
+            handles.List_Files.Value = 1;
+            set([handles.LoadFiles_Str handles.List_Files],'Visible','on');
+        end
+        
+        if handles.FilePlot.Value
+            if iscell(handles.FileName)
+                handles.Hold_Plot.Value = 1;
+                Hold_Plot_Callback(handles.Hold_Plot,[],handles);
+                h = waitbar(0,'Please wait... loading Files');
+                for i = 1:length(handles.FileName)
+                    fid = fopen([handles.FileDir handles.FileName{i}]);
+                    Data = importdata([handles.FileDir handles.FileName{i}]);
+                    fclose(fid);
+                    
+                    if ~isempty(strfind(handles.FileName{i},'mK_Rf'))
+                        handles.LoadData.IVs{i} = Data;
+                        handles.Draw_Select.Value = 1;
+                    elseif ~isempty(strfind(handles.FileName{i},'TF_'))
+                        handles.LoadData.TF{i} = Data;
+                        handles.Draw_Select.Value = 2;
+                    elseif ~isempty(strfind(upper(handles.FileName{i}),'_NOISE'))
+                        handles.LoadData.Noise{i} = Data;
+                        handles.Draw_Select.Value = 3;
+                    elseif ~isempty(strfind(upper(handles.FileName{i}),'_PULSO'))
+                        handles.LoadData.Pulse{i} = Data;
+                        handles.Draw_Select.Value = 4;
+                    end
+                    handles.Datos{i} = Data;
+                    waitbar(i/length(handles.FileName),h)
+                end
+                close(h);
+            else
+                fid = fopen([handles.FileDir handles.FileName]);
+                Data = importdata([handles.FileDir handles.FileName]);
+                fclose(fid);
+                if ~isempty(strfind(handles.FileName,'mK_Rf'))
+                    handles.LoadData.IVs = Data;
+                    handles.Draw_Select.Value = 1;
+                elseif ~isempty(strfind(handles.FileName,'TF_'))
+                    handles.LoadData.TF = Data;
+                    handles.Draw_Select.Value = 2;
+                elseif ~isempty(strfind(upper(handles.FileName),'_NOISE'))
+                    handles.LoadData.Noise = Data;
+                    handles.Draw_Select.Value = 3;
+                elseif ~isempty(strfind(upper(handles.FileName),'_PULSO'))
+                    handles.LoadData.Pulse = Data;
+                    handles.Draw_Select.Value = 4;
+                end
+                handles.Datos = Data;
+            end
+            set(handles.Draw_Select,'Visible','on');
+            Draw_Select_Callback(handles.Draw_Select,[],handles);
+            
+        end
+        if handles.Check_Plot.Value
+            Check_Plot_Callback(handles.Check_Plot,[],handles);
+        end
+    else
+        handles.FileDir = [];
+        handles.FileName = [];
+        handles.Actions_Str.String = 'Graphical Representation: No file selected';
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
+        set([handles.LoadFiles_Str handles.List_Files],'Visible','off');
+    end
+    
+    
+end
+
+guidata(hObject, handles);
+
+% --- Executes on button press in TestPlot.
+function TestPlot_Callback(hObject, eventdata, handles)
+% hObject    handle to TestPlot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of TestPlot
+% if (handles.FilePlot.Value||handles.GraphPlot.Value)
+if handles.FilePlot.Value
+    handles.Browse_File.Enable = 'on';
+else
+    handles.Browse_File.Enable = 'off';
+end
+
+if hObject.Value  % Current values acquired
+    
+    switch size(handles.TestData,2)
+        case 2 % Noise
+            handles.TestData.Noise = Data;
+        case 3 % TF
+            handles.TestData.TF = Data;
+        case 4 % I-Vs
+            handles.TestData.IVs = Data;
+        otherwise
+    end
+    ManagingData2Plot(handles.TestData,[],handles);
+end
+
+guidata(hObject,handles);
+
+% --- Executes on selection change in List_Files.
+function List_Files_Callback(hObject, eventdata, handles)
+% hObject    handle to List_Files (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns List_Files contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from List_Files
+%
+Draw_Select_Callback(handles.Draw_Select,[],handles);
+Check_Plot_Callback(handles.Check_Plot,[],handles);
+guidata(hObject,handles);
+
+% --- Executes during object creation, after setting all properties.
+function List_Files_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to List_Files (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%  MIXING CHAMBER TEMP FUNCTIONS  %%%%%%%%%%%%%%%%%%%%%%%%
+
+
+function update_Temp_display(src,evnt)
+
+handles = src.UserData;
+T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+handles.MCTemp.String = num2str(T_MC);
+
+
+function update_Temp_Color(src,evnt)
+
+handles = src.UserData;
+T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+Set_Pt = str2double(handles.SetPt.String);
+
+Error = abs(T_MC-Set_Pt)/T_MC*100;
+handles.Error_Measured.String = Error;
+
+RGB = [linspace(120,255,100)' sort(linspace(50,170,100),'descend')' 50*ones(100,1)]./255;
+handles.Temp_Color.BackgroundColor = RGB(round(min(ceil(Error),100)),:);
+
+
+function SetPt_Callback(hObject, eventdata, handles)
+% hObject    handle to SetPt (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of SetPt as text
+%        str2double(get(hObject,'String')) returns contents of SetPt as a double
+
+SetPt = str2double(hObject.String);
+
+if isnan(SetPt)||isinf(SetPt)
+    warndlg('Invalid Set Pt value','ZarTES v1.0');
+    hObject.String = '---';
+    return;
+else
+    if SetPt > 500*1e-3 % Por encima de 120mK
+        ButtonName = questdlg('Set Pt above 120 mK, are you sure to continue?','ZarTES v1.0','Yes','No','No');
+        switch ButtonName
+            case 'No'
+                return;
+        end
     end
 end
 
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% (Codigo Juan) %%%%%%%%%%%%%%%%%%
-% StrCond = {'p';'n'};
-% Ibvalues_step = 1;
-% 
-% %                 % Reset Closed Loop
-% handles.SQ_Reset_Closed_Loop.Value = 1;
-% SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
-% hold(handles.Result_Axes,'on');
-% for cond = 1:2
-%     clear data;
-%     
-%     % Ponemos el valor de corriente en la fuente
-%     handles.CurSource_I_Units.Value = 1;
-%     handles.CurSource_I.String = num2str(FieldValues{1}(1)*1e-6);  % Se pasan las corrientes en amperios
-%     handles.CurSource_Set_I.Value = 1;
-%     CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-%     handles.CurSource_OnOff.Value = 1;
-%     CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
-%     
-%     LNCS = 0;
-%     Ibvalues = 0;
-%     
-%     j = 1;
-%     while j < length(FieldValues{1})-1
-%         % Reset Closed Loop
-%         handles.SQ_Reset_Closed_Loop.Value = 1;
-%         SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
-%         pause(0.2)
-%         handles.SQ_Reset_Closed_Loop.Value = 1;
-%         SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
-%         pause(0.2)
-%         clear data;
-%         if LNCS
-%             mag_ConnectLNCS(mag);
-%             mag_setLNCSImag(mag,0);
-%         end
-%         % Set Ibias to zero value in order to impose TES's Superconductor State
-%         handles.SQ_Ibias_Units.Value = 3;
-%         handles.SQ_Ibias.String = num2str(0);
-%         handles.SQ_Set_I.Value = 1;
-%         SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
-%         
-%         if Ibvalues ~= 0
-%             if cond == 1
-%                 Ibvalues = max(Ibvalues*0.60,0);
-%             else
-%                 Ibvalues = min(Ibvalues*0.60,0);
-%             end
-%             if abs(Ibvalues) < 20
-%                 Ibvalues = 0;
-%             end
-%         end
-%         if j > 1            
-%             handles.CurSource_I_Units.Value = 1;
-%             handles.CurSource_I.String = num2str(FieldValues{1}(j)*1e-6);  % Se pasan las corrientes en amperios
-%             handles.CurSource_Set_I.Value = 1;
-%             CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-%         end        
-%         
-%         handles.SQ_Ibias_Units.Value = 3;
-%         handles.SQ_Ibias.String = num2str(Ibvalues);
-%         handles.SQ_Set_I.Value = 1;
-%         SQ_Set_I_Callback(handles.SQ_Set_I,[],handles);
-%         
-%         
-%         jj = 1;
-%         % Adquirimos Curvas I-V para determinar el Ibias crítica en el que pasa de superconductor a estado normal
-% %         handles.Multi_Read.Value = 1;
-% %         Multi_Read_Callback(handles.Multi_Read,[],handles);
-%         bwhile = 0;
-%         c = true;
-%         while c
-%             
-%             if abs(Ibvalues) > 500 % Repetir la medida con la fuente de LNCS
-%                 eval(['ICpairs(j).' StrCond{cond} ' = IVmeasure.ibias(jj-1);'])
-%                 data(jj,4) = IVmeasure.ibias(jj-1);
-%                 data(jj,2) = FieldValues{1}(j);
-%                 clear IVmeasure;
-%                 LNCS = 0;
-%                 break;
-%             end
-%                         
-%             handles.SQ_Ibias_Units.Value = 3;
-%             handles.SQ_Ibias.String = num2str(Ibvalues);
-%             handles.SQ_Set_I.Value = 1;
-%             SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
-%             if jj == 1
-%                 pause(1.5);
-%             end
-%             Multi_Read_Callback(handles.Multi_Read, [], handles)
-%                                     
-%             a = handles.Squid.Read_Current_Value;
-%             IVmeasure.ibias(jj) = a.Value;
-%             pause(0.6);
-%             [~, v] = handles.Multi.Read;
-%             IVmeasure.vout(jj) = v.Value;            
-%             
-%             HL = findobj(handles.Result_Axes,'DisplayName','Temporal');
-%             delete(HL);
-%             clear Data
-%             data(:,4) = IVmeasure.ibias(jj);
-%             data(:,2) = FieldValues{1}(j);
-%             DataName = 'Temporal';
-%             ManagingData2Plot(data,DataName,handles,handles.IC_Range)   
-%             
-%             if jj > 3 % Se descarta el primer valor
-%                 slope = median(diff(IVmeasure.vout(jj-2:jj))./diff(IVmeasure.ibias(jj-2:jj)*1e-6));
-%                 
-%                 if slope < handles.Circuit.mS.Value*0.5
-%                     if slope < 0
-%                         eval(['ICpairs(j).' StrCond{cond} ' = IVmeasure.ibias(jj-1);'])
-%                         
-%                         data(jj,4) = IVmeasure.ibias(jj);
-%                         data(jj,2) = FieldValues{1}(j);
-% 
-%                         clear IVmeasure;
-%                         LNCS = 0;
-%                         Ibvalues_step = 1;                                                
-%                         break;
-%                     else
-%                         if jj < 5
-%                             jj = 1;
-%                             clear IVmeasure;
-%                             Ibvalues_step = 0.01;
-%                             Ibvalues = 0;
-%                             LNCS = 0;
-%                             bwhile = 1;
-%                             break;                            
-%                         end
-%                         eval(['ICpairs(j).' StrCond{cond} ' = IVmeasure.ibias(jj-1);'])
-%                         data(jj,4) = IVmeasure.ibias(jj);
-%                         data(jj,2) = FieldValues{1}(j);                      
-%                         Ibvalues_step = 1;
-%                         clear IVmeasure;
-%                         LNCS = 0;                        
-%                         break;
-%                     end
-%                 else
-%                     data(jj,2) = IVmeasure.ibias(jj);
-%                     data(jj,4) = FieldValues{1}(j);
-%                     jj = jj+1;
-%                     
-%                     if cond == 1
-%                         Ibvalues = Ibvalues+Ibvalues_step;
-%                     else
-%                         Ibvalues = Ibvalues-Ibvalues_step;
-%                     end
-%                 end
-%                 
-%             else
-%                 jj = jj+1;
-%                 if cond == 1
-%                     Ibvalues = Ibvalues+Ibvalues_step;
-%                 else
-%                     Ibvalues = Ibvalues-Ibvalues_step;
-%                 end
-%             end
-%         end
-%         if bwhile
-%             continue;
-%         end
-%         ICpairs(j).B = FieldValues{1}(j);
-%         hf = findobj(handles.Result_Axes,'DisplayName','Final');
-%         delete(hf);
-%         plot(handles.Result_Axes,[ICpairs(1:j).B],eval(['[ICpairs(1:j).' StrCond{cond} ']']),'ro-','DisplayName','Final')
-%         j = j+1;
-%     end % End Bfield values
-%     Temp = str2double(handles.MCTemp.String);
-%     FileStr = ['ICpairs' num2str(Temp*1e3) 'mK.mat'];
-%     
-%     if isempty(handles.FieldFileDir)
-%         handles.FieldFileDir = uigetdir;
-%         while isequal(handles.FieldFileDir,0)
-%             FieldFileDir = uigetdir;
-%             handles.FieldFileDir = FieldFileDir;
-%         end
-%     end                            
-%     save([handles.FieldFileDir FileStr],'ICpairs');
-%     ICpairs = rmfield(ICpairs,'B');
-%     clear IVmeasure
-% end % End Cond (positive or negative ibias)
-% 
-% if LNCS
-%     mag_setLNCSImag(mag,0);
-%     mag_DisconnectLNCS(mag);
-% end
-% 
-% % Desactivamos la salida de corriente de la fuente
-% handles.CurSource_OnOff.Value = 0;
-% CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
-% 
-% % set(handles.SQ_Rf,'Value',Rf_popup); % 7e2 value
-% % SQ_Calibration_Callback(handles.SQ_Calibration,[],handles);
-% 
-% guidata(hObject,handles);
+handles.vi_IGHFrontPanel.FPState = 4;
+pause(0.1)
+handles.vi_IGHFrontPanel.FPState = 1;
+pause(0.1)
+handles.vi_IGHFrontPanel.SetControlValue('Settings',1);
+pause(1.5)
+handles.vi_IGHChangeSettings.SetControlValue('Set Point Dialog',1);
+pause(0.1)
+while strcmp(handles.vi_PromptForT.FPState,'eClosed')
+    pause(0.1);
+end
+handles.vi_PromptForT.SetControlValue('Set T',SetPt)%
+pause(0.4)
+handles.vi_PromptForT.SetControlValue('Set T',SetPt)%
+pause(0.1)
+handles.vi_PromptForT.SetControlValue('OK',1)
+pause(0.1)
+while strcmp(handles.vi_PromptForT.FPState,'eClosed')
+    pause(0.1);
+end
+stop(handles.timer_T);
+start(handles.timer_T);
+waitfor(msgbox('Temperature was sucessfully set','ZarTES v1.0'));
+
+guidata(hObject,handles);
+
+% --- Executes on button press in Temp_Color.
+function Temp_Color_Callback(hObject, eventdata, handles)
+% hObject    handle to Temp_Color (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+function Temp_Error_Callback(hObject, eventdata, handles)
+% hObject    handle to Temp_Error (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Temp_Error as text
+%        str2double(get(hObject,'String')) returns contents of Temp_Error as a double
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+    if value <= 0||value > 100
+        set(hObject,'String','5');
+    end
+else
+    set(hObject,'String','5');
+end
+
+% --- Executes during object creation, after setting all properties.
+function Temp_Error_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Temp_Error (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes during object creation, after setting all properties.
+function Error_Measured_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Temp_Error (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+

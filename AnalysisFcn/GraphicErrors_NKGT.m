@@ -28,6 +28,7 @@ c4 = uimenu(cmenu,'Label','Show Negative Ibias Data','Callback',...
 
 c5 = uimenu(cmenu,'Label','Export Graphic Data','Callback',{@ExportGraph},'UserData',src);
 c6 = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',src);
+c7 = uimenu(cmenu,'Label','Link all x axes','Callback',{@ManagingAxes},'UserData',src);
 
 set(src,'uicontextmenu',cmenu);
 
@@ -100,20 +101,33 @@ switch str
     case 'Hide Negative Ibias Data'
         
         set([hn; hne],'Visible','off');
+        for i = 1:length(hn)           
+            set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        end
         
         
     case 'Show Negative Ibias Data'
         
         set(hn,'Visible','on');
+        for i = 1:length(hn)           
+            set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+        end
         for i = 1:length(hpe)
             if strcmp(hpe(i).Visible,'on')
                 set(hne,'Visible','on');
             end
         end
         
+        
     case 'Positive'
         set(hp,'Visible','on');
+        for i = 1:length(hp)           
+            set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+        end
         set([hn hne],'Visible','off')
+        for i = 1:length(hn)           
+            set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        end
         try
             if strcmp(hpe(1).Visible,'on')||strcmp(hne(1).Visible,'on')
                 set(hpe,'Visible','on');
@@ -123,7 +137,13 @@ switch str
             
     case 'Negative'
         set(hn,'Visible','on');
+        for i = 1:length(hn)           
+            set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+        end
         set([hp hpe],'Visible','off')
+        for i = 1:length(hp)           
+            set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        end
         try
             if strcmp(hpe(1).Visible,'on')||strcmp(hne(1).Visible,'on')
                 set(hne,'Visible','on');
@@ -132,11 +152,30 @@ switch str
         end
     case 'All'
         set([hp hpe hn hne],'Visible','on');
+        for i = 1:max([length(hp) length(hn)])
+            try
+                set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+            end
+            try
+                set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+            end
+        end
         
     otherwise
         h = [findobj('Type','Line'); findobj('Type','ErrorBar')];
         set(h,'Visible','off');
+        for i = 1:length(h)
+            set(get(get(h(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        end
         set([hp; hn],'Visible','on');
+        for i = 1:max([length(hp) length(hn)])
+            try
+                set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+            end
+            try
+                set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
+            end
+        end
 end
 
 function ExportGraph(src,evnt)
@@ -172,7 +211,7 @@ fclose(fid);
 
 function SaveGraph(src,evnt)
 
-ha = findobj(src.UserData.Parent,'Type','Axes');
+ha = findobj(src.UserData.Parent,'Type','Axes','Visible','on');
 fg = figure;
 copyobj(ha,fg);
 [file,path] = uiputfile('*.jpg','Save Graph name');
@@ -180,3 +219,8 @@ if ~isequal(file,0)
     print(fg,'-djpeg',[path filesep file]);
 %     hgsave(fg,[path filesep file]);
 end
+
+function ManagingAxes(src,evnt)
+
+ha = findobj(src.UserData.Parent,'Type','Axes');
+linkaxes(ha,'x');

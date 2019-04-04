@@ -388,7 +388,7 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES.TES.CheckValues;
     case 'TES Thermal Parameters vs. %Rn'
         fig.hObject = handles.Analyzer;
-        indAxes = findobj('Type','Axes');
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
@@ -582,7 +582,7 @@ switch src.Label
         j = 1;
         for i = s
             handles.Session{i}.TES.plotABCT(fig);
-            Lines = findobj('Type','Line');
+            Lines = findobj(fig.hObject,'Type','Line');
             for Ln = 1:length(Lines)
                 if i == s(1)
                     Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
@@ -599,7 +599,7 @@ switch src.Label
                 end
             end
             j = j+1;
-            Axes = findobj('Type','Axes');
+            Axes = findobj(fig.hObject,'Type','Axes');
             for k = 1:length(Axes)
                 USData{k} = Axes(k).UserData;
                 try
@@ -662,7 +662,7 @@ switch src.Label
                     j = 1;
                     for i = s1
                         handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);
-                        Lines = findobj('Type','Line');
+                        Lines = findobj(fig.hObject,'Type','Line');
                         for Ln = 1:length(Lines)
                             if i == s1(1)
                                 Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
@@ -692,7 +692,7 @@ switch src.Label
                     j = 1;
                     for i = s1
                         handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);
-                        Lines = findobj('Type','Line');
+                        Lines = findobj(fig.hObject,'Type','Line');
                         for Ln = 1:length(Lines)
                             if i == s1(1)
                                 Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];

@@ -322,8 +322,8 @@ set(hs,'XScale','linear','YScale','linear')
 eval(['FileName = files' StrCond '{handles.Files_Ind};']);
 FileName = FileName(find(FileName == filesep,1,'last')+1:end);
 
-if ~isempty(strfind(FileName,'TF_PXI_'))
-    Ib = sscanf(FileName,'TF_PXI_%fuA.txt')*1e-6;
+if ~isempty(strfind(FileName,'PXI_TF'))
+    Ib = sscanf(FileName,'PXI_TF_%fuA.txt')*1e-6;
 else
     Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
 end

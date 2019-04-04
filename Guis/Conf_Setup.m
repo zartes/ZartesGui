@@ -103,12 +103,12 @@ switch varargin{1}.Tag
             if hndl.DSA_Input_Amp_Units.Value == 4 % Porcentaje sobre Ibias
                 Porc = str2double(hndl.DSA_Input_Amp.String);
                 Ireal = hndl.Squid.Read_Current_Value;
-                SLRV_str = Ireal.Value*1e1*Porc;
+                SRLV_str = Ireal.Value*1e1*Porc;
             else
                 Str = eval(['DSA_Conf.' OptStr{j} '{Srch == 1};']);
                 SRLV_str = Str(strfind(Str,'SRLV ')+5:end-2);
             end
-            eval(['DSA_Conf.' OptStr{j} '{Srch == 1} = [''SRLV ' SRLV_str 'mV''];'])
+            eval(['DSA_Conf.' OptStr{j} '{Srch == 1} = [''SRLV ' num2str(SRLV_str) 'mV''];'])
         end
         
         Srch = strfind(DSA_Conf.FSine,'FSIN ');
@@ -323,6 +323,7 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(%)';'Step(%)';'Final Value(%)'};
         handles.Table.Data = cell(1,3);
+%          hndl.TF_Zw.rpp = sort(unique([0.9:-0.1:0.3 0.3:-0.02:0.08])','descend');
         handles.Table.Data(1:size(hndl.TF_Zw.rpp,1),size(hndl.TF_Zw.rpp,2)) = num2cell(hndl.TF_Zw.rpp);
         handles.Options.Visible = 'off';
     case 'AQ_TF_Rn_N_Set'
