@@ -76,13 +76,9 @@ elseif isempty(answer{1})
 end
 
 if exist([handles.Enfriada_dir filesep ExcelEnfriada],'file')
-    num = xlsread([handles.Enfriada_dir filesep ExcelEnfriada],2);
-    if ~merg
-        d = {str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
-        xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
-    else   % Añadir la parte del mergin
-        
-    end
+    num = xlsread([handles.Enfriada_dir filesep ExcelEnfriada],2);    
+    d = {str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
+    xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
 else
     d = {'ID_Enfriada','ID_SQUID','ID_TES','Date','Rsh','L','invMf','invMin'};
     xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 1, 'A1')
@@ -90,11 +86,11 @@ else
     xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2, 'A1')
 end
 
-if ~merg
+if ~merg    
     IbvaluesConf('Save_Conf_Callback',handles.Save_Conf,handles.AQ_dir,guidata(handles.Save_Conf));
     save([handles.AQ_dir filesep 'Conf_Acq.mat'],'Conf');
-else  % Añadir la parte del mergin
-    
+else  % Añadir la parte del mergin    
+    save([handles.AQ_dir filesep 'Conf_Acq_Merge.mat'],'Conf');
 end
 
 circuit = TES_Circuit;
@@ -349,7 +345,7 @@ while c
         SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
     catch
     end
-    if nanmedian(Error) < 0.05
+    if (nanmedian(Error)&& j > 10) < 0.05
         c = false;
     else
         if nanmedian(Error) < 0.4  % Cuando la temperatura alcanza un valor con un error relativo menor al 0.4%

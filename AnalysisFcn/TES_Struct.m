@@ -653,8 +653,13 @@ classdef TES_Struct
             prompt = {'Enter TES length value:','Enter TES width value:','Enter Mo thickness value:','Enter Au thickness value:'};
             name = 'Provide TES dimension';
             numlines = 1;
-            defaultanswer = {num2str(obj.TES.sides(1)),num2str(obj.TES.sides(2)),...
-                num2str(obj.TES.hMo),num2str(obj.TES.hAu)};
+            try
+                defaultanswer = {num2str(obj.TES.sides(1)),num2str(obj.TES.sides(2)),...
+                    num2str(obj.TES.hMo),num2str(obj.TES.hAu)};
+            catch
+                defaultanswer = {num2str(25e-6),num2str(25e-6),...
+                    num2str(55e-9),num2str(340e-9)};
+            end
             
             answer = inputdlg(prompt,name,numlines,defaultanswer);
             if ~isempty(answer)
@@ -1029,7 +1034,7 @@ classdef TES_Struct
             Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
             Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
             % Buscamos si es Ibias positivos o negativos
-            if ~isempty(strfind(Path,'Negative Bias')) %#ok<STREMP>
+            if ~isempty(strfind(Path,'Negative')) %#ok<STREMP>
                 [~,Tind] = min(abs([obj.IVsetN.Tbath]*1e3-Tbath));
                 IV = obj.IVsetN(Tind);
                 CondStr = 'N';
@@ -1216,7 +1221,7 @@ classdef TES_Struct
             Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
             Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
             % Buscamos si es Ibias positivos o negativos
-            if ~isempty(strfind(Path,'Negative Bias'))
+            if ~isempty(strfind(Path,'Negative'))
                 [~,Tind] = min(abs([obj.IVsetN.Tbath]*1e3-Tbath));
                 IV = obj.IVsetN(Tind);
                 CondStr = 'N';

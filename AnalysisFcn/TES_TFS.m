@@ -87,7 +87,7 @@ classdef TES_TFS
                     T = 0;
                 end
             end
-            if ~isnumeric(T)
+            if ~isequal(T,0)
                 data = importdata(T);
                 obj.tf = data(:,2)+1i*data(:,3);
                 obj.re = data(:,2);
