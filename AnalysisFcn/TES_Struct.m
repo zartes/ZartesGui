@@ -696,9 +696,19 @@ classdef TES_Struct
                     obj.TFOpt.TFBaseName = '\PXI_TF*';
                     obj.NoiseOpt.NoiseBaseName = '\PXI_noise*';%%%'\HP*'
                     
+                    if isempty(strfind(obj.TFS.file,'PXI_TF_'))
+                        [Path, Name] = fileparts(obj.TFS.file);
+                        warndlg('TFS must be a file named PXI_TF_* (PXI card)','ZarTES v1.0');
+                        obj.TFS = obj.TFS.importTF([Path filesep]);
+                    end
                 case 'HP'
                     obj.TFOpt.TFBaseName = '\TF*';
                     obj.NoiseOpt.NoiseBaseName = '\HP_noise*';%%%'\HP*'
+                    if isempty(strfind(obj.TFS.file,'\TF_'))
+                        [Path, Name] = fileparts(obj.TFS.file);
+                        warndlg('TFS must be a file named TF_* (HP)','ZarTES v1.0');
+                        obj.TFS = obj.TFS.importTF([Path filesep]);
+                    end
                 otherwise
                     disp('PXI acquisition files were selected by default.')
                     obj.TFOpt.TFBaseName = '\PXI_TF*';
@@ -849,11 +859,11 @@ classdef TES_Struct
                             H.figure.Name = 'ZarTES v1.0';
                         end
                         thefile = strcat(dirs{i},'\',filesZ{j1});
-%                         try
+                        try
                             [param, ztes, fZ, ERP, R2, CI, aux1, StrModel, p0] = obj.FitZ(thefile,FreqRange);
-%                         catch
-%                             continue;
-%                         end
+                        catch
+                            continue;
+                        end
                         
                         if param.rp > obj.ZwrpUB || param.rp < obj.ZwrpLB
                             continue;
@@ -1064,8 +1074,9 @@ classdef TES_Struct
                 data = importdata(FileName);
                 IndFs = find(data(:,2) ~= 0);
                 data = data(data(IndFs,1) >= FreqRange(1) & data(IndFs,1) <= FreqRange(2),:);
-                tf = data(IndFs,2)+1i*data(IndFs,3);
-                Rth = obj.circuit.Rsh+obj.circuit.Rpar+2*pi*obj.circuit.L*data(IndFs,1)*1i;
+                tf = data(:,2)+1i*data(:,3);
+%                 tf = data(IndFs,2)+1i*data(IndFs,3);
+                Rth = obj.circuit.Rsh+obj.circuit.Rpar+2*pi*obj.circuit.L*data(:,1)*1i;
                 fS = obj.TFS.f(IndFs);
                 fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
                 ztes = (obj.TFS.tf(fS >= FreqRange(1) & fS <= FreqRange(2))./tf-1).*Rth;
@@ -1230,8 +1241,9 @@ classdef TES_Struct
                 IV = obj.IVsetP(Tind);
                 CondStr = 'P';
             end
-            noisedata{1} = importdata(FileName);
+            noisedata{1} = importdata(FileName);            
             fNoise = noisedata{1}(:,1);
+            
             SigNoise = obj.V2I(noisedata{1}(:,2)*1e12);
             OP = obj.setTESOPfromIb(Ib,IV,param);
             SimulatedNoise = obj.noisesim(OP);
@@ -1242,14 +1254,23 @@ classdef TES_Struct
             NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
             RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./medfilt1(real(NEP),20).^2))/2/1.609e-19;
             
-            
-            findx = find(fNoise > 2e2 & fNoise < 10e4);
-            xdata = fNoise(findx);
-            ydata = medfilt1(NEP(findx)*1e18,40);
-            opts = optimset('Display','off');
-            maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(x,xdata,OP),[0 0],xdata,ydata,[],[],opts);
-            M = maux(2);
-            Mph = maux(1);
+            if isreal(NEP)
+                findx = find(fNoise > 2e2 & fNoise < 10e4);
+                xdata = fNoise(findx);
+                ydata = medfilt1(NEP(findx)*1e18,40);
+                if isempty(findx)||sum(ydata == inf)
+                    M = 0;
+                    Mph = 0;
+                else
+                    opts = optimset('Display','off');
+                    maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(x,xdata,OP),[0 0],xdata,ydata,[],[],opts);
+                    M = maux(2);
+                    Mph = maux(1);
+                end
+            else
+                M = 0;
+                Mph = 0;
+            end
             
             
 %             %%%Excess noise trials.
@@ -2656,6 +2677,7 @@ classdef TES_Struct
                         else
                             Ylabel = param2;
                         end
+                        
                         eval(['h = plot(ax,val' StrRange{k} '2{i},val' StrRange{k} '1{i},''LineStyle'',''-.'',''Marker'',''o'''...
                             ',''DisplayName'',[''T_{bath}: '' num2str(Tbaths' StrRange{k} '1(i)*1e3) '' mK - ' StrCond{k} ' Ibias'']);']);
                         try

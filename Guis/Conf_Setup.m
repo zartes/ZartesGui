@@ -288,7 +288,9 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
         handles.Table.Data = cell(1,3);
-        handles.Table.Data(1:size(hndl.FieldScan.BVvalue,1),size(hndl.FieldScan.BVvalue,2)) = num2cell(hndl.FieldScan.BVvalue');
+        try
+            handles.Table.Data(1:size(hndl.FieldScan.BVvalue,1),size(hndl.FieldScan.BVvalue,2)) = num2cell(hndl.FieldScan.BVvalue');
+        end
         handles.Options.Visible = 'off';
     case 'AQ_IC_Field_Set'
         set(handles.figure1,'Name','Set Field Values for Critical Currents');
@@ -323,8 +325,10 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(%)';'Step(%)';'Final Value(%)'};
         handles.Table.Data = cell(1,3);
-%          hndl.TF_Zw.rpp = sort(unique([0.9:-0.1:0.3 0.3:-0.02:0.08])','descend');
-        handles.Table.Data(1:size(hndl.TF_Zw.rpp,1),size(hndl.TF_Zw.rpp,2)) = num2cell(hndl.TF_Zw.rpp);
+        %          hndl.TF_Zw.rpp = sort(unique([0.9:-0.1:0.3 0.3:-0.02:0.08])','descend');
+        try
+            handles.Table.Data(1:size(hndl.TF_Zw.rpp,1),size(hndl.TF_Zw.rpp,2)) = num2cell(hndl.TF_Zw.rpp);
+        end
         handles.Options.Visible = 'off';
     case 'AQ_TF_Rn_N_Set'
         set(handles.figure1,'Name','Set % of Rn Values for Z(w) and Noise Adquisition');
@@ -332,7 +336,9 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(%)';'Step(%)';'Final Value(%)'};
         handles.Table.Data = cell(1,3);
-        handles.Table.Data(1:size(hndl.TF_Zw.rpn,1),size(hndl.TF_Zw.rpn,2)) = num2cell(hndl.TF_Zw.rpn);
+        try
+            handles.Table.Data(1:size(hndl.TF_Zw.rpn,1),size(hndl.TF_Zw.rpn,2)) = num2cell(hndl.TF_Zw.rpn);
+        end
         handles.Options.Visible = 'off';
 end
 
