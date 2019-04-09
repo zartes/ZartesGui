@@ -44,6 +44,7 @@ if j ~= 1
         case 'Merge'
             handles.AQ_dir = uigetdir([handles.Enfriada_dir filesep], 'Pick a RUN Directory');
             merg = 1;
+            a = handles.AQ_dir(end-2:end);
         case 'New'
             handles.AQ_dir = [handles.Enfriada_dir filesep 'RUN' a];
             [Succ, Message] = mkdir(handles.AQ_dir);
@@ -78,9 +79,15 @@ end
 if exist([handles.Enfriada_dir filesep ExcelEnfriada],'file')
     num = xlsread([handles.Enfriada_dir filesep ExcelEnfriada],2);    
     d = {str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
-    xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
+    try
+        xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
+    catch
+        waitfor(warndlg(['Close the file name: ' ExcelEnfriada ' before push OK'],'ZarTES v1.0'));
+        xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
+    end
 else
-    d = {'ID_Enfriada','ID_SQUID','ID_TES','Date','Rsh','L','invMf','invMin'};
+    d = {'ID_Enfriada','ID_SQUID','ID_TES','Date','Rsh','L','invMf','invMin';...
+        [],[],[],[],SetupTES.Circuit.Rsh.Value,SetupTES.Circuit.L.Value,SetupTES.Circuit.invMf.Value,SetupTES.Circuit.invMin.Value};
     xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 1, 'A1')
     d = {'ID_RUN','FieldB pos(A)','FieldB neg(A)','Comment'; str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
     xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2, 'A1')
@@ -116,7 +123,7 @@ for i = 1:length(PathStr)
     if i == 3 && ~Conf.IVcurves.On % Solo se genera el directorio si se necesita
         continue;
     end
-    if i == 4 && ~(~Conf.TF.Zw.DSA.On || ~Conf.TF.Zw.PXI.On ||... % Solo se genera el directorio si se necesita
+    if i == 4 && (~Conf.TF.Zw.DSA.On || ~Conf.TF.Zw.PXI.On ||... % Solo se genera el directorio si se necesita
             ~Conf.TF.Noise.DSA.On || ~Conf.TF.Noise.PXI.On || ~Conf.Pulse.PXI.On || ~Conf.Spectrum.PXI.On)
         continue;
     end
@@ -149,6 +156,16 @@ for NSummary = 1:size(Conf.Summary,1)
     
     % Verificar que todas las cosas se han medido en cada temperatura para
     % pasar a la siguiente
+    for i = 2:size(Conf.Summary,2)
+        if strcmp(Conf.Summary{NSummary,i},'Running')
+            Conf.Summary{NSummary,i} = 'Yes';
+            handles.Summary_Table.Data{NSummary,i} = 'Yes';
+        end
+    end
+    
+    if isempty(cell2mat(strfind(Conf.Summary(NSummary,2:end),'Yes')))
+        continue;
+    end
     
     Temp = Conf.Summary{NSummary,1};    
     AjustarTemperatura(Temp,Conf,SetupTES,handles)
@@ -213,17 +230,19 @@ for NSummary = 1:size(Conf.Summary,1)
         
         % Es esencial que hayamos medido al menos una curva IV positiva y
         % otra negativa
+        if ~isempty(Conf.TF.Zw.rpp)
+            IZvalues.P = BuildIbiasFromRp(IVsetP,Conf.TF.Zw.rpp);
+            IZvalues.P(IZvalues.P > 500) = 500;
+            IZvalues.P(IZvalues.P < 0) = [];
+            Medir_Zw_Noise(Temp,Opt,IZvalues.P,handles.Positive_Path,Conf,SetupTES,handles);
+        end
         
-        IZvalues.P = BuildIbiasFromRp(IVsetP,Conf.TF.Zw.rpp);
-        IZvalues.N = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
-        
-        IZvalues.P(IZvalues.P > 500) = 500;
-        IZvalues.P(IZvalues.P < 0) = [];
-        IZvalues.N(IZvalues.N < -500) = -500;
-        IZvalues.N(IZvalues.N > 0) = [];
-        
-        Medir_Zw_Noise(Temp,Opt,IZvalues.P,handles.Positive_Path,Conf,SetupTES,handles);
-        Medir_Zw_Noise(Temp,Opt,IZvalues.N,handles.Negative_Path,Conf,SetupTES,handles);
+        if ~isempty(Conf.TF.Zw.rpn)
+            IZvalues.N = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
+            IZvalues.N(IZvalues.N < -500) = -500;
+            IZvalues.N(IZvalues.N > 0) = [];
+            Medir_Zw_Noise(Temp,Opt,IZvalues.N,handles.Negative_Path,Conf,SetupTES,handles);
+        end
         
         if strcmp(Conf.Summary{NSummary,5},'Yes') && strcmp(Conf.Summary{NSummary,6},'Yes')    % Si se mide o on
             handles.Summary_Table.Data{NSummary,5} = 'Done';

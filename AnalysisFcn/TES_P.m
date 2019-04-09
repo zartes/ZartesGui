@@ -193,15 +193,22 @@ classdef TES_P
                         ok2_ind = 1;
                     end
                 end
-                if (ok1_ind)&&(ok2_ind)
+                if (ok1_ind)
                     [val1,Rns1,Tbaths1] = GetParamVsRn(obj,param1);
+                else
+                    val1 = {[]};
+                    Tbaths1 = {[]};
+                end
+                if (ok2_ind)                    
                     [val2,Rns2,Tbaths2] = GetParamVsRn(obj,param2);
                 else
-                    val1 = [];
-                    val2 = [];
-                    Tbaths1 = [];
-                    Tbaths2 = [];
+                    val2 = cell(1,length(val1));
+                    Tbaths2 = cell(1,length(val1));
                 end
+                if ~ok1_ind
+                    val1 = cell(1,length(val2));
+                    Tbaths1 = cell(1,length(val2));
+                end                
             end
         end
         

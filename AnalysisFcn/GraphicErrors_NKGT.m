@@ -124,7 +124,7 @@ switch str
         for i = 1:length(hp)           
             set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
         end
-        set([hn hne],'Visible','off')
+        set([hn; hne],'Visible','off')
         for i = 1:length(hn)           
             set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
         end
@@ -140,7 +140,7 @@ switch str
         for i = 1:length(hn)           
             set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
         end
-        set([hp hpe],'Visible','off')
+        set([hp; hpe],'Visible','off')
         for i = 1:length(hp)           
             set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
         end
@@ -151,7 +151,7 @@ switch str
         catch
         end
     case 'All'
-        set([hp hpe hn hne],'Visible','on');
+        set([hp; hpe; hn; hne],'Visible','on');
         for i = 1:max([length(hp) length(hn)])
             try
                 set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
