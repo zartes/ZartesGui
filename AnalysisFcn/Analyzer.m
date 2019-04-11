@@ -72,25 +72,27 @@ IndMenu = 1;
 MenuTES.Label{IndMenu} = {'TES Data'};
 MenuTES.SubMenu{IndMenu} = {'Load TES';'TES Analysis';'Save TES Data'};
 MenuTES.SubMenu_1{IndMenu,1} = {[]};
-MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'TF Superconductor';'Z(w)-Noise Analysis'};
+MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'TF Superconductor';'Z(w)-Noise Analysis';'Critical Currents';'Field Scan'};
 % MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'Circuit Values'};
-MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameter Values';'TES Thermal Parameters vs. %Rn';'Get G(T)'};
+MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
 MenuTES.SubMenu_2{IndMenu,4} = {'Load TF in Superconductor State (TFS)';'Check TFS'};
 MenuTES.SubMenu_2{IndMenu,5} = {'Fit Z(w)-Noise to ElectroThermal Model'};
+MenuTES.SubMenu_2{IndMenu,6} = {'Import Critical Currents'};
+MenuTES.SubMenu_2{IndMenu,7} = {'Import Field Scan'};
 MenuTES.SubMenu_1{IndMenu,3} = {[]};
 MenuTES.Fcn{IndMenu} = {'TESData'};
 IndMenu = IndMenu +1;
 
-MenuTES.Label{IndMenu} = {'View'};
+MenuTES.Label{IndMenu} = {'Plot'};
 MenuTES.SubMenu{IndMenu} = {'Plot NKGT Set';'Plot ABCT Set';...
-    'Plot Z(w) vs Rn';'Plot Noise vs Rn';'Plot TES Data'};
-MenuTES.Fcn{IndMenu} = {'View'};
+    'Plot Z(w) vs Rn';'Plot Noise vs Rn';'Plot TES Data';'Plot Critical Currents';'Plot Field Scan'};
+MenuTES.Fcn{IndMenu} = {'Plot'};
 IndMenu = IndMenu +1;
 
 MenuTES.Label{IndMenu} = {'Macro'};
-MenuTES.SubMenu{IndMenu} = {'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data'};
+MenuTES.SubMenu{IndMenu} = {'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data';'Plots Critical Currents';'Plots Field Scan'};
 MenuTES.Fcn{IndMenu} = {'MacroTES'};
 IndMenu = IndMenu +1;
 
@@ -138,9 +140,9 @@ end
 
 % if handles.TES_ID == 0 then 'off'
 StrEnable = {'on';'off'};
-StrLabel = {'Save TES Data';'View';'Macro';'Summary';'TES Device';...
-    'IV-Curves';'Fit P vs. T';'TES Thermal Parameter Values';'TES Thermal Parameters vs. %Rn';'Get G(T)';...
-    'TF Superconductor';'Z(w)-Noise Analysis';'Options'};
+StrLabel = {'Save TES Data';'Plot';'Macro';'Summary';'TES Device';...
+    'IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)';...
+    'TF Superconductor';'Critical Currents';'Field Scan';'Z(w)-Noise Analysis';'Options'};
 for i = 1:length(StrLabel)
     h = findobj('Label',StrLabel{i},'Tag','Analyzer');
     h.Enable = StrEnable{~handles.TES_ID+1};
@@ -162,7 +164,8 @@ function varargout = Analyzer_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-a_str = {'New Figure';'Open File';'Save Figure';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
+% a_str = {'New Figure';'Open File';'Save Figure';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
+a_str = {'New Figure';'Open File';'Save Figure';'Link Plot'};
 for i = 1:length(a_str)
     eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
     a.Visible = 'off';
@@ -183,7 +186,7 @@ handles.TES_ID = get(hObject,'Value');
 indAxes = findobj('Type','Axes');
 delete(indAxes);
 Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
-StrLabel = {'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data'};
+StrLabel = {'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
 if length(handles.Session) > 1
     for i = 1:length(StrLabel)
         h = findobj('Label',StrLabel{i},'Tag','Analyzer');
@@ -255,7 +258,7 @@ switch src.Label
             
             Enabling(Session,handles.TES_ID);
             
-            StrLabel = {'Macro';'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data'};
+            StrLabel = {'Macro';'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
             if length(handles.Session) > 1
                 for i = 1:length(StrLabel)
                     h = findobj('Label',StrLabel{i},'Tag','Analyzer');
@@ -278,7 +281,7 @@ switch src.Label
             h(i).Enable = 'off';
         end
         
-        StrLabel = {'TES Data';'Load TES';'TES Analysis';'Set Data Path';...
+        StrLabel = {'TES Data';'Load TES';'TES Analysis';'Set Data Path';'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';...
             'Options';'Z(w) Options';'Noise Options';'Report Options';'Help';'Guide';'About'};
         for i = 1:length(StrLabel)
             h = findobj('Label',StrLabel{i},'Tag','Analyzer');
@@ -292,7 +295,8 @@ switch src.Label
         Session.Path = DataPath;
         answer = inputdlg({'Insert a Nick name for the TES'},'ZarTES v1.0',[1 50],{' '});
         if isempty(answer{1})
-            answer{1} = filename;
+            errordlg('Invalid Nick name!','ZarTES v1.0','modal');
+            return;
         end
         Session.Tag = answer{1};
         if isempty(handles.Loaded_TES.String)
@@ -312,7 +316,7 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.Constructor;
         
         % Searching for Circuir variable (inside session or in circuit)
-        [filename, pathname] = uigetfile({'sesion*';'circuit*'}, 'Pick a MATLAB file refering to sesion or circuit values',[Session.Path 'sesion.mat']);
+        [filename, pathname] = uigetfile({'sesion*';'circuit*'}, 'Pick a MATLAB file refering to circuit values',[Session.Path 'circuit.mat']);
         if ~isequal(filename,0)
             switch filename
                 case 'sesion.mat'
@@ -381,17 +385,14 @@ switch src.Label
         delete(indAxes);        
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],[],fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
-    case 'TES Thermal Parameter Values'
-%         fig = handles.Analyzer;
-%         indAxes = findobj(fig,'Type','Axes');
-%         delete(indAxes);
-        handles.Session{handles.TES_ID}.TES.TES.CheckValues;
     case 'TES Thermal Parameters vs. %Rn'
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
+    case 'TES Thermal Parameter Values'
+        handles.Session{handles.TES_ID}.TES.TES.CheckValues;        
     case 'Get G(T)'
         handles.Session{handles.TES_ID}.TES.TES.G_calc;
     case 'Load TF in Superconductor State (TFS)'
@@ -412,6 +413,16 @@ switch src.Label
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.FitZset;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
+        
+    case 'Import Critical Currents'
+        fig = handles.Analyzer;
+        handles.Session{handles.TES_ID}.TES.IC = handles.Session{handles.TES_ID}.TES.IC.ImportICs(handles.Session{handles.TES_ID}.Path,fig);
+        Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
+        
+    case 'Import Field Scan'
+        fig = handles.Analyzer;
+        handles.Session{handles.TES_ID}.TES.FieldScan = handles.Session{handles.TES_ID}.TES.FieldScan.ImportScan(handles.Session{handles.TES_ID}.Path,fig);
+        Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
     case 'Save TES Data'
         handles.Session{handles.TES_ID}.TES.Save([handles.Session{handles.TES_ID}.Path 'TES_' handles.Session{handles.TES_ID}.Tag]);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID);
@@ -420,7 +431,7 @@ end
 guidata(src,handles);
 
 
-function View(src,evnt)
+function Plot(src,evnt)
 
 handles = guidata(src);
 switch src.Label
@@ -516,6 +527,16 @@ switch src.Label
         else
             return;
         end
+    case 'Plot Critical Currents'
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
+        delete(indAxes);
+        handles.Session{handles.TES_ID}.TES.PlotCriticalCurrent;
+    case 'Plot Field Scan'
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
+        delete(indAxes);
+        handles.Session{handles.TES_ID}.TES.PlotFieldScan;
 end
 guidata(src,handles);
 
@@ -774,7 +795,8 @@ StrEnable = {'on';'off'};
 % TES_Circuit (circuit)
 
 StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';...
-    'IV-Curves';'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Save TES Data';'Options'};
+    'IV-Curves';'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';...
+    'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';'Save TES Data';'Options'};
 for i = 1:length(StrLabel_On)
     h = findobj('Label',StrLabel_On{i},'Tag','Analyzer');
     h.Enable = StrEnable{(~TES_ID+1)};
@@ -804,21 +826,20 @@ end
 % TES_Gset (GsetP o GsetN)
 %   Si están vacios (FitPset)
 if Session.TES.GsetP.Filled || Session.TES.GsetN.Filled
-    StrLabel_On = {'TES Thermal Parameter Values';'TES Thermal Parameters vs. %Rn';'Get G(T)';...
-        'View';'Plot NKGT Set'};
+    StrLabel_On = {'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)';...
+        'Plot';'Plot NKGT Set'};
     for i = 1:length(StrLabel_On)
         h = findobj('Label',StrLabel_On{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
-    StrLabel_Off = {'TES Thermal Parameter Values';'TES Thermal Parameters vs. %Rn';'Get G(T)';...
-        'View';'Plot NKGT Set'};
+    StrLabel_Off = {'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)';...
+        'Plot';'Plot NKGT Set'};
     for i = 1:length(StrLabel_Off)
         h = findobj('Label',StrLabel_Off{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)+1};
     end
 end
-
 
 % TES_Param (TES)
 %   Si están vacios (plotNKGT)
@@ -839,20 +860,49 @@ end
 % TES_P (PP o PN)
 %   Si están vacios (FitZset)
 if Session.TES.PP.Filled || Session.TES.PN.Filled
-    StrLabel_On = {'View';'Plot ABCT Set';'Plot Z(w) vs Rn';'Plot Noise vs Rn';'Plot TES Data';...
+    StrLabel_On = {'Plot';'Plot ABCT Set';'Plot Z(w) vs Rn';'Plot Noise vs Rn';'Plot TES Data';...
         'Summary';'Z(w)-Noise Viewer';'Word Graphical Report'};
     for i = 1:length(StrLabel_On)
         h = findobj('Label',StrLabel_On{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
-    StrLabel_Off = {'View';'Plot ABCT Set';'Plot Z(w) vs Rn';'Plot Noise vs Rn';'Plot TES Data';...
+    StrLabel_Off = {'Plot';'Plot ABCT Set';'Plot Z(w) vs Rn';'Plot Noise vs Rn';'Plot TES Data';...
         'Summary';'Z(w)-Noise Viewer';'Word Graphical Report'};
     for i = 1:length(StrLabel_Off)
         h = findobj('Label',StrLabel_Off{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)+1};
     end
 end
+
+if Session.TES.IC.Filled
+    StrLabel_On = {'Plot';'Plot Critical Currents'};
+    for i = 1:length(StrLabel_On)
+        h = findobj('Label',StrLabel_On{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)};
+    end
+else
+    StrLabel_Off = {'Plot';'Plot Critical Currents'};
+    for i = 1:length(StrLabel_Off)
+        h = findobj('Label',StrLabel_Off{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)};
+    end
+end
+
+if Session.TES.FieldScan.Filled
+    StrLabel_On = {'Plot';'Plot Field Scan'};
+    for i = 1:length(StrLabel_On)
+        h = findobj('Label',StrLabel_On{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)};
+    end
+else
+    StrLabel_Off = {'Plot';'Plot Field Scan'};
+    for i = 1:length(StrLabel_Off)
+        h = findobj('Label',StrLabel_Off{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)};
+    end
+end
+
 
 
 % --- Executes when user attempts to close Analyzer.
