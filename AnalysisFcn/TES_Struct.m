@@ -9,6 +9,8 @@ classdef TES_Struct
         IVsetN;
         GsetP;
         GsetN;
+        IC;
+        FieldScan;
         TFOpt;
         NoiseOpt;
         PP;
@@ -41,6 +43,10 @@ classdef TES_Struct
             obj.IVsetN = obj.IVsetN.Constructor(1);
             obj.GsetP = TES_Gset;
             obj.GsetN = TES_Gset;
+            obj.IC = TES_IC;
+            obj.IC = obj.IC.Constructor;
+            obj.FieldScan = TES_FieldScan;
+            obj.FieldScan = obj.FieldScan.Constructor;
             obj.TFOpt = TES_TF_Opt;
             obj.NoiseOpt = TES_Noise;
             obj.PP = TES_P;
@@ -77,6 +83,16 @@ classdef TES_Struct
                 waitfor(helpdlg('Before closing this message, please check the IV curves','ZarTES v1.0'));
                 eval(['obj.IVset' StrRange{j} ' = get(figIV.hObject,''UserData'');']);
             end
+            
+        end
+        
+        function obj = ImportICs(obj)
+            
+            
+        end
+        
+        function obj = ImportFieldScan(obj)
+            
             
         end
         
@@ -243,7 +259,7 @@ classdef TES_Struct
                     if isnumeric(model)
                         switch model
                             case 1
-                                X0 = [-500 3 1];
+                                X0 = [-50 3 1];
                                 XDATA = Tbath;
                                 LB = [-Inf 2 0 ];%%%Uncomment for model1
                             case 2
@@ -651,7 +667,7 @@ classdef TES_Struct
             % be analytically determined
             
             prompt = {'Enter TES length value:','Enter TES width value:','Enter Mo thickness value:','Enter Au thickness value:'};
-            name = 'Provide TES dimension';
+            name = 'Provide bilayer TES dimension (without absorver)';
             numlines = 1;
             try
                 defaultanswer = {num2str(obj.TES.sides(1)),num2str(obj.TES.sides(2)),...
@@ -668,17 +684,6 @@ classdef TES_Struct
                 obj.TES.hMo = str2double(answer{3});
                 obj.TES.hAu = str2double(answer{4});
             end
-            
-%             prompt = {'Enter Mo thickness value:','Enter Au thickness value:'};
-%             name = 'Provide TES dimension';
-%             numlines = [1 50; 1 50];
-%             defaultanswer = {'55e-9','340e-9'};
-%             
-%             answer = inputdlg(prompt,name,numlines,defaultanswer);
-%             if ~isempty(answer)
-%                 obj.TES.hMo = str2double(answer{1});
-%                 obj.TES.hAu = str2double(answer{2});
-%             end
         end
         
         function obj = FitZset(obj,fig)
@@ -1241,6 +1246,31 @@ classdef TES_Struct
                 IV = obj.IVsetP(Tind);
                 CondStr = 'P';
             end
+            
+%             [noisedata,file]=loadnoise(0,dirs{i},filesNoise{jj});%%%quito '.txt'
+%             OP=setTESOPfromIb(Ib,IV,param);
+%             noiseIrwin=noisesim('irwin',TES,OP,circuit);
+%             %noiseIrwin.squid=3e-12;
+%             %size(noisedata),size(noiseIrwin.sum)
+%             f=logspace(0,6,1000);%%%Ojo, la definición de 'f' debe coincidir con la que hay dentro de noisesim!!!
+%             sIaux=ppval(spline(f,noiseIrwin.sI),noisedata{1}(:,1));
+%             NEP=sqrt(V2I(noisedata{1}(:,2),circuit).^2-noiseIrwin.squid.^2)./sIaux;
+%             %[~,nep_index]=find(~isnan(NEP))
+%             %pause(2)
+%             NEP=NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
+%             
+%             RES=2.35/sqrt(trapz(noisedata{1}(1:length(NEP),1),1./medfilt1(NEP,20).^2))/2/1.609e-19
+%             P(i).ExRes(jj)=RES;
+%             P(i).ThRes(jj)=noiseIrwin.Res;
+%             
+%             findx=find(noisedata{1}(:,1)>2e2 & noisedata{1}(:,1)<10e4);
+%             xdata=noisedata{1}(findx,1);
+%             ydata=medfilt1(NEP(findx)*1e18,40);
+%             parameters.TES=TES;parameters.OP=OP;parameters.circuit=circuit;        
+%             maux=lsqcurvefit(@(x,xdata) fitjohnson(x,xdata,parameters),[0 0],xdata,ydata);
+%             P(i).M(jj)=maux(2);
+%             P(i).Mph(jj)=maux(1);
+                                    
             noisedata{1} = importdata(FileName);            
             fNoise = noisedata{1}(:,1);
             
@@ -1315,7 +1345,7 @@ classdef TES_Struct
             Kb = 1.38e-23;
             C = OP.C;
             L = obj.circuit.L;
-            G = obj.TES.G;
+            G = obj.TES.G*1e-12;
             alfa = OP.ai;
             bI = OP.bi;
             Rn = obj.circuit.Rn;
@@ -1355,7 +1385,10 @@ classdef TES_Struct
                     i_ph = sqrt(4*gamma*Kb*T0^2*G)*alfa*I0*R0./(G*T0*(R0+Rs)*(1+beta*L0)*sqrt(1+4*pi^2*taueff^2.*f.^2));
                     i_jo = sqrt(4*Kb*T0*R0)*sqrt(1+4*pi^2*tau^2.*f.^2)./((R0+Rs)*(1+beta*L0)*sqrt(1+4*pi^2*taueff^2.*f.^2));
                     i_sh = sqrt(4*Kb*Ts*Rs)*sqrt((1-L0)^2+4*pi^2*tau^2.*f.^2)./((R0+Rs)*(1+beta*L0)*sqrt(1+4*pi^2*taueff^2.*f.^2));%%%
-                    noise.ph = i_ph;noise.jo = i_jo;noise.sh = i_sh;noise.sum = sqrt(i_ph.^2+i_jo.^2+i_sh.^2);
+                    noise.ph = i_ph;
+                    noise.jo = i_jo;
+                    noise.sh = i_sh;
+                    noise.sum = sqrt(i_ph.^2+i_jo.^2+i_sh.^2);
                 case 'irwin'
                     sI = -(1/(I0*R0))*(L/(tau_el*R0*L0)+(1-RL/R0)-L*tau*(2*pi*f).^2/(L0*R0)+1i*(2*pi*f)*L*tau*(1/tauI+1/tau_el)/(R0*L0)).^-1;%funcion de transferencia.
                     
@@ -1405,10 +1438,21 @@ classdef TES_Struct
                     %i_temp = (n*TES.K*Ts.^n)*0e-6*abs(sI);%%%ruido en Tbath.(5e-4 = 200uK, 5e-5 = 20uK, 5e-6 = 2uK)
                     
                     noise.f = f;
-                    noise.ph = i_ph;noise.jo = i_jo;noise.sh = i_sh;noise.sum = sqrt(stfn+stes+ssh);%noise.sum = i_ph+i_jo+i_sh;
-                    noise.sI = abs(sI);noise.NEP = NEP;noise.max = sqrt(smax);noise.Res = Res;%noise.tbath = i_temp;
-                    noise.Res_tfn = Res_tfn; noise.Res_ssh = Res_ssh; noise.Res_tes = Res_tes;
-                    noise.Res_tfn_tes = Res_tfn_tes;noise.Res_tfn_ssh = Res_tfn_ssh;noise.Res_ssh_tes = Res_ssh_tes;
+                    noise.ph = i_ph;
+                    noise.jo = i_jo;
+                    noise.sh = i_sh;
+                    noise.sum = sqrt(stfn+stes+ssh);%noise.sum = i_ph+i_jo+i_sh;
+                    noise.sI = abs(sI);
+                    
+                    noise.NEP = NEP;
+                    noise.max = sqrt(smax);
+                    noise.Res = Res;%noise.tbath = i_temp;
+                    noise.Res_tfn = Res_tfn;
+                    noise.Res_ssh = Res_ssh;
+                    noise.Res_tes = Res_tes;
+                    noise.Res_tfn_tes = Res_tfn_tes;
+                    noise.Res_tfn_ssh = Res_tfn_ssh;
+                    noise.Res_ssh_tes = Res_ssh_tes;
                     noise.squid = Nsquid;
                     noise.squidarray = Nsquid*ones(1,length(f));
                 otherwise
@@ -1419,14 +1463,12 @@ classdef TES_Struct
         
         function NEP = fitjohnson(obj,M,f,OP)
             
-            Kb = 1.38e-23;
-            
-            
+            Kb = 1.38e-23;                     
             Circuit = obj.circuit;
             TES = obj.TES;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            G = TES.G;
+            G = TES.G*1e-12;
             T0 = TES.Tc;
             Rn = Circuit.Rn;
             n = TES.n;
@@ -1513,7 +1555,7 @@ classdef TES_Struct
                 %C=TES.OP.C;
                 C=OP.C;
                 L=Circuit.L;
-                G=TES.G;
+                G=TES.G*1e-12;
                 %alfa=TES.OP.ai;
                 alfa=OP.ai;
                 %bI=TES.OP.bi;
@@ -1546,7 +1588,10 @@ classdef TES_Struct
                 i_ph=sqrt(4*gamma*Kb*T0^2*G)*alfa*I0*R0./(G*T0*(R0+Rs)*(1+beta*L0)*sqrt(1+4*pi^2*taueff^2.*f.^2));
                 i_jo=sqrt(4*Kb*T0*R0)*sqrt(1+4*pi^2*tau^2.*f.^2)./((R0+Rs)*(1+beta*L0)*sqrt(1+4*pi^2*taueff^2.*f.^2))*(1+M^2);
                 i_sh=sqrt(4*Kb*Ts*Rs)*sqrt((1-L0)^2+4*pi^2*tau^2.*f.^2)./((R0+Rs)*(1+beta*L0)*sqrt(1+4*pi^2*taueff^2.*f.^2));%%%
-                noise.ph=i_ph; noise.jo=i_jo;noise.sh=i_sh; noise.sum=i_ph+i_jo+i_sh;
+                noise.ph=i_ph;
+                noise.jo=i_jo;
+                noise.sh=i_sh;
+                noise.sum=i_ph+i_jo+i_sh;
                 
             elseif strcmp(model,'irwin')
                 %%% ecuaciones capitulo Irwin
@@ -1577,12 +1622,15 @@ classdef TES_Struct
                 i_sh=sqrt(ssh);
                 %G*5e-8
                 %(n*TES.K*Ts.^n)*5e-6
-                i_temp=(n*TES.K*Ts.^n)*0e-6*abs(sI);%%%ruido en Tbath.(5e-4=200uK, 5e-5=20uK, 5e-6=2uK)
+                i_temp=(n*TES.K*1e-9*Ts.^n)*0e-6*abs(sI);%%%ruido en Tbath.(5e-4=200uK, 5e-5=20uK, 5e-6=2uK)
                 %NEP=sqrt(smax+ssh+stes)./abs(sI);%%%Si ajusto sólo Mjo forzando Mph para stfn=smax.
                 NEP=sqrt(stfn+ssh+stes)./abs(sI);
                 
                 i_squid=3e-12;
-                noise.ph=i_ph;noise.jo=i_jo;noise.sh=i_sh;noise.sum=sqrt(smax+stes+ssh+i_temp.^2+sfaser+i_squid^2);%noise.sum=i_ph+i_jo+i_sh;
+                noise.ph=i_ph;
+                noise.jo=i_jo;
+                noise.sh=i_sh;
+                noise.sum=sqrt(smax+stes+ssh+i_temp.^2+sfaser+i_squid^2);%noise.sum=i_ph+i_jo+i_sh;
                 noise.sI=abs(sI);
                 noise.NEP=NEP;
                 noise.max=sqrt(smax);
@@ -1604,24 +1652,44 @@ classdef TES_Struct
             % Function to set the TES operating point from Ibias and IV curves and fitted
             % parameters p.
             
-            [iaux,ii] = unique(IV.ibias,'stable');
+                        
+            
+            [iaux, ii] = unique(IV.ibias,'stable');
             vaux = IV.vout(ii);
-            [m,i3] = min(diff(vaux)./diff(iaux)); %#ok<ASGLU>
-            
-            %%%% Modificado por Juan %%%%%
-            
-            CompStr = {'>';'';'<'};
-            if eval(['Ib' CompStr{median(sign(iaux))+2} 'iaux(1:i3)'])
-                P = polyfit(iaux(i3+1:end),vaux(i3+1:end),1);
-                OP.vout = polyval(P,Ib);
-            else
-                OP.vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
+            raux = IV.rtes(ii);
+            itaux = IV.ites(ii);
+            vtaux = IV.vtes(ii);
+            paux = IV.ptes(ii);
+            if (isfield(IV, 'ttes'))
+                taux = IV.ttes(ii);
             end
+            [m, i3]=min(diff(vaux)./diff(iaux));
+            %[m,i3]=min(diff(IV.vout)./diff(IV.ibias));%%%Calculamos el índice del salto de estado N->S.
             
-            %%%%%%%%%%%%%%%%
-            
+            OP.vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
             OP.ibias = Ib;
             OP.Tbath = IV.Tbath;
+            
+            
+            
+%             [iaux,ii] = unique(IV.ibias,'stable');
+%             vaux = IV.vout(ii);
+%             [m,i3] = min(diff(vaux)./diff(iaux)); %#ok<ASGLU>
+%             OP.vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
+%             %%%% Modificado por Juan %%%%%
+%             
+% %             CompStr = {'>';'';'<'};
+% %             if eval(['Ib' CompStr{median(sign(iaux))+2} 'iaux(1:i3)'])
+% %                 P = polyfit(iaux(i3+1:end),vaux(i3+1:end),1);
+% %                 OP.vout = polyval(P,Ib);
+% %             else
+%                 
+% %             end
+%             
+%             %%%%%%%%%%%%%%%%
+%             
+%             OP.ibias = Ib;
+%             OP.Tbath = IV.Tbath;
             
             F = obj.circuit.invMin/(obj.circuit.invMf*obj.circuit.Rf);%36.51e-6;
             %F=36.52e-6;
@@ -1671,16 +1739,17 @@ classdef TES_Struct
             LW1 = 1;
             
             if ~isempty(obj.TES.sides)
-                gammas = [obj.TES.gammaMo obj.TES.gammaAu];
 %                 gammas = [2 0.729]*1e3; %valores de gama para Mo y Au
-                rhoAs = [obj.TES.rhoMo obj.TES.rhoAu];
 %                 rhoAs = [0.107 0.0983]; %valores de Rho/A para Mo y Au
-                %sides = [200 150 100]*1e-6 %lados de los TES
+%                 sides = [200 150 100]*1e-6 %lados de los TES
+%                 hMo = 55e-9; hAu = 340e-9; %hAu = 1.5e-6;
+%                 CN = (gammas.*rhoAs)*([hMo ;hAu]*sides.^2).*TES.Tc; %%%Calculo directo
+
+                gammas = [obj.TES.gammaMo obj.TES.gammaAu];
+                rhoAs = [obj.TES.rhoMo obj.TES.rhoAu];                
                 sides = obj.TES.sides;%sides = 100e-6;
                 hMo = obj.TES.hMo;
                 hAu = obj.TES.hAu;
-%                 hMo = 55e-9; hAu = 340e-9; %hAu = 1.5e-6;
-                %CN = (gammas.*rhoAs)*([hMo ;hAu]*sides.^2).*TES.Tc; %%%Calculo directo
                 CN = (gammas.*rhoAs).*([hMo hAu].*sides(1)*sides(2)).*obj.TES.Tc; %%%calculo de cada contribucion por separado.
                 CN = sum(CN);
                 rpaux = 0.1:0.01:0.9;
@@ -2695,6 +2764,50 @@ classdef TES_Struct
             end
         end
         
+        function fig = PlotCriticalCurrent(obj,fig)
+            % Function to plot Critical currents vs BField searching
+            % optimum field across bath temperatures
+            try
+                for i = 1:length(obj.IC.B)
+                    try
+                        h(i) = plot(obj.IC.B{i},obj.IC.p{i},'DisplayName', [num2str(obj.IC.Tbath{i}*1e3,'%1.1f') 'mK Ibias Positive']);
+                        hold on
+                    end
+                end
+                for i = 1:length(obj.IC.B)
+                    try
+                        hn(i) = plot(obj.IC.B{i},obj.IC.n{i},'DisplayName', [num2str(obj.IC.Tbath{i}*1e3,'%1.1f') 'mK Ibias Negative']);
+                        hold on
+                    end
+                end
+                xlabel('Field (\mu A)')
+                ylabel('Critical current (\mu A)');
+            catch
+            end
+        end
+        
+        function fig = PlotFieldScan(obj,fig)
+            % Function to plot Vout vs BField searching optimum field
+            
+            try
+                for i = 1:length(obj.FieldScan.B)
+                    try
+                        h(i) = plot(obj.FieldScan.B{i},obj.FieldScan.Vout{i});
+                        hold on
+                    end
+                    try
+                        set(h(i),'DisplayName', [num2str(obj.FieldScan.Tbath{i}*1e3,'%1.1f') 'mK Ibias ' num2str(obj.FieldScan.Ibias{i}) 'uA']);
+                    catch
+                        set(h(i),'DisplayName', [num2str(obj.FieldScan.Tbath{i}*1e3,'%1.1f') 'mK']);
+                    end
+                end
+                xlabel('I_{Field} (\mu A)')
+                ylabel('Vdc (V)');
+            catch
+            end
+        end
+            
+            
         function TFNoiseViever(obj)
             % Function that invokes TF_Noise_Viewer
             %

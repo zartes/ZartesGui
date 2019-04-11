@@ -770,8 +770,9 @@ plot(SetupTES.Result_Axes,data(ind,2),val,'*','Color','g','MarkerSize',10);
 B = data(:,2);
 V = data(:,4);
 
-file = strcat('BVscan',num2str(Temp*1e3),'mK');
+file = strcat('BVscan',num2str(Ireal,'%1.1f'),'uA_',num2str(Temp*1e3,'%1.1f'),'mK');
 save([handles.Barrido_Campo_Dir file],'B','V');
+save([handles.Barrido_Campo_Dir file '.txt'],'data','-ascii');
 
 function I_Criticas_Carlos(Temp,BfieldValues,Conf,SetupTES,handles)
 

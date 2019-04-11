@@ -91,6 +91,9 @@ if isempty(s)
 end
 set(handles.YDataStr,'String',handles.str{s});
 set([handles.YDataRn handles.YDataTbath],'Enable','on')
+if ~isempty(handles.XDataStr.String)
+    set([handles.YDataXData],'Enable','on')
+end
 guidata(hObject,handles);
 
 % --- Executes on button press in YDataRn.

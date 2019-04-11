@@ -32,7 +32,7 @@ classdef TES_Analyzer_Session
                 else
                     ZTES = eval(['tes.' FN{1} ';']);
                     
-                    FieldStr = {'TES';'circuit';'IVset';'IVsetN';'Gset';'GsetN';'P';'PN'};
+                    FieldStr = {'TES';'circuit';'IVset';'IVsetN';'Gset';'GsetN';'IC';'FieldScan';'P';'PN'};
                     FieldNewStr = {'TES';'circuit';'IVsetP';'IVsetN';'GsetP';'GsetN';'PP';'PN'};
                     
                     obj.TES = TES_Struct;
@@ -48,7 +48,7 @@ classdef TES_Analyzer_Session
                     obj.TES.IVsetN.IVsetPath = ZTES.datadir;
 %                     obj.TES.Save([FN{1} '_Compatible.mat']);
                     msgbox({['Analysis corresponding to: ' ZTES.datadir];...
-                        ['Converting to new struct, some menus may not work properly.']},'ZarTES v1.0');
+                        'Converting to new struct, some menus may not work properly.'},'ZarTES v1.0');
                 end
             end
         end
