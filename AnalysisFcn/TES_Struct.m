@@ -865,7 +865,7 @@ classdef TES_Struct
                         end
                         thefile = strcat(dirs{i},'\',filesZ{j1});
                         try
-                            [param, ztes, fZ, ERP, R2, CI, aux1, StrModel, p0] = obj.FitZ(thefile,FreqRange);
+                            [param, ztes, fZ, fS, ERP, R2, CI, aux1, StrModel, p0] = obj.FitZ(thefile,FreqRange);
                         catch
                             continue;
                         end
@@ -884,6 +884,7 @@ classdef TES_Struct
                         eval(['obj.P' StrRange{k1} '(iOK).ElecThermModel(jj) = {StrModel};']);
                         eval(['obj.P' StrRange{k1} '(iOK).ztes{jj} = ztes;']);
                         eval(['obj.P' StrRange{k1} '(iOK).fZ{jj} = fZ;']);
+                        eval(['obj.P' StrRange{k1} '(iOK).fS{jj} = fS;']);
                         eval(['obj.P' StrRange{k1} '(iOK).ERP{jj} = ERP;']);
                         eval(['obj.P' StrRange{k1} '(iOK).R2{jj} = R2;']);
                         
@@ -1039,7 +1040,7 @@ classdef TES_Struct
             end
         end
         
-        function [param, ztes, fZ, ERP, R2, CI, aux1, StrModel, p0] = FitZ(obj,FileName,FreqRange)
+        function [param, ztes, fZ, fS, ERP, R2, CI, aux1, StrModel, p0] = FitZ(obj,FileName,FreqRange)
             % Function to fit Z(w) according to the selected
             % electro-thermal model
             
@@ -1911,10 +1912,13 @@ classdef TES_Struct
                         ind = N:-1:1;
                         eval(['files' StrCond{iP} ' = files' StrCond{iP} '(ind);']);
                     end
-                    
                     if nargin < 4
-                        fig(IndFig) = figure('Name',StrCond_Label{iP});
+                        fig(IndFig) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
                     end
+%                     if nargin < 4
+%                         
+%                         fig(IndFig) = figure('Name',StrCond_Label{iP});
+%                     end
                     [ncols,~] = SmartSplit(N);
                     hs = nan(N,1);
                     j = 0;
@@ -2106,6 +2110,102 @@ classdef TES_Struct
                         ImZmin = min(imag(1e3*ztes));
                         ylim(hs(i),[min(-15,min(ImZmin)-1) 1])
                         plot(hs(i),1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2);
+                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'fontsize',12);
+                        if abs(OP.Z0-OP.Zinf) < 1.5e-3
+                            set(get(findobj(hs(i),'type','axes'),'title'),'color','r');
+                        end
+                    end
+                    if nargin < 3
+                        n = get(fig(IndFig),'number');
+                        fi = strcat('-f',num2str(n));
+                        mkdir('figs');
+                        name = strcat('figs\TF',num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3),'mK_',StrCond_Label{iP});
+                        print(fi,name,'-dpng','-r0');
+                    end
+                    IndFig = IndFig+1;
+                end
+            end
+        end
+        
+        function fig = PlotTFReImagTbathRp(obj,Tbath,Rn,fig)
+            % Function to visualize Z(w) representations with respect to
+            % Rn values
+            
+            StrCond = {'P';'N'};
+            StrCond_Label = {'Positive_Ibias';'Negative_Ibias'};
+            IndFig = 1;
+            for iP = 1:2
+                if isempty(Tbath)
+                    ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
+                else
+                    for i = 1:length(Tbath)
+                        try
+                            eval(['ind_TbathN(i) = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
+                        catch
+                            return;
+                        end
+                    end
+                end
+                for ind_Tbath = ind_TbathN
+                    
+                    if ~isempty(Rn)
+                        eval(['Rp = [obj.P' StrCond{iP} '(ind_Tbath).p.rp];']);
+                        
+                        for i = 1:length(Rn)
+                            [~,ind(i)] = min(abs(Rp-Rn(i)));
+                        end
+                        try
+                            eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ(ind)]'';';]);
+                            eval(['N = length(files' StrCond{iP} ');']);
+                        catch
+                            continue;
+                        end
+                    else
+                        eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ]'';';]);
+                        eval(['N = length(files' StrCond{iP} ');']);
+                        ind = N:-1:1;
+                        eval(['files' StrCond{iP} ' = files' StrCond{iP} '(ind);']);
+                    end
+                    if nargin < 4
+                        fig(IndFig) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
+                    end
+                    [ncols,~] = SmartSplit(N);
+                    hs = nan(N,1);
+                    j = 0;
+                    for i = 1:N
+                        hs(i) = subplot(ceil(N/ncols),ncols,i);
+                        hold(hs(i),'on');
+                        grid(hs(i),'on');
+                        xlabel(hs(i),'w (Hz)');
+                        if ~mod(j,ncols)
+                            ylabel(hs(i),'Re/Im(mZ)');
+                            j = 0;
+                        end
+                        j = j+1;
+                    end
+                    set(hs,'LineWidth',2,'FontSize',11,'FontWeight','bold');
+                    for i = 1:N
+                        eval(['FileName = files' StrCond{iP} '{i};']);
+                        FileName = FileName(find(FileName == filesep,1,'last')+1:end);
+                        if ~isempty(strfind(upper(FileName),'PXI_TF'))
+                            Ib = sscanf(FileName,'PXI_TF_%fuA.txt')*1e-6;
+                        else
+                            Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
+                        end
+                        eval(['OP = obj.setTESOPfromIb(Ib,obj.IVset' StrCond{iP} '(ind_Tbath),obj.P' StrCond{iP} '(ind_Tbath).p);']);
+                        
+                        ztes = eval(['obj.P' StrCond{iP} '(ind_Tbath).ztes{ind(i)};']);
+                        fZ = eval(['obj.P' StrCond{iP} '(ind_Tbath).fZ{ind(i)};']);
+                        fS = eval(['obj.P' StrCond{iP} '(ind_Tbath).fS{ind(i)};']);
+                        
+                        plot(hs(i),fS,real(1e3*ztes),'.','color',[0 0.447 0.741],...
+                            'markerfacecolor',[0 0.447 0.741],'markersize',15);
+                        plot(hs(i),fS,imag(1e3*ztes),'.','color',[0 0.447 0.741],...
+                            'markerfacecolor',[0 0.447 0.741],'markersize',15);
+                        
+%                         ImZmin = min(imag(1e3*ztes));
+%                         ylim(hs(i),[min(-15,min(ImZmin)-1) 1])
+                        plot(hs(i),fS,1e3*fZ(:,1),fS,1e3*fZ(:,2),'r','linewidth',2);
                         title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'fontsize',12);
                         if abs(OP.Z0-OP.Zinf) < 1.5e-3
                             set(get(findobj(hs(i),'type','axes'),'title'),'color','r');
