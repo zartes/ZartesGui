@@ -465,6 +465,14 @@ switch src.Label
         answer = inputdlg(prompt,name,numlines,defaultanswer);
         Rn = eval(['[' answer{1} ']']);
         handles.Session{handles.TES_ID}.TES.PlotTFTbathRp(Tbath,Rn);
+        ButtonName = questdlg('Plot Real Z(w) and Imag Z(w) vs frequency?', ...
+            'ZarTES v1.0', ...
+            'Yes', 'No', 'No');
+        switch ButtonName
+            case 'Yes'
+                handles.Session{handles.TES_ID}.TES.PlotTFReImagTbathRp(Tbath,Rn);
+        end % switch
+        
     case 'Plot Noise vs Rn'
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');

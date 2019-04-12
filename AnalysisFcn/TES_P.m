@@ -10,6 +10,7 @@ classdef TES_P
         ElecThermModel = {[]};
         ztes = {[]};
         fZ = {[]};
+        fS = {[]};
         ERP = {[]};
         R2 = {[]};
         Filtered = {[]};
