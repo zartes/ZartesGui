@@ -13,6 +13,7 @@ classdef TES_Circuit
         mS;  % Ohm
         mN;  % Ohm
         L;  % H
+        Nsquid; % 'pA/Hz^{0.5}'
     end
     
     
@@ -30,6 +31,7 @@ classdef TES_Circuit
             obj.mS = 8133;
             obj.mN = 650.7;
             obj.L = 7.7e-08;
+            obj.Nsquid = 3e-12;
         end
         
         function ok = Filled(obj)
