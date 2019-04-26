@@ -10,10 +10,12 @@ if evnt.Button == 3
         StrCond = {'P';'N'};
         data = eval(['Data{4}.Gset' StrCond{Data{1}} '(Data{2})' ]);
         FieldNames = fieldnames(data);
-        GsetParam{1} = src.DisplayName;
+%         GsetParam{1} = src.DisplayName;        
+        GsetParam{1} = [];
         for i = 1:length(FieldNames)
             GsetParam = [GsetParam; {[FieldNames{i} ': ' num2str(eval(['data.' FieldNames{i}]))]}];
         end
+        GsetParam(1) = []; 
         cmenu = uicontextmenu('Visible','on');
         for i = 1:length(GsetParam)
             c1(i) = uimenu(cmenu,'Label',GsetParam{i});

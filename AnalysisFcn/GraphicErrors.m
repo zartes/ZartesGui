@@ -1,8 +1,8 @@
 function GraphicErrors(src,evnt)
 % Auxiliary function to handle right-click mouse options of ABCT representation
 % Last update: 14/11/2018
-
-h = findobj('Type','Line');
+fig = src.Parent;
+h = findobj(fig,'Type','Line');
 TempStr = [];
 j = 1;
 for i = 1:length(h)
@@ -16,7 +16,7 @@ TempStr = unique(Tag);
 % IbiasStr = unique(Tag2);
 
 cmenu = uicontextmenu('Visible','on');
-c0 = uimenu(cmenu,'Label','Show only');
+c0 = uimenu(cmenu,'Label','Show');
 for i = 1:length(TempStr)
     c0_1(i) = uimenu(c0,'Label',TempStr{i},'Callback',{@Handle_Errors});
 end

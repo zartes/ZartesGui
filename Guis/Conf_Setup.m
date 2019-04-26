@@ -181,7 +181,7 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false true false];
         CircProp = properties(handles.varargin{3}.circuit);
-        TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'Ohm';'Ohm';'Ohm';'Ohm';'H'};
+        TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'Ohm';'Ohm';'Ohm';'Ohm';'H';'pA/Hz^{0.5}'};
         handles.Table.Data(1:length(CircProp),1) = CircProp;
         for i = 1:length(CircProp)
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i}]);
@@ -453,7 +453,7 @@ switch handles.varargin{1}.Tag
     case 'CurSource_Range'
         handles.varargin{1}.UserData = handles.Table.Data;
     case 'TES_Struct'
-        ButtonName = questdlg('Circuit parameters might be changed', ...
+        ButtonName = questdlg('Do you want to save these Circuit parameters?', ...
             'ZarTES v1.0', ...
             'Save', 'Cancel', 'Save');
         switch ButtonName

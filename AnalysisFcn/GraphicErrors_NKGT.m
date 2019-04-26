@@ -5,14 +5,15 @@ function GraphicErrors_NKGT(src,evnt)
 StrIbias = {'Positive';'Negative'};
 
 cmenu = uicontextmenu('Visible','on');
-c0 = uimenu(cmenu,'Label','Show only');
+c0 = uimenu(cmenu,'Label','Show');
 for i = 1:length(StrIbias)
     c0_1(i) = uimenu(c0,'Label',StrIbias{i},'Callback',{@Handle_Errors});
 end
 c0_1(i+1) = uimenu(c0,'Label','All','Callback',{@Handle_Errors});
 
 Data = src.UserData;
-he = findobj('Type','ErrorBar','Visible','on');
+fig = src.Parent;
+he = findobj(fig,'Type','ErrorBar','Visible','on');
 if ~isempty(he)
     StrLabel = 'Deactivate error bars';
 else

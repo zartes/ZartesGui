@@ -1799,8 +1799,8 @@ function IC_Range_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 cla(handles.Result_Axes);
 hold(handles.Result_Axes,'on');
-xlabel(handles.Result_Axes,'Bfield(uA)');
-ylabel(handles.Result_Axes,'Ibias(uA)');
+xlabel(handles.Result_Axes,'Bfield(\muA)');
+ylabel(handles.Result_Axes,'Ibias(\muA)');
 set(handles.Result_Axes,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
                 'XTickLabelMode','auto','XTickMode','auto');
 if size(handles.FieldRange,2) > 1
@@ -3021,7 +3021,7 @@ if nargin == 4
             set(findobj(handles.Result_Axes),'Visible','on');
             
             plot(handles.Result_Axes,Data(:,2),Data(:,4),'Visible','on','Marker','o','Color',[0 0.447 0.741]);
-            xlabel(handles.Result_Axes,'Ibias(\mu A)','FontSize',12,'FontWeight','bold');
+            xlabel(handles.Result_Axes,'Ibias(\muA)','FontSize',12,'FontWeight','bold');
             ylabel(handles.Result_Axes,'Vdc(V)','LineWidth',2,'FontSize',12,'FontWeight','bold');
             set(handles.Result_Axes,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
                 'XTickLabelMode','auto','XTickMode','auto');
@@ -3032,8 +3032,8 @@ if nargin == 4
             set(findobj(handles.Result_Axes),'Visible','on');
             
             plot(handles.Result_Axes,Data(:,2),Data(:,4),'Visible','on','Marker','o','Color',[0 0.447 0.741],'DisplayName',DataName);
-            xlabel(handles.Result_Axes,'Bfield(\mu A)','FontSize',12,'FontWeight','bold');
-            ylabel(handles.Result_Axes,'Icritical(\mu A)','LineWidth',2,'FontSize',12,'FontWeight','bold');
+            xlabel(handles.Result_Axes,'Bfield(\muA)','FontSize',12,'FontWeight','bold');
+            ylabel(handles.Result_Axes,'Icritical(\muA)','LineWidth',2,'FontSize',12,'FontWeight','bold');
             set(handles.Result_Axes,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
                 'XTickLabelMode','auto','XTickMode','auto');
             
@@ -3043,7 +3043,7 @@ if nargin == 4
             set(findobj(handles.Result_Axes),'Visible','on');
             
             plot(handles.Result_Axes,Data(:,2),Data(:,5),'Visible','on','Marker','o','Color',[0 0.447 0.741]);
-            xlabel(handles.Result_Axes,'I_{Field}(\mu A)','FontSize',12,'FontWeight','bold');
+            xlabel(handles.Result_Axes,'I_{Field}(\muA)','FontSize',12,'FontWeight','bold');
             ylabel(handles.Result_Axes,'Vdc(V)','FontSize',12,'FontWeight','bold');
             set(handles.Result_Axes,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
                 'XTickLabelMode','auto','XTickMode','auto');
@@ -3214,12 +3214,12 @@ else
             set(handles.Result_Axes,'Visible','off');
             plot(handles.Result_Axes1,Data(:,1),Data(:,2))
             xlabel(handles.Result_Axes1,'Time(s)');
-            ylabel(handles.Result_Axes1,'V_{in} (mV)');
+            ylabel(handles.Result_Axes1,'V_{in}(mV)');
             set(handles.Result_Axes1,'linewidth',2,'XScale','linear','YScale','linear')
             
             plot(handles.Result_Axes2,Data(:,1),Data(:,3))
             xlabel(handles.Result_Axes2,'Time(s)');
-            ylabel(handles.Result_Axes2,'V_{out} (mV)');
+            ylabel(handles.Result_Axes2,'V_{out}(mV)');
             set(handles.Result_Axes2,'linewidth',2,'XScale','linear','YScale','linear')
             
             set(handles.Result_Axes3,'linewidth',2,'fontsize',12,'fontweight','bold',...
@@ -3255,7 +3255,7 @@ else
             handles.Result_Axes.XScale = 'linear';
             handles.Result_Axes.YScale = 'linear';
             plot(handles.Result_Axes,Data(:,2),Data(:,4),'Visible','on','DisplayName',DataName,'Marker','o','Color',[0 0.447 0.741]);
-            xlabel(handles.Result_Axes,'Ibias (\mu A)','fontsize',12,'fontweight','bold');
+            xlabel(handles.Result_Axes,'Ibias (\muA)','fontsize',12,'fontweight','bold');
             ylabel(handles.Result_Axes,'Vdc(V)','linewidth',2,'fontsize',12,'fontweight','bold');
             
         case 5 % Field Opt
@@ -3267,7 +3267,7 @@ else
             handles.Result_Axes.XScale = 'linear';
             handles.Result_Axes.YScale = 'linear';
             plot(handles.Result_Axes,Data(:,2),Data(:,5),'Visible','on','DisplayName',DataName,'Marker','o','Color',[0 0.447 0.741]);
-            xlabel(handles.Result_Axes,'I_{Field} (\mu A)','fontsize',12,'fontweight','bold');
+            xlabel(handles.Result_Axes,'I_{Field} (\muA)','fontsize',12,'fontweight','bold');
             ylabel(handles.Result_Axes,'Vdc(V)','fontsize',12,'fontweight','bold');
             
         case 1 % Empty
