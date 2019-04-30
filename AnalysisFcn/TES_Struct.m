@@ -301,7 +301,7 @@ classdef TES_Struct
                             eval(['obj.Gset' StrRange{k} '(jj).G100 = Gaux(jj).G100;']);
                             eval(['obj.Gset' StrRange{k} '(jj).ERP = ERP;']);
                             eval(['obj.Gset' StrRange{k} '(jj).R2 = R2;']);
-                            plot(ax,Tbath,obj.fitP(fit,XDATA,model),'LineStyle','-','Color',c(jj,:),'linewidth',1,'DisplayName',IVTESset(i).file,...
+                            plot(ax,Tbath,obj.fitP(fit,XDATA,model),'LineStyle','-','Color',c(jj,:),'LineWidth',1,'DisplayName',IVTESset(i).file,...
                                 'ButtonDownFcn',{@Identify_Origin_PT},'UserData',{k;jj;i;obj},'Visible','off');
                         end
                         
@@ -339,7 +339,7 @@ classdef TES_Struct
                         eval(['obj.Gset' StrRange{k} '(jj).ERP = ERP;']);
                         eval(['obj.Gset' StrRange{k} '(jj).R2 = R2;']);
                         
-                        plot(ax,Tbath,obj.fitP(fit,XDATA,model),'LineStyle','-','Color',c(jj,:),'linewidth',1,'DisplayName',IVTESset(i).file,...
+                        plot(ax,Tbath,obj.fitP(fit,XDATA,model),'LineStyle','-','Color',c(jj,:),'LineWidth',1,'DisplayName',IVTESset(i).file,...
                             'ButtonDownFcn',{@Identify_Origin_PT},'UserData',{k;jj;i;obj},'Visible','off');
                         
 %                         model = obj.BuildPTbModel;
@@ -368,9 +368,9 @@ classdef TES_Struct
                         waitbar(jj/length(perc),wb,['Fit P vs. T in progress: ' StrTitle{k}]);
                     end
                 end
-                xlabel(ax,'T_{bath}(K)','fontsize',11,'fontweight','bold')
-                ylabel(ax,'P_{TES}(pW)','fontsize',11,'fontweight','bold')
-                set(ax,'fontsize',12,'linewidth',2,'fontweight','bold')
+                xlabel(ax,'T_{bath}(K)','FontSize',11,'FontWeight','bold')
+                ylabel(ax,'P_{TES}(pW)','FontSize',11,'FontWeight','bold')
+                set(ax,'FontSize',12,'LineWidth',2,'FontWeight','bold')
                 if ishandle(wb)
                     delete(wb);
                 end
@@ -573,29 +573,29 @@ classdef TES_Struct
                     val = eval(['[Gset.' StrField{j} ']*' StrMultiplier{j} ';']);
                     try
                         val_CI = eval(['[Gset.' StrField{j} '_CI]*' StrMultiplier{j} ';']);
-                        er(j) = errorbar(h(j),rp(ind),val(ind),val_CI(ind),'color',color{k},...
+                        er(j) = errorbar(h(j),rp(ind),val(ind),val_CI(ind),'Color',color{k},...
                             'Visible','off','DisplayName',[StrIbias{k} ' Error Bar'],'Clipping','on');
                         set(get(get(er(j),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                     catch
                     end
                     eval(['plot(h(j),rp(ind),val(ind),''' LineStr{k} ''','...
-                        '''color'',color{k},''MarkerFaceColor'',color{k},''linewidth'',LS,''markersize'',MS,''Marker'','...
+                        '''Color'',color{k},''MarkerFaceColor'',color{k},''LineWidth'',LS,''MarkerSize'',MS,''Marker'','...
                         '''' Marker{k} ''',''DisplayName'',''' StrIbias{k} ''');']);
                     xlim(h(j),[0.15 0.9]);
-                    xlabel(h(j),'%R_n','fontsize',11,'fontweight','bold');
-                    ylabel(h(j),StrLabel{j},'fontsize',11,'fontweight','bold');
-                    set(h(j),'linewidth',2,'fontsize',11,'fontweight','bold')
+                    xlabel(h(j),'%R_n','FontSize',11,'FontWeight','bold');
+                    ylabel(h(j),StrLabel{j},'FontSize',11,'FontWeight','bold');
+                    set(h(j),'LineWidth',2,'FontSize',11,'FontWeight','bold')
                     
                     try
                         eval(['plot(h(j),Gset(TES_OP_y).rp,Gset(TES_OP_y).' StrField{j} ',''.-'','...
-                            '''color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'',''linewidth'',LS,''Marker'',''hexagram'',''markersize'',2*MS,''DisplayName'',''Operation Point'');']);
+                            '''Color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'',''LineWidth'',LS,''Marker'',''hexagram'',''MarkerSize'',2*MS,''DisplayName'',''Operation Point'');']);
                     catch
                     end
                 end
                 fig.subplots = h;
                 try
                     data.er = er;
-                    set(h,'ButtonDownFcn',{@GraphicErrors_NKGT},'UserData',data,'fontsize',12,'linewidth',2,'fontweight','bold')
+                    set(h,'ButtonDownFcn',{@GraphicErrors_NKGT},'UserData',data,'FontSize',12,'LineWidth',2,'FontWeight','bold')
                 catch
                 end
                 set(h,'Visible','on');
@@ -645,8 +645,8 @@ classdef TES_Struct
                     eval(['obj.TES.' StrField{i} ' = val(ind_rp);']);
                     
                     eval(['plot(h(i),obj.GsetP(ind_rp).rp,val(ind_rp),''.-'','...
-                        '''color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'','...
-                        '''linewidth'',LS,''Marker'',''hexagram'',''markersize'',2*MS,''DisplayName'',''Operating Point'');']);
+                        '''Color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'','...
+                        '''LineWidth'',LS,''Marker'',''hexagram'',''MarkerSize'',2*MS,''DisplayName'',''Operating Point'');']);
                     axis(h(i),'tight')
                     
                     
@@ -923,15 +923,15 @@ classdef TES_Struct
                             end
                             ind = 1:3:length(ztes);
                             try
-                            h(h_i) = plot(ax,1e3*ztes(ind),'.','color',[0 0.447 0.741],...
-                                'markerfacecolor',[0 0.447 0.741],'markersize',15,'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj}]);
+                            h(h_i) = plot(ax,1e3*ztes(ind),'.','Color',[0 0.447 0.741],...
+                                'markerfacecolor',[0 0.447 0.741],'MarkerSize',15,'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj}]);
                             %%% Paso marker de 'o' a '.'
-                            set(ax,'linewidth',2,'fontsize',12,'fontweight','bold');
-                            xlabel(ax,'Re(mZ)','fontsize',12,'fontweight','bold');
-                            ylabel(ax,'Im(mZ)','fontsize',12,'fontweight','bold');%title('Ztes with fits (red)');
+                            set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold');
+                            xlabel(ax,'Re(mZ)','FontSize',12,'FontWeight','bold');
+                            ylabel(ax,'Im(mZ)','FontSize',12,'FontWeight','bold');%title('Ztes with fits (red)');
                             ImZmin(jj) = min(imag(1e3*ztes));
                             ylim(ax,[min(-15,min(ImZmin)-1) 1])
-                            g(h_i) = plot(ax,1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2,...
+                            g(h_i) = plot(ax,1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,...
                                 'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj} ':fit']);hold(ax,'on');
                             set([h(h_i) g(h_i)],'UserData',[h(h_i) g(h_i)]);
                             catch
@@ -1028,12 +1028,12 @@ classdef TES_Struct
                             eval(['errorbar(as(i),rp,[obj.P' StrRange{k1} '(iOK).p(rpjj).' StrModelPar{i} ']*1e6,'...
                                 'a(rpjj,i)*1e6,''LineStyle'',''-.'',''Marker'',''.'',''MarkerEdgeColor'',[1 0 0]);'])
                         end
-                        xlabel(as(i),'%R_n','fontsize',12,'fontweight','bold');
-                        ylabel(as(i),StrModelPar{i},'fontsize',12,'fontweight','bold');
+                        xlabel(as(i),'%R_n','FontSize',12,'FontWeight','bold');
+                        ylabel(as(i),StrModelPar{i},'FontSize',12,'FontWeight','bold');
                         grid(as(i),'on');
                         hold(as(i),'on');
                     end
-                    set(as,'linewidth',2,'fontsize',12,'fontweight','bold');
+                    set(as,'LineWidth',2,'FontSize',12,'FontWeight','bold');
                     figParam(k1).Name = ['Thermal Model Parameters Evolution: ' StrRangeExt{k1}]; %#ok<AGROW>
                 end
                 
@@ -1818,45 +1818,45 @@ classdef TES_Struct
                         eval(['hold(h(' num2str(j) '),''on'');']);
                         try
                             eval(['er(ind) = errorbar(h(' num2str(j) '),'...
-                                DataStr{j} ',' DataStr_CI{j} ',''color'',[colors(ind_color,:)],''Visible'',''' errorOpt ''',''DisplayName'','''...
+                                DataStr{j} ',' DataStr_CI{j} ',''Color'',[colors(ind_color,:)],''Visible'',''' errorOpt ''',''DisplayName'','''...
                                 NameStr ' Error Bar'',''Clipping'',''on'');']);
                             set(get(get(er(ind),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         catch
                         end
                         try
                         eval(['h_ax(' num2str(i) ',' num2str(j) ') = ' PlotStr{j} '(h(' num2str(j) '),' DataStr{j} ...
-                            ',''' MarkerStr{i} ''',''color'',[colors(ind_color,:)],''linewidth'',LW1,''markersize'',MS,''DisplayName'',''' NameStr ''''...
+                            ',''' MarkerStr{i} ''',''Color'',[colors(ind_color,:)],''LineWidth'',LW1,''MarkerSize'',MS,''DisplayName'',''' NameStr ''''...
                             ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}]);']);
-                        eval(['set(h(' num2str(j) '),''fontsize'',11,''fontweight'',''bold'');']);
+                        eval(['set(h(' num2str(j) '),''FontSize'',11,''FontWeight'',''bold'');']);
                         eval(['axis(h(' num2str(j) '),''tight'');']);
                         catch
                         end
                         try
-                            eval(['erbad(ind) = errorbar(h(' num2str(j) '),' DataStrBad{j} ',' DataStrBad_CI{j} ',''Visible'',''off'',''color'',[1 1 1]*160/255,'...
+                            eval(['erbad(ind) = errorbar(h(' num2str(j) '),' DataStrBad{j} ',' DataStrBad_CI{j} ',''Visible'',''off'',''Color'',[1 1 1]*160/255,'...
                                 '''linestyle'',''none'',''DisplayName'',''Filtered Error Bar'',''Clipping'',''on'');']);
                             set(get(get(erbad(ind),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                             eval(['h_bad(ind) = ' PlotStr{j} '(h(' num2str(j) '),' DataStrBad{j} ...
-                                ',''' MarkerStr{i} ''',''color'',[1 1 1]*160/255,''markersize'',MS,''DisplayName'',''Filtered'''...
+                                ',''' MarkerStr{i} ''',''Color'',[1 1 1]*160/255,''MarkerSize'',MS,''DisplayName'',''Filtered'''...
                                 ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}],''Visible'',''off'',''linestyle'',''none'');']);                                                       
                             set(get(get(h_bad(ind),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         catch
                         end                        
                         
-                        eval(['xlabel(h(' num2str(j) '),''%R_n'',''fontsize'',11,''fontweight'',''bold'');']);
-                        eval(['ylabel(h(' num2str(j) '),''' YLabels{j} ''',''fontsize'',11,''fontweight'',''bold'');']);
+                        eval(['xlabel(h(' num2str(j) '),''%R_n'',''FontSize'',11,''FontWeight'',''bold'');']);
+                        eval(['ylabel(h(' num2str(j) '),''' YLabels{j} ''',''FontSize'',11,''FontWeight'',''bold'');']);
                         ind = ind+1;
                     end
                     ind_color = ind_color+1;
                 end
                 
                 if ~isfield(fig,'subplots')
-                    teob = plot(h(4),0.1:0.01:0.9,1./(0.1:0.01:0.9)-1,'-.r','linewidth',2,'DisplayName','Beta^{teo}');
+                    teob = plot(h(4),0.1:0.01:0.9,1./(0.1:0.01:0.9)-1,'-.r','LineWidth',2,'DisplayName','Beta^{teo}');
                     set(get(get(teob,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                     set(h([2 4]),'YScale','log');
                     if ~isempty(obj.TES.sides)
-                        teo(1) = plot(h(1),rpaux,CN*1e15*ones(1,length(rpaux)),'-.r','linewidth',2,'DisplayName','{C_{LB}}^{teo}');
+                        teo(1) = plot(h(1),rpaux,CN*1e15*ones(1,length(rpaux)),'-.r','LineWidth',2,'DisplayName','{C_{LB}}^{teo}');
                         set(get(get(teo(1),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-                        teo(2) = plot(h(1),rpaux,2.43*CN*1e15*ones(1,length(rpaux)),'-.r','linewidth',2,'DisplayName','{C_{UB}}^{teo}');
+                        teo(2) = plot(h(1),rpaux,2.43*CN*1e15*ones(1,length(rpaux)),'-.r','LineWidth',2,'DisplayName','{C_{UB}}^{teo}');
                         set(get(get(teo(2),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                     end
                 end
@@ -1869,7 +1869,7 @@ classdef TES_Struct
                 data.er = er;
                 data.h_bad = h_bad;
                 data.erbad = erbad;
-                set(h,'ButtonDownFcn',{@GraphicErrors},'UserData',data,'fontsize',12,'linewidth',2,'fontweight','bold')
+                set(h,'ButtonDownFcn',{@GraphicErrors},'UserData',data,'FontSize',12,'LineWidth',2,'FontWeight','bold')
             catch
             end
             set(h,'Visible','on')
@@ -1900,6 +1900,7 @@ classdef TES_Struct
                         for i = 1:length(Rn)
                             [~,ind(i)] = min(abs(Rp-Rn(i)));
                         end
+                        ind = unique(ind,'stable');
                         try
                             eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileNoise(ind)]'';';]);
                             eval(['N = length(files' StrCond{iP} ');']);
@@ -1963,8 +1964,8 @@ classdef TES_Struct
                         switch obj.NoiseOpt.tipo
                             case 'current'
                                 
-                                loglog(hs(i),fNoise(:,1),SigNoise,'.-r'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                                loglog(hs(i),fNoise(:,1),medfilt1(SigNoise,20),'.-k'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                                loglog(hs(i),fNoise(:,1),SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                                loglog(hs(i),fNoise(:,1),medfilt1(SigNoise,20),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
                                 
                                 if obj.NoiseOpt.Mph == 0
                                     totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
@@ -1973,38 +1974,48 @@ classdef TES_Struct
                                     totnoise = sqrt((auxnoise.ph*(1+Mexph^2)).^2+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
                                 end
                                 if ~obj.NoiseOpt.boolcomponents
-                                    loglog(hs(i),f,totnoise*1e12,'b');
-                                    h = findobj(hs(i),'color','b');
+                                    loglog(hs(i),f,totnoise*1e12,'b','DisplayName','Total Simulation Noise');
+                                    h = findobj(hs(i),'Color','b');
                                 else
-                                    loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
-                                    legend(hs(i),'experimental','exp\_filtered','jhonson','phonon','shunt','total');
-                                    legend(hs(i),'off');
-                                    h = findobj(hs,'displayname','total');
+%                                     loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
+                                    loglog(hs(i),f,auxnoise.jo*1e12,'DisplayName','Jhonson');
+                                    loglog(hs(i),f,auxnoise.ph*1e12,'DisplayName','Phonon');
+                                    loglog(hs(i),f,auxnoise.sh*1e12,'DisplayName','Shunt');
+                                    loglog(hs(i),f,auxnoise.squidarray*1e12,'DisplayName','Squid');
+                                    loglog(hs(i),f,totnoise*1e12,'DisplayName','Total');
+%                                     legend(hs(i),'Experimental','Exp Filtered Noise','Jhonson','Phonon','Shunt','Total');
+%                                     legend(hs(i),'off');
+%                                     h = findobj(hs,'displayname','total');
                                 end
                             case 'nep'
                                 sIaux = ppval(spline(f,auxnoise.sI),fNoise(:,1));
                                 NEP = real(sqrt((SigNoise*1e-12).^2-auxnoise.squid.^2)./sIaux);
-                                loglog(hs(i),fNoise(:,1),(NEP*1e18),'.-r'),hold on,grid on,
-                                loglog(hs(i),fNoise(:,1),medfilt1(NEP*1e18,20),'.-k'),hold on,grid on,
+                                loglog(hs(i),fNoise(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold on,grid on,
+                                loglog(hs(i),fNoise(:,1),medfilt1(NEP*1e18,20),'.-k','DisplayName','Exp Filtered Noise');hold on,grid on,
                                 if obj.NoiseOpt.Mph == 0
                                     totNEP = auxnoise.NEP;
                                 else
                                     totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
                                 end
                                 if ~obj.NoiseOpt.boolcomponents
-                                    loglog(hs(i),f,totNEP*1e18,'b');hold on;grid on;
-                                    h = findobj(hs(i),'color','b');
+                                    loglog(hs(i),f,totNEP*1e18,'b','DisplayName','Total Simulation Noise');hold on;grid on;
+                                    h = findobj(hs(i),'Color','b');
                                 else
-                                    loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
-                                    legend(hs(i),'experimental','exp\_filtered','jhonson','phonon','shunt','total');
-                                    legend(hs(i),'off');
-                                    h = findobj(hs(i),'displayname','total');
+%                                     loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
+                                    loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Jhonson');
+                                    loglog(hs(i),f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon');
+                                    loglog(hs(i),f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt');
+                                    loglog(hs(i),f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid');
+                                    loglog(hs(i),f,totNEP*1e18,'DisplayName','Total');
+%                                     legend(hs(i),'Experimental Noise','Exp Filtered Noise','Jhonson','Phonon','Shunt','Total');
+%                                     legend(hs(i),'off');
+%                                     h = findobj(hs(i),'displayname','total');
                                 end
                         end
                         axis(hs(i),[1e1 1e5 2 1e3])
-                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'fontsize',12);
+                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
                         if abs(OP.Z0-OP.Zinf) < 1.5e-3
-                            set(get(findobj(hs(i),'type','axes'),'title'),'color','r');
+                            set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
                         end
                         
                         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2061,8 +2072,9 @@ classdef TES_Struct
                         for i = 1:length(Rn)
                             [~,ind(i)] = min(abs(Rp-Rn(i)));
                         end
+                        ind = unique(ind,'stable');
                         try
-                            eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ(ind)]'';';]);
+                            eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ(ind)]'';';]);                            
                             eval(['N = length(files' StrCond{iP} ');']);
                         catch
                             continue;
@@ -2104,16 +2116,17 @@ classdef TES_Struct
                         ztes = eval(['obj.P' StrCond{iP} '(ind_Tbath).ztes{ind(i)};']);
                         fZ = eval(['obj.P' StrCond{iP} '(ind_Tbath).fZ{ind(i)};']);
                         
-                        plot(hs(i),1e3*ztes,'.','color',[0 0.447 0.741],...
-                            'markerfacecolor',[0 0.447 0.741],'markersize',15);
+                        plot(hs(i),1e3*ztes,'.','Color',[0 0.447 0.741],...
+                            'markerfacecolor',[0 0.447 0.741],'MarkerSize',15,'DisplayName','Experimental Data');
                         
                         ImZmin = min(imag(1e3*ztes));
                         ylim(hs(i),[min(-15,min(ImZmin)-1) 1])
-                        plot(hs(i),1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2);
-                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'fontsize',12);
+                        plot(hs(i),1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,'DisplayName',eval(['obj.P' StrCond{iP} '(ind_Tbath).ElecThermModel{ind(i)}']));
+                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
                         if abs(OP.Z0-OP.Zinf) < 1.5e-3
-                            set(get(findobj(hs(i),'type','axes'),'title'),'color','r');
+                            set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
                         end
+                        
                     end
                     if nargin < 3
                         n = get(fig(IndFig),'number');
@@ -2154,6 +2167,7 @@ classdef TES_Struct
                         for i = 1:length(Rn)
                             [~,ind(i)] = min(abs(Rp-Rn(i)));
                         end
+                        ind = unique(ind,'stable');
                         try
                             eval(['files' StrCond{iP} ' = [obj.P' StrCond{iP} '(ind_Tbath).fileZ(ind)]'';';]);
                             eval(['N = length(files' StrCond{iP} ');']);
@@ -2198,18 +2212,18 @@ classdef TES_Struct
                         fZ = eval(['obj.P' StrCond{iP} '(ind_Tbath).fZ{ind(i)};']);
                         fS = eval(['obj.P' StrCond{iP} '(ind_Tbath).fS{ind(i)};']);
                         
-                        plot(hs(i),fS,real(1e3*ztes),'.','color',[0 0.447 0.741],...
-                            'markerfacecolor',[0 0.447 0.741],'markersize',15,'DisplayName','Re(Z(w))');
-                        plot(hs(i),fS,imag(1e3*ztes),'.','color',[0 0.447 0.741],...
-                            'markerfacecolor',[0 0.447 0.741],'markersize',15,'DisplayName','Im(Z(w))');
+                        plot(hs(i),fS,real(1e3*ztes),'.','Color',[0 0 1],...
+                            'markerfacecolor',[0 0.447 0.741],'MarkerSize',8,'DisplayName','Exp Re(Z(w))');
+                        plot(hs(i),fS,imag(1e3*ztes),'.','Color',[1 0 0],...
+                            'markerfacecolor',[0 0.447 0.741],'MarkerSize',8,'DisplayName','Exp Im(Z(w))');
                         
 %                         ImZmin = min(imag(1e3*ztes));
 %                         ylim(hs(i),[min(-15,min(ImZmin)-1) 1])
-                        plot(hs(i),fS,1e3*fZ(:,1),'r','linewidth',2,'DisplayName','fit-Real(Z(w))');
-                        plot(hs(i),fS,1e3*fZ(:,2),'r','linewidth',2,'DisplayName','fit-Im(Z(w))');
-                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'fontsize',12);
+                        plot(hs(i),fS,1e3*fZ(:,1),'Color',[0 1 0],'LineStyle',':','LineWidth',2,'DisplayName','fit-Real(Z(w))');
+                        plot(hs(i),fS,1e3*fZ(:,2),'Color',[0 0 0.1724],'LineStyle',':','LineWidth',2,'DisplayName','fit-Im(Z(w))');
+                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
                         if abs(OP.Z0-OP.Zinf) < 1.5e-3
-                            set(get(findobj(hs(i),'type','axes'),'title'),'color','r');
+                            set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
                         end
                     end
                     if nargin < 3
@@ -2268,16 +2282,11 @@ classdef TES_Struct
                     if nargin < 5
                         fig = figure('Visible','on');
                     end
-                    if isempty(findobj(fig,'Type','Axes'))
+                    ax = findobj(fig,'Type','Axes');
+                    if isempty(ax)
                         figure(fig);
                         ax = axes;
                         hold(ax,'on');
-                    else
-                        ax = findobj('Type','Axes');
-%                         if length(ax) > 1
-%                             ax = axes;
-%                             hold(ax,'on');
-%                         end
                     end
                     for k = 1:2
                         
@@ -2350,16 +2359,11 @@ classdef TES_Struct
                     if nargin < 5
                         fig = figure('Visible','on');
                     end
-                    if isempty(findobj(fig,'Type','Axes'))
+                    ax = findobj(fig,'Type','Axes');
+                    if isempty(ax)
                         figure(fig);
                         ax = axes;
                         hold(ax,'on');
-                    else
-                        ax = findobj(fig,'Type','Axes');
-%                         if length(ax) > 1
-%                             ax = axes;
-%                             hold(ax,'on');
-%                         end
                     end
                     StrRange = {'P';'N'};
                     StrCond = {'Positive';'Negative'};
@@ -2514,8 +2518,9 @@ classdef TES_Struct
                         hold on
                     end
                 end
-                xlabel(ax,'Field (\muA)')
-                ylabel(ax,'Critical current (\muA)');
+                xlabel(ax,'Field (\muA)','FontSize',11,'FontWeight','bold');
+                ylabel(ax,'Critical current (\muA)','FontSize',11,'FontWeight','bold');
+                set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold');
             catch
             end
         end
@@ -2538,8 +2543,9 @@ classdef TES_Struct
                         set(h(i),'DisplayName', [num2str(obj.FieldScan.Tbath{i}*1e3,'%1.1f') 'mK']);
                     end
                 end
-                xlabel(ax,'I_{Field} (\muA)')
-                ylabel(ax,'Vdc(V)');
+                xlabel(ax,'I_{Field} (\muA)','FontSize',11,'FontWeight','bold');
+                ylabel(ax,'Vdc(V)','FontSize',11,'FontWeight','bold');
+                set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold');
             catch
             end
         end
@@ -2617,14 +2623,14 @@ classdef TES_Struct
                                 '''ButtonDownFcn'',{@ChangeGoodOpt},''DisplayName'',num2str(IVset(i).Tbath),''Tag'',IVset(i).file);']);
                             grid(h(j),'on');
                             hold(h(j),'on');
-                            xlabel(h(j),Data2DrawStr_Units(j,1),'fontweight','bold');
-                            ylabel(h(j),Data2DrawStr_Units(j,2),'fontweight','bold');
+                            xlabel(h(j),Data2DrawStr_Units(j,1),'FontWeight','bold');
+                            ylabel(h(j),Data2DrawStr_Units(j,2),'FontWeight','bold');
                         end
                     else  % No se pinta o se pinta de otro color
                         
                     end
                 end
-                set(h,'fontsize',12,'linewidth',2,'fontweight','bold')
+                set(h,'FontSize',12,'LineWidth',2,'FontWeight','bold')
                 axis(h,'tight');
                 figIV.hObject.Visible = 'on';
                 
@@ -2700,7 +2706,7 @@ classdef TES_Struct
                                 opts = optimset('Display','off');
                                 fitfun = @(x,y)obj.fitP(x,y,model);
                                 [fit,resnorm,residual,exitflag,output,lambda,jacob] = lsqcurvefit(fitfun,X0,XDATA,Paux*1e12,LB,[],opts); %#ok<ASGLU>
-                                plot(ax,Tbath,obj.fitP(fit,XDATA,model),'-r','linewidth',1)
+                                plot(ax,Tbath,obj.fitP(fit,XDATA,model),'-r','LineWidth',1)
                             end
                         elseif isstruct(model)
                             
@@ -2713,13 +2719,13 @@ classdef TES_Struct
                             opts = optimset('Display','off');
                             fitfun = @(x,y)obj.fitP(x,y,model);
                             [fit,~,aux2,~,~,~,auxJ] = lsqcurvefit(fitfun,X0,XDATA,Paux*1e12,LB,[],opts);                                                        
-                            plot(ax,Tbath,obj.fitP(fit,XDATA,model),'-r','linewidth',1);
+                            plot(ax,Tbath,obj.fitP(fit,XDATA,model),'-r','LineWidth',1);
                             
                         end
                     end
-                    xlabel(ax,'T_{bath}(K)','fontsize',11,'fontweight','bold')
-                    ylabel(ax,'P_{TES}(pW)','fontsize',11,'fontweight','bold')
-                    set(ax,'fontsize',12,'linewidth',2,'fontweight','bold')
+                    xlabel(ax,'T_{bath}(K)','FontSize',11,'FontWeight','bold')
+                    ylabel(ax,'P_{TES}(pW)','FontSize',11,'FontWeight','bold')
+                    set(ax,'FontSize',12,'LineWidth',2,'FontWeight','bold')
                 end
                 print(fig,'-dmeta');
                 close(fig);
@@ -2772,22 +2778,22 @@ classdef TES_Struct
                         val = eval(['[Gset.' StrField{j} ']*' StrMultiplier{j} ';']);
                         try
                             val_CI = eval(['[Gset.' StrField{j} '_CI]*' StrMultiplier{j} ';']);
-                            er(j) = errorbar(h(j),rp(ind),val(ind),val_CI(ind),'color',color{k},...
+                            er(j) = errorbar(h(j),rp(ind),val(ind),val_CI(ind),'Color',color{k},...
                                 'Visible','on','DisplayName',[StrIbias{k} ' Error Bar'],'Clipping','on');
                         catch
                         end
                         eval(['plot(h(j),rp(ind),val(ind),''' LineStr{k} ''','...
-                            '''color'',color{k},''MarkerFaceColor'',color{k},''linewidth'',LS,''markersize'',MS,''Marker'','...
+                            '''Color'',color{k},''MarkerFaceColor'',color{k},''LineWidth'',LS,''MarkerSize'',MS,''Marker'','...
                             '''' Marker{k} ''',''DisplayName'',''' StrIbias{k} ''');']);
                         xlim(h(j),[0.15 0.9]);
-                        xlabel(h(j),'%R_n','fontsize',11,'fontweight','bold');
-                        ylabel(h(j),StrLabel{j},'fontsize',11,'fontweight','bold');
-                        set(h(j),'linewidth',2,'fontsize',11,'fontweight','bold')
+                        xlabel(h(j),'%R_n','FontSize',11,'FontWeight','bold');
+                        ylabel(h(j),StrLabel{j},'FontSize',11,'FontWeight','bold');
+                        set(h(j),'LineWidth',2,'FontSize',11,'FontWeight','bold')
                         
                         try
                             eval(['plot(h(j),Gset(TES_OP_y).rp,Gset(TES_OP_y).' StrField{j} ',''.-'','...
-                                '''color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'','...
-                                '''linewidth'',LS,''Marker'',''hexagram'',''markersize'',2*MS,''DisplayName'',''Operation Point'');']);
+                                '''Color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'','...
+                                '''LineWidth'',LS,''Marker'',''hexagram'',''MarkerSize'',2*MS,''DisplayName'',''Operation Point'');']);
                         catch
                         end
                     end                                                            

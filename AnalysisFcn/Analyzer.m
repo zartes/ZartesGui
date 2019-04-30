@@ -588,22 +588,24 @@ switch src.Label
         colors = distinguishable_colors(length(s));
         j = 1;
         for i = s
+            SessionName = handles.Session{i}.Tag;
+            SessionName(SessionName == '_') = ' ';
             handles.Session{i}.TES.plotNKGTset(fig,1);
             Lines = findobj(handles.Analyzer,'Type','Line');
             for Ln = 1:length(Lines)
                 if i == s(1)
-                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                     Lines(Ln).UserData = i;
-                    if ~strcmp(Lines(Ln).DisplayName,['Operating Point - ' handles.Session{i}.Tag])
+                    if ~strcmp(Lines(Ln).DisplayName,['Operating Point - ' SessionName])
                         Lines(Ln).Marker = Markers{j};
                         Lines(Ln).MarkerSize = 6;
                         %                         Lines(Ln).Color = colors(j,:);
                     end
                 else
                     if ~isequal(Lines(Ln).UserData,i-1)
-                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                         Lines(Ln).UserData = i;
-                        if ~strcmp(Lines(Ln).DisplayName,['Operating Point - ' handles.Session{i}.Tag])
+                        if ~strcmp(Lines(Ln).DisplayName,['Operating Point - ' SessionName])
                             Lines(Ln).Marker = Markers{j};
                             Lines(Ln).MarkerSize = 6;
                             %                             Lines(Ln).Color = colors(j,:);
@@ -636,11 +638,13 @@ switch src.Label
         
         j = 1;
         for i = s
+            SessionName = handles.Session{i}.Tag;
+            SessionName(SessionName == '_') = ' ';
             handles.Session{i}.TES.plotABCT(fig);
             Lines = findobj(fig.hObject,'Type','Line');
             for Ln = 1:length(Lines)
                 if i == s(1)
-                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                     US = Lines(Ln).UserData;
                     Lines(Ln).UserData = [US; i];
                     Lines(Ln).Marker = Markers{j};
@@ -649,7 +653,7 @@ switch src.Label
                 else
                     US = Lines(Ln).UserData;
                     if length(US)<5
-                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                         Lines(Ln).UserData = [US; i];
                         Lines(Ln).Marker = Markers{j};
                         Lines(Ln).MarkerSize = 6;
@@ -719,23 +723,28 @@ switch src.Label
                     Tbath = str2double(str(s))';
                     Rn = [];                   
                     
-                    handles.Session{handles.TES_ID}.TES.PlotTESData(data.param1,[],Tbath,handles.Analyzer);
+%                     handles.Session{handles.TES_ID}.TES.PlotTESData(data.param1,[],Tbath,handles.Analyzer);
                     
 %                     colors = distinguishable_colors(length(s1));
+                    Lines_old = [];
                     j = 1;
                     for i = s1
+                        SessionName = handles.Session{i}.Tag;
+                        SessionName(SessionName == '_') = ' ';
                         handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);
                         Lines = findobj(fig.hObject,'Type','Line');
+                        Lines = setdiff(Lines,Lines_old);
+                        
                         for Ln = 1:length(Lines)
                             if i == s1(1)
-                                Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                 Lines(Ln).UserData = i;
 %                                 Lines(Ln).Color = colors(j,:);
                                 Lines(Ln).Marker = Markers{j};
                                 Lines(Ln).MarkerSize = 6;
                             else
                                 if ~isequal(Lines(Ln).UserData,i-1)
-                                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                     Lines(Ln).UserData = i;
 %                                     Lines(Ln).Color = colors(j,:);
                                     Lines(Ln).Marker = Markers{j};
@@ -743,6 +752,7 @@ switch src.Label
                                 end
                             end
                         end
+                        Lines_old = [Lines_old;Lines];
                         j = j+1;
                     end
                     
@@ -754,22 +764,26 @@ switch src.Label
                     answer = inputdlg(prompt,name,numlines,defaultanswer);
                     Rn = eval(['[' answer{1} ']']);
                     Tbath = [];
-                                                            
-%                     colors = distinguishable_colors(length(s1));
+                    
+                    %                     colors = distinguishable_colors(length(s1));
+                    Lines_old = [];
                     j = 1;
                     for i = s1
+                        SessionName = handles.Session{i}.Tag;
+                        SessionName(SessionName == '_') = ' ';
                         handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);
                         Lines = findobj(fig.hObject,'Type','Line');
+                        Lines = setdiff(Lines,Lines_old);
                         for Ln = 1:length(Lines)
                             if i == s1(1)
-                                Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                 Lines(Ln).UserData = i;
 %                                 Lines(Ln).Color = colors(j,:);
                                 Lines(Ln).Marker = Markers{j};
                                 Lines(Ln).MarkerSize = 6;
                             else
                                 if ~isequal(Lines(Ln).UserData,i-1)
-                                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                     Lines(Ln).UserData = i;
 %                                     Lines(Ln).Color = colors(j,:);
                                     Lines(Ln).Marker = Markers{j};
@@ -777,6 +791,7 @@ switch src.Label
                                 end
                             end
                         end
+                        Lines_old = [Lines_old;Lines];
                         j = j+1;
                     end                    
                     
@@ -784,20 +799,24 @@ switch src.Label
                     param = data.param1;
                     param2 = data.param2;
                     params = char([{param};{param2}]);
+                    Lines_old = [];
                     j = 1;
                     for i = s1
+                        SessionName = handles.Session{i}.Tag;
+                        SessionName(SessionName == '_') = ' ';
                         handles.Session{i}.TES.PlotTESData(params,[],[],handles.Analyzer);
                         Lines = findobj(fig.hObject,'Type','Line');
+                        Lines = setdiff(Lines,Lines_old);
                         for Ln = 1:length(Lines)
                             if i == s1(1)
-                                Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                 Lines(Ln).UserData = i;
 %                                 Lines(Ln).Color = colors(j,:);
                                 Lines(Ln).Marker = Markers{j};
                                 Lines(Ln).MarkerSize = 6;
                             else
                                 if ~isequal(Lines(Ln).UserData,i-1)
-                                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                     Lines(Ln).UserData = i;
 %                                     Lines(Ln).Color = colors(j,:);
                                     Lines(Ln).Marker = Markers{j};
@@ -805,6 +824,7 @@ switch src.Label
                                 end
                             end
                         end
+                        Lines_old = [Lines_old;Lines];
                         j = j+1;
                     end
             end
@@ -824,18 +844,20 @@ switch src.Label
         delete(indAxes);
         j = 1;
         for i = s1
+            SessionName = handles.Session{i}.Tag;
+            SessionName(SessionName == '_') = ' ';
             handles.Session{i}.TES.PlotCriticalCurrent(handles.Analyzer);
             Lines = findobj(fig.hObject,'Type','Line');
             for Ln = 1:length(Lines)
                 if i == s1(1)
-                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                     Lines(Ln).UserData = i;
                     %                                 Lines(Ln).Color = colors(j,:);
                     Lines(Ln).Marker = Markers{j};
                     Lines(Ln).MarkerSize = 6;
                 else
                     if ~isequal(Lines(Ln).UserData,i-1)
-                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' handles.Session{i}.Tag];
+                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                         Lines(Ln).UserData = i;
                         %                                     Lines(Ln).Color = colors(j,:);
                         Lines(Ln).Marker = Markers{j};
@@ -848,8 +870,42 @@ switch src.Label
         
         
         
-    case 'Plots Field Scans'
-        
+    case 'Plots Field Scan'
+        str = cellstr(handles.Loaded_TES.String);
+        [s1,~] = listdlg('PromptString','Select Loaded TES:',...
+            'SelectionMode','multiple',...
+            'ListString',str);
+        if isempty(s1)
+            return;
+        end
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
+        delete(indAxes);
+        j = 1;
+        for i = s1
+            SessionName = handles.Session{i}.Tag;
+            SessionName(SessionName == '_') = ' ';
+            handles.Session{i}.TES.PlotFieldScan(handles.Analyzer);
+            Lines = findobj(fig.hObject,'Type','Line');
+            for Ln = 1:length(Lines)
+                if i == s1(1)
+                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
+                    Lines(Ln).UserData = i;
+                    %                                 Lines(Ln).Color = colors(j,:);
+                    Lines(Ln).Marker = Markers{j};
+                    Lines(Ln).MarkerSize = 6;
+                else
+                    if ~isequal(Lines(Ln).UserData,i-1)
+                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
+                        Lines(Ln).UserData = i;
+                        %                                     Lines(Ln).Color = colors(j,:);
+                        Lines(Ln).Marker = Markers{j};
+                        Lines(Ln).MarkerSize = 6;
+                    end
+                end
+            end
+            j = j+1;
+        end
 end
 guidata(src,handles);
 
@@ -981,6 +1037,8 @@ else
         h.Enable = StrEnable{(~TES_ID+1)+1};
     end
 end
+
+
 try
     if Session.TES.IC.Filled
         StrLabel_On = {'Plot';'Plot Critical Currents'};
@@ -989,7 +1047,7 @@ try
             h.Enable = StrEnable{(~TES_ID+1)};
         end
     else
-        StrLabel_Off = {'Plot';'Plot Critical Currents'};
+        StrLabel_Off = {'Plot Critical Currents'};
         for i = 1:length(StrLabel_Off)
             h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
             h.Enable = StrEnable{(~TES_ID+1)+1};
@@ -1003,26 +1061,13 @@ try
             h.Enable = StrEnable{(~TES_ID+1)};
         end
     else
-        StrLabel_Off = {'Plot';'Plot Field Scan'};
+        StrLabel_Off = {'Plot Field Scan'};
         for i = 1:length(StrLabel_Off)
             h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
             h.Enable = StrEnable{(~TES_ID+1)+1};
         end
     end
     
-    if Session.TES.IC.Filled || Session.TES.FieldScan.Filled
-        StrLabel_On = {'Plot'};
-        for i = 1:length(StrLabel_On)
-            h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
-            h.Enable = StrEnable{(~TES_ID+1)};
-        end
-    else
-        StrLabel_Off = {'Plot'};
-        for i = 1:length(StrLabel_Off)
-            h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
-            h.Enable = StrEnable{(~TES_ID+1)+1};
-        end
-    end
         
 catch
 end
