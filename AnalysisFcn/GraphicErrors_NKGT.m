@@ -35,6 +35,7 @@ set(src,'uicontextmenu',cmenu);
 
 function Handle_Errors(src,evnt)
 
+handles = guidata(src);
 str = get(src,'Label');
 if (~isempty(strfind(str,'Positive')))||(~isempty(strfind(str,'Negative')))
     TempStr = str;
@@ -44,7 +45,7 @@ end
 Data = src.UserData;
 
 % Positive Ibias
-h = findobj('Type','Line');
+h = findobj(handles.Analyzer,'Type','Line');
 jp = [];
 jn = [];
 for i = 1:length(h)
@@ -61,7 +62,7 @@ hp = h(jp);
 hn = h(jn);
 
 % Positive Ibias Error bars
-he = findobj('Type','ErrorBar');
+he = findobj(handles.Analyzer,'Type','ErrorBar');
 jpe = [];
 jne = [];
 for i = 1:length(he)

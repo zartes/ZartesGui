@@ -215,7 +215,7 @@ function Rewind_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 if handles.Files_Ind > 1    
-    hds = findobj('Type','Uicontrol');
+    hds = findobj(hObject.Parent,'Type','Uicontrol');
     set(hds,'Enable','off');
 end
 while handles.Files_Ind > 1   
@@ -241,8 +241,9 @@ function Forward_Callback(hObject, eventdata, handles)
 % hObject    handle to Forward (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 if handles.Files_Ind < handles.Nfiles
-    hds = findobj('Type','Uicontrol');
+    hds = findobj(hObject.Parent,'Type','Uicontrol');
     set(hds,'Enable','off');
 end
 while handles.Files_Ind < handles.Nfiles        
@@ -335,28 +336,28 @@ data{3} = FileName;
 
 ztes = eval(['handles.varargin{1}.P' StrCond '(ind_Tbath).ztes{handles.Files_Ind};']);
 fZ = eval(['handles.varargin{1}.P' StrCond '(ind_Tbath).fZ{handles.Files_Ind};']);
-plot(hs,1e3*ztes,'.','color',[0 0.447 0.741],...
-    'markerfacecolor',[0 0.447 0.741],'markersize',15,'ButtonDownFcn',{@DisplayResults},'UserData',data);
+plot(hs,1e3*ztes,'.','Color',[0 0.447 0.741],...
+    'MarkerFaceColor',[0 0.447 0.741],'MarkerSize',15,'ButtonDownFcn',{@DisplayResults},'UserData',data,'DisplayName','Experimental Data');
 hold(hs,'on');grid(hs,'on');
 
-set(hs,'linewidth',2,'fontsize',12,'fontweight','bold');
-xlabel(hs,'Re(mZ)','fontsize',12,'fontweight','bold');
-ylabel(hs,'Im(mZ)','fontsize',12,'fontweight','bold');%title('Ztes with fits (red)');
+set(hs,'LineWidth',2,'FontSize',12,'fontweight','bold');
+xlabel(hs,'Re(mZ)','FontSize',12,'fontweight','bold');
+ylabel(hs,'Im(mZ)','FontSize',12,'fontweight','bold');%title('Ztes with fits (red)');
 ImZmin = min(imag(1e3*ztes));
 % ylim(hs,[min(-15,min(ImZmin)-1) 1])
 
-plot(hs,1e3*fZ(:,1),1e3*fZ(:,2),'r','linewidth',2,'ButtonDownFcn',{@DisplayResults},'UserData',data);
-legend(hs,'Experimental',eval(['handles.varargin{1}.P' StrCond '(ind_Tbath).ElecThermModel{handles.Files_Ind}']));
+plot(hs,1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,'ButtonDownFcn',{@DisplayResults},'UserData',data,'DisplayName',eval(['handles.varargin{1}.P' StrCond '(ind_Tbath).ElecThermModel{handles.Files_Ind}']));
+% legend(hs,'Experimental',);
 
 axis(hs,'tight');
 r0 = data{1}.p(handles.Files_Ind).rp;
 Z0 = data{1}.p(handles.Files_Ind).Z0;
 Zinf = data{1}.p(handles.Files_Ind).Zinf;
-title(hs,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'fontsize',12);
-% title(hs,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
+title(hs,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'FontSize',12);
+% title(hs,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
 if abs(Z0-Zinf) < 1.5e-3
 % if abs(OP.Z0-OP.Zinf) < 1.5e-3
-    set(get(findobj(hs,'type','axes'),'title'),'color','r');
+    set(get(findobj(hs,'type','axes'),'title'),'Color','r');
 end
 hold(hs,'off');
 
@@ -397,8 +398,8 @@ auxnoise = handles.varargin{1}.noisesim(OP,M,f);
 switch handles.varargin{1}.NoiseOpt.tipo
     case 'current'
         
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r','DisplayName','Experimental'); hold(hs1,'on');grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},20),'.-k','DisplayName','Exp\_Filtered'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r','DisplayName','Experimental Noise'); hold(hs1,'on');grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},20),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         
         if handles.varargin{1}.NoiseOpt.Mph == 0
             totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
@@ -408,12 +409,17 @@ switch handles.varargin{1}.NoiseOpt.tipo
         end
         
         if ~handles.varargin{1}.NoiseOpt.boolcomponents
-            loglog(hs1,f,totnoise*1e12,'b','DisplayName','Total');
-            h = findobj(hs1,'color','b');
+            loglog(hs1,f,totnoise*1e12,'b','DisplayName','Total Simulation Noise');
+            h = findobj(hs1,'Color','b');
         else
-            loglog(hs1,f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,auxnoise.squidarray*1e12,f,totnoise*1e12);
-            legend(hs1,'Experimental','Exp\_Filtered','Jhonson','Phonon','Shunt','Squid','Total');            
-            h = findobj(hs1,'displayname','Total');
+            loglog(hs1,f,auxnoise.jo*1e12,'DisplayName','Jhonson');
+            loglog(hs1,f,auxnoise.ph*1e12,'DisplayName','Phonon');
+            loglog(hs1,f,auxnoise.sh*1e12,'DisplayName','Shunt');
+            loglog(hs1,f,auxnoise.squidarray*1e12,'DisplayName','Squid');
+            loglog(hs1,f,totnoise*1e12,'DisplayName','Total');
+%             
+%             legend(hs1,'Experimental Noise','Exp Filtered Noise','Jhonson','Phonon','Shunt','Squid','Total');            
+%             h = findobj(hs1,'DisplayName','Total');
         end
         ylabel(hs1,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold')
         
@@ -422,21 +428,25 @@ switch handles.varargin{1}.NoiseOpt.tipo
         sIaux = ppval(spline(f,auxnoise.sI),fNoise{handles.Files_Ind}(:,1));
         NEP = real(sqrt((SigNoise{handles.Files_Ind}*1e-12.^2-auxnoise.squid.^2))./sIaux);
         
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r'),hold on,grid on,
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,20),'.-k'),hold on,grid on,
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise'),hold on,grid on,
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,20),'.-k','DisplayName','Exp Filtered Noise'),hold on,grid on,
         if handles.varargin{1}.NoiseOpt.Mph == 0
             totNEP = auxnoise.NEP;
         else
             totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
         end
         if ~handles.varargin{1}.NoiseOpt.boolcomponents
-            loglog(hs1,f,totNEP*1e18,'b');hold(hs1,'on');grid(hs1,'on');
-            h = findobj(hs1,'color','b');
+            loglog(hs1,f,totNEP*1e18,'b','DisplayName','Total Simulation Noise');hold(hs1,'on');grid(hs1,'on');
+            h = findobj(hs1,'Color','b');
         else
-            loglog(hs1,f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,auxnoise.squidarray*1e18./auxnoise.sI,f,(totNEP*1e18));
-            legend(hs1,'Experimental','Exp\_Filtered','Jhonson','Phonon','Shunt','Squid','Total');
-            legend(hs1,'off');
-            h = findobj(hs1,'DisplayName','Total');
+            loglog(hs1,f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Jhonson');
+            loglog(hs1,f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon');
+            loglog(hs1,f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt');
+            loglog(hs1,f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid');
+            loglog(hs1,f,totNEP*1e18,'DisplayName','Total');
+%             legend(hs1,'Experimental Noise','Exp Filtered Noise','Jhonson','Phonon','Shunt','Squid','Total');
+%             legend(hs1,'off');
+%             h = findobj(hs1,'DisplayName','Total');
         end
         ylabel(hs1,'aW/Hz^{0.5}','FontSize',12,'FontWeight','bold')
 end
@@ -450,12 +460,12 @@ set(hs1,'FontSize',11,'FontWeight','bold');
 set(hs1,'LineWidth',2)
 set(hs1,'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-')
 set(hs1,'XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'})
-title(hs1,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'fontsize',12);
-% title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'fontsize',12);
+title(hs1,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'FontSize',12);
+% title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
 %         OP.Z0,OP.Zinf
 %debug
 if abs(OP.Z0-OP.Zinf) < 1.5e-3
-    set(get(findobj(hs1,'type','axes'),'title'),'color','r');
+    set(get(findobj(hs1,'type','axes'),'title'),'Color','r');
 end
 hold(hs1,'off');
 if src == handles.figure1||src == handles.TBath_popup
