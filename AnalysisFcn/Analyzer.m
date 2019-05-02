@@ -586,12 +586,14 @@ switch src.Label
         delete(indAxes);
         
         colors = distinguishable_colors(length(s));
-        j = 1;
+        Lines_old = [];
+        j = 1;        
         for i = s
             SessionName = handles.Session{i}.Tag;
             SessionName(SessionName == '_') = ' ';
             handles.Session{i}.TES.plotNKGTset(fig,1);
-            Lines = findobj(handles.Analyzer,'Type','Line');
+            Lines = findobj(fig.hObject,'Type','Line');
+            Lines = setdiff(Lines,Lines_old);
             for Ln = 1:length(Lines)
                 if i == s(1)
                     Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
@@ -614,6 +616,7 @@ switch src.Label
                     end
                 end
             end
+            Lines_old = [Lines_old;Lines];
             j = j+1;
         end
         
@@ -635,13 +638,14 @@ switch src.Label
         erbad(1:4) = {[]};
         
         colors = distinguishable_colors(length(s));
-        
+        Lines_old = [];
         j = 1;
         for i = s
             SessionName = handles.Session{i}.Tag;
             SessionName(SessionName == '_') = ' ';
             handles.Session{i}.TES.plotABCT(fig);
             Lines = findobj(fig.hObject,'Type','Line');
+            Lines = setdiff(Lines,Lines_old);
             for Ln = 1:length(Lines)
                 if i == s(1)
                     Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
@@ -661,6 +665,7 @@ switch src.Label
                     end
                 end
             end
+            Lines_old = [Lines_old;Lines];
             j = j+1;
             Axes = findobj(fig.hObject,'Type','Axes');
             for k = 1:length(Axes)
@@ -697,11 +702,9 @@ switch src.Label
         str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
         dummy = uimenu('Visible','off');
         waitfor(GraphicTESData(str,dummy));
-        data = dummy.UserData;
+        data = dummy.UserData;        
         
-        
-        Markers = {'o';'x';'+';'*';'s';'d';'v';'^';'.';'<';'>';'p';'h'};
-                
+        Markers = {'o';'x';'+';'*';'s';'d';'v';'^';'.';'<';'>';'p';'h'};                
         if ~isempty(data)
             
             switch data.case
@@ -842,12 +845,14 @@ switch src.Label
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
+        Lines_old = [];
         j = 1;
         for i = s1
             SessionName = handles.Session{i}.Tag;
             SessionName(SessionName == '_') = ' ';
             handles.Session{i}.TES.PlotCriticalCurrent(handles.Analyzer);
             Lines = findobj(fig.hObject,'Type','Line');
+            Lines = setdiff(Lines,Lines_old);
             for Ln = 1:length(Lines)
                 if i == s1(1)
                     Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
@@ -865,6 +870,7 @@ switch src.Label
                     end
                 end
             end
+            Lines_old = [Lines_old;Lines];
             j = j+1;
         end
         
@@ -881,12 +887,14 @@ switch src.Label
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
+        Lines_old = [];
         j = 1;
         for i = s1
             SessionName = handles.Session{i}.Tag;
             SessionName(SessionName == '_') = ' ';
             handles.Session{i}.TES.PlotFieldScan(handles.Analyzer);
             Lines = findobj(fig.hObject,'Type','Line');
+            Lines = setdiff(Lines,Lines_old);
             for Ln = 1:length(Lines)
                 if i == s1(1)
                     Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
@@ -904,6 +912,7 @@ switch src.Label
                     end
                 end
             end
+            Lines_old = [Lines_old;Lines];
             j = j+1;
         end
 end
