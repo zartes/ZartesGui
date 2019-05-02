@@ -666,7 +666,7 @@ classdef TES_Struct
             % If this data is available, then theoretical C value could
             % be analytically determined
             
-            prompt = {'Enter TES length value:','Enter TES width value:','Enter Mo thickness value:','Enter Au thickness value:'};
+            prompt = {'Enter TES length value (m):','Enter TES width value (m):','Enter Mo thickness value (m):','Enter Au thickness value (m):'};
             name = 'Provide bilayer TES dimension (without absorver)';
             numlines = 1;
             try

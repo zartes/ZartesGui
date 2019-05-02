@@ -56,6 +56,7 @@ c5 = uimenu(cmenu,'Label','Export Graphic Data','Callback',{@ExportGraph},'UserD
 c6 = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',src);
 
 c7 = uimenu(cmenu,'Label','Link all x axes','Callback',{@ManagingAxes},'UserData',src);
+c8 = uimenu(cmenu,'Label','Change y axes','Callback',{@ManagingAxes},'UserData',src);
 
 set(src,'uicontextmenu',cmenu);
 
@@ -64,7 +65,6 @@ function Handle_Errors(src,evnt)
 str = get(src,'Label');
 if ~isempty(strfind(str,'mK'))
     TempStr = str;
-%     TempStr = str(1:strfind(str,'mK')+2);
 else
     TempStr = '';
 end
@@ -135,17 +135,6 @@ switch str
     
     case 'Deactivate error bars'
         set([hpe; hne; hfe],'Visible','off');
-%         for i = 1:max([length(hpe) length(hne) length(hfe)])
-%             try
-%                 set(get(get(hpe(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-%             end
-%             try
-%                 set(get(get(hne(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-%             end
-%             try
-%                 set(get(get(hfe(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-%             end                
-%         end
         
     case 'Activate error bars'
         
@@ -156,13 +145,11 @@ switch str
             try
                 if strcmp(hn(i).Visible,'on')
                     set(hne(i),'Visible','on');
-%                     set(get(get(hne(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
                 end
             end      
             try
                 if strcmp(hp(i).Visible,'on')
                     set(hpe(i),'Visible','on');
-%                     set(get(get(hpe(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
                 end
             end
         end        
@@ -171,14 +158,6 @@ switch str
     case 'Hide Filtered Data'
         
         set([hf; hfe],'Visible','off');
-%         for i = 1:max([length(hf) length(hfe)])
-%             try
-%                 set(get(get(hf(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-%             end
-%             try
-%                 set(get(get(hfe(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-%             end                
-%         end
         
     case 'Show Filtered Data'
         
@@ -274,4 +253,19 @@ end
 function ManagingAxes(src,evnt)
 
 ha = findobj(src.UserData.Parent,'Type','Axes');
-linkaxes(ha,'x');
+switch src.Label
+    case 'Link all x axes'
+        linkaxes(ha,'x');
+    case 'Change y axes'
+        v = axis;
+        prompt ={'Min Y Limit';'Max Y Limit'};
+        name = 'Y-axes limits';
+        numlines = [1 50];
+        defaultanswer = {num2str(v(3));num2str(v(4))};
+        answer = inputdlg(prompt,name,numlines,defaultanswer);
+        if ~isempty(answer)
+            try
+                axis([v(1) v(2) str2double(answer{1}) str2double(answer{2})]);
+            end
+        end
+end
