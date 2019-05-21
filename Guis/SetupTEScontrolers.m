@@ -240,7 +240,8 @@ figure(handles.SetupTES);
 image(data);
 ax.Visible = 'off';
 set(handles.SetupTES,'Visible','on');
-waitfor(warndlg('Please, check the circuit values','ZarTES v1.0'));
+handles.VersionStr = 'ZarTES v1.0';
+waitfor(warndlg('Please, check the circuit values',handles.VersionStr));
 Obj_Properties(handles.Menu_Circuit);
 guidata(hObject,handles);
 
@@ -314,7 +315,8 @@ function UserGuide(src,evnt)
 winopen('SetupTESControlers_UserGuide.pdf');
 
 function About(src,evnt)
-fig = figure('Visible','off','NumberTitle','off','Name','ZarTES v1.0','MenuBar','none','Units','Normalized');
+handles = guidata(src);
+fig = figure('Visible','off','NumberTitle','off','Name',handles.VersionStr,'MenuBar','none','Units','Normalized');
 ax = axes;
 data = imread('ICMA-CSIC.jpg');
 image(data)
@@ -427,7 +429,7 @@ function SetupTES_DeleteFcn(hObject, eventdata, handles)
 try
     fprintf(handles.LogFID,['Session ends: ' datestr(now) '\n']);
     fclose(handles.LogFID);
-    buttonquest = questdlg('Do you want to erase Log File?','ZarTES v1.0','Yes','No','No');
+    buttonquest = questdlg('Do you want to erase Log File?',handles.VersionStr,'Yes','No','No');
     switch buttonquest
         case 'Yes'
             delete(handles.LogName);
@@ -507,7 +509,7 @@ if isempty(handles.Squid.ObjHandle)
     handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
 else
-    warndlg('Change this parameter consistently with the SQUID Device!','ZarTES v1.0');
+    warndlg('Change this parameter consistently with the SQUID Device!',handles.VersionStr);
     handles.Squid.SourceCH = hObject.Value;
     handles.Actions_Str.String = ['Electronic Magnicon: Channel Source ' num2str(handles.Squid.SourceCH)];
     Actions_Str_Callback(handles.Actions_Str,[],handles);
@@ -1054,7 +1056,7 @@ else
         
         if ~isempty(handles.TestData.IVs)
             ButtonName = questdlg('Do you want to erase current I-V Curve test values?', ...
-                'ZarTES v1.0', ...
+                handles.VersionStr, ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
                 case 'Yes'
@@ -1147,7 +1149,7 @@ else
             
             ButtonName = questdlg(['Do you want to update Circuit values from the ones extracted from IV curve: mN = '...
                 num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)], ...
-                'ZarTES v1.0', ...
+                handles.VersionStr, ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
                 case 'Yes'
@@ -1160,7 +1162,7 @@ else
             end % switch                        
             
                         
-            ButtonName = questdlg('Do you want to store the IV-Curve for further analysis?','ZarTES v1.0',...
+            ButtonName = questdlg('Do you want to store the IV-Curve for further analysis?',handles.VersionStr,...
                 'Yes','No','Yes');
             switch ButtonName
                 case 'Yes'
@@ -1288,7 +1290,7 @@ if ~isempty(handles.IVset)
         
     else
         handles.SQ_SetRnBias.Enable = 'off';
-        warndlg('Not available for the current Mixing Chamber Temperature. To enable please acquire an IV curve.','ZarTES v1.0');        
+        warndlg('Not available for the current Mixing Chamber Temperature. To enable please acquire an IV curve.',handles.VersionStr);        
     end    
 else
     handles.SQ_SetRnBias.Enable = 'off';
@@ -1694,7 +1696,7 @@ else
         
         if ~isempty(handles.TestData.VField)
             ButtonName = questdlg('Do you want to erase current Field Scan?', ...
-                'ZarTES v1.0', ...
+                handles.VersionStr, ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
                 case 'Yes'
@@ -1757,7 +1759,7 @@ else
         CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
         
         try
-            ButtonName = questdlg('Do you want to save the current Field Scan?','ZarTES v1.0',...
+            ButtonName = questdlg('Do you want to save the current Field Scan?',handles.VersionStr,...
                 'Yes','No','Yes');
             switch ButtonName
                 case 'Yes'
@@ -1896,7 +1898,7 @@ CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
 
 try
     Temp = str2double(handles.MCTemp.String);
-    button = questdlg('Do you want to store this Critical Current plot?','ZarTES v1.0','Yes','No','Yes');
+    button = questdlg('Do you want to store this Critical Current plot?',handles.VersionStr,'Yes','No','Yes');
     switch button
         case 'Yes'
             FileStr = ['ICpairs' num2str(Temp*1e3,'%1.1') 'mK.txt'];
@@ -1912,9 +1914,9 @@ try
             end
             if ~isequal(folder_name,0)
                 
-                msgbox(['File named ' FileStr 'was saved'],'ZarTES v1.0');
+                msgbox(['File named ' FileStr 'was saved'],handles.VersionStr);
             else
-                warndlg('No path was selected','ZarTES v1.0');
+                warndlg('No path was selected',handles.VersionStr);
             end
         otherwise
     end
@@ -2343,7 +2345,7 @@ if hObject.Value
         else
             if ~isnumeric(eventdata)
                 ButtonName = questdlg('Do you want to erase current Noise (DSA) test values?', ...
-                    'ZarTES v1.0', ...
+                    handles.VersionStr, ...
                     'Yes', 'No', 'Yes');
                 switch ButtonName
                     case 'Yes'
@@ -2430,7 +2432,7 @@ if hObject.Value
         else
             if ~isnumeric(eventdata)
                 ButtonName = questdlg('Do you want to erase current TF (DSA) test values?', ...
-                    'ZarTES v1.0', ...
+                    handles.VersionStr, ...
                     'Yes', 'No', 'Yes');
                 switch ButtonName
                     case 'Yes'
@@ -2700,7 +2702,7 @@ if hObject.Value
         handles.DSA.WhiteNoise(excitacion);
         pause(0.4);
     catch
-        warndlg('External Source is not connected','ZarTES v1.0');
+        warndlg('External Source is not connected',handles.VersionStr);
         hObject.BackgroundColor = handles.Disable_Color;
         hObject.Value = 0;
         hObject.Enable = 'on';
@@ -2740,7 +2742,7 @@ if hObject.Value
         else
             if ~isnumeric(eventdata)
                 ButtonName = questdlg('Do you want to erase current TF (PXI) test values?', ...
-                    'ZarTES v1.0', ...
+                    handles.VersionStr, ...
                     'Yes', 'No', 'Yes');
                 switch ButtonName
                     case 'Yes'
@@ -2826,7 +2828,7 @@ if hObject.Value
         else
             if ~isnumeric(eventdata)
                 ButtonName = questdlg('Do you want to erase current Noise (PXI) test values?', ...
-                    'ZarTES v1.0', ...
+                    handles.VersionStr, ...
                     'Yes', 'No', 'Yes');
                 switch ButtonName
                     case 'Yes'
@@ -2892,7 +2894,7 @@ else
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             pause(0.5);
         else
-            warndlg('No Data for Acquisition was found, change Trigger Settings','ZarTES v1.0');
+            warndlg('No Data for Acquisition was found, change Trigger Settings',handles.VersionStr);
         end
         hObject.BackgroundColor = handles.Disable_Color;
         hObject.Value = 0;
@@ -3002,7 +3004,7 @@ end
 function ManagingData2Plot(Data,DataName,handles,hObject)
 handles = guidata(handles.SetupTES);
 if isempty(handles.Circuit.Rf.Value)
-    waitfor(msgbox('Circuit Rf value is empty, set the correct value','ZarTES v1.0'));
+    waitfor(msgbox('Circuit Rf value is empty, set the correct value',handles.VersionStr));
     waitfor(handles.Menu_Circuit.Callback(handles.Menu_Circuit,[],handles));
     handles = guidata(handles.SetupTES);
     if isempty(handles.Circuit.Rf.Value)
@@ -3331,12 +3333,12 @@ elseif handles.FilePlot.Value
                     eval(['Data = handles.LoadData.' DataStr{handles.Draw_Select.Value} '{' num2str(i) '};']);
                 catch
                     if i == 1
-                        warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                        warndlg('Data representation does not correspond to loaded data',handles.VersionStr);
                         return;
                     end
                 end
                 if isempty(Data)&&length(eval(['handles.LoadData.' DataStr{handles.Draw_Select.Value}]))==1
-                    warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                    warndlg('Data representation does not correspond to loaded data',handles.VersionStr);
                     return;
                 elseif ~isempty(Data)
                     switch handles.Draw_Select.Value
@@ -3379,14 +3381,14 @@ elseif handles.FilePlot.Value
             try
                 eval(['Data = handles.LoadData.' DataStr{handles.Draw_Select.Value} '{' num2str(handles.List_Files.Value-1) '};']);
             catch
-                warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                warndlg('Data representation does not correspond to loaded data',handles.VersionStr);
                 return;
             end
             if isempty(Data)
-                warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                warndlg('Data representation does not correspond to loaded data',handles.VersionStr);
                 return;
             elseif iscell(Data) && length(Data) == 1 && isempty(Data{1})
-                warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+                warndlg('Data representation does not correspond to loaded data',handles.VersionStr);
                 return;
             end
             switch handles.Draw_Select.Value
@@ -3415,14 +3417,14 @@ elseif handles.FilePlot.Value
         try
             eval(['Data = handles.LoadData.' DataStr{handles.Draw_Select.Value} ';']);
         catch
-            warndlg(['No data of ' DataStr{handles.Draw_Select.Value} ' were loaded'],'ZarTES v1.0');
+            warndlg(['No data of ' DataStr{handles.Draw_Select.Value} ' were loaded'],handles.VersionStr);
             return;
         end
         if isempty(Data)
-            warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+            warndlg('Data representation does not correspond to loaded data',handles.VersionStr);
             return;
         elseif iscell(Data) && length(Data) == 1 && isempty(Data{1})
-            warndlg('Data representation does not correspond to loaded data','ZarTES v1.0');
+            warndlg('Data representation does not correspond to loaded data',handles.VersionStr);
             return;
         end
         switch handles.Draw_Select.Value
@@ -3759,12 +3761,12 @@ function SetPt_Callback(hObject, eventdata, handles)
 SetPt = str2double(hObject.String);
 
 if isnan(SetPt)||isinf(SetPt)
-    warndlg('Invalid Set Pt value','ZarTES v1.0');
+    warndlg('Invalid Set Pt value',handles.VersionStr);
     hObject.String = '---';
     return;
 else
     if SetPt > 500*1e-3 % Por encima de 120mK
-        ButtonName = questdlg('Set Pt above 120 mK, are you sure to continue?','ZarTES v1.0','Yes','No','No');
+        ButtonName = questdlg('Set Pt above 120 mK, are you sure to continue?',handles.VersionStr,'Yes','No','No');
         switch ButtonName
             case 'No'
                 return;
@@ -3794,7 +3796,7 @@ while strcmp(handles.vi_PromptForT.FPState,'eClosed')
 end
 stop(handles.timer_T);
 start(handles.timer_T);
-waitfor(msgbox('Temperature was sucessfully set','ZarTES v1.0'));
+waitfor(msgbox('Temperature was sucessfully set',handles.VersionStr));
 
 guidata(hObject,handles);
 

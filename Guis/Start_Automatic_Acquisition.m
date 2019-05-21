@@ -49,8 +49,8 @@ if j ~= 1
             handles.AQ_dir = [handles.Enfriada_dir filesep 'RUN' a];
             [Succ, Message] = mkdir(handles.AQ_dir);
             if ~Succ
-                warndlg(Message,'ZarTES v1.0');
-                msgbox('Acquisition Aborted','ZarTES v1.0');
+                warndlg(Message,SetupTES.VersionStr);
+                msgbox('Acquisition Aborted',SetupTES.VersionStr);
                 return;
             end
     end
@@ -58,8 +58,8 @@ else
     handles.AQ_dir = [handles.Enfriada_dir filesep 'RUN' a];
     [Succ, Message] = mkdir(handles.AQ_dir);
     if ~Succ
-        warndlg(Message,'ZarTES v1.0');
-        msgbox('Acquisition Aborted','ZarTES v1.0');
+        warndlg(Message,SetupTES.VersionStr);
+        msgbox('Acquisition Aborted',SetupTES.VersionStr);
         return;
     end
 end
@@ -82,7 +82,7 @@ if exist([handles.Enfriada_dir filesep ExcelEnfriada],'file')
     try
         xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
     catch
-        waitfor(warndlg(['Close the file name: ' ExcelEnfriada ' before push OK'],'ZarTES v1.0'));
+        waitfor(warndlg(['Close the file name: ' ExcelEnfriada ' before push OK'],SetupTES.VersionStr));
         xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
     end
 else
@@ -100,8 +100,12 @@ else  % Añadir la parte del mergin
     save([handles.AQ_dir filesep 'Conf_Acq_Merge.mat'],'Conf');
 end
 
-circuit = TES_Circuit;
-circuit = circuit.Update(SetupTES.Circuit);
+circuit1 = TES_Circuit;
+circuit1 = circuit1.Update(SetupTES.Circuit);
+CircuitProps = {'Rsh';'Rf';'invMf';'invMin';'L';'Nsquid';'Rpar';'Rn';'mS';'mN'};
+for i = 1:length(CircuitProps)
+    eval(['circuit.' CircuitProps{i} ' = circuit1.' CircuitProps{i} ';'])
+end
 save([handles.AQ_dir filesep 'circuit.mat'],'circuit');
 
 fid = fopen([handles.AQ_dir filesep 'Readme.txt'],'a+');
@@ -134,8 +138,8 @@ for i = 1:length(PathStr)
     if exist(eval(['handles.' PathStr{i} '_Dir']),'dir') == 0
         [Succ, Message] = mkdir(eval(['handles.' PathStr{i} '_Dir']));
         if ~Succ
-            warndlg(Message,'ZarTES v1.0');
-            msgbox('Acquisition Aborted','ZarTES v1.0');
+            warndlg(Message,SetupTES.VersionStr);
+            msgbox('Acquisition Aborted',SetupTES.VersionStr);
             return;
         end
     end
@@ -215,16 +219,16 @@ for NSummary = 1:size(Conf.Summary,1)
         if exist(handles.Positive_Path,'dir') == 0
             [Succ, Message] = mkdir(handles.Positive_Path);
             if ~Succ
-                warndlg(Message,'ZarTES v1.0');
-                msgbox('Acquisition Aborted','ZarTES v1.0');
+                warndlg(Message,SetupTES.VersionStr);
+                msgbox('Acquisition Aborted',SetupTES.VersionStr);
             end
         end
         handles.Negative_Path = [handles.Negative_Bias_Dir num2str(Temp*1e3,'%1.1f') 'mK' filesep];
         if exist(handles.Negative_Path,'dir') == 0
             [Succ, Message] = mkdir(handles.Negative_Path);
             if ~Succ
-                warndlg(Message,'ZarTES v1.0');
-                msgbox('Acquisition Aborted','ZarTES v1.0');
+                warndlg(Message,SetupTES.VersionStr);
+                msgbox('Acquisition Aborted',SetupTES.VersionStr);
             end
         end
         
@@ -265,16 +269,16 @@ for NSummary = 1:size(Conf.Summary,1)
         if exist(handles.Positive_Pulse_Path,'dir') == 0
             [Succ, Message] = mkdir(handles.Positive_Pulse_Path);
             if ~Succ
-                warndlg(Message,'ZarTES v1.0');
-                msgbox('Acquisition Aborted','ZarTES v1.0');
+                warndlg(Message,SetupTES.VersionStr);
+                msgbox('Acquisition Aborted',SetupTES.VersionStr);
             end
         end
         handles.Negative_Pulse_Path = [handles.Negative_Bias_Dir num2str(Temp*1e3,'%1.1f') 'mK' filesep 'Pulsos' filesep];
         if exist(handles.Negative_Pulse_Path,'dir') == 0
             [Succ, Message] = mkdir(handles.Negative_Pulse_Path);
             if ~Succ
-                warndlg(Message,'ZarTES v1.0');
-                msgbox('Acquisition Aborted','ZarTES v1.0');
+                warndlg(Message,SetupTES.VersionStr);
+                msgbox('Acquisition Aborted',SetupTES.VersionStr);
             end
         end
         Medir_Pulsos(Temp,Conf,IZvalues.P,handles.Positive_Path,SetupTES,handles);
@@ -316,7 +320,7 @@ while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
 end
 stop(SetupTES.timer_T);
 start(SetupTES.timer_T);
-msgbox('Acquisition complete!','ZarTES v1.0')
+msgbox('Acquisition complete!',SetupTES.VersionStr)
 
 
 function AjustarTemperatura(Temp,Conf,SetupTES,handles)
@@ -352,7 +356,7 @@ RGB = [linspace(120,255,100)' sort(linspace(50,170,100),'descend')' 50*ones(100,
 Error = nan(10,1);
 c = true;
 j = 1;
-h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name','ZarTES v1.0');
+h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
 while c
     T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
     Set_Pt = str2double(SetupTES.SetPt.String);
@@ -368,7 +372,7 @@ while c
         c = false;
     else
         if nanmedian(Error) < 0.4  % Cuando la temperatura alcanza un valor con un error relativo menor al 0.4%
-            h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name','ZarTES v1.0');
+            h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
             pause(1);
             tfin = 70;
             tic;
