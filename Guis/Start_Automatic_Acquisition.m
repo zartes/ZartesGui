@@ -417,15 +417,19 @@ elseif Conf.IVcurves.SmartRange.On
     Res = Res_Orig;
 end
 
+ThresIbias = 1; % la curva de IV llegará en caso positivo a -1 uA
 
 for IB = 1:2 % Positive 1, Negative 2
     if IB == 1
         %             Field = Bfield.p;
         IBvals = Ibvalues.p;
+%         ThresIbias = -ThresIbias;
     else
         %             Field = Bfield.n;
         IBvals = Ibvalues.n;
+%         ThresIbias = -ThresIbias;
     end
+    ThresIbias = -ThresIbias;  % Cambiará de signo en función de que sea positivo o negativo el rango de ibias
     
     % Ponemos el Squid en Estado Normal
     SetupTES.SQ_TES2NormalState.Value = 1;
@@ -448,7 +452,10 @@ for IB = 1:2 % Positive 1, Negative 2
     i = 1;
     while abs(IBvals(i)) >= 0
         if IB == 1
-            if IBvals(i) < 0
+%             if IBvals(i) < 0 
+%                 break;
+%             end
+            if IBvals(i) < 0 && IBvals(i) < ThresIbias
                 break;
             end
         else
@@ -511,19 +518,29 @@ for IB = 1:2 % Positive 1, Negative 2
                 end
             end
             % Aseguramos que se tome el valor de Ibias == 0
-            if IB == 1
-                if IBvals(i) == 0
-                    IBvals(i+1) = -1;
-                elseif IBvals(i)-Res < 0
-                    IBvals(i+1) = 0;
+            if IB == 1                
+                if IBvals(i) <= ThresIbias
+                    IBvals(i+1) = -1.5;
+                elseif IBvals(i)-Res < 0 
+                    if i > 1 && IBvals(i-1) > 0
+                        IBvals(i+1) = 0;
+                        Res = 0.1;
+                    else
+                        IBvals(i+1) = IBvals(i)-Res;
+                    end                
                 else
                     IBvals(i+1) = IBvals(i)-Res;
                 end
             else
-                if IBvals(i) == 0
-                    IBvals(i+1) = +1;
-                elseif IBvals(i) + Res > 0
-                    IBvals(i+1) = 0;
+                if IBvals(i) >= ThresIbias
+                    IBvals(i+1) = +1.5;
+                elseif IBvals(i)+Res > 0 
+                    if i > 1 && IBvals(i-1) < 0
+                        IBvals(i+1) = 0;
+                        Res = 0.1;
+                    else
+                        IBvals(i+1) = IBvals(i)+Res;
+                    end
                 else
                     IBvals(i+1) = IBvals(i)+Res;
                 end
