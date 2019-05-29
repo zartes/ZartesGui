@@ -368,17 +368,30 @@ while c
         SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
     catch
     end
-    if (nanmedian(Error)&& j > 10) < 0.05
+    if (nanmedian(Error)&& j > 10) < 0.01
         c = false;
     else
-        if nanmedian(Error) < 0.4  % Cuando la temperatura alcanza un valor con un error relativo menor al 0.4%
+        if nanmedian(Error) < 0.2  % Cuando la temperatura alcanza un valor con un error relativo menor al 0.2%
             h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
             pause(1);
-            tfin = 70;
+            tfin = 300;
             tic;
             waitbar(0/tfin,h,'5 mins remaining for safety');
             t  = toc;
-            while tfin-t > 0       
+            while tfin-t > 0    
+                T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
+                Set_Pt = str2double(SetupTES.SetPt.String);
+                
+                %% Gestion del error de temperatura
+                Error(j) = abs(T_MC-Set_Pt)/T_MC*100;
+                SetupTES.Error_Measured.String = Error(j);
+                try
+                    SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
+                catch
+                end
+                if Error(j) < 0.01
+                    break;
+                end
                 if ishandle(h)
                     mins = floor((tfin-t)/60);
                     secs = ((tfin-t)/60-floor((tfin-t)/60))*60;
@@ -470,7 +483,7 @@ for IB = 1:2 % Positive 1, Negative 2
         if i == 1
             pause(1.5)
         else
-            pause(0.6);
+            pause(1);
         end
         averages = 1;
         for i_av = 1:averages
