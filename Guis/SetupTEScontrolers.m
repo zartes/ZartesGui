@@ -22,7 +22,7 @@ function varargout = SetupTEScontrolers(varargin)
 
 % Edit the above text to modify the response to help SetupTEScontrolers
 
-% Last Modified by GUIDE v2.5 03-Apr-2019 10:51:39
+% Last Modified by GUIDE v2.5 11-Jun-2019 13:27:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -693,8 +693,16 @@ else
         pause(0.3);
         
         if ~handles.LNCS_Active.Value
-            handles.Squid.Set_Current_Value(Ibvalue)  % uA.
-        else
+            if abs(Ibvalue) > 500
+                warndlg('Value out of range (max I bias ±500 uA), select LNCS for greater current values','ZarTES v1.0');
+                hObject.BackgroundColor = handles.Disable_Color;
+                hObject.Value = 0;
+                hObject.Enable = 'on';
+                return;
+            else                
+                handles.Squid.Set_Current_Value(Ibvalue)  % uA.
+            end
+        else            
             handles.Squid.Set_Current_Value_LNCS(Ibvalue);
         end
         
@@ -891,6 +899,113 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+% --- Executes on slider movement.
+function SQ_PhiB_Callback(hObject, eventdata, handles)
+% hObject    handle to SQ_PhiB (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+if isempty(handles.Squid.ObjHandle)
+    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+%     hObject.Value = 0;
+else
+    
+    %         hObject.BackgroundColor = handles.Active_Color;  % Green Color
+    hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Action of the device (including line)
+    phib = hObject.Value;
+    handles.SQ_PhiBStr.String = num2str(phib);
+    try
+        handles.Squid.Set_Phib(phib);
+    catch me
+        disp(me);
+    end
+    handles.Actions_Str.String = ['Electronic Magnicon: PhiB changed to ' num2str(phib) ' uA'];
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %         hObject.BackgroundColor = handles.Disable_Color;
+    %         hObject.Value = 0;
+    hObject.Enable = 'on';
+    
+end
+guidata(hObject,handles);
+
+% --- Executes during object creation, after setting all properties.
+function SQ_PhiB_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to SQ_PhiB (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+function SQ_PhiBStr_Callback(hObject, eventdata, handles)
+% hObject    handle to SQ_PhiBStr (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of SQ_PhiBStr as text
+%        str2double(get(hObject,'String')) returns contents of SQ_PhiBStr as a double
+
+if isempty(handles.Squid.ObjHandle)
+    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
+    Actions_Str_Callback(handles.Actions_Str,[],handles);
+%     hObject.Value = 0;
+else
+    
+    %         hObject.BackgroundColor = handles.Active_Color;  % Green Color
+    hObject.Enable = 'off';
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Action of the device (including line)    
+    phib = str2double(hObject.String);
+    
+    if phib < -124 || phib > 125
+        warndlg('Value out of range (PhiB [-124 125])','ZarTES v1.0');        
+        hObject.String = '0';
+        handles.Actions_Str.String = 'Electronic Magnicon: PhiB does not change';
+        hObject.Enable = 'on';
+    else
+        
+        handles.SQ_PhiB.Value = phib;        
+        try
+            handles.Squid.Set_Phib(phib);
+        catch me
+            disp(me);
+        end
+        handles.Actions_Str.String = ['Electronic Magnicon: PhiB changed to ' num2str(phib) ' uA'];
+        Actions_Str_Callback(handles.Actions_Str,[],handles);
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        %         hObject.BackgroundColor = handles.Disable_Color;
+        %         hObject.Value = 0;
+        hObject.Enable = 'on';
+    end
+    
+end
+guidata(hObject,handles);
+
+% --- Executes during object creation, after setting all properties.
+function SQ_PhiBStr_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to SQ_PhiBStr (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
 
 function SQ_Rf_Callback(hObject, eventdata, handles)
 % hObject    handle to SQ_Rf (see GCBO)
@@ -1461,8 +1576,20 @@ else
         CurSource_I_Units_Callback(handles.CurSource_I_Units,[],handles);
         I.Value = str2double(handles.CurSource_I.String);
         I.Units = 'A';
-        
-        handles.CurSour = handles.CurSour.SetIntensity(I);
+        if abs(I.Value) > 0.005 % 5 mA
+            h = msgbox('Current value exceeds security range of 5mA', ...
+                'ZarTES v1.0');
+            tic;
+            t = toc;
+            while 10-t > 0
+                t = toc;
+            end
+            if ishandle(h)
+                close(h);
+            end
+        else
+            handles.CurSour = handles.CurSour.SetIntensity(I);
+        end
         handles.Actions_Str.String = ['Current Source: I value set to ' num2str(I.Value) ' A'];
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3874,4 +4001,11 @@ function Error_Measured_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+
+
+
+
+
 
