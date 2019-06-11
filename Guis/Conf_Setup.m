@@ -89,7 +89,8 @@ switch varargin{1}.Tag
         handles.Options.String = {'Sweept Sine';'Fixed Sine';'White Noise'};
         handles.Options.Value = varargin{2};
         
-        OptStr = {'SSine';'FSine';'WNoise'};
+%         OptStr = {'SSine';'FSine';'WNoise'};
+        OptStr = {'SSine'};
         
         for j = 1:length(OptStr)
             
@@ -101,8 +102,12 @@ switch varargin{1}.Tag
             end
             Srch = cell2mat(Srch);
             if hndl.DSA_Input_Amp_Units.Value == 4 % Porcentaje sobre Ibias
-                Porc = str2double(hndl.DSA_Input_Amp.String);
-                Ireal = hndl.Squid.Read_Current_Value;
+                Porc = str2double(hndl.DSA_Input_Amp.String)/100;
+                if ~handles1.SetupTES.LNCS_Active.Value
+                    Ireal = handles1.SetupTES.Squid.Read_Current_Value;
+                else
+                    Ireal = handles1.SetupTES.Squid.Read_Current_Value_LNCS;
+                end
                 SRLV_str = Ireal.Value*1e1*Porc;
             else
                 Str = eval(['DSA_Conf.' OptStr{j} '{Srch == 1};']);
@@ -289,7 +294,7 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
         handles.Table.Data = cell(1,3);
         try
-            handles.Table.Data(1:size(hndl.FieldScan.BVvalue,1),size(hndl.FieldScan.BVvalue,2)) = num2cell(hndl.FieldScan.BVvalue');
+            handles.Table.Data(1:size(hndl.FieldScan.BVvalues,1),size(hndl.FieldScan.BVvalues,2)) = num2cell(hndl.FieldScan.BVvalues');
         end
         handles.Options.Visible = 'off';
     case 'AQ_IC_Field_Set'

@@ -152,7 +152,7 @@ Conf.Temp_FromFile = 0;
 
 Conf.FieldScan.On = 1;
 Conf.FieldScan.Rn = 0.7;
-Conf.FieldScan.BVvalue = -1000:100:1000;
+Conf.FieldScan.BVvalues = -1000:100:1000;
 
 Conf.BFieldIC.On = 1;
 Conf.BFieldIC.BVvalue = -1000:100:1000;
@@ -303,7 +303,7 @@ handles.Temp.Values = Conf.Temps.Values';
 handles.BField_Scan.Value = Conf.FieldScan.On;
 handles.Field_Rn.String = num2str(Conf.FieldScan.Rn);
 
-handles.FieldScan.BVvalue = Conf.FieldScan.BVvalue';
+handles.FieldScan.BVvalues = Conf.FieldScan.BVvalues';
 BField_Scan_Callback(handles.BField_Scan,[],handles);
 
 
@@ -1264,7 +1264,7 @@ Conf.Temps.File = [handles.TempDir handles.TempName];
 
 Conf.FieldScan.On = handles.BField_Scan.Value;
 Conf.FieldScan.Rn = str2double(handles.Field_Rn.String);
-Conf.FieldScan.BVvalues = handles.FieldScan.BVvalue;
+Conf.FieldScan.BVvalues = handles.FieldScan.BVvalues;
 
 Conf.BFieldIC.On = handles.BField_IC.Value;
 Conf.BFieldIC.BVvalues = handles.BFieldIC.BVvalue;
@@ -1596,7 +1596,7 @@ if NewValue ~= 4
             Amp = Amp/1e06;
     end
 else
-    Amp = 0.05;
+    Amp = 5;
 end
 handles.DSA_Input_Amp.String = num2str(Amp);
 hObject.UserData = NewValue;
@@ -1640,12 +1640,12 @@ if handles.DSA_Input_Amp_Units.Value ~= 4
 else
     if ~isempty(value)&&~isnan(value)
         if (value <= 0)||(value > 1)
-            set(hObject,'String','0.05');
+            set(hObject,'String','5');
             handles.DSA_Input_Amp_Units.Value = 4;
             DSA_Input_Amp_Callback(hObject, [], handles)
         end
     else
-        set(hObject,'String','0.05');
+        set(hObject,'String','5');
         handles.DSA_Input_Amp_Units.Value = 4;
         DSA_Input_Amp_Callback(hObject, [], handles)
     end
@@ -1777,7 +1777,7 @@ if NewValue ~= 4
             Amp = Amp/1e06;
     end
 else
-    Amp = 0.05;
+    Amp = 5;
 end
 handles.PXI_Input_Amp.String = num2str(Amp);
 hObject.UserData = NewValue;
@@ -1848,12 +1848,12 @@ if handles.PXI_Input_Amp_Units.Value ~= 4
 else
     if ~isempty(value)&&~isnan(value)
         if (value <= 0)||(value > 1)
-            set(hObject,'String','0.05');
+            set(hObject,'String','5');
             handles.PXI_Input_Amp_Units.Value = 4;
             PXI_Input_Amp_Callback(hObject, [], handles)
         end
     else
-        set(hObject,'String','0.05');
+        set(hObject,'String','5');
         handles.PXI_Input_Amp_Units.Value = 4;
         PXI_Input_Amp_Callback(hObject, [], handles)
     end
@@ -2198,7 +2198,7 @@ Conf.Temps.File = [handles.TempDir handles.TempName];
 
 Conf.FieldScan.On = handles.BField_Scan.Value;
 Conf.FieldScan.Rn = str2double(handles.Field_Rn.String);
-Conf.FieldScan.BVvalues = handles.FieldScan.BVvalue';
+Conf.FieldScan.BVvalues = handles.FieldScan.BVvalues';
 
 Conf.BFieldIC.On = handles.BField_IC.Value;
 Conf.BFieldIC.BVvalues = handles.BFieldIC.BVvalue';
@@ -2534,3 +2534,6 @@ function FinalMCT_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+function Summary_Table_CellEditCallback(hObject,eventdata,handles)

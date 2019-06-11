@@ -20,7 +20,7 @@ classdef TES_Analyzer_Session
             else
                 obj.File = filename;
                 obj.Path = pathname;
-                answer = inputdlg({'Insert a Nick name for the TES'},'ZarTES v1.0',[1 50],{' '});
+                answer = inputdlg({'Insert a Nick name for the TES'},'ZarTES v2.1',[1 50],{' '});
                 if isempty(answer{1})
                     answer{1} = filename;
                 end
@@ -48,7 +48,7 @@ classdef TES_Analyzer_Session
                     obj.TES.IVsetN.IVsetPath = ZTES.datadir;
 %                     obj.TES.Save([FN{1} '_Compatible.mat']);
                     msgbox({['Analysis corresponding to: ' ZTES.datadir];...
-                        'Converting to new struct, some menus may not work properly.'},'ZarTES v1.0');
+                        'Converting to new struct, some menus may not work properly.'},'ZarTES v2.1');
                 end
             end
         end

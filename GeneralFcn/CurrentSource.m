@@ -16,7 +16,7 @@ classdef CurrentSource
             % Function to generate the class with default values
             
             obj.PrimaryAddress = 2;
-            obj.BoardIndex = 1;
+            obj.BoardIndex = 0;
             obj.Vmax = PhysicalMeasurement;
             obj.Vmax.Value = 50;
             obj.Vmax.Units = 'V';

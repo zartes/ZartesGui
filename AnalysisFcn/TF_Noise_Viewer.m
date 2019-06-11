@@ -22,7 +22,7 @@ function varargout = TF_Noise_Viewer(varargin)
 
 % Edit the above text to modify the response to help TF_Noise_Viewer
 
-% Last Modified by GUIDE v2.5 19-Oct-2018 09:49:40
+% Last Modified by GUIDE v2.5 20-May-2019 14:27:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -86,7 +86,7 @@ if ~isempty(Tbaths{1})||~isempty(Tbaths{2})
     handles.TBath_ind = 1;
     set(handles.TBath_popup,'String',char(Str),'Value',handles.TBath_ind);
 else
-    warndlg('First use FitZset method!','ZarTES v1.0');
+    warndlg('First use FitZset method!','ZarTES v2.1');
     delete(handles.figure1);
     return;
 end
@@ -99,7 +99,7 @@ catch
     Ok = 0;
 end
 if ~Ok
-    warndlg('First use FitZset method!','ZarTES v1.0');
+    warndlg('First use FitZset method!','ZarTES v2.1');
     delete(handles.figure1);
     return;
 end
@@ -310,6 +310,15 @@ else
     ind = find(Tbaths{2} == T_selected);
     StrCond = 'N';
 end
+Tbath = str2double(Str(1:strfind(Str,'mK')-1));
+
+if ~isempty(strfind(Str,'Negative'))
+    [~,Tind] = min(abs([handles.varargin{1}.IVsetN.Tbath]*1e3-Tbath));
+    IV = handles.varargin{1}.IVsetN(Tind);
+else
+    [~,Tind] = min(abs([handles.varargin{1}.IVsetP.Tbath]*1e3-Tbath));
+    IV = handles.varargin{1}.IVsetP(Tind);
+end
 
 
 %% TF is drawn
@@ -328,7 +337,7 @@ if ~isempty(strfind(FileName,'PXI_TF'))
 else
     Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
 end
-eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,handles.varargin{1}.IVset' StrCond '(ind_Tbath),handles.varargin{1}.P' StrCond '(ind_Tbath).p);']);
+eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,IV,handles.varargin{1}.P' StrCond '(ind_Tbath).p,''' StrCond ''');']);
 
 data{1} = eval(['handles.varargin{1}.P' StrCond '(ind_Tbath)']);
 data{2} = handles.Files_Ind;
@@ -384,7 +393,7 @@ eval(['FileName = filesNoise' StrCond '{handles.Files_Ind};']);
 FileName = FileName(find(FileName == filesep,1,'last')+1:end);
 
 Ib = sscanf(FileName,strcat(handles.varargin{1}.NoiseOpt.NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
-eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,handles.varargin{1}.IVset' StrCond '(ind_Tbath),handles.varargin{1}.P' StrCond '(ind_Tbath).p);']);
+eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,IV,handles.varargin{1}.P' StrCond '(ind_Tbath).p,''' StrCond ''');']);
 if handles.varargin{1}.NoiseOpt.Mjo == 1
 %     M = OP.M;
     M = data{1}.p(handles.Files_Ind).M;
@@ -393,7 +402,7 @@ else
 end
 f = logspace(0,6,1000);
 % auxnoise = obj.noisesim(OP,M,f);
-auxnoise = handles.varargin{1}.noisesim(OP,M,f);
+auxnoise = handles.varargin{1}.noisesim(OP,M,f,StrCond);
 
 switch handles.varargin{1}.NoiseOpt.tipo
     case 'current'
@@ -426,10 +435,10 @@ switch handles.varargin{1}.NoiseOpt.tipo
     case 'nep'
         
         sIaux = ppval(spline(f,auxnoise.sI),fNoise{handles.Files_Ind}(:,1));
-        NEP = real(sqrt((SigNoise{handles.Files_Ind}*1e-12.^2-auxnoise.squid.^2))./sIaux);
+        NEP = real(sqrt(((SigNoise{handles.Files_Ind}*1e-12).^2-auxnoise.squid.^2))./sIaux);
         
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise'),hold on,grid on,
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,20),'.-k','DisplayName','Exp Filtered Noise'),hold on,grid on,
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise'),hold(hs1,'on'),grid(hs1,'on'),
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,20),'.-k','DisplayName','Exp Filtered Noise'),hold(hs1,'on'),grid(hs1,'on'),
         if handles.varargin{1}.NoiseOpt.Mph == 0
             totNEP = auxnoise.NEP;
         else

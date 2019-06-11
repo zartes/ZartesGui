@@ -61,6 +61,9 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','Toolbar','figure');
 
+handles.VersionStr = 'ZarTES v2.1';
+set(handles.Analyzer,'Name',handles.VersionStr);
+
 handles.TES_ID = 0;
 handles.NewTES = {[]};
 handles.NewTES_DataPath = {[]};
@@ -70,29 +73,31 @@ handles.NewTES_DataPath = {[]};
 %% Generating the uimenus
 IndMenu = 1;
 MenuTES.Label{IndMenu} = {'TES Data'};
-MenuTES.SubMenu{IndMenu} = {'Load TES';'TES Analysis';'Save TES Data'};
+MenuTES.SubMenu{IndMenu} = {'Load TES';'TES Analysis';'Re-Analyze Loaded TES';'Save TES Data'};
 MenuTES.SubMenu_1{IndMenu,1} = {[]};
-MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'TF Superconductor';'Z(w)-Noise Analysis';'Critical Currents';'Field Scan'};
+MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'TF Superconductor';'TF Normal';'Z(w)-Noise Analysis';'Critical Currents';'Field Scan'};
 % MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'Circuit Values'};
-MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
+% MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
+MenuTES.SubMenu_2{IndMenu,3} = {'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
 MenuTES.SubMenu_2{IndMenu,4} = {'Load TF in Superconductor State (TFS)';'Check TFS'};
-MenuTES.SubMenu_2{IndMenu,5} = {'Fit Z(w)-Noise to ElectroThermal Model'};
-MenuTES.SubMenu_2{IndMenu,6} = {'Import Critical Currents'};
-MenuTES.SubMenu_2{IndMenu,7} = {'Import Field Scan'};
+MenuTES.SubMenu_2{IndMenu,5} = {'Load TF in Normal State (TFN)';'Check TFN'};
+MenuTES.SubMenu_2{IndMenu,6} = {'Z(w) Derived L';'Fit Z(w)-Noise to ElectroThermal Model'};
+MenuTES.SubMenu_2{IndMenu,7} = {'Import Critical Currents'};
+MenuTES.SubMenu_2{IndMenu,8} = {'Import Field Scan'};
 MenuTES.SubMenu_1{IndMenu,3} = {[]};
 MenuTES.Fcn{IndMenu} = {'TESData'};
 IndMenu = IndMenu +1;
 
 MenuTES.Label{IndMenu} = {'Plot'};
-MenuTES.SubMenu{IndMenu} = {'Plot NKGT Set';'Plot ABCT Set';...
+MenuTES.SubMenu{IndMenu} = {'Plot NKGT Set';'Plot RTs Set';'Plot ABCT Set';...
     'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';'Plot Critical Currents';'Plot Field Scan'};
 MenuTES.Fcn{IndMenu} = {'Plot'};
 IndMenu = IndMenu +1;
 
 MenuTES.Label{IndMenu} = {'Macro'};
-MenuTES.SubMenu{IndMenu} = {'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data';'Plots Critical Currents';'Plots Field Scan'};
+MenuTES.SubMenu{IndMenu} = {'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plots Critical Currents';'Plots Field Scan'};
 MenuTES.Fcn{IndMenu} = {'MacroTES'};
 IndMenu = IndMenu +1;
 
@@ -140,9 +145,9 @@ end
 
 % if handles.TES_ID == 0 then 'off'
 StrEnable = {'on';'off'};
-StrLabel = {'Save TES Data';'Plot';'Macro';'Summary';'TES Device';...
+StrLabel = {'Re-Analyze Loaded TES';'Save TES Data';'Plot';'Macro';'Summary';'TES Device';...
     'IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)';...
-    'TF Superconductor';'Critical Currents';'Field Scan';'Z(w)-Noise Analysis';'Options'};
+    'TF Superconductor';'TF Normal';'Critical Currents';'Field Scan';'Z(w)-Noise Analysis';'Options'};
 for i = 1:length(StrLabel)
     h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
     h.Enable = StrEnable{~handles.TES_ID+1};
@@ -236,7 +241,7 @@ switch src.Label
             if handles.TES_ID ~= 0
                 for i = 1:length(handles.TES_ID)
                     if strcmp(Session.File,handles.Session{i}.File) && strcmp(Session.Path,handles.Session{i}.Path)
-                        msgbox('Selected TES is already loaded','ZarTES v1.0');
+                        msgbox('Selected TES is already loaded',handles.VersionStr);
                         return;
                     end
                 end
@@ -258,7 +263,7 @@ switch src.Label
             
             Enabling(Session,handles.TES_ID,handles.Analyzer);
             
-            StrLabel = {'Macro';'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
+            StrLabel = {'Macro';'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
             if length(handles.Session) > 1
                 for i = 1:length(StrLabel)
                     h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
@@ -272,7 +277,7 @@ switch src.Label
         if DataPath ~= 0
             DataPath = [DataPath filesep];
         else
-            errordlg('Invalid Data path name!','ZarTES v1.0','modal');
+            errordlg('Invalid Data path name!',handles.VersionStr,'modal');
             return;
         end
         
@@ -293,9 +298,9 @@ switch src.Label
         Session = TES_Analyzer_Session;
         Session.File = [];
         Session.Path = DataPath;
-        answer = inputdlg({'Insert a Nick name for the TES'},'ZarTES v1.0',[1 50],{' '});
+        answer = inputdlg({'Insert a Nick name for the TES'},handles.VersionStr,[1 50],{' '});
         if isempty(answer{1})
-            errordlg('Invalid Nick name!','ZarTES v1.0','modal');
+            errordlg('Invalid Nick name!',handles.VersionStr,'modal');
             return;
         end
         Session.Tag = answer{1};
@@ -327,29 +332,9 @@ switch src.Label
             handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
             handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
         else
-            warndlg('Caution! Circuit parameters were not loaded, check it manually','ZarTES v1.0');
+            warndlg('Caution! Circuit parameters were not loaded, check it manually',handles.VersionStr);
         end
-        %             d = dir([DataPath 'sesion.mat']);
-        %         circuit = [];
-        %         if ~isempty(d)
-        %             load([DataPath 'sesion.mat'],'circuit');
-        %             if ~isempty(circuit)
-        %                 handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
-        %             end
-        %         else
-        %             [filename, pathname] = uigetfile({'sesion.m';'circuit.m'}, 'Pick a MATLAB code file');
-        %             load([DataPath 'sesion.mat'],'circuit');
-        %             if ~isempty(circuit)
-        %                 handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
-        %             end
-        %             d = dir([DataPath 'circuit.mat']);
-        %             load([DataPath 'circuit.mat'],'circuit');
-        %             if ~isempty(circuit)
-        %                 handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
-        %             end
-        %
-        %         end
-        StrLabel = {'Macro';'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
+        StrLabel = {'Macro';'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
         if length(handles.Session) > 1
             for i = 1:length(StrLabel)
                 h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
@@ -358,8 +343,107 @@ switch src.Label
         end
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
+    case 'Re-Analyze Loaded TES'
+        str = cellstr(handles.Loaded_TES.String);
+        [s1,~] = listdlg('PromptString','Select Loaded TES:',...
+            'SelectionMode','multiple',...
+            'ListString',str);
+        if isempty(s1)
+            return;
+        end
+        
+        prompt = {'Enter the %Rn range (Initial:Step:Final):'};
+        name = '%Rn range to fit P vs. Tbath data (suggested values)';
+        numlines = [1 70];
+        defaultanswer = {'0.2:0.01:0.7'};
+        answer = inputdlg(prompt,name,numlines,defaultanswer);
+        if ~isempty(answer)
+            perc = eval(answer{1});
+            if ~isnumeric(perc)
+                warndlg('Invalid %Rn values',handles.VersionStr);
+                return;
+            end
+        else
+            warndlg('Invalid %Rn values',handles.VersionStr);
+            return;
+        end
+        
+        prompt = {'Enter the %Rn (0 < %Rn < 1) for TES thermal parameters'};
+        name = 'TES Thermal Parameters';
+        numlines = 1;
+        defaultanswer = {'0.5'};
+        answer = inputdlg(prompt,name,numlines,defaultanswer);
+        if isempty(answer)
+            warndlg('No %Rn value selected',handles.VersionStr);
+            return;
+        else
+            X = str2double(answer{1});
+            if isnan(X)
+                warndlg('Invalid %Rn value',handles.VersionStr);
+                return;
+            end
+        end
+        
+        ButtonName = questdlg('Select Files Acquisition device', ...
+            handles.VersionStr, ...
+            'PXI', 'HP', 'HP');
+        switch ButtonName
+            case 'PXI'
+                opt.TFOpt.TFBaseName = '\PXI_TF*';
+                opt.NoiseOpt.NoiseBaseName = '\PXI_noise*';%%%'\HP*'
+            case 'HP'
+                opt.TFOpt.TFBaseName = '\TF*';
+                opt.NoiseOpt.NoiseBaseName = '\HP_noise*';%%%'\HP*'
+            otherwise
+                disp('PXI acquisition files were selected by default.')
+                opt.TFOpt.TFBaseName = '\PXI_TF*';
+                opt.NoiseOpt.NoiseBaseName = '\PXI_noise*';%%%'\HP*'
+        end
+        
+                
+        prompt = {'Mimimum frequency value:','Maximum frequency value:'};
+        dlg_title = 'Frequency limitation for Z(w)-Noise analysis';
+        num_lines = [1 70];
+        defaultans = {num2str(0),num2str(100000)};
+        answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+        
+        if ~isempty(answer)
+            minFreq = eval(answer{1});
+            maxFreq = eval(answer{2});
+            if ~isnumeric(minFreq)||~isnumeric(maxFreq)
+                warndlg('Cancelled by user',handles.VersionStr);
+                return;
+            end
+        else
+            warndlg('Cancelled by user',handles.VersionStr);
+            return;
+        end
+        opt.FreqRange = [minFreq maxFreq];
+        opt.TFOpt.boolShow = 0;
+        
+        for i = s1
+            fig = handles.Analyzer;
+            % Fit P vs T
+            indAxes = findobj(fig,'Type','Axes');
+            delete(indAxes);
+            handles.Session{i}.TES = handles.Session{i}.TES.fitPvsTset(perc,[],fig);  %perc = 0.2:0.01:0.7; model = []; fig
+            % Thermal parameters
+            clear fig;
+            fig.hObject = handles.Analyzer;
+            indAxes = findobj(fig,'Type','Axes');
+            delete(indAxes);            
+            handles.Session{i}.TES = handles.Session{i}.TES.plotNKGTset(fig,X);
+            % Fit Z(w)-Noise (HP by default)
+            indAxes = findobj(fig,'Type','Axes');
+            delete(indAxes);          
+            
+            handles.Session{i}.TES = handles.Session{i}.TES.FitZset(fig,opt);
+            
+        end        
+        
+        
     case 'TES Dimensions'
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.EnterDimensions;
+        handles.Session{handles.TES_ID}.TES.TESDim = handles.Session{handles.TES_ID}.TES.TESDim.EnterDimensions;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
     case 'Circuit Values'
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
@@ -368,16 +452,31 @@ switch src.Label
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes','Tag','Analyzer');
         delete(indAxes);
-        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.IVcurveSlopesFromData(handles.Session{handles.TES_ID}.Path,fig);
+        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.IVcurveSlopesFromData(handles.Session{handles.TES_ID}.Path,fig);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
     case 'Import IV-Curves'
-        [handles.Session{handles.TES_ID}.TES.IVsetP, TempLims] = handles.Session{handles.TES_ID}.TES.IVsetP.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.Path);
-        handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath, TempLims);
+        handles.Session{handles.TES_ID}.TES.IVsetP = TES_IVCurveSet;
+        handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.Constructor;
+        handles.Session{handles.TES_ID}.TES.IVsetN = TES_IVCurveSet;
+        handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Constructor(1);
+        [IVsetP, TempLims, TESP] = handles.Session{handles.TES_ID}.TES.IVsetP.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.Path);
+        handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.Update(IVsetP);
+        handles.Session{handles.TES_ID}.TES.TESP = handles.Session{handles.TES_ID}.TES.TESP.Update(TESP.TESP);
+        
+        [IVsetN, TempLims, TESN] = handles.Session{handles.TES_ID}.TES.IVsetN.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath, TempLims);
+        handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Update(IVsetN);
+        handles.Session{handles.TES_ID}.TES.TESN = handles.Session{handles.TES_ID}.TES.TESN.Update(TESN.TESN);
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
+        figure(fig.hObject);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckIVCurvesVisually(fig);
+        
+%         [handles.Session{handles.TES_ID}.TES.TESP.mN, handles.Session{handles.TES_ID}.TES.TESP.mS] = handles.Session{handles.TES_ID}.TES.IVs_Slopes(handles.Session{handles.TES_ID}.TES.IVsetP);
+%         [handles.Session{handles.TES_ID}.TES.TESN.mN, handles.Session{handles.TES_ID}.TES.TESN.mS] = handles.Session{handles.TES_ID}.TES.IVs_Slopes(handles.Session{handles.TES_ID}.TES.IVsetN);
+%         [obj.TESN.mN, obj.TESN.mS] = obj.IVs_Slopes(IVsetN,fig);
+                
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
     case 'Check IV-Curves'
         fig.hObject = handles.Analyzer;
@@ -386,10 +485,16 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckIVCurvesVisually(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
     case 'Fit P vs. T'
-        fig = handles.Analyzer;
-        indAxes = findobj(fig,'Type','Axes');
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);        
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],[],fig);
+        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],[],fig.hObject);
+        
+        waitfor(msgbox('Continue to Thermal parameters vs %Rn','ZarTES v2.1')); %handles.VersionStr
+%         fig = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
+        delete(indAxes);        
+        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
     case 'TES Thermal Parameters vs. %Rn'
         fig.hObject = handles.Analyzer;
@@ -398,9 +503,11 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
     case 'TES Thermal Parameter Values'
-        handles.Session{handles.TES_ID}.TES.TES.CheckValues;        
+        handles.Session{handles.TES_ID}.TES.TESP.CheckValues('PosIbias');
+        handles.Session{handles.TES_ID}.TES.TESN.CheckValues('NegIbias');        
     case 'Get G(T)'
-        handles.Session{handles.TES_ID}.TES.TES.G_calc;
+        handles.Session{handles.TES_ID}.TES.TESP.G_calc;
+        handles.Session{handles.TES_ID}.TES.TESN.G_calc;
     case 'Load TF in Superconductor State (TFS)'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');
@@ -413,6 +520,48 @@ switch src.Label
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.TFS = handles.Session{handles.TES_ID}.TES.TFS.CheckTF(handles.Analyzer);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+    case 'Load TF in Normal State (TFN)'
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);
+        handles.Session{handles.TES_ID}.TES.TFN = handles.Session{handles.TES_ID}.TES.TFN.TFfromFile(handles.Session{handles.TES_ID}.Path,handles.Analyzer);
+        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+    case 'Check TFN'
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);
+        handles.Session{handles.TES_ID}.TES.TFN = handles.Session{handles.TES_ID}.TES.TFN.CheckTF(handles.Analyzer);
+        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+    
+    case 'Z(w) Derived L'
+    
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);
+        L = handles.Session{handles.TES_ID}.TES.fitLcircuit;
+        
+        ax = axes(fig);
+        semilogx(ax,handles.Session{handles.TES_ID}.TES.TFS.f,...
+            imag(handles.Session{handles.TES_ID}.TES.TFS.tf./handles.Session{handles.TES_ID}.TES.TFN.tf),'DisplayName','Experimental Data')
+        hold(ax,'on');
+        semilogx(ax,handles.Session{handles.TES_ID}.TES.TFS.f,...
+            fitLfcn(L,handles.Session{handles.TES_ID}.TES.TFS.f,handles.Session{handles.TES_ID}.TES),'.-r','DisplayName','Fitting Data')        
+        
+        xlabel(ax,'Freq (Hz)','FontSize',12,'FontWeight','bold');
+        ylabel(ax,'Imag(TFS/TFN)','FontSize',12,'FontWeight','bold');
+        set(ax,'FontSize',12,'FontWeight','bold')
+        ButtonName = questdlg(['Estimation of L: ' num2str(L) ', do you want to update L value to circuit?'], ...
+            'ZarTES 2.0', ...
+            'Yes', 'No', 'No');
+        switch ButtonName
+            case 'Yes'
+                handles.Session{handles.TES_ID}.TES.circuit.L = L;
+                msgbox('Parameter L updated','ZarTES 2.0')
+        end % switch
+        
+        
+        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+    
     case 'Fit Z(w)-Noise to ElectroThermal Model'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');
@@ -429,7 +578,7 @@ switch src.Label
         if ~isempty(h)
             indAxes = findobj(fig,'Type','Axes');
             delete(indAxes);
-            handles.Session{handles.TES_ID}.TES.PlotCriticalCurrent;
+            handles.Session{handles.TES_ID}.TES.PlotCriticalCurrent(fig);
         end
         
         
@@ -441,7 +590,7 @@ switch src.Label
         if ~isempty(h)
             indAxes = findobj(fig,'Type','Axes');
             delete(indAxes);
-            handles.Session{handles.TES_ID}.TES.PlotCriticalCurrent;
+            handles.Session{handles.TES_ID}.TES.PlotFieldScan(fig);
         end
     case 'Save TES Data'
         handles.Session{handles.TES_ID}.TES.Save([handles.Session{handles.TES_ID}.Path 'TES_' handles.Session{handles.TES_ID}.Tag]);
@@ -459,7 +608,15 @@ switch src.Label
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
-        handles.Session{handles.TES_ID}.TES.plotNKGTset(fig,1);
+        rp = [handles.Session{handles.TES_ID}.TES.TESP.rp handles.Session{handles.TES_ID}.TES.TESN.rp];
+        handles.Session{handles.TES_ID}.TES.plotNKGTset(fig,rp);
+        
+    case 'Plot RTs Set'
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);
+        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotRTs(fig);
+        
     case 'Plot ABCT Set'
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
@@ -486,7 +643,7 @@ switch src.Label
         Rn = eval(['[' answer{1} ']']);
         handles.Session{handles.TES_ID}.TES.PlotTFTbathRp(Tbath,Rn);
         ButtonName = questdlg('Plot Real Z(w) and Imag Z(w) vs frequency?', ...
-            'ZarTES v1.0', ...
+            handles.VersionStr, ...
             'Yes', 'No', 'No');
         switch ButtonName
             case 'Yes'
@@ -591,7 +748,8 @@ switch src.Label
         for i = s
             SessionName = handles.Session{i}.Tag;
             SessionName(SessionName == '_') = ' ';
-            handles.Session{i}.TES.plotNKGTset(fig,1);
+            rp = [handles.Session{i}.TES.TESP.rp handles.Session{i}.TES.TESN.rp];
+            handles.Session{i}.TES.plotNKGTset(fig,rp);
             Lines = findobj(fig.hObject,'Type','Line');
             Lines = setdiff(Lines,Lines_old);
             for Ln = 1:length(Lines)
@@ -620,6 +778,49 @@ switch src.Label
             j = j+1;
         end
         
+    case 'Plot RTs Sets'
+        str = cellstr(handles.Loaded_TES.String);
+        [s,~] = listdlg('PromptString','Select Loaded TES:',...
+            'SelectionMode','multiple',...
+            'ListString',str);
+        if isempty(s)
+            return;
+        end
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);
+        
+        colors = distinguishable_colors(length(s));
+        Lines_old = [];
+        j = 1;
+        for i = s
+            SessionName = handles.Session{i}.Tag;
+            SessionName(SessionName == '_') = ' ';
+            handles.Session{i}.TES = handles.Session{i}.TES.plotRTs(fig);
+            Lines = findobj(fig,'Type','Line');
+            Lines = setdiff(Lines,Lines_old);
+            for Ln = 1:length(Lines)
+                if i == s(1)
+                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
+                    US = Lines(Ln).UserData;
+                    Lines(Ln).UserData = [US; i];
+                    Lines(Ln).Marker = Markers{j};
+                    Lines(Ln).MarkerSize = 6;
+%                     Lines(Ln).Color = colors(j,:);
+                else
+                    US = Lines(Ln).UserData;
+                    if length(US)<5
+                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
+                        Lines(Ln).UserData = [US; i];
+                        Lines(Ln).Marker = Markers{j};
+                        Lines(Ln).MarkerSize = 6;
+%                         Lines(Ln).Color = colors(j,:);
+                    end
+                end
+            end
+            Lines_old = [Lines_old;Lines];
+            j = j+1;            
+        end
         
     case 'Plot ABCT Sets'
         str = cellstr(handles.Loaded_TES.String);
@@ -697,7 +898,9 @@ switch src.Label
         end
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
+        pause(0.2)
         delete(indAxes);
+        
         
         str = fieldnames(handles.Session{handles.TES_ID}.TES.PP(1).p);
         dummy = uimenu('Visible','off');
@@ -738,18 +941,41 @@ switch src.Label
                         Lines = findobj(fig.hObject,'Type','Line');
                         Lines = setdiff(Lines,Lines_old);
                         
+                        jp = [];
+                        jn = [];
+                        for k = 1:length(Lines)
+                            Tag = [Lines(k).DisplayName];
+                            if ~isempty(strfind(Tag,'Positive'))
+                                TbathP(k) = sscanf(Tag(strfind(Tag,':')+1:strfind(Tag,'mK')+1),'%d mK ');
+                                jp = [jp k];
+                            end
+                            if ~isempty(strfind(Tag,'Negative'))
+                                TbathN(k) = sscanf(Tag(strfind(Tag,':')+1:strfind(Tag,'mK')+1),'%d mK ');
+                                jn = [jn k];
+                            end
+                        end
+                        LinesP = Lines(jp);
+                        [val,ind] = sort(TbathP(jp));
+                        LinesP = LinesP(ind);
+                        LinesN = Lines(jn);
+                        [val,ind] = sort(TbathN(jn));
+                        LinesN = LinesN(ind);
+                        Lines = [LinesP;LinesN];
+                                                
+                        colors = distinguishable_colors(length(Lines));
+                        
                         for Ln = 1:length(Lines)
                             if i == s1(1)
                                 Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                 Lines(Ln).UserData = i;
-%                                 Lines(Ln).Color = colors(j,:);
+                                Lines(Ln).Color = colors(Ln,:);
                                 Lines(Ln).Marker = Markers{j};
                                 Lines(Ln).MarkerSize = 6;
                             else
                                 if ~isequal(Lines(Ln).UserData,i-1)
                                     Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                     Lines(Ln).UserData = i;
-%                                     Lines(Ln).Color = colors(j,:);
+                                    Lines(Ln).Color = colors(Ln,:);
                                     Lines(Ln).Marker = Markers{j};
                                     Lines(Ln).MarkerSize = 6;
                                 end
@@ -777,18 +1003,42 @@ switch src.Label
                         handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);
                         Lines = findobj(fig.hObject,'Type','Line');
                         Lines = setdiff(Lines,Lines_old);
+                        
+                        jp = [];
+                        jn = [];
+                        for k = 1:length(Lines)
+                            Tag = [Lines(k).DisplayName];
+                            if ~isempty(strfind(Tag,'Positive'))
+                                TbathP(k) = sscanf(Tag(strfind(Tag,':')+1:strfind(Tag,'mK')+1),'%d mK ');
+                                jp = [jp k];
+                            end
+                            if ~isempty(strfind(Tag,'Negative'))
+                                TbathN(k) = sscanf(Tag(strfind(Tag,':')+1:strfind(Tag,'mK')+1),'%d mK ');
+                                jn = [jn k];
+                            end
+                        end
+                        LinesP = Lines(jp);
+                        [val,ind] = sort(TbathP(jp));
+                        LinesP = LinesP(ind);
+                        LinesN = Lines(jn);
+                        [val,ind] = sort(TbathN(jn));
+                        LinesN = LinesN(ind);
+                        Lines = [LinesP;LinesN];
+                                                
+                        colors = distinguishable_colors(length(Lines));
+                        
                         for Ln = 1:length(Lines)
                             if i == s1(1)
                                 Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                 Lines(Ln).UserData = i;
-%                                 Lines(Ln).Color = colors(j,:);
+                                Lines(Ln).Color = colors(Ln,:);
                                 Lines(Ln).Marker = Markers{j};
                                 Lines(Ln).MarkerSize = 6;
                             else
                                 if ~isequal(Lines(Ln).UserData,i-1)
                                     Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                     Lines(Ln).UserData = i;
-%                                     Lines(Ln).Color = colors(j,:);
+                                    Lines(Ln).Color = colors(Ln,:);
                                     Lines(Ln).Marker = Markers{j};
                                     Lines(Ln).MarkerSize = 6;
                                 end
@@ -810,18 +1060,42 @@ switch src.Label
                         handles.Session{i}.TES.PlotTESData(params,[],[],handles.Analyzer);
                         Lines = findobj(fig.hObject,'Type','Line');
                         Lines = setdiff(Lines,Lines_old);
+                        
+                        jp = [];
+                        jn = [];
+                        for k = 1:length(Lines)
+                            Tag = [Lines(k).DisplayName];
+                            if ~isempty(strfind(Tag,'Positive'))
+                                TbathP(k) = sscanf(Tag(strfind(Tag,':')+1:strfind(Tag,'mK')+1),'%d mK ');
+                                jp = [jp k];
+                            end
+                            if ~isempty(strfind(Tag,'Negative'))
+                                TbathN(k) = sscanf(Tag(strfind(Tag,':')+1:strfind(Tag,'mK')+1),'%d mK ');
+                                jn = [jn k];
+                            end
+                        end
+                        LinesP = Lines(jp);
+                        [val,ind] = sort(TbathP(jp));
+                        LinesP = LinesP(ind);
+                        LinesN = Lines(jn);
+                        [val,ind] = sort(TbathN(jn));
+                        LinesN = LinesN(ind);
+                        Lines = [LinesP;LinesN];
+                                                
+                        colors = distinguishable_colors(length(Lines));
+                        
                         for Ln = 1:length(Lines)
                             if i == s1(1)
                                 Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                 Lines(Ln).UserData = i;
-%                                 Lines(Ln).Color = colors(j,:);
+                                Lines(Ln).Color = colors(Ln,:);
                                 Lines(Ln).Marker = Markers{j};
                                 Lines(Ln).MarkerSize = 6;
                             else
                                 if ~isequal(Lines(Ln).UserData,i-1)
                                     Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
                                     Lines(Ln).UserData = i;
-%                                     Lines(Ln).Color = colors(j,:);
+                                    Lines(Ln).Color = colors(Ln,:);
                                     Lines(Ln).Marker = Markers{j};
                                     Lines(Ln).MarkerSize = 6;
                                 end
@@ -950,7 +1224,7 @@ switch src.Label
     case 'Guide'
         winopen('TES_Analyzer_UserGuide.pdf');
     case 'About'
-        fig = figure('Visible','off','NumberTitle','off','Name','ZarTES v1.0','MenuBar','none','Units','Normalized');
+        fig = figure('Visible','off','NumberTitle','off','Name',handles.VersionStr,'MenuBar','none','Units','Normalized');
         ax = axes;
         data = imread('ICMA-CSIC.jpg');
         image(data)
@@ -966,8 +1240,11 @@ StrEnable = {'on';'off'};
 % Verificar si todos los campos están completos
 % TES_Circuit (circuit)
 
+% StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';...
+%     'IV-Curves';'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';...
+%     'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';'Save TES Data';'Options'};
 StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';...
-    'IV-Curves';'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';...
+    'IV-Curves';'Import IV-Curves';...
     'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';'Save TES Data';'Options'};
 for i = 1:length(StrLabel_On)
     h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
@@ -980,14 +1257,16 @@ end
 %   Si están vacios (Import IV curves)
 if Session.TES.IVsetP.Filled || Session.TES.IVsetN.Filled
     StrLabel_On = {'Check IV-Curves';'Fit P vs. T';...
-        'TF Superconductor';'Load TF in Superconductor State (TFS)';'Check TFS'};
+        'TF Superconductor';'Load TF in Superconductor State (TFS)';'Check TFS';...
+        'TF Normal';'Load TF in Normal State (TFN)';'Check TFN'};
     for i = 1:length(StrLabel_On)
         h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
     StrLabel_Off = {'Check IV-Curves';'Fit P vs. T';...
-        'TF Superconductor';'Load TF in Superconductor State (TFS)';'Check TFS'};
+        'TF Superconductor';'Load TF in Superconductor State (TFS)';'Check TFS';...
+        'TF Normal';'Load TF in Normal State (TFN)';'Check TFN'};
     for i = 1:length(StrLabel_Off)
         h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)+1};
@@ -1012,34 +1291,59 @@ else
         h.Enable = StrEnable{(~TES_ID+1)+1};
     end
 end
-
-% TES_Param (TES)
-%   Si están vacios (plotNKGT)
-if Session.TES.TES.Filled && Session.TES.TFS.Filled
-    StrLabel_On = {'Z(w)-Noise Analysis';'Fit Z(w)-Noise to ElectroThermal Model'};
+if (Session.TES.TESP.Filled)||Session.TES.TESN.Filled
+    StrLabel_On = {'Plot';'Plot RTs Set'};
     for i = 1:length(StrLabel_On)
         h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
-    StrLabel_Off = {'Z(w)-Noise Analysis';'Fit Z(w)-Noise to ElectroThermal Model'};
+    StrLabel_Off = {'Plot';'Plot RTs Set'};
+    for i = 1:length(StrLabel_Off)
+        h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)+1};
+    end
+end
+% TES_Param (TES)
+%   Si están vacios (plotNKGT)
+if (Session.TES.TESP.Filled && Session.TES.TFS.Filled)||Session.TES.TESN.Filled && Session.TES.TFS.Filled
+    StrLabel_On = {'Z(w)-Noise Analysis';'Fit Z(w)-Noise to ElectroThermal Model';'Re-Analyze Loaded TES'};
+    for i = 1:length(StrLabel_On)
+        h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)};
+    end
+else
+    StrLabel_Off = {'Z(w)-Noise Analysis';'Fit Z(w)-Noise to ElectroThermal Model';'Re-Analyze Loaded TES'};
     for i = 1:length(StrLabel_Off)
         h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)+1};
     end
 end
 
+if Session.TES.TFS.Filled && Session.TES.TFN.Filled
+    StrLabel_On = {'Z(w) Derived L'};
+    for i = 1:length(StrLabel_On)
+        h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)};
+    end
+else
+    StrLabel_Off = {'Z(w) Derived L'};
+    for i = 1:length(StrLabel_Off)
+        h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)+1};
+    end
+end
 % TES_P (PP o PN)
 %   Si están vacios (FitZset)
 if Session.TES.PP.Filled || Session.TES.PN.Filled
-    StrLabel_On = {'Plot';'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';...
+    StrLabel_On = {'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';...
         'Summary';'Z(w)-Noise Viewer';'Word Graphical Report'};
     for i = 1:length(StrLabel_On)
         h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
-    StrLabel_Off = {'Plot';'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';...
+    StrLabel_Off = {'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';...
         'Summary';'Z(w)-Noise Viewer';'Word Graphical Report'};
     for i = 1:length(StrLabel_Off)
         h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
@@ -1050,7 +1354,7 @@ end
 
 try
     if Session.TES.IC.Filled
-        StrLabel_On = {'Plot';'Plot Critical Currents'};
+        StrLabel_On = {'Plot Critical Currents'};
         for i = 1:length(StrLabel_On)
             h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
             h.Enable = StrEnable{(~TES_ID+1)};
@@ -1064,7 +1368,7 @@ try
     end
     
     if Session.TES.FieldScan.Filled
-        StrLabel_On = {'Plot';'Plot Field Scan'};
+        StrLabel_On = {'Plot Field Scan'};
         for i = 1:length(StrLabel_On)
             h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
             h.Enable = StrEnable{(~TES_ID+1)};
@@ -1092,7 +1396,7 @@ function Analyzer_CloseRequestFcn(hObject, eventdata, handles)
 
 if handles.TES_ID ~= 0
     ButtonName = questdlg('Do you want to save before exit?', ...
-        'ZarTES v1.0', ...
+        handles.VersionStr, ...
         'Yes', 'No', 'Yes');
     switch ButtonName
         case 'Yes'
@@ -1114,15 +1418,21 @@ function Analyzer_WindowButtonDownFcn(hObject, eventdata, handles)
 
 switch eventdata.Source.SelectionType
     case 'alt' % Botón derecho
-        cmenu = uicontextmenu('Visible','on');
-        c6 = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',hObject);
-        set(hObject,'uicontextmenu',cmenu);
+        ha = findobj(hObject,'Type','Axes');
+        if isempty(ha)
+            set(hObject,'uicontextmenu',[]);
+        else
+            cmenu = uicontextmenu('Visible','on');
+            c6 = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',hObject);
+            set(hObject,'uicontextmenu',cmenu);        
+        end
     case 'normal' % Botón izquierdo
     case 'extend' % Pulsando Ruleta del raton
 end
         
 function SaveGraph(src,evnt)
 ha = findobj(src.UserData.Parent,'Type','Axes');
+   
 fg = figure;
 copyobj(ha,fg);
 [file,path] = uiputfile('*.jpg','Save Graph name');

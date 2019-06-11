@@ -35,9 +35,19 @@ mag_setLNCSImag(mag,signo*500);
 
 % In the case of using the source in channel 1, it is mandatory to remove
 % the LNCS device. 
-mag_setImag_CH(mag,signo*500);
-mag_setLNCSImag(mag,0);
-mag_DisconnectLNCS(mag);
+
+hd = findobj('Tag','LNCS_Active');
+if ~isempty(hd)
+    if ~hd.Value
+        mag_setImag_CH(mag,signo*500);
+        mag_setLNCSImag(mag,0);
+        mag_DisconnectLNCS(mag);
+    end
+else
+    mag_setImag_CH(mag,signo*500);
+    mag_setLNCSImag(mag,0);
+    mag_DisconnectLNCS(mag);
+end
 
 % No criterion is used here in order to return 1 in all cases. %%%%%%%%%%%%
 out = 1; 

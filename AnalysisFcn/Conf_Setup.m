@@ -58,7 +58,7 @@ handles.varargin = varargin;
 position = get(handles.figure1,'Position');
 set(handles.figure1,'Color',[0 0.2 0.5],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
-    'Units','Normalized');
+    'Units','Normalized','ButtonDownFcn',{@ExportData});
 
 
 switch varargin{1}.Tag
@@ -180,21 +180,21 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false true false];
         CircProp = properties(handles.varargin{3}.circuit);
-        TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'Ohm';'Ohm';'Ohm';'Ohm';'H';'pA/Hz^{0.5}'};
+        TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
         handles.Table.Data(1:length(CircProp),1) = CircProp;
         for i = 1:length(CircProp)
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i}]);
             handles.Table.Data{i,3} = TESUnits{i};
         end
     case 'TES_Param'
-        set(handles.figure1,'Name','TES Operating Point');
+        set(handles.figure1,'Name',['TES Operating Point - ' handles.varargin{1}.Name]);
         set([handles.Add handles.Remove handles.Options handles.Save],'Visible','off');
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false false false];
         TESProp = properties(handles.varargin{3});
-        TESUnits = {'adim';'W/K^n';'K';'pW/K'};
-        handles.Table.Data(1:4,1) = TESProp(1:4);
-        for i = 1:length(TESProp(1:4))
+        TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K';'%Rn';'Ohm';'Ohm'};
+        handles.Table.Data(1:length(TESUnits),1) = TESProp(1:length(TESUnits));
+        for i = 1:length(TESProp(1:length(TESUnits)))
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
             handles.Table.Data{i,3} = TESUnits{i};
         end
@@ -436,7 +436,7 @@ switch handles.varargin{1}.Tag
         handles.varargin{1}.UserData = handles.Table.Data;
     case 'TES_Struct'
         ButtonName = questdlg('Do you want to save these Circuit parameters?', ...
-            'ZarTES v1.0', ...
+            'ZarTES v2.1', ...
             'Save', 'Cancel', 'Save');
         switch ButtonName
             case 'Save'
@@ -558,11 +558,11 @@ switch handles.varargin{1}.Tag
         guidata(hObject,handles);
     case 'AQ_TF_Rn_P_Set'
         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
-            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v1.0');
+            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.1');
         end
     case 'AQ_TF_Rn_N_Set'
         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
-            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v1.0');
+            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.1');
         end
 end
 
@@ -604,3 +604,38 @@ else
     Value{1} = sort(unique(cell2mat(vals)),'ascend');
 end
 Value{1}(find(isnan(Value{1}))) = [];
+
+function ExportData(src,evnt)
+    
+
+cmenu = uicontextmenu('Visible','on');
+c1 = uimenu(cmenu,'Label','Export');
+
+uimenu(c1,'Label','Data to a .txt file','Callback',...
+    {@ExportDataTXT});
+guidata(c1,guidata(src));
+set(src,'uicontextmenu',cmenu);
+
+function ExportDataTXT(src,evnt)   
+        
+
+handles = guidata(src);
+[FileName, PathName] = uiputfile('.txt', 'Select a file name for storing data');
+if isequal(FileName,0)||isempty(FileName)
+    return;
+end
+file = strcat([PathName FileName]);
+fid = fopen(file,'a+');
+LabelStr = [];
+data = [handles.Table.Data{:,2}];
+%
+%     LabelStr = handles.Table.Data(:,1);
+%
+%     data = handles.Table.Data(:,1:2)';
+for i = 1:length(handles.Table.Data(:,1))
+    LabelStr = [LabelStr handles.Table.Data{i,1} '\t'];
+end
+fprintf(fid,[LabelStr '\n']);
+save(file,'data','-ascii','-tabs','-append');
+fclose(fid);
+
