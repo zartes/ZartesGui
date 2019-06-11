@@ -14,7 +14,7 @@ classdef Multimeter
             % Function to generate the class with default values
             
             obj.PrimaryAddress = 4;
-            obj.BoardIndex = 0; 
+            obj.BoardIndex = 1; 
             obj.ID = 'HP3458A';
             obj.averages = 1;
         end

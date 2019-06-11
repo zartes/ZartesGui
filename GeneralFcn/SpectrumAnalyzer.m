@@ -15,12 +15,12 @@ classdef SpectrumAnalyzer
             % Function to generate the class with default values
             
             obj.PrimaryAddress = 11;
-            obj.BoardIndex = 0;
+            obj.BoardIndex = 1;
             obj.ID = 'HP3562A';
             obj.Config.SSine = {'AUTO 0';'SSIN';'LGSW';'RES 20P/DC';'SF 1Hz';'FRS 5Dec';...
                 'SWUP';'SRLV 100mV';'C2AC 0';'FRQR';'VTRM';'VHZ';'NYQT'};
-            obj.Config.FSine = {'LGRS';'FSIN 1Hz';'SRLV 20mV'};
-            obj.Config.WNoise = {'LGRS';'RND';'SRLV 100mV'};
+            obj.Config.FSine = {'LGRS';'FSIN 1Hz';'SRLV20mV'};
+            obj.Config.WNoise = {'LGRS';'RND';'SRLV100mV'};
             obj.Config.Noise = {'AUTO 0';'LGRS';'SF 10Hz';'FRS 4Dec';'PSUN';'VTRM';'VHZ';'STBL';...
                 'AVG 5';'C2AC 1';'PSP2';'MGDB';'YASC'};
             
@@ -31,7 +31,7 @@ classdef SpectrumAnalyzer
             % Analyzer
             
             [obj, status] = hp_init(obj);
-            Calibration(obj)
+%             Calibration(obj)
         end
         
         function Calibration(obj)
@@ -51,10 +51,10 @@ classdef SpectrumAnalyzer
             % DSA Configuration for Z(w) acquisition by Sweept Sine input
             
             if nargin == 3
-                obj.Config.SSine{5} = ['SF ' num2str(Freq) 'Hz'];                   
-                obj.Config.SSine{8} = ['SRLV ' num2str(Amp) 'mV'];
+                obj.Config.SSine{5} = ['SF' num2str(Freq) 'Hz'];                   
+                obj.Config.SSine{8} = ['SRLV' num2str(Amp) 'mV'];
             elseif nargin == 2
-                obj.Config.SSine{8} = ['SRLV ' num2str(Amp) 'mV'];
+                obj.Config.SSine{8} = ['SRLV' num2str(Amp) 'mV'];
             end
             for i = 1:length(obj.Config.SSine)
                 fprintf(obj.ObjHandle,obj.Config.SSine{i});
@@ -79,7 +79,7 @@ classdef SpectrumAnalyzer
             % DSA Configuration for Z(w) acquisition by white noise input
                         
             if nargin == 2
-                obj.Config.WNoise{3} = ['SRLV ' num2str(Amp) 'mV'];
+                obj.Config.WNoise{3} = ['SRLV' num2str(Amp) 'mV'];
             end
             for i = 1:length(obj.Config.WNoise)
                 fprintf(obj.ObjHandle,obj.Config.WNoise{i});

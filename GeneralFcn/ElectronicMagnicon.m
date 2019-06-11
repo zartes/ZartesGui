@@ -173,6 +173,15 @@ classdef ElectronicMagnicon
             Ireal.Units = 'uA';
         end
         
+        function Set_Phib(obj,IuA)
+            %Función para fijar valor de Phi_b. Pasar Ibias en uA.
+            
+            out = mag_setPhib_CH(obj,IuA);
+            if ~strcmp(out, 'OK')
+                disp('Problem detected, check the electronic magnicon connection!');
+            end
+        end
+        
         function Connect_LNCS(obj)
             % Function to connect LNCS (Low Noise Current Source)
             

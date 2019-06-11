@@ -18,7 +18,7 @@ classdef AVS
             % Function to generate the class with default values
             
             obj.PrimaryAddress = 21;
-            obj.BoardIndex = 0; 
+            obj.BoardIndex = 1; 
             obj.ID = 'PICOWATT,AVS47-IB,0,1.4';
             obj.Naverages = 10;
             obj.Rango = 1;

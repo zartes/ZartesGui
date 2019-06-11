@@ -20,6 +20,7 @@ classdef PXI_Acquisition_card
             
             %%%% Vertical Configuration
             obj.ConfStructs.Vertical.ChannelList = '0,1';
+            obj.ConfStructs.Vertical.channelList = '0,1';
             obj.ConfStructs.Vertical.Range = 0.0025;
             obj.ConfStructs.Vertical.Coupling = 'dc';
             obj.ConfStructs.Vertical.ProbeAttenuation = 1;
@@ -66,21 +67,19 @@ classdef PXI_Acquisition_card
                 
         function obj = TF_Configuration(obj) 
             % Configuration to adquire Transfer Functions 
+                        
             
             obj.Options.TimeOut = 10;
             obj.Options.channelList = '0,1';
             
+            obj.ConfStructs.Vertical.channelList = '0,1';
+            obj.ConfStructs.Trigger.Type = 6;
             obj.ConfStructs.Horizontal.SR = 2e5;
             obj.ConfStructs.Horizontal.RL = 2e5;
-            pxi_ConfigureHorizontal(obj);    % ConfStructs.Horizontal
-            
-            obj.ConfStructs.Vertical.channelList = '0,1';
-            obj = pxi_ConfigureChannels(obj);      % ConfStructs.Vertical
-            
-            obj.ConfStructs.Trigger.Type = 6;
+            pxi_ConfigureChannels(obj);      % ConfStructs.Vertical
+            pxi_ConfigureHorizontal(obj);    % ConfStructs.Horizontal                                                            
             pxi_ConfigureTrigger(obj);       % ConfStructs.Trigger
-            
-                       
+                                   
             
         end
         
@@ -111,7 +110,7 @@ classdef PXI_Acquisition_card
         function [data, WfmI, TimeLapsed] = Get_Wave_Form(obj)    
             % Function for acquisition
             
-            obj.AbortAcquisition;
+%             obj.AbortAcquisition;
             [data, WfmI, TimeLapsed] = pxi_GetWaveForm(obj);
         end
         

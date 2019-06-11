@@ -12,7 +12,8 @@ function [data, WfmI, TimeLapsed] = pxi_GetWaveForm(pxi)
 %% Función para descargar una captura y la informacion asociada a un vector
 
 % numSamples = get(get(pxi.ObjHandle,'horizontal'),'min_number_of_points');
-numSamples = pxi.ConfStructs.Horizontal.RL;
+numSamples=get(get(pxi.ObjHandle,'horizontal'),'min_number_of_points');
+% numSamples = pxi.ConfStructs.Horizontal.RL;
 ChL = length(pxi.ConfStructs.Vertical.ChannelList);
 if ChL == 1
     numChannels = 1;
@@ -37,7 +38,7 @@ waveformArray = zeros(1,numSamples*numChannels);%%%Prealojamos espacio.
 %     waveformInfo(i).reserved1 = 0;
 %     waveformInfo(i).reserved2 = 0;
 % end 
-pxi.AbortAcquisition;
+% pxi.AbortAcquisition; 
 try
     invoke(pxi.ObjHandle.Acquisition, 'initiateacquisition'); %%%Puede ir aquí o fuera.
 catch

@@ -62,7 +62,7 @@ classdef TES_TFS
             if Filled(obj1)
                 obj = obj.UpdateTFS(obj1);
             else
-                errordlg('No TF was selected!','ZarTES v1.0')
+                errordlg('No TF was selected!','ZarTES v2.1')
                 return;
             end
             if nargin == 3
@@ -77,9 +77,11 @@ classdef TES_TFS
             
             if nargin > 1
                 [File, path] = uigetfile([DataPath '*TF*'],'Pick Transfer Functions','Multiselect','off');
-                if iscell(File)||ischar(File)
+                if isequal(File,0)
+                    T = 0;
+                elseif iscell(File)||ischar(File)
                     T = strcat(path, File);
-                end
+                end                    
             else
                 if ~isempty(obj.file)
                     T = obj.file(1:find(obj.file == filesep,1,'last'));
@@ -95,7 +97,7 @@ classdef TES_TFS
                 obj.f = data(:,1);
                 obj.file = T;
             else
-                warndlg('No file selected','ZarTES v1.0')
+                warndlg('No file selected','ZarTES v2.1')
                 obj.tf = [];
                 obj.re = [];
                 obj.im = [];
@@ -111,7 +113,7 @@ classdef TES_TFS
                 fig = figure;
             end
             if isempty(obj.tf)
-                errordlg('No TF was selected!','ZarTES v1.0');
+                errordlg('No TF was selected!','ZarTES v2.1');
                 obj = TFfromFile(obj,[],fig);
                 return;
             end
@@ -131,13 +133,13 @@ classdef TES_TFS
             
             obj.PlotTF(fig);
             ButtonName = questdlg('Is this TFS valid?', ...
-                'ZarTES v1.0', ...
+                'ZarTES v2.1', ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
                 case 'No'
                     obj = obj.Constructor;
                 case 'Yes'
-                    waitfor(msgbox('TF in Superconductor state updated','ZarTES v1.0'));
+                    waitfor(msgbox('TF in Superconductor state updated','ZarTES v2.1'));
             end
         end
         

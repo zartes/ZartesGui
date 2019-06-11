@@ -4,17 +4,26 @@ classdef TES_Param
     
     properties
         n;
+        n_CI;
         K;
+        K_CI;        
         Tc;
+        Tc_CI;
         G;
-        G100;
-        sides = [25e-6 25e-6];
-        gammaMo = 2e3;
-        gammaAu = 0.729e3;
-        rhoMo = 0.107;
-        rhoAu = 0.0983;
-        hMo = 55e-9;
-        hAu = 340e-9;
+        G_CI;
+        G100;        
+        rp;
+%         sides = [25e-6 25e-6];
+%         gammaMo = 2e3;
+%         gammaAu = 0.729e3;
+%         rhoMo = 0.107;
+%         rhoAu = 0.0983;
+%         hMo = 55e-9;
+%         hAu = 340e-9;
+        Rpar;  %Ohm
+        Rn;  % (%)
+        mS;  % Ohm
+        mN;  % Ohm
     end
     
     methods
@@ -51,10 +60,13 @@ classdef TES_Param
             ok = 1; % All fields are filled
         end
         
-        function CheckValues(obj)
+        function CheckValues(obj,CondStr)
             % Function to check visually the class values
-            
-            h = figure('Visible','off','Tag','TES_Param');
+            if exist('CondStr','var')
+                h = figure('Visible','off','Tag','TES_Param','Name',CondStr);
+            else
+                h = figure('Visible','off','Tag','TES_Param');
+            end
             waitfor(Conf_Setup(h,[],obj));
         end
         
@@ -67,24 +79,33 @@ classdef TES_Param
                 defaultanswer = {'0.1'};
                 answer = inputdlg(prompt,name,numlines,defaultanswer);
                 if isempty(answer)
-                    warndlg('No Temp value selected','ZarTES v1.0');
+                    warndlg('No Temp value selected','ZarTES v2.1');
                     return;
                 else
                     Temp = str2double(answer{1});
                     if isnan(Temp)
-                        warndlg('Invalid Temp value','ZarTES v1.0');
+                        warndlg('Invalid Temp value','ZarTES v2.1');
                         return;
                     end
                 end
-                G_new = obj.n*obj.K*1e3*Temp^(obj.n-1);
-                uiwait(msgbox(['G(' num2str(Temp) ') = ' num2str(G_new)],'ZarTES v1.0','modal'));
+                G_new = obj.n*obj.K*Temp^(obj.n-1);
+                uiwait(msgbox(['G(' num2str(Temp) ') = ' num2str(G_new)],'ZarTES v2.1','modal'));
             end
             try
-                G_new = obj.n*obj.K*1e3*Temp^(obj.n-1);
+                G_new = obj.n*obj.K*Temp^(obj.n-1);
                 
             catch
                 disp('TES values are empty.')
             end
+        end
+        
+        function obj = RnRparCalc(obj,circuit)
+            % Function to compute Rn and Rpar trough the values of the
+            % circuit.
+            
+            obj.Rpar = (circuit.Rf*circuit.invMf/(obj.mS*circuit.invMin)-1)*circuit.Rsh;
+            obj.Rn = (circuit.Rsh*circuit.Rf*circuit.invMf/(obj.mN*circuit.invMin)-circuit.Rsh-obj.Rpar);
+            
         end
     end
     

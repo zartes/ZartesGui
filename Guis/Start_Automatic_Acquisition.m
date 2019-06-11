@@ -127,8 +127,8 @@ for i = 1:length(PathStr)
     if i == 3 && ~Conf.IVcurves.On % Solo se genera el directorio si se necesita
         continue;
     end
-    if i == 4 && (~Conf.TF.Zw.DSA.On || ~Conf.TF.Zw.PXI.On ||... % Solo se genera el directorio si se necesita
-            ~Conf.TF.Noise.DSA.On || ~Conf.TF.Noise.PXI.On || ~Conf.Pulse.PXI.On || ~Conf.Spectrum.PXI.On)
+    if i == 4 && ~(Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On ||... % Solo se genera el directorio si se necesita
+            Conf.TF.Noise.DSA.On || Conf.TF.Noise.PXI.On || Conf.Pulse.PXI.On || Conf.Spectrum.PXI.On)
         continue;
     end
     PathName = PathStr{i};
@@ -157,7 +157,11 @@ SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidat
 
 
 for NSummary = 1:size(Conf.Summary,1)          
-    
+    clear IVsetP IVsetN;
+    try
+        handles = rmfield(handles,{'IVsetP','IVsetN'});
+    catch
+    end
     % Verificar que todas las cosas se han medido en cada temperatura para
     % pasar a la siguiente
     for i = 2:size(Conf.Summary,2)
@@ -175,7 +179,7 @@ for NSummary = 1:size(Conf.Summary,1)
     AjustarTemperatura(Temp,Conf,SetupTES,handles)
     
     if strcmp(Conf.Summary{NSummary,2},'Yes')    % Si se mide o on 
-        handles.Summary_Table.Data{NSummary,2} = 'Running';        
+        handles.Summary_Table.Data{NSummary,2} = 'Running';               
         [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles);  
         handles.Summary_Table.Data{NSummary,2} = 'Done'; 
         Conf.Summary{NSummary,2} = 'Done';
@@ -183,16 +187,30 @@ for NSummary = 1:size(Conf.Summary,1)
     
     if strcmp(Conf.Summary{NSummary,3},'Yes')    % Si se mide o on
         handles.Summary_Table.Data{NSummary,3} = 'Running'; 
-        Bfield = FieldScan(Temp,Conf,SetupTES,handles);  % Se obtiene Bfield.p y Bfield.n
+        if exist('IVsetP','var')
+            handles.IVsetP = IVsetP;
+        end
+        if exist('IVsetN','var')
+            handles.IVsetN = IVsetN;
+        end
+        Bfield_acq = FieldScan(Temp,Conf,SetupTES,handles);  % Se obtiene Bfield.p y Bfield.n
         handles.Summary_Table.Data{NSummary,3} = 'Done'; 
         Conf.Summary{NSummary,3} = 'Done';
+        Bfield.p = Bfield_acq.p;
+        Bfield.n = Bfield_acq.n;
     elseif ~Conf.BField.FromScan
         Bfield.p = Conf.BField.P;
         Bfield.n = Conf.BField.N;
     end
+    
     if Conf.BField.Symmetric
-        Bfield.n = Bfield.p;
-    end
+        try
+            Bfield.n = Bfield.p;
+        catch
+            Bfield.p = Conf.BField.P;
+            Bfield.n = Bfield.p;
+        end
+    end        
     
     if strcmp(Conf.Summary{NSummary,4},'Yes')    % Si se mide o on
         handles.Summary_Table.Data{NSummary,4} = 'Running'; 
@@ -237,14 +255,22 @@ for NSummary = 1:size(Conf.Summary,1)
         if ~isempty(Conf.TF.Zw.rpp)
             IZvalues.P = BuildIbiasFromRp(IVsetP,Conf.TF.Zw.rpp);
             IZvalues.P(IZvalues.P > 500) = 500;
+            clear rpp;
+            rpp = Conf.TF.Zw.rpp;
+            rpp(IZvalues.P < 0) = [];
             IZvalues.P(IZvalues.P < 0) = [];
+            handles.rpp = rpp;
             Medir_Zw_Noise(Temp,Opt,IZvalues.P,handles.Positive_Path,Conf,SetupTES,handles);
         end
         
         if ~isempty(Conf.TF.Zw.rpn)
             IZvalues.N = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
             IZvalues.N(IZvalues.N < -500) = -500;
+            clear rpn;
+            rpn = Conf.TF.Zw.rpn;
+            rpn(IZvalues.N > 0) = [];
             IZvalues.N(IZvalues.N > 0) = [];
+            handles.rpn = rpn;
             Medir_Zw_Noise(Temp,Opt,IZvalues.N,handles.Negative_Path,Conf,SetupTES,handles);
         end
         
@@ -291,6 +317,8 @@ for NSummary = 1:size(Conf.Summary,1)
         %         Medir_Pulsos(Temp,Conf,IZvalues.P,handles.Positive_Path,SetupTES,handles);
         %%%%
     end
+    
+    
     
 end
 
@@ -352,27 +380,45 @@ start(SetupTES.timer_T);
 set(SetupTES.SetPt,'String',num2str(Temp));
 
 RGB = [linspace(120,255,100)' sort(linspace(50,170,100),'descend')' 50*ones(100,1)]./255;
+tic;
+h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
+t  = toc;
+tfin = 30;
+while tfin-t > 0
+    if ishandle(h)
+        mins = floor((tfin-t)/60);
+        secs = ((tfin-t)/60-floor((tfin-t)/60))*60;
+        if mins ~= 0
+            waitbar(t/tfin,h,[num2str(mins,'%1.0f') ' min ' num2str(secs,'%1.0f') ' s remaining for safety']);
+        else
+            waitbar(t/tfin,h,[num2str(secs,'%1.0f') ' s remaining for safety']);
+        end
+    end
+    pause(0.5);
+    t  = toc;
+end                
 
-Error = nan(10,1);
+Error = nan(9,1);
 c = true;
 j = 1;
-h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
 while c
     T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
     Set_Pt = str2double(SetupTES.SetPt.String);
     
     %% Gestion del error de temperatura
-    Error(j) = abs(T_MC-Set_Pt)/T_MC*100;
+    Error(j) = abs(T_MC-Set_Pt);
     SetupTES.Error_Measured.String = Error(j);
+    disp(Error);
     try
         SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
     catch
+        SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
     end
-    if (nanmedian(Error)&& j > 10) < 0.01
+    if (mean(Error)) < 0.0001 && j > 10  % Error es 0.0001 K
         c = false;
     else
-        if nanmedian(Error) < 0.2  % Cuando la temperatura alcanza un valor con un error relativo menor al 0.2%
-            h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
+        if mean(Error) < 0.0001 % Cuando la temperatura alcanza un valor con un error relativo menor al 0.2%
+%             h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
             pause(1);
             tfin = 300;
             tic;
@@ -383,13 +429,18 @@ while c
                 Set_Pt = str2double(SetupTES.SetPt.String);
                 
                 %% Gestion del error de temperatura
-                Error(j) = abs(T_MC-Set_Pt)/T_MC*100;
+                Error(j) =abs( T_MC-Set_Pt);
+                disp(Error);
                 SetupTES.Error_Measured.String = Error(j);
                 try
                     SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
                 catch
+                    SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
                 end
-                if Error(j) < 0.01
+                if mean(Error(j)) < 0.0001
+                    if ishandle(h)
+                        close(h);
+                    end
                     break;
                 end
                 if ishandle(h)
@@ -407,6 +458,7 @@ while c
             end
             c = false;
         end
+        pause(0.5);
     end
     j = max(mod(j+1,10),1);
     if ishandle(h)
@@ -414,25 +466,32 @@ while c
     end
     pause(0.2);
 end
-close(h);
+pause(0.2);
+if ishandle(h)
+    close(h);
+end
 
 function [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles)
 
 figure(SetupTES.SetupTES);
+set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2); findobj(SetupTES.Result_Axes3)],'Visible','off');
+set(findobj(SetupTES.Result_Axes),'Visible','on');
+SetupTEScontrolers('Grid_Plot_Callback',SetupTES.Grid_Plot,[],guidata(SetupTES.Grid_Plot));
 % Seleccion de Ibvalues
 if Conf.IVcurves.Manual.On
     Ibvalues = Conf.IVcurves.Manual.Values;  % Ibvalues.p y Ibvalues.n
 elseif Conf.IVcurves.SmartRange.On
     Ibvalues.p = 500;
     Ibvalues.n = -500;
-    slope_curr = 0;
-    Res_Orig = 10;
-    Res = Res_Orig;
+    
 end
 
 ThresIbias = 1; % la curva de IV llegará en caso positivo a -1 uA
 
 for IB = 1:2 % Positive 1, Negative 2
+    slope_curr = 0;
+    Res_Orig = 10;
+    Res = Res_Orig;
     if IB == 1
         %             Field = Bfield.p;
         IBvals = Ibvalues.p;
@@ -463,7 +522,7 @@ for IB = 1:2 % Positive 1, Negative 2
     
     % Adquirimos una Curva I-V
     i = 1;
-    while abs(IBvals(i)) >= 0
+    while abs(IBvals(i)) >= -abs(ThresIbias)
         if IB == 1
 %             if IBvals(i) < 0 
 %                 break;
@@ -472,7 +531,7 @@ for IB = 1:2 % Positive 1, Negative 2
                 break;
             end
         else
-            if IBvals(i) > 0
+            if IBvals(i) > 0 && IBvals(i) > ThresIbias
                 break;
             end
         end
@@ -504,7 +563,7 @@ for IB = 1:2 % Positive 1, Negative 2
         delete(Ch);
         plot(SetupTES.Result_Axes,IVmeasure.ibias(1:i),IVmeasure.vout(1:i),'Marker','o','Color',[0 0.447 0.741]);
         hold(SetupTES.Result_Axes,'on');
-        xlabel(SetupTES.Result_Axes,'Ibias (uA)')
+        xlabel(SetupTES.Result_Axes,'Ibias (\muA)')
         ylabel(SetupTES.Result_Axes,'Vout (V)');
         set(SetupTES.Result_Axes,'fontsize',12);
         refreshdata(SetupTES.Result_Axes);
@@ -535,9 +594,13 @@ for IB = 1:2 % Positive 1, Negative 2
                 if IBvals(i) <= ThresIbias
                     IBvals(i+1) = -1.5;
                 elseif IBvals(i)-Res < 0 
+                    Res = 0.1;
                     if i > 1 && IBvals(i-1) > 0
-                        IBvals(i+1) = 0;
-                        Res = 0.1;
+                        if IBvals(i) ~= 0
+                            IBvals(i+1) = 0;
+                        else
+                            IBvals(i+1) = IBvals(i)-Res;
+                        end
                     else
                         IBvals(i+1) = IBvals(i)-Res;
                     end                
@@ -548,9 +611,13 @@ for IB = 1:2 % Positive 1, Negative 2
                 if IBvals(i) >= ThresIbias
                     IBvals(i+1) = +1.5;
                 elseif IBvals(i)+Res > 0 
+                    Res = 0.1;
                     if i > 1 && IBvals(i-1) < 0
-                        IBvals(i+1) = 0;
-                        Res = 0.1;
+                        if IBvals(i) ~= 0
+                            IBvals(i+1) = 0;
+                        else
+                            IBvals(i+1) = IBvals(i)+Res;
+                        end
                     else
                         IBvals(i+1) = IBvals(i)+Res;
                     end
@@ -616,9 +683,12 @@ end
 function OptField = FieldScan(Temp,Conf,SetupTES,handles)
 
 figure(SetupTES.SetupTES)
-OptField = 0;
+set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2); findobj(SetupTES.Result_Axes3)],'Visible','off');
+set(findobj(SetupTES.Result_Axes),'Visible','on');
+OptField.p = 0;
+OptField.n = 0;
 % Definir Campo_Dir (handles.Barrido_Campo)
-
+if ~isfield(handles,'IVsetP')||~isfield(handles,'IVsetN')
 if ~isfield(SetupTES,'IVset')
     figure(SetupTES.SetupTES)
     % Ponemos el Squid en Estado Normal
@@ -658,7 +728,7 @@ if ~isfield(SetupTES,'IVset')
         delete(Ch);
         plot(SetupTES.Result_Axes,IVmeasure.ibias(1:i),IVmeasure.vout(1:i),'Marker','o','Color',[0 0.447 0.741]);
         hold(SetupTES.Result_Axes,'on');
-        xlabel(SetupTES.Result_Axes,'Ibias (uA)')
+        xlabel(SetupTES.Result_Axes,'Ibias (\muA)')
         ylabel(SetupTES.Result_Axes,'Vout (V)');
         set(SetupTES.Result_Axes,'fontsize',12);
         refreshdata(SetupTES.Result_Axes);
@@ -707,114 +777,133 @@ else
     figure(SetupTES.SetupTES)
     IVset = handles.SetupTES.IVset;
 end
-for Ri = 1:length(Conf.FieldScan.Rn)
-    clear data;
-    Conf.FieldScan.Ibias = BuildIbiasFromRp(IVset,Conf.FieldScan.Rn(Ri));  %%%%%%
-    handles.Field_Ibias.String = num2str(Conf.FieldScan.Ibias);
-    
-    % Calibramos la fuente de corriente
-    SetupTES.CurSource_Cal.Value = 1;
-    SetupTEScontrolers('CurSource_Cal_Callback',SetupTES.CurSource_Cal,[],guidata(SetupTES.CurSource_Cal))
-    
-    % Ponemos el Squid en Estado Normal
-    SetupTES.SQ_TES2NormalState.Value = 1;
-    SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,sign(Conf.FieldScan.Ibias),guidata(SetupTES.SQ_TES2NormalState));
-    % Reset Closed Loop
-    SetupTES.SQ_Reset_Closed_Loop.Value = 1;
-    SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
-    
-    % Ponemos el valor de Ibias en el Squid
-    SetupTES.SQ_Ibias.String = num2str(Conf.FieldScan.Ibias);
-    SetupTES.SQ_Ibias_Units.Value = 3;
-    SetupTES.SQ_Set_I.Value = 1;
-    SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
-    
-    % Leemos el valor real de Ibias en el Squid
-    SetupTES.SQ_Read_I.Value = 1;
-    SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
-    Ireal = str2double(SetupTES.SQ_realIbias.String);
-    
-    SetupTES.CurSource_I_Units.Value = 1;
-    SetupTES.CurSource_I.String = num2str(Conf.FieldScan.BVvalues(1)*1e-6);  % Se pasan las corrientes en amperios
-    SetupTES.CurSource_Set_I.Value = 1;
-    SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
-    SetupTES.CurSource_OnOff.Value = 1;
-    SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
-    jj = 1;
-    for j = 1:length(Conf.FieldScan.BVvalues)
-        
-        if j > 1
-            % Ponemos el valor de corriente en la fuente
-            SetupTES.CurSource_I_Units.Value = 1;
-            SetupTES.CurSource_I.String = num2str(Conf.FieldScan.BVvalues(j)*1e-6);  % Se pasan las corrientes en amperios
-            SetupTES.CurSource_Set_I.Value = 1;
-            SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
-        end
-        if jj == 1
-            pause(1.5);
-        else
-            pause(0.5);
-        end
-        
-        averages = 1;
-        for i_av = 1:averages
-            SetupTES.Multi_Read.Value = 1;
-            SetupTEScontrolers('Multi_Read_Callback',SetupTES.Multi_Read,[],guidata(SetupTES.Multi_Read));
-            aux1{i_av} = str2double(SetupTES.Multi_Value.String);
-            if i_av == averages
-                Vdc = mean(cell2mat(aux1));
-            end
-        end
-        
-        data(jj,1) = now;
-        data(jj,2) = Conf.FieldScan.BVvalues(j); %*1e-6;
-        data(jj,3) = Ireal; %%%Vout
-        data(jj,4) = Vdc;
-        
-        
-        % Actualizamos el gráfico
-        Ch = findobj(SetupTES.Result_Axes,'Type','Line');
-        delete(Ch);
-        plot(SetupTES.Result_Axes,data(1:jj,2),data(1:jj,4),'Marker','o','Color',[0 0.447 0.741],'DisplayName',num2str(Conf.FieldScan.Rn(Ri)));
-        hold(SetupTES.Result_Axes,'on');
-        xlabel(SetupTES.Result_Axes,'Bfield (uA)')
-        ylabel(SetupTES.Result_Axes,'Vout (V)');
-        set(SetupTES.Result_Axes,'fontsize',12);
-        refreshdata(SetupTES.Result_Axes);
-        axis(SetupTES.Result_Axes,'tight');
-        
-        %         pause(0.2)
-        jj = jj+1;
-    end
-end
-% Desactivamos la salida de corriente de la fuente
-SetupTES.CurSource_OnOff.Value = 0;
-SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
-
-%%%
-[val, ind] = max(data(:,4));
-if Conf.FieldScan.Ibias > 0
-    OptField.p = data(ind,4);
 else
-    OptField.n = data(ind,4);
+    IVsetP = handles.IVsetP;
+    IVsetN = handles.IVsetN;
 end
-
-plot(SetupTES.Result_Axes,data(ind,2),val,'*','Color','g','MarkerSize',10);
-
-B = data(:,2);
-V = data(:,4);
-
-file = strcat('BVscan',num2str(Ireal,'%1.1f'),'uA_',num2str(Temp*1e3,'%1.1f'),'mK');
-save([handles.Barrido_Campo_Dir file],'B','V');
-save([handles.Barrido_Campo_Dir file '.txt'],'data','-ascii');
+StrCond = {'P';'N'};
+for k = 1:2
+    for Ri = 1:length(Conf.FieldScan.Rn)
+        
+        
+        clear data;
+        eval(['Conf.FieldScan.Ibias = BuildIbiasFromRp(IVset' StrCond{k} ',Conf.FieldScan.Rn(Ri));'])  %%%%%%
+        SetupTES.SQ_Rn.String = num2str(Conf.FieldScan.Rn(Ri));
+        handles.Field_Ibias.String = num2str(Conf.FieldScan.Ibias);
+        SetupTES.SQ_Rn_Ibias.String = num2str(Conf.FieldScan.Ibias);
+        
+        % Calibramos la fuente de corriente
+        SetupTES.CurSource_Cal.Value = 1;
+        SetupTEScontrolers('CurSource_Cal_Callback',SetupTES.CurSource_Cal,[],guidata(SetupTES.CurSource_Cal))
+        
+        % Ponemos el Squid en Estado Normal
+        SetupTES.SQ_TES2NormalState.Value = 1;
+        SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,sign(Conf.FieldScan.Ibias),guidata(SetupTES.SQ_TES2NormalState));
+        % Reset Closed Loop
+        SetupTES.SQ_Reset_Closed_Loop.Value = 1;
+        SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
+        
+        % Ponemos el valor de Ibias en el Squid
+        SetupTES.SQ_Ibias.String = num2str(Conf.FieldScan.Ibias);
+        SetupTES.SQ_Ibias_Units.Value = 3;
+        SetupTES.SQ_Set_I.Value = 1;
+        SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
+        
+        
+        % Leemos el valor real de Ibias en el Squid
+        SetupTES.SQ_Read_I.Value = 1;
+        SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
+        Ireal = str2double(SetupTES.SQ_realIbias.String);
+        
+        SetupTES.CurSource_I_Units.Value = 1;
+        SetupTES.CurSource_I.String = num2str(Conf.FieldScan.BVvalues(1)*1e-6);  % Se pasan las corrientes en amperios
+        SetupTES.CurSource_Set_I.Value = 1;
+        SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
+        SetupTES.CurSource_OnOff.Value = 1;
+        SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
+        jj = 1;
+        for j = 1:length(Conf.FieldScan.BVvalues)
+            
+            if j > 1
+                % Ponemos el valor de corriente en la fuente
+                SetupTES.CurSource_I_Units.Value = 1;
+                SetupTES.CurSource_I.String = num2str(Conf.FieldScan.BVvalues(j)*1e-6);  % Se pasan las corrientes en amperios
+                SetupTES.CurSource_Set_I.Value = 1;
+                SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
+            end
+            if jj == 1
+                pause(1.5);
+            else
+                pause(1);
+            end
+            
+            averages = 1;
+            for i_av = 1:averages
+                SetupTES.Multi_Read.Value = 1;
+                SetupTEScontrolers('Multi_Read_Callback',SetupTES.Multi_Read,[],guidata(SetupTES.Multi_Read));
+                aux1{i_av} = str2double(SetupTES.Multi_Value.String);
+                if i_av == averages
+                    Vdc = mean(cell2mat(aux1));
+                end
+            end
+            
+            data(jj,1) = now;
+            data(jj,2) = Conf.FieldScan.BVvalues(j); %*1e-6;
+            data(jj,3) = Ireal; %%%Vout
+            data(jj,4) = Vdc;
+            
+            
+            % Actualizamos el gráfico
+            Ch = findobj(SetupTES.Result_Axes,'Type','Line');
+            delete(Ch);
+            plot(SetupTES.Result_Axes,data(1:jj,2),data(1:jj,4),'Marker','o','Color',[0 0.447 0.741],'DisplayName',num2str(Conf.FieldScan.Rn(Ri)));
+            hold(SetupTES.Result_Axes,'on');
+            xlabel(SetupTES.Result_Axes,'Bfield (\muA)')
+            ylabel(SetupTES.Result_Axes,'Vout (V)');
+            set(SetupTES.Result_Axes,'fontsize',12);
+            refreshdata(SetupTES.Result_Axes);
+            axis(SetupTES.Result_Axes,'tight');
+            
+            %         pause(0.2)
+            jj = jj+1;
+        end
+    end
+    % Desactivamos la salida de corriente de la fuente
+    SetupTES.CurSource_OnOff.Value = 0;
+    SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
+    
+    %%%
+    
+    if Conf.FieldScan.Ibias > 0       
+        [val, ind] = max(data(:,4));
+        OptField.p = data(ind,2);
+    else
+        [val, ind] = min(data(:,4));
+        OptField.n = data(ind,2);
+    end
+    
+    plot(SetupTES.Result_Axes,data(ind,2),val,'*','Color','g','MarkerSize',10);
+    clear B V;
+    B = data(:,2);
+    V = data(:,4);
+    
+    file = strcat('BVscan',num2str(Ireal,'%1.1f'),'uA_',num2str(Temp*1e3,'%1.1f'),'mK');
+    save([handles.Barrido_Campo_Dir file],'B','V');
+    save([handles.Barrido_Campo_Dir file '.txt'],'data','-ascii');
+end
 
 function I_Criticas_Carlos(Temp,BfieldValues,Conf,SetupTES,handles)
 
 figure(SetupTES.SetupTES)
+set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2); findobj(SetupTES.Result_Axes3)],'Visible','off');
+set(findobj(SetupTES.Result_Axes),'Visible','on');
 cla(SetupTES.Result_Axes);
 hold(SetupTES.Result_Axes,'on');
 xlabel(SetupTES.Result_Axes,'Bfield(uA)');
 ylabel(SetupTES.Result_Axes,'Ibias(uA)');
+xlim(SetupTES.Result_Axes,[min(BfieldValues) max(BfieldValues)]);
+ylim(SetupTES.Result_Axes,[-500 500]);
+set(SetupTES.Result_Axes,'YDir','normal');
 % Ponemos el valor de corriente en la fuente
 SetupTES.CurSource_I_Units.Value = 1;
 SetupTES.CurSource_I.String = num2str(BfieldValues(1)*1e-6);  % Se pasan las corrientes en amperios
@@ -832,6 +921,12 @@ step = 0.1;
 
 for i = 1:length(BfieldValues)
     
+    % Set Ibias to zero value in order to impose TES's Superconductor State
+    SetupTES.SQ_Ibias_Units.Value = 3;
+    SetupTES.SQ_Ibias.String = num2str(0);
+    SetupTES.SQ_Set_I.Value = 1;
+    SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I, [], guidata(SetupTES.SQ_Set_I));
+    
     SetupTES.CurSource_I_Units.Value = 1;
     SetupTES.CurSource_I.String = num2str(BfieldValues(i)*1e-6);  % Se pasan las corrientes en amperios
     SetupTES.CurSource_Set_I.Value = 1;
@@ -841,16 +936,17 @@ for i = 1:length(BfieldValues)
     if i < 4
         i0 = [1 1];
     else
-        mmp = (ICpairs(i-1).p-ICpairs(i-3).p)/(BfieldValues(i-1)-BfieldValues(i-3));
-        mmn = (ICpairs(i-1).n-ICpairs(i-3).n)/(BfieldValues(i-1)-BfieldValues(i-3));
-        icnext_p = ICpairs(i-1).p + mmp*(BfieldValues(i)-BfieldValues(i-1));
-        icnext_n = ICpairs(i-1).n + mmn*(BfieldValues(i)-BfieldValues(i-1));
-        ic0_p = 0.9*icnext_p;
-        ic0_n = 0.9*icnext_n;
-        tempvalues = 0:step:500;%%%array de barrido en corriente
-        ind_p = find(tempvalues <= abs(ic0_p));
-        ind_n = find(tempvalues <= abs(ic0_n));
         try
+            mmp = (ICpairs(i-1).p-ICpairs(i-3).p)/(BfieldValues(i-1)-BfieldValues(i-3));
+            mmn = (ICpairs(i-1).n-ICpairs(i-3).n)/(BfieldValues(i-1)-BfieldValues(i-3));
+            icnext_p = ICpairs(i-1).p + mmp*(BfieldValues(i)-BfieldValues(i-1));
+            icnext_n = ICpairs(i-1).n + mmn*(BfieldValues(i)-BfieldValues(i-1));
+            ic0_p = 0.9*icnext_p;
+            ic0_n = 0.9*icnext_n;
+            tempvalues = 0:step:500;%%%array de barrido en corriente
+            ind_p = find(tempvalues <= abs(ic0_p));
+            ind_n = find(tempvalues <= abs(ic0_n));
+            
             i0 = [ind_p(end) ind_n(end)];%%%Calculamos el índice que corresponde a la corriente para empezar el barrido
         catch
             i0 = [1 1];
@@ -876,13 +972,20 @@ for i = 1:length(BfieldValues)
     HL = findobj(SetupTES.Result_Axes,'DisplayName','Final_Temporal');
     delete(HL);
     plot(SetupTES.Result_Axes,BfieldValues(1:i),[ICpairs.p],'ro-',BfieldValues(1:i),[ICpairs.n],'ro-','DisplayName','Final');
+    
+    SetupTES.CurSource_I_Units.Value = 1;
+    SetupTES.CurSource_I.String = num2str(0);  % Se pasan las corrientes en amperios
+    SetupTES.CurSource_Set_I.Value = 1;
+    SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
+    pause(1);
+    
 end
 FileStr = ['ICpairs' num2str(Temp*1e3,'%1.1f') 'mK.mat'];
-save([handles.ICs_Dir FileStr],'ICpairs');
+save([handles.Barrido_Campo_Dir FileStr],'ICpairs');
 data(:,1) = ICpairs(i).B;
 data(:,2) = ICpairs(i).p;
 data(:,3) = ICpairs(i).n;
-save([handles.ICs_Dir 'ICpairs' num2str(Temp*1e3,'%1.1f') '.txt'],'data','-ascii');
+save([handles.Barrido_Campo_Dir 'ICpairs' num2str(Temp*1e3,'%1.1f') '.txt'],'data','-ascii');
 
 SetupTES.CurSource_I_Units.Value = 1;
 SetupTES.CurSource_I.String = num2str(0*1e-6);  % Se pasan las corrientes en amperios
@@ -950,16 +1053,20 @@ for jj = 1:2 % barrido positivo y negativo
         end
         vout1 = vout2;
     end
-    % Set Ibias to zero value in order to impose TES's Superconductor State
-    SetupTES.SQ_Ibias_Units.Value = 3;
-    SetupTES.SQ_Ibias.String = num2str(0);
-    SetupTES.SQ_Set_I.Value = 1;
-    SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I, [], guidata(SetupTES.SQ_Set_I));
+    
     
     if jj == 1
-        ICpair.p = IV.ic(end-1);
+        try
+            ICpair.p = IV.ic(end-1);
+        catch
+            ICpair.p = 500;
+        end        
     elseif jj == 2
-        ICpair.n = IV.ic(end-1);
+        try
+            ICpair.n = IV.ic(end-1);
+        catch
+            ICpair.n = -500;
+        end
     end
     HL = findobj(SetupTES.Result_Axes,'DisplayName','Temporal');
     delete(HL);
@@ -1167,6 +1274,7 @@ while j < length(BfieldValues)+1
         ICpairs(j).B = BfieldValues(j);
         %         hf = findobj(SetupTES.Result_Axes,'DisplayName','Final');
         %         delete(hf);
+        
         plot(SetupTES.Result_Axes,[ICpairs(1:j).B],eval(['[ICpairs(1:j).' StrCond{cond} ']']),'ro-','DisplayName','Final')
         cond = cond+1;
     end % End Bfield values
@@ -1180,7 +1288,7 @@ FileStr = ['ICpairs' num2str(Temp*1e3) 'mK.mat'];
 save([handles.Barrido_Campo_Dir FileStr],'ICpairs');
 
 file = strcat('Ic_',num2str(Temp*1e3,'%1.1f'),'mK_',StrCond{cond},'_matlab.txt');
-save([handles.ICs_Dir file],'data','-ascii');
+save([handles.Barrido_Campo_Dir file],'data','-ascii');
 clear ICpairs
 
 if LNCS
@@ -1199,12 +1307,11 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
     % Calibracion del HP
     SetupTES.DSA.Calibration;
     
-    
-    % Ponemos el TES en estado normal
-    SetupTES.SQ_TES2NormalState.Value = 1;
-    SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,sign(1),guidata(SetupTES.SQ_TES2NormalState));
-    
     for i = 1:length(IZvalues)
+        % Ponemos el TES en estado normal
+        SetupTES.SQ_TES2NormalState.Value = 1;
+        SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,sign(IZvalues(i)),guidata(SetupTES.SQ_TES2NormalState));
+            
         % For para cada IZvalue (Ibias)
         try
         
@@ -1225,7 +1332,17 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
         % Read I real value
         SetupTES.SQ_Read_I.Value = 1;
         SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
-        pause(0.1);
+        
+        
+        if sign(IZvalues(i))
+            SetupTES.SQ_Rn.String = num2str(handles.rpp(i));
+        else
+            SetupTES.SQ_Rn.String = num2str(handles.rpn(i));
+        end
+        SetupTES.SQ_Rn_Ibias.String = SetupTES.SQ_Ibias.String;
+        
+        pause(0.2);
+        
         Itxt = SetupTES.SQ_realIbias.String;
         catch
             continue;
@@ -1242,7 +1359,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
                             IbvaluesConf('DSA_Input_Amp_Callback',handles.DSA_Input_Amp,[],handles);
                             Amp = round(str2double(handles.DSA_Input_Amp.String));
                         else
-                            Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)));
+                            Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)/100));
                         end
                         SetupTES.DSA = SetupTES.DSA.SineSweeptMode(Amp);
                         
@@ -1255,7 +1372,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
                             IbvaluesConf('DSA_Input_Amp_Callback',handles.DSA_Input_Amp,[],handles);
                             Amp = round(str2double(handles.DSA_Input_Amp.String));
                         else
-                            Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)));
+                            Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)/100));
                         end
                         SetupTES.DSA = SetupTES.DSA.FixedSine(Amp,Freq);
                         
@@ -1265,14 +1382,27 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
                             IbvaluesConf('DSA_Input_Amp_Callback',handles.DSA_Input_Amp,[],handles);
                             Amp = round(str2double(handles.DSA_Input_Amp.String));
                         else
-                            Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)));
+                            Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)/100));
                         end
                         SetupTES.DSA = SetupTES.DSA.WhiteNoise(Amp);
                         
                 end
-                
+                clear datos;
                 [SetupTES.DSA, datos] = SetupTES.DSA.Read;
                 
+                set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2); findobj(SetupTES.Result_Axes3)],'Visible','off');
+                set(findobj(SetupTES.Result_Axes),'Visible','on');
+                cla(SetupTES.Result_Axes);
+                plot(SetupTES.Result_Axes,datos(:,2)+1i*datos(:,3),'Visible','on','Marker','o',...
+                    'LineStyle','-');
+                xlabel(SetupTES.Result_Axes,'Re(mZ)','FontSize',12,'FontWeight','bold');
+                ylabel(SetupTES.Result_Axes,'Im(mZ)','FontSize',12,'FontWeight','bold');
+                axis(SetupTES.Result_Axes,'tight');
+                set(SetupTES.Result_Axes,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
+                    'XTickLabelMode','auto','XTickMode','auto');
+                
+                drawnow;
+                pause(0.2);
                 % Guardamos los datos en un fichero
                 file = strcat('TF_',Itxt,'uA','.txt');
                 save([Path file],'datos','-ascii');%salva los datos a fichero.
@@ -1283,8 +1413,32 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
             if Conf.TF.Noise.DSA.On
                 
                 SetupTES.DSA = SetupTES.DSA.NoiseMode;
+                clear datos;
                 [SetupTES.DSA, datos] = SetupTES.DSA.Read;
                 
+                set([findobj(SetupTES.Result_Axes); findobj(SetupTES.Result_Axes3)],'Visible','off');
+                set(SetupTES.Result_Axes1,'Position',[0.65 0.58 0.30 0.35]);
+                set(SetupTES.Result_Axes2,'Position',[0.65 0.09 0.30 0.35]);
+                set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2)],'Visible','on');
+                cla(SetupTES.Result_Axes1);
+                cla(SetupTES.Result_Axes2);
+                loglog(SetupTES.Result_Axes1,datos(:,1),datos(:,2));
+                xlabel(SetupTES.Result_Axes1,'\nu(Hz)','FontSize',12,'FontWeight','bold');
+                ylabel(SetupTES.Result_Axes1,'V_{out}','FontSize',12,'FontWeight','bold');
+                set(SetupTES.Result_Axes1,'XScale','log','YScale','log','LineWidth',2,'FontSize',11,...
+                    'FontWeight','bold','XTickLabelMode','auto','XTickMode','auto');
+                
+                loglog(SetupTES.Result_Axes2,datos(:,1),V2I(datos(:,2)*1e12,SetupTES.Circuit),'.-r',...
+                    datos(:,1),medfilt1(V2I(datos(:,2)*1e12,SetupTES.Circuit),20),'.-k');
+                ylabel(SetupTES.Result_Axes2,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold');
+                xlabel(SetupTES.Result_Axes2,'\nu(Hz)','FontSize',12,'fontweight','bold');
+                set(SetupTES.Result_Axes2,'XScale','log','YScale','log','LineWidth',2,'FontSize',11,'FontWeight',...
+                    'bold','XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'});
+                axis(SetupTES.Result_Axes2,'tight');
+                
+                
+                drawnow;
+                pause(0.2);
                 % Guardamos los datos en un fichero
                 file = strcat('HP_noise_',Itxt,'uA','.txt');
                 save([Path file],'datos','-ascii');%salva los datos a fichero.
@@ -1296,18 +1450,21 @@ end
 
 if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
     
-    % Ponemos el TES en estado normal
-    SetupTES.SQ_TES2NormalState.Value = 1;
-    SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,sign(1),guidata(SetupTES.SQ_TES2NormalState));
+    
     
     for i = 1:length(IZvalues)
+        
+        % Ponemos el TES en estado normal
+        SetupTES.SQ_TES2NormalState.Value = 1;
+        SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,sign(IZvalues(i)),guidata(SetupTES.SQ_TES2NormalState));
+        
         % For para cada IZvalue (Ibias)
         try
         % Reseteamos el lazo
         % Reset Closed Loop
         SetupTES.SQ_Reset_Closed_Loop.Value = 1;
         SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
-        
+        drawnow;
         % Ponemos la corriente para fijar el punto de operacion del Squid
         % Ponemos el valor de Ibias en el Squid
         
@@ -1320,7 +1477,15 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
         % Read I real value
         SetupTES.SQ_Read_I.Value = 1;
         SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
-        pause(0.1);
+        
+        if sign(IZvalues(i))
+            SetupTES.SQ_Rn.String = num2str(handles.rpp(i));
+        else
+            SetupTES.SQ_Rn.String = num2str(handles.rpn(i));
+        end
+        SetupTES.SQ_Rn_Ibias.String = SetupTES.SQ_Ibias.String;
+        
+        pause(0.2);
         Itxt = SetupTES.SQ_realIbias.String;
         catch
             continue;
@@ -1339,7 +1504,7 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
                 
                 if handles.PXI_Input_Amp_Units == 4 % Porcentaje de Ibias
                     %                 Ireal = SetupTES.Squid.Read_Current_Value; % Devuelve el valor siempre en uA
-                    excitacion = abs(round(IZvalues(i)*1e1*str2double(handles.PXI_Input_Amp.String)));
+                    excitacion = abs(round(IZvalues(i)*1e1*str2double(handles.PXI_Input_Amp.String)/100));
                 else
                     handles.PXI_Input_Amp_Units.Value = 2;
                     excitacion = round(str2double(handles.PXI_Input_Amp.String));
@@ -1348,6 +1513,7 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
                 SetupTES.DSA.SourceOn;
                 SetupTES.DSA.WhiteNoise(excitacion);
                 
+                clear data;
                 [data, ~] = SetupTES.PXI.Get_Wave_Form;
                 
                 sk = skewness(data);
@@ -1369,9 +1535,58 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
                 end
                 txy = txy/n_avg;
                 txy = medfilt1(txy,40);
+                clear datos;
                 datos = [freqs real(txy) imag(txy)];
                 SetupTES.DSA.SourceOff;
+                clear Data;
+                Data{1} = data(:,1);
+                Data{2} = data(:,2);
+                Data{3} = data(:,3);
+                Data{4} = datos(:,1);
+                Data{5} = datos(:,2);
+                Data{6} = datos(:,3);
                 
+                set(findobj(SetupTES.Result_Axes),'Visible','off');
+                set(SetupTES.Result_Axes1,'Position',[0.65 0.58 0.15 0.35]);
+                set(SetupTES.Result_Axes2,'Position',[0.65 0.09 0.15 0.35]);
+                set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2); findobj(SetupTES.Result_Axes3)],'Visible','on');
+                try
+                    plot(SetupTES.Result_Axes1,Data{1},Data{2});
+                catch
+                    plot(SetupTES.Result_Axes1,Data(:,1),Data(:,2));
+                end
+                xlabel(SetupTES.Result_Axes1,'Time(s)','FontSize',12,'FontWeight','bold');
+                ylabel(SetupTES.Result_Axes1,'V_{in}(mV)','FontSize',12,'FontWeight','bold');
+                set(SetupTES.Result_Axes1,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
+                    'XTickLabelMode','auto','XTickMode','auto');
+                
+                try
+                    plot(SetupTES.Result_Axes2,Data{1},Data{3});
+                catch
+                    plot(SetupTES.Result_Axes2,Data(:,1),Data(:,3));
+                end
+                xlabel(SetupTES.Result_Axes2,'Time(s)','FontSize',12,'FontWeight','bold');
+                ylabel(SetupTES.Result_Axes2,'V_{out}(mV)','FontSize',12,'FontWeight','bold');
+                set(SetupTES.Result_Axes2,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
+                    'XTickLabelMode','auto','XTickMode','auto');
+                
+                try
+                    plot(SetupTES.Result_Axes3,Data{5},Data{6},'o-');
+                    %                 plot(handles.Result_Axes3,Data(:,4)+1i*Data(:,5),'o-');
+                catch
+                    try
+                        plot(SetupTES.Result_Axes3,Data(:,4)+1i*Data(:,5),'o-');
+                    catch
+                        plot(handles.Result_Axes3,Data(:,2)+1i*Data(:,3),'o-');
+                    end
+                end
+                xlabel(SetupTES.Result_Axes3,'Re(mZ)','FontSize',12,'FontWeight','bold');
+                ylabel(SetupTES.Result_Axes3,'Im(mZ)','FontSize',12,'FontWeight','bold');
+                set(SetupTES.Result_Axes3,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
+                    'XTickLabelMode','auto','XTickMode','auto');
+                axis(SetupTES.Result_Axes3,'tight');
+                drawnow;
+                pause(0.2);
                 % Guardamos los datos en un fichero
                 file = strcat('PXI_TF_',Itxt,'uA','.txt');
                 save([Path file],'datos','-ascii');%salva los datos a fichero.
@@ -1383,7 +1598,7 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
                 SetupTES.PXI.AbortAcquisition;
                 SetupTES.PXI = SetupTES.PXI.Noise_Configuration;
                 pause(1);
-                
+                clear data;
                 [data, ~] = SetupTES.PXI.Get_Wave_Form;
                 
                 sk = skewness(data);
@@ -1406,6 +1621,28 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
                 end
                 datos(:,2) = datos(:,2)/n_avg;
                 
+                set([findobj(SetupTES.Result_Axes); findobj(SetupTES.Result_Axes3)],'Visible','off');
+                set(SetupTES.Result_Axes1,'Position',[0.65 0.58 0.30 0.35]);
+                set(SetupTES.Result_Axes2,'Position',[0.65 0.09 0.30 0.35]);
+                cla(SetupTES.Result_Axes1);
+                cla(SetupTES.Result_Axes2);
+                set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2)],'Visible','on');
+                
+                loglog(SetupTES.Result_Axes1,datos(:,1),datos(:,2));
+                xlabel(SetupTES.Result_Axes1,'Time(s)','FontSize',12,'FontWeight','bold');
+                ylabel(SetupTES.Result_Axes1,'V_{out}','FontSize',12,'FontWeight','bold');
+                set(SetupTES.Result_Axes1,'LineWidth',2,'FontSize',11,'FontWeight','bold','XScale','log','YScale','log',...
+                    'XTickLabelMode','auto','XTickMode','auto');
+                
+                loglog(SetupTES.Result_Axes2,datos(:,1),V2I(datos(:,2)*1e12,SetupTES.Circuit),'.-r',...
+                    datos(:,1),medfilt1(V2I(datos(:,2)*1e12,SetupTES.Circuit),20),'.-k');
+                ylabel(SetupTES.Result_Axes2,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold');
+                xlabel(SetupTES.Result_Axes2,'\nu(Hz)','FontSize',12,'FontWeight','bold');
+                set(SetupTES.Result_Axes2,'XScale','log','YScale','log','LineWidth',2,'FontSize',11,'FontWeight',...
+                    'bold','XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'});
+                axis(SetupTES.Result_Axes2,'tight');
+                drawnow;
+                pause(0.2);
                 % Guardamos los datos en un fichero
                 file = strcat('PXI_noise_',Itxt,'uA','.txt');
                 save([Path file],'datos','-ascii');%salva los datos a fichero.

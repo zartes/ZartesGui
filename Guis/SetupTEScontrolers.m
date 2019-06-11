@@ -83,7 +83,7 @@ try
     handles.timer_T = timer(...
         'ExecutionMode', 'fixedRate', ...       % Run timer repeatedly
         'Period', Period, ...                        % Initial period is 1 sec.
-        'TimerFcn', {@update_Temp_Color},'UserData',handles,'Name','TEStimer');
+        'TimerFcn', {@update_Temp_Color},'UserData',handles,'Name','T_TEStimer');
     %     guidata(handles.timer,handles);
     start(handles.timer);
     
@@ -262,7 +262,7 @@ handles.Menu_Circuit = uimenu('Parent',handles.menu(1),'Label',...
 handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
 handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
 
-instrreset;
+% instrreset;
 % Menu is generated here
 handles.menu(2) = uimenu('Parent',handles.SetupTES,'Label',...
     'Devices');
@@ -445,6 +445,7 @@ try
     stop(handles.timer_T);
 end
 delete(timerfind('Name','TEStimer'));
+delete(timerfind('Name','T_TEStimer'));
 try
     for i = 1:length(handles.DevStrOn)
         if handles.DevStrOn(i)
@@ -473,10 +474,13 @@ function Stop_Callback(hObject, eventdata, handles)
 Active_Color = [120 170 50]/255;
 % Gray color - Disable elements
 Disable_Color = [204 204 204]/255;
+hObject.BackgroundColor = Disable_Color;
 if hObject.Value
-    hObject.BackgroundColor = Active_Color;
+%     hObject.BackgroundColor = Active_Color;
+    hObject.UserData = 1;
 else
-    hObject.BackgroundColor = Disable_Color;
+%     
+    hObject.UserData = 0;
 end
 guidata(hObject,handles);
 
@@ -489,7 +493,8 @@ set(src,'uicontextmenu',cmenu);
 
 function SaveGraph(src,evnt)
 
-ha = findobj(src.UserData.Parent,'Type','Axes','Visible','on');
+Parent = src.UserData;
+ha = findobj(Parent,'Type','Axes','Visible','on');
 if ~isempty(ha)
     fg = figure;
     copyobj(ha,fg);
@@ -1084,15 +1089,15 @@ else
         end
         
         % Poner el valor en el sitio que le corresponde
-        for i = 1:length(Ibias)
-            hnd = guidata(handles.Stop);
-            if hnd.Value == 1
-                handles.Stop.Value = 0;
-                Stop_Callback(handles.Stop,[],handles);
-                break;
-            end
+        for i = 1:length(Ibias)            
             xlim(handles.Result_Axes,[min(Ibias{i}) max(Ibias{i})]);
             for j = 1:length(Ibias{i})
+                hnd = guidata(hObject);
+                if hnd.Stop.UserData == 1
+                    handles.Stop.UserData = 0;
+                    Stop_Callback(handles.Stop,[],handles);
+                    break;
+                end
                 handles.SQ_Ibias.String = Ibias{i}(j);
                 handles.SQ_Set_I.Value = 1;
                 SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
@@ -1159,6 +1164,15 @@ else
                     handles.Circuit.Rn.Value = Rn;
                     handles.Menu_Circuit.UserData = handles.Circuit;
                     Obj_Properties(handles.Menu_Circuit);
+                    TESDATA.circuit = TES_Circuit;
+                    TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
+                    IVCurveSet = TES_IVCurveSet;
+                    IVCurveSet = IVCurveSet.Update(IVmeasure);
+                    TESDATA.TES.n = [];
+                    handles.IVset = IVCurveSet.GetIVTES(TESDATA);
+                    handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+                    
+                    set([handles.SQ_SetRnBias handles.SQ_Rn.Enable],'Enable','on')
             end % switch                        
             
                         
@@ -1166,8 +1180,8 @@ else
                 'Yes','No','Yes');
             switch ButtonName
                 case 'Yes'
-                    TMC = num2str(str2double(handles.T_MC.String)*1e3,'%1.1f');
-                    if sign(Ibias) < 0
+                    TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
+                    if sign(Ibias{1}) < 0
                         filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_n_matlab.txt'];
                     else
                         filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_p_matlab.txt'];
@@ -1182,19 +1196,12 @@ else
                     end
                     
                 otherwise
-                    if isempty(handles.IVset)
-                        handles.SQ_Rn.Enable = 'off';
-                    end
-                    return;
+%                     if isempty(handles.IVset)
+%                         handles.SQ_Rn.Enable = 'off';
+%                     end
+                    break;
             end
-            TESDATA.circuit = TES_Circuit;
-            TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
-            IVCurveSet = TES_IVCurveSet;
-            IVCurveSet = IVCurveSet.Update(IVmeasure);
-            TESDATA.TES.n = [];
-            handles.IVset = IVCurveSet.GetIVTES(TESDATA);
-            handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');            
-            handles.SQ_Rn.Enable = 'on';
+            
             
             end
             
@@ -1233,11 +1240,12 @@ else
         SQ_TES2NormalState_Callback(handles.SQ_TES2NormalState,[],handles);
         
         handles.SQ_Closed_Loop.Value = 1;
-        SQ_Closed_Loop_Callback(handles.SQ_Closed_Loop,[],handles);
+        SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
         
         handles.SQ_Ibias_Units.Value = 3;
         SQ_Ibias_Units_Callback(handles.SQ_Ibias_Units,[],handles);
-        handles.SQ_Ibias.String = handles.SQ_Rn_Ibias.String;
+        SQ_Rn_Callback(handles.SQ_Rn,[],handles);
+        handles.SQ_Ibias.String = handles.SQ_Rn.String;
         Ibvalue = str2double(handles.SQ_Ibias.String);
         pause(0.3);
         
@@ -1282,7 +1290,7 @@ else
 end
 
 if ~isempty(handles.IVset)
-    if abs(handles.IVset.Tbath-handles.MCTemp.String) < 0.002        
+    if abs(handles.IVset.Tbath-str2double(handles.MCTemp.String)) < 0.002        
         
         Ibias = BuildIbiasFromRp(handles.IVset,str2double(handles.SQ_Rn.String));  %%%%%%
         handles.SQ_Rn_Ibias.String = num2str(Ibias);
@@ -1713,8 +1721,8 @@ else
         
         for i = 1:length(FieldValues)
             hnd = guidata(handles.Stop);
-            if hnd.Value == 1
-                handles.Stop.Value = 0;
+            if hnd.Stop.UserData == 1
+                handles.Stop.UserData = 0;
                 Stop_Callback(handles.Stop,[],handles);
                 break;
             end
@@ -1839,9 +1847,9 @@ step = 15;
 
 for i = 1:length(FieldValues{1})
     
-    hnd = guidata(handles.Stop);
-    if hnd.Value == 1
-        handles.Stop.Value = 0;
+    hnd = guidata(handles.SetupTES);
+    if hnd.Stop.UserData == 1
+        handles.Stop.UserData = 0;
         Stop_Callback(handles.Stop,[],handles);
         break;
     end
@@ -2115,7 +2123,7 @@ if NewValue ~= 4
             Amp = Amp/1e06;
     end
 else
-    Amp = 0.05;
+    Amp = 5;
 end
 handles.DSA_Input_Amp.String = num2str(Amp);
 hObject.UserData = NewValue;
@@ -2520,7 +2528,7 @@ if NewValue ~= 4
             Amp = Amp/1e06;
     end
 else
-    Amp = 0.05;
+    Amp = 5;
 end
 handles.PXI_Input_Amp.String = num2str(Amp);
 hObject.UserData = NewValue;
@@ -2648,7 +2656,7 @@ function PXI_TF_Zw_Menu_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns PXI_TF_Zw_Menu contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from PXI_TF_Zw_Menu
 if hObject.Value == 1
-    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','off');
+    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','on');
 else
     set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','on');
 end
@@ -2685,8 +2693,8 @@ if hObject.Value
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
-    handles.PXI.AbortAcquisition;
-    handles.PXI = handles.PXI.TF_Configuration;
+%     handles.PXI.AbortAcquisition;
+    handles.PXI=handles.PXI.TF_Configuration;
     handles.Actions_Str.String = 'PXI Acquisition Card: TF Mode ON';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
     
@@ -2698,9 +2706,11 @@ if hObject.Value
         excitacion = str2double(handles.PXI_Input_Amp.String);
     end
     try
-        handles.DSA.SourceOn;
+%         
         handles.DSA.WhiteNoise(excitacion);
-        pause(0.4);
+%         pause(0.4);
+        handles.DSA.SourceOn;
+%         pause(1);
     catch
         warndlg('External Source is not connected',handles.VersionStr);
         hObject.BackgroundColor = handles.Disable_Color;
@@ -2754,9 +2764,12 @@ if hObject.Value
         
         
         DataName = ' ';
-        Data(:,1) = handles.TestData.TF.PXI{end}(:,1);
-        Data(:,2) = handles.TestData.TF.PXI{end}(:,2);
-        Data(:,3) = handles.TestData.TF.PXI{end}(:,3);
+        Data{1} = handles.TestData.TF.PXI{end}(:,1);
+        Data{2} = handles.TestData.TF.PXI{end}(:,2);
+        Data{3} = handles.TestData.TF.PXI{end}(:,3);
+        Data{4} = handles.PXI_TF_DataXY(:,1);
+        Data{5} = handles.PXI_TF_DataXY(:,2);
+        Data{6} = handles.PXI_TF_DataXY(:,3);
         ManagingData2Plot(Data,DataName,handles,hObject)
     end
     
@@ -3069,23 +3082,35 @@ if nargin == 4
             set(handles.Result_Axes1,'Position',[0.65 0.58 0.15 0.35]);
             set(handles.Result_Axes2,'Position',[0.65 0.09 0.15 0.35]);
             set([findobj(handles.Result_Axes1); findobj(handles.Result_Axes2); findobj(handles.Result_Axes3)],'Visible','on');
-            
-            plot(handles.Result_Axes1,Data(:,1),Data(:,2));
+            try
+            plot(handles.Result_Axes1,Data{1},Data{2});
+            catch
+                plot(handles.Result_Axes1,Data(:,1),Data(:,2));
+            end
             xlabel(handles.Result_Axes1,'Time(s)','FontSize',12,'FontWeight','bold');
             ylabel(handles.Result_Axes1,'V_{in}(mV)','FontSize',12,'FontWeight','bold');
             set(handles.Result_Axes1,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
                 'XTickLabelMode','auto','XTickMode','auto');
             
-            plot(handles.Result_Axes2,Data(:,1),Data(:,3));
+            try
+            plot(handles.Result_Axes2,Data{1},Data{3});
+            catch
+                plot(handles.Result_Axes2,Data(:,1),Data(:,3));
+            end
             xlabel(handles.Result_Axes2,'Time(s)','FontSize',12,'FontWeight','bold');
             ylabel(handles.Result_Axes2,'V_{out}(mV)','FontSize',12,'FontWeight','bold');
             set(handles.Result_Axes2,'LineWidth',2,'FontSize',12,'FontWeight','bold','XScale','linear','YScale','linear',...
                 'XTickLabelMode','auto','XTickMode','auto');
             
             try
-                plot(handles.Result_Axes3,Data(:,4)+1i*Data(:,5),'o-');
+                plot(handles.Result_Axes3,Data{5},Data{6},'o-');
+%                 plot(handles.Result_Axes3,Data(:,4)+1i*Data(:,5),'o-');
             catch
-                plot(handles.Result_Axes3,Data(:,2)+1i*Data(:,3),'o-');
+                try
+                    plot(handles.Result_Axes3,Data(:,4)+1i*Data(:,5),'o-');
+                catch
+                    plot(handles.Result_Axes3,Data(:,2)+1i*Data(:,3),'o-');
+                end
             end
             xlabel(handles.Result_Axes3,'Re(mZ)','FontSize',12,'FontWeight','bold');
             ylabel(handles.Result_Axes3,'Im(mZ)','FontSize',12,'FontWeight','bold');
@@ -3345,11 +3370,11 @@ elseif handles.FilePlot.Value
                         case 1 % IV
                             ManagingData2Plot(Data,DataName,handles,handles.Start_IVRange);
                         case 2 % Zw
-                            if ~isempty(strfind(upper(DataName),'PXI'))
-                                ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Zw_Read);
-                            else
+%                             if ~isempty(strfind(upper(DataName),'PXI'))
+%                                 ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Zw_Read);
+%                             else
                                 ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Zw_Read);
-                            end
+%                             end
                         case 3 % Noise
                             if ~isempty(strfind(upper(DataName),'PXI'))
                                 ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Noise_Read);
@@ -3368,7 +3393,7 @@ elseif handles.FilePlot.Value
             DataName = handles.FileName{handles.List_Files.Value-1};
             if ~isempty(strfind(DataName,'mK_Rf'))
                 handles.Draw_Select.Value = 1;
-            elseif ~isempty(strfind(DataName,'TF'))
+            elseif ~isempty(strfind(DataName,'TF_'))
                 handles.Draw_Select.Value = 2;
             elseif ~isempty(strfind(upper(DataName),'NOISE'))
                 handles.Draw_Select.Value = 3;
@@ -3395,11 +3420,11 @@ elseif handles.FilePlot.Value
                 case 1 % IV
                     ManagingData2Plot(Data,DataName,handles,handles.Start_IVRange);
                 case 2 % Zw
-                    if ~isempty(strfind(upper(DataName),'PXI'))
-                        ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Zw_Read);
-                    else
+%                     if ~isempty(strfind(upper(DataName),'PXI'))
+%                         ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Zw_Read);
+%                     else
                         ManagingData2Plot(Data,DataName,handles,handles.DSA_TF_Zw_Read);
-                    end
+%                     end
                 case 3 % Noise
                     if ~isempty(strfind(upper(DataName),'PXI'))
                         ManagingData2Plot(Data,DataName,handles,handles.PXI_TF_Noise_Read);
@@ -3431,11 +3456,11 @@ elseif handles.FilePlot.Value
             case 1 % IV
                 ManagingData2Plot(Data,handles.FileName,handles,handles.Start_IVRange);
             case 2 % Zw
-                if ~isempty(strfind(upper(handles.FileName),'PXI'))
-                    ManagingData2Plot(Data,handles.FileName,handles,handles.PXI_TF_Zw_Read);
-                else
+%                 if ~isempty(strfind(upper(handles.FileName),'PXI'))
+%                     ManagingData2Plot(Data,handles.FileName,handles,handles.PXI_TF_Zw_Read);
+%                 else
                     ManagingData2Plot(Data,handles.FileName,handles,handles.DSA_TF_Zw_Read);
-                end
+%                 end
             case 3 % Noise
                 if ~isempty(strfind(upper(handles.FileName),'PXI'))
                     ManagingData2Plot(Data,handles.FileName,handles,handles.PXI_TF_Noise_Read);
@@ -3747,7 +3772,11 @@ Error = abs(T_MC-Set_Pt)/T_MC*100;
 handles.Error_Measured.String = Error;
 
 RGB = [linspace(120,255,100)' sort(linspace(50,170,100),'descend')' 50*ones(100,1)]./255;
-handles.Temp_Color.BackgroundColor = RGB(round(min(ceil(Error),100)),:);
+try
+    handles.Temp_Color.BackgroundColor = RGB(round(min(ceil(Error),100)),:);
+catch
+    handles.Temp_Color.BackgroundColor = RGB(1,:);
+end
 
 
 function SetPt_Callback(hObject, eventdata, handles)
