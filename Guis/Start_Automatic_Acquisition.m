@@ -1,5 +1,6 @@
 function Start_Automatic_Acquisition(handles, SetupTES, Conf)
 
+% Falta añadir los parametros de delay heredados del SetupTESControlers. 
 
 handles.Enfriada_dir = uigetdir(pwd, 'Select a path for storing acquisition data');
 if ~ischar(handles.Enfriada_dir)

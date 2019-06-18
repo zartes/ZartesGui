@@ -148,7 +148,8 @@ switch varargin{1}.Tag
         
         ConfInstrs{1} = DSA_Conf.Noise;
         handles.Options.String = {'Noise Setup'};
-        handles.Options.Value = varargin{2};
+%         handles.Options.Value = varargin{2};
+        handles.Options.Value = 1;
         
         % Noise Conf.
         Srch = strfind(DSA_Conf.Noise,'SF ');
@@ -180,6 +181,20 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Initial Value';'Step';'Final Value'};
         handles.Options.Visible = 'off';
         handles.Table.Data = hndl.FieldRange;
+        
+    case 'Param_Delay'
+        set(handles.figure1,'Name','');
+        set([handles.Add handles.Remove handles.Options],'Visible','off');
+        handles.Table.Data = {[]};
+        handles.Table.ColumnEditable = [false true false];
+        TESProp = properties(handles.varargin{3});
+        handles.Table.ColumnName = {'Parameter';'Value';'Units'};
+        TESUnits = {'s';'s'};
+        handles.Table.Data(1:length(TESProp),1) = TESProp;
+        for i = 1:length(TESProp)
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
+            handles.Table.Data{i,3} = TESUnits{i};
+        end
     case 'TES_Struct'
         set(handles.figure1,'Name','TES Circuit Parameters');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
@@ -457,6 +472,14 @@ switch handles.varargin{1}.Tag
         handles.varargin{1}.UserData = handles.Table.Data;
     case 'CurSource_Range'
         handles.varargin{1}.UserData = handles.Table.Data;
+        
+    case 'Param_Delay'
+        ParamDelay = properties(handles.varargin{3});
+        for i = 1:length(ParamDelay)
+            eval(['NewOPT.' ParamDelay{i} ' = handles.Table.Data{i,2};']);%
+        end
+        handles.varargin{1}.UserData = NewOPT;
+        guidata(handles.varargin{1},NewOPT);
     case 'TES_Struct'
         ButtonName = questdlg('Do you want to save these Circuit parameters?', ...
             'ZarTES v1.0', ...
@@ -593,6 +616,9 @@ switch handles.varargin{1}.Tag
     case 'DSA_TF_Noise_Conf'
         handles.varargin{3}.DSA_TF_Zw_Menu.Value = handles.Options.Value;
         handles.ConfInstrs{handles.Options.Value} = handles.Table.Data;
+        guidata(hObject,handles);
+    case ''
+        handles.Params = handles.Table.Data(:,2);
         guidata(hObject,handles);
     case 'AQ_TF_Rn_P_Set'
         if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})

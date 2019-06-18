@@ -61,7 +61,7 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','Toolbar','figure');
 
-handles.VersionStr = 'ZarTES v2.1';
+handles.VersionStr = 'ZarTES v2.0';
 set(handles.Analyzer,'Name',handles.VersionStr);
 
 handles.TES_ID = 0;
@@ -490,7 +490,7 @@ switch src.Label
         delete(indAxes);        
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],[],fig.hObject);
         
-        waitfor(msgbox('Continue to Thermal parameters vs %Rn','ZarTES v2.1')); %handles.VersionStr
+        waitfor(msgbox('Continue to Thermal parameters vs %Rn','ZarTES v2.0')); %handles.VersionStr
 %         fig = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);        
@@ -524,6 +524,10 @@ switch src.Label
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');
         delete(indAxes);
+        if ~isa(handles.Session{handles.TES_ID}.TES.TFN,'TES_TFN')
+            handles.Session{handles.TES_ID}.TES.TFN = TES_TFS;
+            handles.Session{handles.TES_ID}.TES.TFN = handles.Session{handles.TES_ID}.TES.TFN.Constructor;
+        end
         handles.Session{handles.TES_ID}.TES.TFN = handles.Session{handles.TES_ID}.TES.TFN.TFfromFile(handles.Session{handles.TES_ID}.Path,handles.Analyzer);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
     case 'Check TFN'
@@ -1306,7 +1310,7 @@ else
 end
 % TES_Param (TES)
 %   Si están vacios (plotNKGT)
-if (Session.TES.TESP.Filled && Session.TES.TFS.Filled)||Session.TES.TESN.Filled && Session.TES.TFS.Filled
+if (Session.TES.TESP.Filled && Session.TES.TFS.Filled)||Session.TES.TESN.Filled
     StrLabel_On = {'Z(w)-Noise Analysis';'Fit Z(w)-Noise to ElectroThermal Model';'Re-Analyze Loaded TES'};
     for i = 1:length(StrLabel_On)
         h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
@@ -1319,14 +1323,21 @@ else
         h.Enable = StrEnable{(~TES_ID+1)+1};
     end
 end
-
-if Session.TES.TFS.Filled && Session.TES.TFN.Filled
-    StrLabel_On = {'Z(w) Derived L'};
-    for i = 1:length(StrLabel_On)
-        h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
-        h.Enable = StrEnable{(~TES_ID+1)};
+try
+    if Session.TES.TFS.Filled && Session.TES.TFN.Filled
+        StrLabel_On = {'Z(w) Derived L'};
+        for i = 1:length(StrLabel_On)
+            h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+            h.Enable = StrEnable{(~TES_ID+1)};
+        end
+    else
+        StrLabel_Off = {'Z(w) Derived L'};
+        for i = 1:length(StrLabel_Off)
+            h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
+            h.Enable = StrEnable{(~TES_ID+1)+1};
+        end
     end
-else
+catch
     StrLabel_Off = {'Z(w) Derived L'};
     for i = 1:length(StrLabel_Off)
         h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
@@ -1335,7 +1346,7 @@ else
 end
 % TES_P (PP o PN)
 %   Si están vacios (FitZset)
-if Session.TES.PP.Filled || Session.TES.PN.Filled
+if any(Session.TES.PP.Filled) || any(Session.TES.PN.Filled)
     StrLabel_On = {'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';...
         'Summary';'Z(w)-Noise Viewer';'Word Graphical Report'};
     for i = 1:length(StrLabel_On)

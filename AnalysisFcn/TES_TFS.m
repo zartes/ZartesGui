@@ -62,7 +62,7 @@ classdef TES_TFS
             if Filled(obj1)
                 obj = obj.UpdateTFS(obj1);
             else
-                errordlg('No TF was selected!','ZarTES v2.1')
+                errordlg('No TF was selected!','ZarTES v2.0')
                 return;
             end
             if nargin == 3
@@ -97,7 +97,7 @@ classdef TES_TFS
                 obj.f = data(:,1);
                 obj.file = T;
             else
-                warndlg('No file selected','ZarTES v2.1')
+                warndlg('No file selected','ZarTES v2.0')
                 obj.tf = [];
                 obj.re = [];
                 obj.im = [];
@@ -113,7 +113,7 @@ classdef TES_TFS
                 fig = figure;
             end
             if isempty(obj.tf)
-                errordlg('No TF was selected!','ZarTES v2.1');
+                errordlg('No TF was selected!','ZarTES v2.0');
                 obj = TFfromFile(obj,[],fig);
                 return;
             end
@@ -133,13 +133,13 @@ classdef TES_TFS
             
             obj.PlotTF(fig);
             ButtonName = questdlg('Is this TFS valid?', ...
-                'ZarTES v2.1', ...
+                'ZarTES v2.0', ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
                 case 'No'
                     obj = obj.Constructor;
                 case 'Yes'
-                    waitfor(msgbox('TF in Superconductor state updated','ZarTES v2.1'));
+                    waitfor(msgbox('TF in Superconductor state updated','ZarTES v2.0'));
             end
         end
         

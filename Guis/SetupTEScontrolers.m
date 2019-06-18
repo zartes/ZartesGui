@@ -128,6 +128,15 @@ handles.PXI_TF_Data = [];
 handles.PXI_NoiseData = [];
 handles.IVset = [];
 
+handles.IVDelay = IV_Delay;
+handles.IVDelay = handles.IVDelay.Constructor;
+
+handles.BoptDelay = IV_Delay;
+handles.BoptDelay = handles.BoptDelay.Constructor;
+
+handles.ICDelay = IV_Delay;
+handles.ICDelay = handles.ICDelay.Constructor;
+
 handles = Menu_Generation(handles);  % Here, the constructor is applied
 % After Constructor, all the values have to be defined in the guide
 
@@ -241,7 +250,7 @@ image(data);
 ax.Visible = 'off';
 set(handles.SetupTES,'Visible','on');
 handles.VersionStr = 'ZarTES v1.0';
-waitfor(warndlg('Please, check the circuit values',handles.VersionStr));
+waitfor(warndlg('Please, check the following circuit values',handles.VersionStr));
 Obj_Properties(handles.Menu_Circuit);
 guidata(hObject,handles);
 
@@ -297,19 +306,46 @@ for i = 1:size(handles.HndlStr,1)
     
 end
 
+%%%%%% Automatic Measurements
+handles.menu(3) = uimenu('Parent',handles.SetupTES,'Label',...
+    'Automatic Measurements');
+handles.Menu_Auto_Meas_IV = uimenu('Parent',handles.menu(3),'Label',...
+    'I-V parameters','Tag','I-V parameters','Callback',{@ChangeDelayParam},'Separator','on');
+handles.Menu_Auto_Meas_Bopt = uimenu('Parent',handles.menu(3),'Label',...
+    'B opt parameters','Tag','B opt parameters','Callback',{@ChangeDelayParam});
+handles.Menu_Auto_Meas_IC = uimenu('Parent',handles.menu(3),'Label',...
+    'Critical I parameters','Tag','Critical I parameters','Callback',{@ChangeDelayParam});
+
 
 %%%%%%% Start Acquisition
-handles.menu(3) = uimenu('Parent',handles.SetupTES,'Label',...
+handles.menu(4) = uimenu('Parent',handles.SetupTES,'Label',...
     'Acquisition');
-handles.Menu_ACQ_Conf = uimenu('Parent',handles.menu(3),'Label',...
+handles.Menu_ACQ_Conf = uimenu('Parent',handles.menu(4),'Label',...
     'Configuration Panel','Callback',{@IbvaluesConf},'Separator','on');
 
-handles.menu(4) = uimenu('Parent',handles.SetupTES,'Label',...
+handles.menu(5) = uimenu('Parent',handles.SetupTES,'Label',...
     'Help');
-handles.Menu_Guide = uimenu('Parent',handles.menu(4),'Label',...
+handles.Menu_Guide = uimenu('Parent',handles.menu(5),'Label',...
     'User Guide','Callback',{@UserGuide});
-handles.Menu_About = uimenu('Parent',handles.menu(4),'Label',...
+handles.Menu_About = uimenu('Parent',handles.menu(5),'Label',...
     'About','Callback',{@About});
+
+function ChangeDelayParam(src,evnt)
+
+handles = guidata(src);
+switch src.Label
+    case 'I-V parameters'  
+        handles.IVDelay = handles.IVDelay.View;        
+        handles.Actions_Str.String = 'I-V Curve time slots have changed';        
+    case 'B opt parameters'        
+        handles.BoptDelay = handles.BoptDelay.View;
+        handles.Actions_Str.String = 'B opt time slots have changed';
+    case 'Critical I parameters'
+        handles.ICDelay = handles.ICDelay.View;
+        handles.Actions_Str.String = 'Critical I time slots have changed';        
+end
+Actions_Str_Callback(handles.Actions_Str,[],handles);
+guidata(src,handles);
 
 function UserGuide(src,evnt)
 winopen('SetupTESControlers_UserGuide.pdf');
@@ -694,7 +730,7 @@ else
         
         if ~handles.LNCS_Active.Value
             if abs(Ibvalue) > 500
-                warndlg('Value out of range (max I bias ±500 uA), select LNCS for greater current values','ZarTES v1.0');
+                warndlg('Value out of range (max I bias ±500 uA), select LNCS for greater current values',handles.VersionStr);
                 hObject.BackgroundColor = handles.Disable_Color;
                 hObject.Value = 0;
                 hObject.Enable = 'on';
@@ -922,6 +958,9 @@ else
     handles.SQ_PhiBStr.String = num2str(phib);
     try
         handles.Squid.Set_Phib(phib);
+        Ireal = handles.Squid.Read_PhiB;
+        handles.SQ_PhiBStr.String = num2str(Ireal.Value);
+        handles.SQ_PhiB.Value = Ireal.Value;
     catch me
         disp(me);
     end
@@ -970,7 +1009,7 @@ else
     phib = str2double(hObject.String);
     
     if phib < -124 || phib > 125
-        warndlg('Value out of range (PhiB [-124 125])','ZarTES v1.0');        
+        warndlg('Value out of range (PhiB [-124 125])',handles.VersionStr);        
         hObject.String = '0';
         handles.Actions_Str.String = 'Electronic Magnicon: PhiB does not change';
         hObject.Enable = 'on';
@@ -979,6 +1018,9 @@ else
         handles.SQ_PhiB.Value = phib;        
         try
             handles.Squid.Set_Phib(phib);
+            Ireal = handles.Squid.Read_PhiB;
+            handles.SQ_PhiBStr.String = num2str(Ireal.Value);
+            handles.SQ_PhiB.Value = Ireal.Value;
         catch me
             disp(me);
         end
@@ -1217,9 +1259,9 @@ else
                 handles.SQ_Set_I.Value = 1;
                 SQ_Set_I_Callback(handles.SQ_Set_I, [], handles);
                 if i == 1 && j == 1
-                    pause(2);
+                    pause(handles.IVDelay.FirstDelay);  % FirstDelay
                 end
-                pause(1)
+                pause(handles.IVDelay.StepDelay); % StepDelay
                 if ~handles.LNCS_Active.Value
                     Ireal = handles.Squid.Read_Current_Value;
                 else
@@ -1578,7 +1620,7 @@ else
         I.Units = 'A';
         if abs(I.Value) > 0.005 % 5 mA
             h = msgbox('Current value exceeds security range of 5mA', ...
-                'ZarTES v1.0');
+                handles.VersionStr);
             tic;
             t = toc;
             while 10-t > 0
@@ -1863,9 +1905,9 @@ else
                 handles.CurSource_Set_I.Value = 1;
                 CurSource_Set_I_Callback(handles.CurSource_Set_I, [], handles);
                 if i == 1 && j == 1
-                    pause(2);
+                    pause(handles.BoptDelay.FirstDelay);
                 end
-                pause(0.5)
+                pause(handles.BoptDelay.StepDelay)
                 averages = 1;
                 for i_av = 1:averages
                     handles.Multi_Read.Value = 1;
@@ -1966,6 +2008,7 @@ CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
 handles.CurSource_OnOff.Value = 1;
 CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
 
+pause(handles.ICDelay.FirstDelay);
 
 handles.SQ_Reset_Closed_Loop.Value = 1;
 SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
@@ -1985,7 +2028,7 @@ for i = 1:length(FieldValues{1})
     handles.CurSource_I.String = num2str(FieldValues{1}(i)*1e-6);  % Se pasan las corrientes en amperios
     handles.CurSource_Set_I.Value = 1;
     CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-    pause(1);
+    pause(handles.ICDelay.StepDelay);
     
     if i < 4
         i0 = [1 1];
@@ -2012,7 +2055,7 @@ for i = 1:length(FieldValues{1})
         ICpairs(i).B = FieldValues{1}(i);
         step = max(0.1,aux.p/20);%por si es cero.
     catch
-        pause(1);
+%         pause(1);
         ICpairs(i).p = nan;
         ICpairs(i).n = nan;
         ICpairs(i).B = FieldValues{1}(i);

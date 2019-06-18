@@ -1,4 +1,4 @@
-function out = mag_setPhib_CH(s,IuA,nch)
+function out = mag_setPhib_CH(s,IuA)
 % Function to set Phi_b values of the electronic magnicon in uA
 %
 % Input:
@@ -26,7 +26,7 @@ str = sprintf('%s%02X\r',str,chk);
 out = query(s.ObjHandle,str,'%s','%s');
 
 if strcmp(out,'|0AC')
-    out='OK';
+    out = 'OK';
 else
-    out='FAIL';
+    out = 'FAIL';
 end

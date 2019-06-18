@@ -71,7 +71,7 @@ classdef TES_Circuit
 %             % Function to complete the class with experimental data (Rf, mN and
 %             % mS)
 %             
-%             waitfor(helpdlg('Pick some IV curves to estimate mN (normal state slope) and mS (superconductor state slope)','ZarTES v2.1'));
+%             waitfor(helpdlg('Pick some IV curves to estimate mN (normal state slope) and mS (superconductor state slope)','ZarTES v2.0'));
 %             if exist('DataPath','var')
 %                 [IVset, pre_Rf] = obj.importIVs(DataPath);
 %             else
@@ -83,7 +83,7 @@ classdef TES_Circuit
 %             if length(pre_Rf) == 1
 %                 obj.Rf = pre_Rf;
 %             else
-%                 errordlg('Rf values are unconsistent!','ZarTES v2.1')
+%                 errordlg('Rf values are unconsistent!','ZarTES v2.0')
 %                 return;
 %             end
 %             if exist('fig','var')
@@ -105,7 +105,7 @@ classdef TES_Circuit
 %             if iscell(file)||ischar(file)
 %                 T = strcat(path,file);
 %             else
-%                 errordlg('Invalid Data path name!','ZarTES v2.1','modal');
+%                 errordlg('Invalid Data path name!','ZarTES v2.0','modal');
 %                 IVset = [];
 %                 pre_Rf = [];
 %                 return;
@@ -195,7 +195,7 @@ classdef TES_Circuit
 %             end
 %             pre_Rf = unique(pre_Rf);
 %             if length(pre_Rf) > 1
-%                 warndlg('Unconsistency on Rf values, please check it out','ZarTES v2.1');
+%                 warndlg('Unconsistency on Rf values, please check it out','ZarTES v2.0');
 %             end
 %         end
         

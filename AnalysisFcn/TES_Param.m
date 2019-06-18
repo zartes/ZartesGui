@@ -79,17 +79,17 @@ classdef TES_Param
                 defaultanswer = {'0.1'};
                 answer = inputdlg(prompt,name,numlines,defaultanswer);
                 if isempty(answer)
-                    warndlg('No Temp value selected','ZarTES v2.1');
+                    warndlg('No Temp value selected','ZarTES v2.0');
                     return;
                 else
                     Temp = str2double(answer{1});
                     if isnan(Temp)
-                        warndlg('Invalid Temp value','ZarTES v2.1');
+                        warndlg('Invalid Temp value','ZarTES v2.0');
                         return;
                     end
                 end
                 G_new = obj.n*obj.K*Temp^(obj.n-1);
-                uiwait(msgbox(['G(' num2str(Temp) ') = ' num2str(G_new)],'ZarTES v2.1','modal'));
+                uiwait(msgbox(['G(' num2str(Temp) ') = ' num2str(G_new)],'ZarTES v2.0','modal'));
             end
             try
                 G_new = obj.n*obj.K*Temp^(obj.n-1);

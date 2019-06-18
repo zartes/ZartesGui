@@ -61,14 +61,14 @@ classdef TES_IC
             end
             
             if isequal(path,0)
-                errordlg('Invalid Data path name!','ZarTES v2.1','modal');                
+                errordlg('Invalid Data path name!','ZarTES v2.0','modal');                
                 return;
             end
             d = dir([path filesep 'ICpairs*.mat']);
             if isempty(d)
                 d = dir([path filesep 'ICpairs*.txt']);
                 if isempty(d)
-                    errordlg('No Data on this path!','ZarTES v2.1','modal');
+                    errordlg('No Data on this path!','ZarTES v2.0','modal');
                     return;                    
                 end
             end                        
