@@ -73,13 +73,15 @@ classdef TES_P
                     FN = fieldnames(obj(j).p);
                     for i = 1:length(FN)
                         if isempty(eval(['obj(j).p.' FN{i}]))
-                            ok = 0;  % Empty field
-                            return;
+                            ok(j) = 0;  % Empty field
+                            continue;
+                        else
+                            ok(j) = 1;
                         end
                     end
                 end
             end
-            ok = 1; % All fields are filled
+%             ok = 1; % All fields are filled
         end
         
         function [val,rp,Tbath] = GetParamVsRn(obj,param,Tbath)
@@ -87,7 +89,7 @@ classdef TES_P
             % with respect to Rn values
             
             if ~ischar(param)
-                warndlg('param must be string','ZarTES v2.1');
+                warndlg('param must be string','ZarTES v2.0');
                 return;
             else
                 ValidParams = fieldnames(obj(1).p);
@@ -121,7 +123,7 @@ classdef TES_P
                     end
                 else
                     if isempty(strfind(param,'_CI'))
-                        warndlg('param not valid!','ZarTES v2.1');
+                        warndlg('param not valid!','ZarTES v2.0');
                         return;
                     end
                 end
@@ -133,7 +135,7 @@ classdef TES_P
             % with respect to Tbath values
             
             if ~ischar(param)
-                warndlg('param must be string','ZarTES v2.1');
+                warndlg('param must be string','ZarTES v2.0');
                 return;
             else
                 ValidParams = fieldnames(obj(1).p);
@@ -151,7 +153,7 @@ classdef TES_P
                     else
                         if exist('Rn','var')
                             if Rn <= 0 || Rn > 1
-                                warndlg('%Rn out of range, %Rn must be among 0-1 values!','ZarTES v2.1');
+                                warndlg('%Rn out of range, %Rn must be among 0-1 values!','ZarTES v2.0');
                                 return;
                             end
                             Tbaths = [obj.Tbath];
@@ -167,12 +169,12 @@ classdef TES_P
                                 Rns(i,:) = rp(ind);
                             end
                         else
-                            warndlg('%Rn value is missed!','ZarTES v2.1');
+                            warndlg('%Rn value is missed!','ZarTES v2.0');
                             return;
                         end
                     end
                 else
-                    warndlg('param not valid!','ZarTES v2.1');
+                    warndlg('param not valid!','ZarTES v2.0');
                     return;
                 end
             end
@@ -182,7 +184,7 @@ classdef TES_P
             % Function to obtain any parameter values with respect to other parameter values
             
             if (~ischar(param1))||(~ischar(param2))
-                warndlg('param1 and param2 must be strings','ZarTES v2.1');
+                warndlg('param1 and param2 must be strings','ZarTES v2.0');
                 return;
             else
                 ValidParams = fieldnames(obj(1).p);

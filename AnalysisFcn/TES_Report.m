@@ -9,6 +9,7 @@ classdef TES_Report
         ABCTset = 1;
         FitZset = 1;
         NoiseSet = 1;
+        RTs = 1;
     end
     
     methods

@@ -88,7 +88,7 @@ classdef TES_Struct
                 
                 % Revisar las curvas IV y seleccionar aquellas para eliminar del
                 % analisis
-                waitfor(helpdlg('Before closing this message, please check the IV curves','ZarTES v2.1'));
+                waitfor(helpdlg('Before closing this message, please check the IV curves','ZarTES v2.0'));
                 eval(['obj.IVset' StrRange{j} ' = get(figIV.hObject,''UserData'');']);                
             end
             ax = findobj(figIV.hObject,'Type','Axes');
@@ -100,7 +100,7 @@ classdef TES_Struct
             % Function to complete the class with experimental data (Rf, mN and
             % mS)
             
-            waitfor(helpdlg('Pick some IV curves to estimate mN (normal state slope) and mS (superconductor state slope)','ZarTES v2.1'));
+            waitfor(helpdlg('Pick some IV curves to estimate mN (normal state slope) and mS (superconductor state slope)','ZarTES v2.0'));
             if exist('DataPath','var')
                 [IVsetP, IVsetN, pre_Rf] = obj.importIVs(DataPath);
             else
@@ -112,7 +112,7 @@ classdef TES_Struct
             if length(pre_Rf) == 1
                 obj.circuit.Rf = pre_Rf;
             else
-                errordlg('Rf values are unconsistent!','ZarTES v2.1')
+                errordlg('Rf values are unconsistent!','ZarTES v2.0')
                 return;
             end
             if exist('fig','var')
@@ -137,7 +137,7 @@ classdef TES_Struct
             if iscell(file)||ischar(file)
                 T = strcat(path,file);
             else
-                errordlg('Invalid Data path name!','ZarTES v2.1','modal');
+                errordlg('Invalid Data path name!','ZarTES v2.0','modal');
                 IVsetP = [];
                 IVsetN = [];
                 pre_Rf = [];
@@ -225,7 +225,7 @@ classdef TES_Struct
             end
             pre_Rf = unique(pre_Rf);
             if length(pre_Rf) > 1
-                warndlg('Unconsistency on Rf values, please check it out','ZarTES v2.1');
+                warndlg('Unconsistency on Rf values, please check it out','ZarTES v2.0');
             end
         end
         
@@ -451,11 +451,11 @@ classdef TES_Struct
                                 if ~isempty(answer)
                                     eval(['perc' StrRange{k} ' = eval(answer{1});']);
                                     if ~isnumeric(eval(['perc' StrRange{k} ]))
-                                        warndlg('Invalid %Rn values','ZarTES v2.1');
+                                        warndlg('Invalid %Rn values','ZarTES v2.0');
                                         return;
                                     end
                                 else
-                                    warndlg('Invalid %Rn values','ZarTES v2.1');
+                                    warndlg('Invalid %Rn values','ZarTES v2.0');
                                     return;
                                 end
                             else
@@ -1041,7 +1041,7 @@ classdef TES_Struct
                 set(h,'Visible','on');
             end
             if nargin < 2
-                warndlg('TESDATA.fitPvsTset must be firstly applied.','ZarTES v2.1')
+                warndlg('TESDATA.fitPvsTset must be firstly applied.','ZarTES v2.0')
                 fig = [];
             end
             IndxOP = findobj('DisplayName','Operation Point');
@@ -1052,7 +1052,7 @@ classdef TES_Struct
                 if nargin < 3
                     
                     pause(0.2)
-                    waitfor(helpdlg('After closing this message, select a point for TES characterization','ZarTES v2.1'));
+                    waitfor(helpdlg('After closing this message, select a point for TES characterization','ZarTES v2.0'));
                     figure(fig.hObject);
                     
                     % Seleccion mediante teclado de la Rn
@@ -1062,12 +1062,12 @@ classdef TES_Struct
                     defaultanswer = {'0.8'};
                     answer = inputdlg(prompt,name,numlines,defaultanswer);
                     if isempty(answer)
-                        warndlg('No %Rn value selected','ZarTES v2.1');
+                        warndlg('No %Rn value selected','ZarTES v2.0');
                         return;
                     else
                         X = str2double(answer{1});
                         if isnan(X)
-                            warndlg('Invalid %Rn value','ZarTES v2.1');
+                            warndlg('Invalid %Rn value','ZarTES v2.0');
                             return;
                         end
                     end
@@ -1125,7 +1125,7 @@ classdef TES_Struct
             % and when ERP value (Error Relative Parameter) is greater than 0.8
             if nargin < 2             
                 ButtonName = questdlg('Select Files Acquisition device', ...
-                    'ZarTES v2.1', ...
+                    'ZarTES v2.0', ...
                     'PXI', 'HP', 'PXI');
                 switch ButtonName
                     case 'PXI'
@@ -1134,7 +1134,7 @@ classdef TES_Struct
                         
                         if isempty(strfind(obj.TFS.file,'PXI_TF_'))
                             [Path, Name] = fileparts(obj.TFS.file);
-                            warndlg('TFS must be a file named PXI_TF_* (PXI card)','ZarTES v2.1');
+                            warndlg('TFS must be a file named PXI_TF_* (PXI card)','ZarTES v2.0');
                             obj.TFS = obj.TFS.importTF([Path filesep]);
                         end
                     case 'HP'
@@ -1142,7 +1142,7 @@ classdef TES_Struct
                         obj.NoiseOpt.NoiseBaseName = '\HP_noise*';%%%'\HP*'
                         if isempty(strfind(obj.TFS.file,'\TF_'))
                             [Path, Name] = fileparts(obj.TFS.file);
-                            warndlg('TFS must be a file named TF_* (HP)','ZarTES v2.1');
+                            warndlg('TFS must be a file named TF_* (HP)','ZarTES v2.0');
                             obj.TFS = obj.TFS.importTF([Path filesep]);
                         end
                     otherwise
@@ -1161,17 +1161,17 @@ classdef TES_Struct
                     minFreq = eval(answer{1});
                     maxFreq = eval(answer{2});
                     if ~isnumeric(minFreq)||~isnumeric(maxFreq)
-                        warndlg('Cancelled by user','ZarTES v2.1');
+                        warndlg('Cancelled by user','ZarTES v2.0');
                         return;
                     end
                 else
-                    warndlg('Cancelled by user','ZarTES v2.1');
+                    warndlg('Cancelled by user','ZarTES v2.0');
                     return;
                 end
                 FreqRange = [minFreq maxFreq];
                 
                 ButtonName = questdlg('Do you want to show the data and fits?', ...
-                    'ZarTES v2.1', ...
+                    'ZarTES v2.0', ...
                     'Yes', 'No', 'Yes');
                 switch ButtonName
                     case 'Yes'
@@ -1236,7 +1236,7 @@ classdef TES_Struct
                     if DataPath ~= 0
                         DataPath = [DataPath filesep];
                     else
-                        errordlg('Invalid Data path name!','ZarTES v2.1','modal');
+                        errordlg('Invalid Data path name!','ZarTES v2.0','modal');
                         return;
                     end
                     
@@ -1252,7 +1252,7 @@ classdef TES_Struct
                         end
                     end
                     if isempty(dirs{1})
-                        errordlg('Invalid Data path name!','ZarTES v2.1','modal');
+                        errordlg('Invalid Data path name!','ZarTES v2.0','modal');
                         return;
                     end
                 end
@@ -1265,12 +1265,14 @@ classdef TES_Struct
                 H.figure.Name = 'Z(w) Analysis';
                 H1 = multiwaitbar(2,[0 0],{'Folder(s)','File(s)'});
                 H1.figure.Name = 'Noise Analysis';
-                eval(['obj.P' StrRange{k1} ' = TES_P;']);
-                eval(['obj.P' StrRange{k1} ' = obj.P' StrRange{k1} '.Constructor;']);
+                
                 
                 iOK = 0;
                 for i = 1:length(dirs)
+                    
                     iOK = iOK+1;
+                    eval(['obj.P' StrRange{k1} '(iOK) = TES_P;']);
+                    eval(['obj.P' StrRange{k1} '(iOK) = obj.P' StrRange{k1} '(iOK).Constructor;']);
                     %%%buscamos los ficheros a analizar en cada directorio.
                     D = [dirs{i} obj.TFOpt.TFBaseName];
                     filesZ = ListInBiasOrder(D);
@@ -1298,7 +1300,7 @@ classdef TES_Struct
                             multiwaitbar(2,[i/length(dirs) j1/length(filesZ)],{Path,NameStr},H);
                         else
                             H = multiwaitbar(2,[i/length(dirs) j1/length(filesZ)],{Path,NameStr});
-                            H.figure.Name = 'ZarTES v2.1';
+                            H.figure.Name = 'ZarTES v2.0';
                         end
                         thefile = strcat(dirs{i},'\',filesZ{j1});
                         try
@@ -1306,11 +1308,11 @@ classdef TES_Struct
                         catch
                             continue;
                         end
-                        
-                        if param.rp > obj.ZwrpUB || param.rp < obj.ZwrpLB
-                            continue;
-                        end
                         eval(['obj.P' StrRange{k1} '(iOK).Tbath = Tbath*1e-3;;']);
+%                         if param.rp > obj.ZwrpUB || param.rp < obj.ZwrpLB
+%                             continue;
+%                         end
+                        
                         paramList = fieldnames(param);
                         for pm = 1:length(paramList)
                             eval(['obj.P' StrRange{k1} '(iOK).p(jj).' paramList{pm} ' = param.' paramList{pm} ';']);
@@ -1424,12 +1426,15 @@ classdef TES_Struct
                 catch
                 end
                 if obj.TFOpt.boolShow
+                    try
                     dat.fig = fig;
                     set(fig,'UserData',dat);
                     pause(0.2)
-                    waitfor(helpdlg('After closing this message, check the validity of the curves and fittings','ZarTES v2.1'));
+                    waitfor(helpdlg('After closing this message, check the validity of the curves and fittings','ZarTES v2.0'));
                     Data = get(fig(1),'UserData'); %#ok<NASGU>
                     eval(['obj.P' StrRange{k1} ' = Data.P;']);
+                    catch
+                    end
                 end
                 % Capar los datos de forma que no puedan existir valores porl
                 % encima de 1 y por debajo de 0
@@ -1590,6 +1595,7 @@ classdef TES_Struct
             T0 = eval(['obj.TES' CondStr '.Tc;']); %(K)
             G0 = eval(['obj.TES' CondStr '.G']);  %(W/K)
             
+            IVmeasure.vout = IVmeasure.vout+1000;
             [iaux,ii] = unique(IVmeasure.ibias,'stable');
             vaux = IVmeasure.vout(ii);
             [m,i3] = min(diff(vaux)./diff(iaux)); %#ok<ASGLU>
@@ -1605,7 +1611,7 @@ classdef TES_Struct
 %             end
 %             Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
             IVaux.ibias = Ib;
-            IVaux.vout = Vout;
+            IVaux.vout = Vout-1000;
             IVaux.Tbath = IVmeasure.Tbath;
             
             F = obj.circuit.invMin/(obj.circuit.invMf*obj.circuit.Rf);%36.51e-6;
@@ -1716,8 +1722,8 @@ classdef TES_Struct
                 xdata = fNoise(findx);
                 ydata = medfilt1(NEP(findx)*1e18,40);
                 if isempty(findx)||sum(ydata == inf)
-                    M = 0;
-                    Mph = 0;
+                    M = NaN;
+                    Mph = NaN;
                 else
                     opts = optimset('Display','off');
                     maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(x,xdata,OP,CondStr),[0 0],xdata,ydata,[],[],opts);
@@ -1725,8 +1731,8 @@ classdef TES_Struct
                     Mph = maux(1);
                 end
             else
-                M = 0;
-                Mph = 0;
+                M = NaN;
+                Mph = NaN;
             end                        
         end
         
@@ -1867,7 +1873,7 @@ classdef TES_Struct
                     noise.squid = Nsquid;
                     noise.squidarray = Nsquid*ones(1,length(f));
                 otherwise
-                    warndlg('no valid model','ZarTES v2.1');
+                    warndlg('no valid model','ZarTES v2.0');
                     noise = [];
             end
         end
@@ -2054,7 +2060,7 @@ classdef TES_Struct
             colors = distinguishable_colors((length(obj.PP)+length(obj.PN)));
             ind_color = 1;
             for k = 1:2
-                if isempty(eval(['obj.P' StrRange{k} '.Tbath']))
+                if isempty(all(eval(['obj.P' StrRange{k} '.Tbath'])))
                     continue;
                 end
                 P = eval(['obj.P' StrRange{k} ';']);
@@ -2152,9 +2158,10 @@ classdef TES_Struct
                 data.h_bad = h_bad;
                 data.erbad = erbad;
                 set(h,'ButtonDownFcn',{@GraphicErrors},'UserData',data,'FontSize',12,'LineWidth',2,'FontWeight','bold')
+                set(h,'Visible','on')
             catch
             end
-            set(h,'Visible','on')
+            
             
         end
         
@@ -2374,7 +2381,14 @@ classdef TES_Struct
                     end
                     if nargin < 4
                         fig(IndFig) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
+                    end                    
+                    try
+                        eval(['[~,Tind] = min(abs([obj.IVset' StrCond{iP} '.Tbath]-Tbath));'])
+                    catch
+                        Tind = ind_Tbath;
                     end
+                    eval(['IV = obj.IVset' StrCond{iP} '(Tind);'])                    
+                    
                     [ncols,~] = SmartSplit(N);
                     hs = nan(N,1);
                     j = 0;
@@ -2398,7 +2412,7 @@ classdef TES_Struct
                         else
                             Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
                         end
-                        eval(['OP = obj.setTESOPfromIb(Ib,obj.IVset' StrCond{iP} '(ind_Tbath),obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
+                        eval(['OP = obj.setTESOPfromIb(Ib,IV,obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
                         
                         ztes = eval(['obj.P' StrCond{iP} '(ind_Tbath).ztes{ind(i)};']);
                         fZ = eval(['obj.P' StrCond{iP} '(ind_Tbath).fZ{ind(i)};']);
@@ -2470,6 +2484,12 @@ classdef TES_Struct
                     if nargin < 4
                         fig(IndFig) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
                     end
+                    try
+                        eval(['[~,Tind] = min(abs([obj.IVset' StrCond{iP} '.Tbath]-Tbath));'])
+                    catch
+                        Tind = ind_Tbath;
+                    end
+                    eval(['IV = obj.IVset' StrCond{iP} '(Tind);'])    
                     [ncols,~] = SmartSplit(N);
                     hs = nan(N,1);
                     j = 0;
@@ -2493,7 +2513,7 @@ classdef TES_Struct
                         else
                             Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
                         end
-                        eval(['OP = obj.setTESOPfromIb(Ib,obj.IVset' StrCond{iP} '(ind_Tbath),obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
+                        eval(['OP = obj.setTESOPfromIb(Ib,IV,obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
                         
                         ztes = eval(['obj.P' StrCond{iP} '(ind_Tbath).ztes{ind(i)};']);
                         fZ = eval(['obj.P' StrCond{iP} '(ind_Tbath).fZ{ind(i)};']);
@@ -2532,9 +2552,11 @@ classdef TES_Struct
 %                 delete([findobj(fig,'Type','Line'); findobj(fig,'Type','ErrorBar'); findobj(fig,'Type','Axes')]);
 %             end
             if ~ischar(param)
-                warndlg('param must be string','ZarTES v2.1');
+                warndlg('param must be string','ZarTES v2.0');
                 return;
             elseif size(param,1) == 1
+                
+                ActionStr = ['PlotTESData(''' param ''',[' num2str(Rn) '],[' num2str(Tbath) '],fig.hObject)'];
                 YLabels = {'C(fJ/K)';'\tau_{eff}(\mus)';'\alpha_i';'\beta_i'};
                 colors{1} = [0 0.4470 0.7410];
                 colors{2} = [1 0.5 0.05];
@@ -2597,6 +2619,15 @@ classdef TES_Struct
                                 Ylabel = param;
                             end
                         end
+%                         try
+%                             P = Data{1};
+%                         catch
+%                             return;
+%                         end
+%                         N_meas = Data{2};
+%                         P_Rango = Data{3};
+%                         Circuit = Data{4};
+                        
                         if ~strcmp(param,'ExRes')
                             eval(['h = plot(ax,Tbath' StrRange{k} ',val' StrRange{k} ',''LineStyle'',''-.'',''Marker'',''' StrMarker{k} ''''...
                                 ',''DisplayName'',''' StrCond{k} ' Ibias'');']);
@@ -2678,23 +2709,25 @@ classdef TES_Struct
                             else
                                 Ylabel = param;
                             end
+                            P = eval(['obj.P' StrRange{k}]); 
                             if ~strcmp(param,'ExRes')
                                 eval(['h = plot(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},''LineStyle'',''-.'',''Marker'',''o'''...
-                                    ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias'']);']);
+                                    ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit;param;ActionStr}]);']);
                                 
                                 try
                                     eval(['e = errorbar(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},val' StrRange{k} '_CI{i},''LineStyle'',''-.'',''Marker'',''o'''...
-                                        ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'',''Color'',h.Color);']);
+                                        ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'',''Color'',h.Color,''Clipping'',''on'');']);
                                     
                                     set(get(get(e,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                                     
                                 catch
                                 end
                             else
+                                                          
                                 eval(['h = plot(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},''LineStyle'',''-.'',''Marker'',''o'''...
-                                    ',''DisplayName'',[''ExRes T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias'']);']);
+                                    ',''DisplayName'',[''ExRes T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit;param;ActionStr}]);']);
                                 eval(['h = plot(ax,rp' StrRange{k} 'Th{i},val' StrRange{k} 'Th{i},''LineStyle'',''-'',''Color'',h.Color'...
-                                    ',''DisplayName'',[''ThRes T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias'']);']);
+                                    ',''DisplayName'',[''ThRes T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit;param;ActionStr}]);']);
                             end
                             catch
                             end
@@ -2855,7 +2888,7 @@ classdef TES_Struct
             trace(ActXWord.Visible);
             WordHandle = invoke(ActXWord.Documents,'Add');
             
-            answer = inputdlg({'Insert Name of the TES or date'},'ZarTES v2.1',[1 50],{' '});
+            answer = inputdlg({'Insert Name of the TES or date'},'ZarTES v2.0',[1 50],{' '});
             if isempty(answer)
                 return;
             end
@@ -3041,8 +3074,7 @@ classdef TES_Struct
             end
             
             %% Pintar NKGT set
-            if obj.Report.NKGTset
-                
+            if obj.Report.NKGTset                
             
                 if size([obj.GsetP.n],2) == 1
                     TESProp = properties(obj.TESP);
@@ -3065,8 +3097,8 @@ classdef TES_Struct
                     
                 else
                     clear fig;
-                    MS = 10; %#ok<NASGU>
-                    LS = 1; %#ok<NASGU>
+                    MS = 2; %#ok<NASGU>
+                    LS = 0.5; %#ok<NASGU>
                     color{1} = [0 0.447 0.741];
                     color{2} = [1 0 0];
                     
@@ -3086,7 +3118,7 @@ classdef TES_Struct
                         end
                         Gset = eval(['obj.Gset' StrRange{k}]);
                         
-                        TES_OP_y = find([Gset.Tc] == eval(['obj.TES' StrRange{k} '.Tc'])*1e-3,1,'last');
+                        TES_OP_y = find([Gset.Tc] == eval(['obj.TES' StrRange{k} '.Tc']),1,'last');
                         
                         if isfield(fig,'subplots')
                             h = fig.subplots;
@@ -3115,7 +3147,7 @@ classdef TES_Struct
                             set(h(j),'LineWidth',2,'FontSize',11,'FontWeight','bold')
                             
                             try
-                                eval(['plot(h(j),Gset(TES_OP_y).rp,Gset(TES_OP_y).' StrField{j} ',''.-'','...
+                                eval(['plot(h(j),Gset(TES_OP_y).rp,Gset(TES_OP_y).' StrField{j} '*' StrMultiplier{j} ',''.-'','...
                                     '''Color'',''g'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'','...
                                     '''LineWidth'',LS,''Marker'',''hexagram'',''MarkerSize'',2*MS,''DisplayName'',''Operation Point'');']);
                             catch
@@ -3258,6 +3290,24 @@ classdef TES_Struct
                     ActXWord.Selection.TypeParagraph;
                 catch
                 end
+                
+            end
+            if obj.Report.RTs
+                fig.hObject = figure;
+                obj.plotRTs(fig);
+                
+                TextString = 'RTs Figure';
+                ActXWord.Selection.TypeText(TextString);
+                ActXWord.Selection.TypeParagraph; %enter
+                ActXWord.Selection.TypeParagraph;
+                
+                print(fig.hObject,'-dmeta');
+                invoke(ActXWord.Selection,'Paste');
+                close(fig.hObject);
+                pause(0.3)
+                clear fig;
+                ActXWord.Selection.TypeParagraph;
+                ActXWord.Selection.TypeParagraph;                                
                 
             end
             

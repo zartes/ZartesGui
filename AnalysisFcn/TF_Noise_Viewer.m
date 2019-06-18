@@ -61,6 +61,8 @@ set(handles.figure1,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
+handles.VersionStr = 'ZarTES v2.0';
+set(handles.figure1,'Name',handles.VersionStr);
 % Updating the popup menu
 
 
@@ -86,7 +88,7 @@ if ~isempty(Tbaths{1})||~isempty(Tbaths{2})
     handles.TBath_ind = 1;
     set(handles.TBath_popup,'String',char(Str),'Value',handles.TBath_ind);
 else
-    warndlg('First use FitZset method!','ZarTES v2.1');
+    warndlg('First use FitZset method!','ZarTES v2.0');
     delete(handles.figure1);
     return;
 end
@@ -99,7 +101,7 @@ catch
     Ok = 0;
 end
 if ~Ok
-    warndlg('First use FitZset method!','ZarTES v2.1');
+    warndlg('First use FitZset method!','ZarTES v2.0');
     delete(handles.figure1);
     return;
 end

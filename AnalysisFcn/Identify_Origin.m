@@ -13,18 +13,33 @@ if evnt.Button == 3
     N_meas = Data{2};
     P_Rango = Data{3};
     Circuit = Data{4};
+    try
+        param = Data{5};
+        Action = Data{6};
+    catch
+        param = [];
+    end
+    
     % En la gráfica los datos están ordenados de menor a mayor
     [XData, jj] = sort([P(N_meas).p.rp]);
     x_click = evnt.IntersectionPoint(1);
     [val,ind] = min((abs(XData-x_click)));
     ind_orig = ind;
-    
     hps = findobj(src.Parent.Parent,'Type','Axes');
-    StrParam = {'bi';'ai';'taueff*1e6';'C*1e15'};
-    for i = 1:length(hps)
-        hp(i) = plot(hps(i),XData(ind_orig),eval(['P(N_meas).p(jj(ind_orig)).' StrParam{i}]),'.',...
-            'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'markersize',15);
-        set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+    if isempty(param)
+%         hps = findobj(src.Parent.Parent,'Type','Axes');
+        StrParam = {'bi';'ai';'taueff*1e6';'C*1e15'};
+        for i = 1:length(hps)
+            hp(i) = plot(hps(i),XData(ind_orig),eval(['P(N_meas).p(jj(ind_orig)).' StrParam{i}]),'.',...
+                'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'markersize',15);
+            set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        end
+    else
+        for i = 1:length(hps)
+            hp(i) = plot(hps(i),XData(ind_orig),eval(['P(N_meas).p(jj(ind_orig)).' param]),'.',...
+                'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'markersize',15);
+            set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        end
     end
     
     % Identificar el subplot
@@ -40,6 +55,7 @@ if evnt.Button == 3
     data{4} = P(N_meas).fNoise{jj(ind_orig)};
     data{5} = P(N_meas).SigNoise{jj(ind_orig)};
     data{6} = Circuit;
+        
     catch
         FileStrLabel = [];
         data = [];
@@ -177,7 +193,13 @@ switch str
         fig.hObject = handles.Analyzer;
         indAxes = findobj('Type','Axes');
         delete(indAxes);
-        handles.Session{handles.TES_ID}.TES.plotABCT(fig);
+        if length(Data{1}) == 6
+            Action = Data{1}{6};
+            eval(['handles.Session{handles.TES_ID}.TES.' Action ';'])
+        else
+            handles.Session{handles.TES_ID}.TES.plotABCT(fig);
+        end
+        
         
     case 'Unfilter'
         handles = guidata(src.Parent.Parent.Parent);

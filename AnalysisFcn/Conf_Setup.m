@@ -142,7 +142,8 @@ switch varargin{1}.Tag
         
         ConfInstrs{1} = DSA_Conf.Noise;
         handles.Options.String = {'Noise Setup'};
-        handles.Options.Value = varargin{2};
+%         handles.Options.Value = varargin{2};
+        handles.Options.Value = 1;
         
         % Noise Conf.
         Srch = strfind(DSA_Conf.Noise,'SF ');
@@ -256,7 +257,8 @@ switch varargin{1}.Tag
         handles.Table.ColumnFormat{4} = 'Logical';
         handles.Table.ColumnFormat{5} = 'Logical';
         handles.Table.ColumnFormat{6} = 'Logical';
-        handles.Table.ColumnEditable = [true true true true true true];
+        handles.Table.ColumnFormat{7} = 'Logical';
+        handles.Table.ColumnEditable = [true true true true true true true];
         for i = 1:length(TESProp)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
                 if eval(['handles.varargin{3}.' TESProp{i}])
@@ -436,7 +438,7 @@ switch handles.varargin{1}.Tag
         handles.varargin{1}.UserData = handles.Table.Data;
     case 'TES_Struct'
         ButtonName = questdlg('Do you want to save these Circuit parameters?', ...
-            'ZarTES v2.1', ...
+            'ZarTES v2.0', ...
             'Save', 'Cancel', 'Save');
         switch ButtonName
             case 'Save'
@@ -558,11 +560,11 @@ switch handles.varargin{1}.Tag
         guidata(hObject,handles);
     case 'AQ_TF_Rn_P_Set'
         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
-            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.1');
+            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
         end
     case 'AQ_TF_Rn_N_Set'
         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
-            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.1');
+            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
         end
 end
 

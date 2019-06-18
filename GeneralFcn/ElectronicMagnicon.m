@@ -182,6 +182,21 @@ classdef ElectronicMagnicon
             end
         end
         
+        function Ireal = Read_Phib(obj)
+            %Función para leer el valor de Phi_b.
+            
+            Ireal = PhysicalMeasurement;
+            Ireal.Value = mag_readLNCSImag(obj);
+            Ireal.Units = 'uA';            
+            [I, out] = mag_readPhib_CH(obj);            
+            if ~strcmp(out, 'OK')
+                disp('Problem detected, check the electronic magnicon connection!');
+                Ireal.Value = NaN;                
+            else
+                Ireal.Value = I;
+            end            
+        end
+        
         function Connect_LNCS(obj)
             % Function to connect LNCS (Low Noise Current Source)
             

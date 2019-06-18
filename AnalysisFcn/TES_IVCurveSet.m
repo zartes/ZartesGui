@@ -94,7 +94,7 @@ classdef TES_IVCurveSet
                 end
                 fileN = file2;
             end
-            h = waitbar(0,'Please wait...','Name','ZarTES v2.1 - Loading IV curves');
+            h = waitbar(0,'Please wait...','Name','ZarTES v2.0 - Loading IV curves');
             pause(0.05);
             iOK = 1;
             
@@ -202,7 +202,7 @@ classdef TES_IVCurveSet
 %                     
 %                     % Revisar las curvas IV y seleccionar aquellas para eliminar del
 %                     % analisis
-%                     waitfor(helpdlg('Before closing this message, please check the IV curves','ZarTES v2.1'));
+%                     waitfor(helpdlg('Before closing this message, please check the IV curves','ZarTES v2.0'));
 %                     obj = get(fig,'UserData');
 %                     %             end
 %                     ax = findobj(fig,'Type','Axes');
@@ -223,7 +223,7 @@ classdef TES_IVCurveSet
                                 j = j+1;
                                 continue;
                             end
-                            if (PN(j) < nanmedian(PN)*0.95)||(PN(j) > nanmedian(PN)*1.05)
+                            if (PN(j) < nanmedian(PN)*0.85)||(PN(j) > nanmedian(PN)*1.15)
                                 obj(i).good = 0;
                                 PN(j) = NaN;
                             end
@@ -501,7 +501,7 @@ classdef TES_IVCurveSet
                     TempLims(2) = str2double(answer{2});
                 end
                 if any(isnan(TempLims))
-                    errordlg('Invalid temperature values!', 'ZarTES v2.1', 'modal');
+                    errordlg('Invalid temperature values!', 'ZarTES v2.0', 'modal');
                     return;
                 end
             end
@@ -510,7 +510,7 @@ classdef TES_IVCurveSet
                 if IVsPath ~= 0
                     IVsPath = [IVsPath filesep];
                 else
-                    errordlg('Invalid Data path name!','ZarTES v2.1','modal');
+                    errordlg('Invalid Data path name!','ZarTES v2.0','modal');
                     return;
                 end
                 obj(1).IVsetPath = IVsPath;
