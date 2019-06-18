@@ -1311,7 +1311,7 @@ else
 end
 % TES_Param (TES)
 %   Si están vacios (plotNKGT)
-if (Session.TES.TESP.Filled && Session.TES.TFS.Filled)||Session.TES.TESN.Filled
+if (Session.TES.TESP.Filled && Session.TES.TFS.Filled)
     StrLabel_On = {'Z(w)-Noise Analysis';'Fit Z(w)-Noise to ElectroThermal Model';'Re-Analyze Loaded TES'};
     for i = 1:length(StrLabel_On)
         h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
