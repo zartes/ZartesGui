@@ -548,6 +548,7 @@ switch src.Label
         semilogx(ax,handles.Session{handles.TES_ID}.TES.TFS.f,...
             imag(handles.Session{handles.TES_ID}.TES.TFS.tf./handles.Session{handles.TES_ID}.TES.TFN.tf),'DisplayName','Experimental Data')
         hold(ax,'on');
+        grid(ax,'on');
         semilogx(ax,handles.Session{handles.TES_ID}.TES.TFS.f,...
             fitLfcn(L,handles.Session{handles.TES_ID}.TES.TFS.f,handles.Session{handles.TES_ID}.TES),'.-r','DisplayName','Fitting Data')        
         

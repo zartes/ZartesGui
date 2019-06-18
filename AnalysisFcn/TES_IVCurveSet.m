@@ -102,9 +102,9 @@ classdef TES_IVCurveSet
                 
             ButtonName = questdlg('IV-alignment method', ...
                 'Choose method for the alignment of IV-Curves', ...
-                'Naive', 'Respect to Normal Curve', 'Naive');
+                'Forced zero-zero', 'Respect to Normal Curve', 'Respect to Normal Curve');
             switch ButtonName
-                case 'Naive'
+                case 'Forced zero-zero'
                     
                 case 'Respect to Normal Curve'
                     hfig = findobj('Tag','IV correction');
@@ -113,12 +113,14 @@ classdef TES_IVCurveSet
                         fig = figure('Tag','IV correction');
                         ax1 = axes('Tag','IV axes');
                         hold(ax1,'on');
+                        grid(ax1,'on');
                     else
                         fig = hfig;
                         ax1 = hax;
+                        grid(ax1,'on');
                     end
                 otherwise
-                    ButtonName = 'Naive';
+                    ButtonName = 'Forced zero-zero';
             end
             
             
@@ -153,7 +155,7 @@ classdef TES_IVCurveSet
                 obj(iOK).Tbath = sscanf(char(regexp(fileN{iOK},'\d+.?\d+mK*','match')),'%fmK')*1e-3;
                 obj(iOK).IVsetPath = path;
                 switch ButtonName
-                    case 'Naive'
+                    case 'Forced zero-zero'
                         obj(iOK).vout = obj(iOK).vout-obj(iOK).vout(end);
                         mN(iOK) = mean(obj(iOK).vout(1:5)./obj(iOK).ibias(1:5));
                         mS(iOK) = nanmean(obj(iOK).vout(end-5:end-1)./obj(iOK).ibias(end-5:end-1));
@@ -190,7 +192,7 @@ classdef TES_IVCurveSet
             end
             
             switch ButtonName
-                case 'Naive'
+                case 'Forced zero-zero'
                     mN = prctile(mN,50);
                     mS = prctile(mS,50);
 %                     mN = nanmedian(mN);
@@ -690,7 +692,7 @@ classdef TES_IVCurveSet
                     end
                     h_ib(j) = plot(h(1),Ibias*1e6,Vout,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
                         'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
-                    grid on,hold on
+                    grid(h(1),'on'),hold(h(1),'on');
                     xlim(h(1),[min(0,sign(Ibias(1))*500) 500]) %%%Podemos controlar apariencia con esto. 300->500
                     xlabel(h(1),'Ibias(\muA)','fontweight','bold');ylabel(h(1),'Vout(V)','fontweight','bold');
                     set(h(1),'fontsize',12,'linewidth',2,'fontweight','bold')
@@ -700,7 +702,7 @@ classdef TES_IVCurveSet
                     end
                     h_ites(j) = plot(h(3),obj(i).vtes*1e6,obj(i).ites*1e6,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
                         'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
-                    grid on,hold on
+                    grid(h(3),'on'),hold(h(3),'on');
                     xlim(h(3),[min(0,sign(Ibias(1))*.5) .5])
                     xlabel(h(3),'V_{TES}(\muV)','fontweight','bold');ylabel(h(3),'Ites(\muA)','fontweight','bold');
                     set(h(3),'fontsize',12,'linewidth',2,'fontweight','bold')
@@ -710,7 +712,7 @@ classdef TES_IVCurveSet
                     end
                     h_ptes(j) = plot(h(2),obj(i).vtes*1e6,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
                         'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
-                    grid on,hold on
+                    grid(h(2),'on'),hold(h(2),'on');
                     xlim(h(2),[min(0,sign(Ibias(1))*1.0) 1.0])%%%Podemos controlar apariencia con esto. 0.5->1.0
                     xlabel(h(2),'V_{TES}(\muV)','fontweight','bold');ylabel(h(2),'Ptes(pW)','fontweight','bold');
                     set(h(2),'fontsize',12,'linewidth',2,'fontweight','bold')
@@ -720,7 +722,7 @@ classdef TES_IVCurveSet
                     end
                     h_rtes(j) = plot(h(4),obj(i).rtes,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
                         'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
-                    grid on,hold on
+                    grid(h(4),'on'),hold(h(4),'on');
                     xlim(h(4),[0 1]), ylim(h(4),[0 20]);
                     xlabel(h(4),'R_{TES}/R_n','fontweight','bold');ylabel(h(4),'Ptes(pW)','fontweight','bold');
                     set(h(4),'fontsize',12,'linewidth',2,'fontweight','bold')

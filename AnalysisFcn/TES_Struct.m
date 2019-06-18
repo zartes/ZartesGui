@@ -488,7 +488,9 @@ classdef TES_Struct
                     ax(axInd(2),2) = subplot(2,2,axInd(2),'Visible','off');
                     title(ax(axInd(1),1),StrTitle{k});
                     hold(ax(axInd(1),1),'on');
-                    hold(ax(axInd(2),2),'on');                    
+                    hold(ax(axInd(2),2),'on');      
+                    grid(ax(axInd(1),1),'on');
+                    grid(ax(axInd(2),2),'on');    
                     
                     IVTESset = eval(['obj.IVset' StrRange{k}]);
                     c = distinguishable_colors(length(IVTESset));
@@ -601,6 +603,7 @@ classdef TES_Struct
                     ax = subplot(1,2,k,'Visible','off');
                     title(ax,StrTitle{k});
                     hold(ax,'on');
+                    grid(ax,'on');
                     IVTESset = eval(['obj.IVset' StrRange{k}]);
                     c = distinguishable_colors(length(eval(['perc' StrRange{k}])));
                     wb = waitbar(0,'Please wait...');
@@ -920,12 +923,14 @@ classdef TES_Struct
                 fig = figure;
                 ax = axes;
                 hold(ax,'on');
+                grid(ax,'on');
             else
                 ax = findobj(fig,'Type','Axes');
                 if isempty(ax)
                     ax = axes;
                 end
                 hold(ax,'on');
+                grid(ax,'on');
             end
                 
             StrRange = {'P';'N'};
@@ -1369,7 +1374,9 @@ classdef TES_Struct
                             ImZmin(jj) = min(imag(1e3*ztes));
                             ylim(ax,[min(-15,min(ImZmin)-1) 1])
                             g(h_i) = plot(ax,1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,...
-                                'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj} ':fit']);hold(ax,'on');
+                                'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj} ':fit']);
+                            hold(ax,'on');
+                            grid(ax,'on');
                             set([h(h_i) g(h_i)],'UserData',[h(h_i) g(h_i)]);
                             catch
                             end
@@ -2320,7 +2327,9 @@ classdef TES_Struct
                         if strcmpi(obj.NoiseOpt,'nep')
                             RESJ = sqrt(2*log(2)./trapz(f,1./totNEP.^2));
                             disp(num2str(RESJ));
-                            semilogx(hs(i),f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19),hold on
+                            semilogx(hs(i),f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19);
+                            hold(hs(i),'on');
+                            grid(hs(i),'on');
                             RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
                             disp(num2str(RESJ2));
                             semilogx(hs(i),fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise(:,1)))))/1.609e-19,'r')
@@ -2596,6 +2605,7 @@ classdef TES_Struct
                         figure(fig);
                         ax = axes;
                         hold(ax,'on');
+                        grid(ax,'on');
                     end
                     for k = 1:2
                         
@@ -2685,6 +2695,7 @@ classdef TES_Struct
                         figure(fig);
                         ax = axes;
                         hold(ax,'on');
+                        grid(ax,'on');
                     end
                     StrRange = {'P';'N'};
                     StrCond = {'Positive';'Negative'};
@@ -2761,11 +2772,13 @@ classdef TES_Struct
                     figure(fig);
                     ax = axes;
                     hold(ax,'on');
+                    grid(ax,'on');
                 else
                     ax = findobj('Type','Axes');
                     if length(ax) > 1
                         ax = axes;
                         hold(ax,'on');
+                        grid(ax,'on');
                     end
                 end
                 StrRange = {'P';'N'};
@@ -2835,12 +2848,14 @@ classdef TES_Struct
                     try
                         h(i) = plot(ax,obj.IC.B{i},obj.IC.p{i},'DisplayName', [num2str(obj.IC.Tbath{i}*1e3,'%1.1f') 'mK Ibias Positive']);
                         hold(ax,'on');
+                        grid(ax,'on');
                     end
                 end
                 for i = 1:length(obj.IC.B)
                     try
                         hn(i) = plot(ax,obj.IC.B{i},obj.IC.n{i},'DisplayName', [num2str(obj.IC.Tbath{i}*1e3,'%1.1f') 'mK Ibias Negative']);
                         hold(ax,'on');
+                        grid(ax,'on');
                     end
                 end
                 xlabel(ax,'Field (\muA)','FontSize',11,'FontWeight','bold');
@@ -2861,6 +2876,7 @@ classdef TES_Struct
                     try
                         h(i) = plot(ax,obj.FieldScan.B{i},obj.FieldScan.Vout{i});
                         hold(ax,'on');
+                        grid(ax,'on');
                     end
                     try
                         set(h(i),'DisplayName', [num2str(obj.FieldScan.Tbath{i}*1e3,'%1.1f') 'mK Ibias ' num2str(obj.FieldScan.Ibias{i}) 'uA']);
@@ -3018,10 +3034,12 @@ classdef TES_Struct
                     if Npoints > 1
                         ax = subplot(1,2,k); 
                         hold(ax,'on');
+                        grid(ax,'on');
                         for i = 1:Npoints
                             plot(ax,Gset(i).Tbath,Gset(i).Paux_fit,'LineStyle','-','Color',...
                                 c(i,:),'LineWidth',1);
                             hold(ax,'on')
+                            grid(ax,'on');
                             
                             plot(ax,Gset(i).Tbath,Gset(i).Paux,'Marker','o','MarkerFaceColor',...
                                 c(i,:),'MarkerEdgeColor',c(i,:),'DisplayName',['Rn(%): ' num2str(Gset(i).rp)]);
@@ -3039,6 +3057,8 @@ classdef TES_Struct
                         ax(axInd(2),2) = subplot(2,2,axInd(2),'Visible','on');                        
                         hold(ax(axInd(1),1),'on');
                         hold(ax(axInd(2),2),'on');
+                        grid(ax(axInd(1),1),'on');
+                        grid(ax(axInd(2),2),'on');
                         Gset = eval(['obj.Gset' StrRange{k}]);
                         if isempty(eval(['obj.IVset' StrRange{k} '.ibias']))
                             continue;
