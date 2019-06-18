@@ -118,6 +118,7 @@ classdef TES_TFS
                 return;
             end
             ax = axes;
+            grid(ax,'on');
             plot(ax,real(obj.tf),imag(obj.tf),'.','color',[0 0.447 0.741],...
                 'markerfacecolor',[0 0.447 0.741],'markersize',15,'DisplayName',obj.file);
             set(ax,'linewidth',2,'fontsize',12,'fontweight','bold');
