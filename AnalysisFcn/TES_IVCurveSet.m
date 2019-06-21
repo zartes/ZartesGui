@@ -68,7 +68,7 @@ classdef TES_IVCurveSet
             ok = 1; % All fields are filled
         end
         
-        function [obj, mN, mS] = ImportFullIV(obj,path,fileN)
+        function [obj, mN, mS, pre_Rf] = ImportFullIV(obj,path,fileN)
             % Function to import I-V curves from files
             
             if ~exist('path','var')
@@ -133,7 +133,16 @@ classdef TES_IVCurveSet
                 catch
                     data = fopen(T{i});
                     continue;
+                end                
+                
+%                 IVset = auxS;
+                ind_i = strfind(fileN{iOK},'mK_Rf');
+                ind_f = strfind(fileN{iOK},'K_down_');
+                if isempty(ind_f)
+                    ind_f = strfind(fileN{iOK},'K_up_');
                 end
+                pre_Rf(i) = str2double(fileN{iOK}(ind_i+5:ind_f-1))*1000;
+                
                 if isstruct(data)
                     data = data.data;
                 end
@@ -189,6 +198,10 @@ classdef TES_IVCurveSet
 %                 plot(ax1,obj(iOK).ibias,obj(iOK).vout);
                 
                 iOK = iOK+1;                                
+            end
+            pre_Rf = unique(pre_Rf);
+            if length(pre_Rf) > 1
+                warndlg('Unconsistency on Rf values, please check it out','ZarTES v2.0');
             end
             
             switch ButtonName
@@ -560,7 +573,8 @@ classdef TES_IVCurveSet
                 % Sortening in ascending mode
                 [Val,Ind] = sort(TempStr); %#ok<ASGLU>
                 eval([upper(StrRange{j}) 'files = ' upper(StrRange{j}) 'files(Ind,:);']);
-                eval(['[obj, mN, mS] = obj.ImportFullIV(''' IVsPath ''',' upper(StrRange{j}) 'files);']);
+                eval(['[obj, mN, mS, Rf] = obj.ImportFullIV(''' IVsPath ''',' upper(StrRange{j}) 'files);']);
+                TESDATA.circuit.Rf = Rf;
                 eval(['TESDATA.TES' upper(StrRange{j}) '.mN = mN;']);
                 eval(['TESDATA.TES' upper(StrRange{j}) '.mS = mS;']);
 %                 eval(['[obj,TESDATA.TES' upper(StrRange{j}) '.mN, TESDATA.TES' upper(StrRange{j}) '.mS] = obj.IVs_Slopes;']);

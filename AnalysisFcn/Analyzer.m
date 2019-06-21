@@ -461,10 +461,13 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES.IVsetN = TES_IVCurveSet;
         handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Constructor(1);
         [IVsetP, TempLims, TESP] = handles.Session{handles.TES_ID}.TES.IVsetP.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.Path);
+        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESP.circuit);
         handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.Update(IVsetP);
         handles.Session{handles.TES_ID}.TES.TESP = handles.Session{handles.TES_ID}.TES.TESP.Update(TESP.TESP);
         
+        
         [IVsetN, TempLims, TESN] = handles.Session{handles.TES_ID}.TES.IVsetN.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath, TempLims);
+        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESN.circuit);
         handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Update(IVsetN);
         handles.Session{handles.TES_ID}.TES.TESN = handles.Session{handles.TES_ID}.TES.TESN.Update(TESN.TESN);
         fig.hObject = handles.Analyzer;

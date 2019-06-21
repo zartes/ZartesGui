@@ -364,7 +364,7 @@ axis(hs,'tight');
 r0 = data{1}.p(handles.Files_Ind).rp;
 Z0 = data{1}.p(handles.Files_Ind).Z0;
 Zinf = data{1}.p(handles.Files_Ind).Zinf;
-title(hs,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'FontSize',12);
+title(hs,strcat(num2str(nearest(r0*100),'%3.0f'),'%Rn'),'FontSize',12);
 % title(hs,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
 if abs(Z0-Zinf) < handles.varargin{1}.Z0_Zinf_Thrs
     set(get(findobj(hs,'type','axes'),'title'),'Color','r');
@@ -470,7 +470,7 @@ set(hs1,'FontSize',11,'FontWeight','bold');
 set(hs1,'LineWidth',2)
 set(hs1,'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-')
 set(hs1,'XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'})
-title(hs1,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'FontSize',12);
+title(hs1,strcat(num2str(nearest(r0*100),'%3.0f'),'%Rn'),'FontSize',12);
 % title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
 %         OP.Z0,OP.Zinf
 %debug
