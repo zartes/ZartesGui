@@ -179,7 +179,7 @@ switch str
         end
         guidata(handles.Analyzer,handles);
         fig.hObject = handles.Analyzer;
-        indAxes = findobj('Type','Axes');
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotABCT(fig);
         
@@ -197,7 +197,7 @@ switch str
         end
         guidata(handles.Analyzer,handles);
         fig.hObject = handles.Analyzer;
-        indAxes = findobj('Type','Axes');
+        indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotABCT(fig);
         
