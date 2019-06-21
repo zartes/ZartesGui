@@ -368,6 +368,13 @@ classdef TES_Struct
                         model.X0 = [1 1 0.1];
                         model.LB = [0 0 0];
                         model.UB = [];
+                    case 'nKdirect'
+                        model.nombre = 'nKdirect';
+                        model.function = @(p,T,Tc)(p(1)*(Tc.^p(2)-T.^p(2))./(p(2).*Tc.^(p(2)-1)));
+                        model.description = 'p(1)=K p(2)=n';
+                        model.X0 = [50 3];
+                        model.LB = [0 2];%%%lower bounds
+                        model.UB = [];%%%upper bounds
                 end
             end
         end
@@ -379,6 +386,7 @@ classdef TES_Struct
             % according to the Ptes-rtes curves.
             if isempty(model)
                 model = obj.BuildPTbModel('GTcdirect');
+%                 model = obj.BuildPTbModel('nKdirect');
 %                 model = 1;
             end
             if isempty(fig)
@@ -701,6 +709,7 @@ classdef TES_Struct
                             end
                             opts = optimset('Display','off');
                             fitfun = @(x,y)obj.fitP(x,y,model);
+%                             fitfun = @(x,y,Tc)obj.fitP(x,y,obj.TESP.Tc,model);
                             [fit,~,aux2,~,~,~,auxJ] = lsqcurvefit(fitfun,X0,XDATA,Paux*1e12,LB,[],opts);
                             ci = nlparci(fit,aux2,'jacobian',auxJ); %%%confidence intervals.
                             
@@ -709,6 +718,8 @@ classdef TES_Struct
                             Gaux(jj) = obj.GetGfromFit(fit_CI',model);%#ok<AGROW,
                             ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,model))./abs(Paux*1e12)))/length(Paux*1e12);
                             R = corrcoef([obj.fitP(fit,XDATA,model)' Paux'*1e12]);
+%                             ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,obj.TESP.Tc,model))./abs(Paux*1e12)))/length(Paux*1e12);
+%                             R = corrcoef([obj.fitP(fit,XDATA,obj.TESP.Tc,model)' Paux'*1e12]);
                             R2 = R(1,2)^2;
                             eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
                             eval(['obj.Gset' StrRange{k} '(jj).n_CI = Gaux(jj).n_CI;']);
@@ -724,6 +735,7 @@ classdef TES_Struct
                             eval(['obj.Gset' StrRange{k} '(jj).Tbath = Tbath;']);
                             eval(['obj.Gset' StrRange{k} '(jj).Paux = Paux*1e12;']);
                             eval(['obj.Gset' StrRange{k} '(jj).Paux_fit = obj.fitP(fit,XDATA,model);']);
+%                             eval(['obj.Gset' StrRange{k} '(jj).Paux_fit = obj.fitP(fit,XDATA,obj.TESP.Tc,model);']);
                             
                             plot(ax,Tbath,obj.fitP(fit,XDATA,model),'LineStyle','-','Color',c(jj,:),'LineWidth',1,'DisplayName',IVTESset(i).file,...
                                 'ButtonDownFcn',{@Identify_Origin_PT},'UserData',{k;jj;i;obj},'Visible','off');
@@ -785,7 +797,12 @@ classdef TES_Struct
                 end
             elseif isstruct(model)
                 f = model.function;
-                P = f(p,T);
+                switch model.nombre
+                    case 'nKdirect'
+                        P = f(p,T,Tc);
+                    otherwise
+                        P = f(p,T);
+                end
             end
         end
         
@@ -914,6 +931,20 @@ classdef TES_Struct
                             ((4*param.Tc^3)*param.B_CI)^2 );  %To be computed
                         param.G0 = param.G;
                         param.G_100 = 2*0.1.*(param.A+2*param.B*0.1.^2);
+                    case 'nKdirect'
+                        param.n = fit(2,1);
+                        param.n_CI = fit(2,2);   
+                        param.K = fit(1,1);
+                        param.K_CI = fit(1,2); 
+                        param.Tc = obj.TESP.Tc;
+                        param.Tc_CI = 0;
+                        param.G = param.n*param.K*param.Tc^(param.n-1);
+                        param.G_CI = sqrt( ((param.K*param.Tc^(param.n - 1) + param.K*param.Tc^(param.n - 1)*param.n*log(param.Tc))*param.n_CI)^2 ...
+                            + ((param.n*param.Tc^(param.n - 1))*param.K_CI)^2 ...
+                            + ((param.n*param.K*param.Tc^(param.n - 2)*(param.n - 1))*param.Tc_CI)^2 );  
+                        param.G0 = param.G;
+                        param.G100 = param.n*param.K*0.1^(param.n-1);
+                        
                 end
             end
         end
@@ -1608,21 +1639,14 @@ classdef TES_Struct
             T0 = eval(['obj.TES' CondStr '.Tc;']); %(K)
             G0 = eval(['obj.TES' CondStr '.G']);  %(W/K)
             
-            IVmeasure.vout = IVmeasure.vout+1000;
+            IVmeasure.vout = IVmeasure.vout+1000;  % Sumo 1000 para que toda la curva IV
+            %sea positiva siempre, que no haya cambios de signo para que los splines no devuelvan valores extraños
+            % Luego se restan los 1000.
             [iaux,ii] = unique(IVmeasure.ibias,'stable');
             vaux = IVmeasure.vout(ii);
             [m,i3] = min(diff(vaux)./diff(iaux)); %#ok<ASGLU>
             
-            %%%% Modificado por Juan %%%%%
-            
-%             CompStr = {'>';'';'<'};
-%             if eval(['Ib' CompStr{median(sign(iaux))+2} 'iaux(1:i3)'])
-%                 P = polyfit(iaux(i3+1:end),vaux(i3+1:end),1);
-%                 Vout = polyval(P,Ib);
-%             else
-                Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
-%             end
-%             Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
+            Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
             IVaux.ibias = Ib;
             IVaux.vout = Vout-1000;
             IVaux.Tbath = IVmeasure.Tbath;
