@@ -233,7 +233,11 @@ switch varargin{1}.Tag
         handles.Table.ColumnFormat{4} = 'Logical';
         handles.Table.ColumnFormat{5} = {'\HP_noise*','\PXI_noise*'};
         handles.Table.ColumnFormat{6} = {'irwin','wouter'};
-        handles.Table.ColumnEditable = [true true true true true true];
+        handles.Table.ColumnFormat{7} = 'numeric';
+        handles.Table.ColumnFormat{8} = 'numeric';
+        handles.Table.ColumnFormat{9} = 'numeric';
+        handles.Table.ColumnEditable = [true true true true true true true true true];
+        
         for i = 1:length(TESProp)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
                 if eval(['handles.varargin{3}.' TESProp{i}])

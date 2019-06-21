@@ -88,7 +88,7 @@ if ~isempty(Tbaths{1})||~isempty(Tbaths{2})
     handles.TBath_ind = 1;
     set(handles.TBath_popup,'String',char(Str),'Value',handles.TBath_ind);
 else
-    warndlg('First use FitZset method!','ZarTES v2.0');
+    warndlg('First use FitZset method!',handles.VersionStr);
     delete(handles.figure1);
     return;
 end
@@ -101,7 +101,7 @@ catch
     Ok = 0;
 end
 if ~Ok
-    warndlg('First use FitZset method!','ZarTES v2.0');
+    warndlg('First use FitZset method!',handles.VersionStr);
     delete(handles.figure1);
     return;
 end
@@ -366,8 +366,7 @@ Z0 = data{1}.p(handles.Files_Ind).Z0;
 Zinf = data{1}.p(handles.Files_Ind).Zinf;
 title(hs,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'FontSize',12);
 % title(hs,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
-if abs(Z0-Zinf) < 1.5e-3
-% if abs(OP.Z0-OP.Zinf) < 1.5e-3
+if abs(Z0-Zinf) < handles.varargin{1}.Z0_Zinf_Thrs
     set(get(findobj(hs,'type','axes'),'title'),'Color','r');
 end
 hold(hs,'off');
@@ -402,7 +401,7 @@ if handles.varargin{1}.NoiseOpt.Mjo == 1
 else
     M = 0;
 end
-f = logspace(0,6,1000);
+f = logspace(0,5,1000);
 % auxnoise = obj.noisesim(OP,M,f);
 auxnoise = handles.varargin{1}.noisesim(OP,M,f,StrCond);
 
@@ -410,26 +409,26 @@ switch handles.varargin{1}.NoiseOpt.tipo
     case 'current'
         
         loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r','DisplayName','Experimental Noise'); hold(hs1,'on');grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},20),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},handles.varargin{1}.NoiseOpt.MedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         
         if handles.varargin{1}.NoiseOpt.Mph == 0
             totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
         else
             Mexph = OP.Mph;
-            totnoise = sqrt((auxnoise.ph*(1+Mexph^2)).^2+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+            totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
         end
         
         if ~handles.varargin{1}.NoiseOpt.boolcomponents
             loglog(hs1,f,totnoise*1e12,'b','DisplayName','Total Simulation Noise');
             h = findobj(hs1,'Color','b');
         else
-            loglog(hs1,f,auxnoise.jo*1e12,'DisplayName','Jhonson');
+            loglog(hs1,f,auxnoise.jo*1e12,'DisplayName','Johnson');
             loglog(hs1,f,auxnoise.ph*1e12,'DisplayName','Phonon');
             loglog(hs1,f,auxnoise.sh*1e12,'DisplayName','Shunt');
             loglog(hs1,f,auxnoise.squidarray*1e12,'DisplayName','Squid');
             loglog(hs1,f,totnoise*1e12,'DisplayName','Total');
 %             
-%             legend(hs1,'Experimental Noise','Exp Filtered Noise','Jhonson','Phonon','Shunt','Squid','Total');            
+%             legend(hs1,'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Squid','Total');            
 %             h = findobj(hs1,'DisplayName','Total');
         end
         ylabel(hs1,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold')
@@ -440,7 +439,7 @@ switch handles.varargin{1}.NoiseOpt.tipo
         NEP = real(sqrt(((SigNoise{handles.Files_Ind}*1e-12).^2-auxnoise.squid.^2))./sIaux);
         
         loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise'),hold(hs1,'on'),grid(hs1,'on'),
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,20),'.-k','DisplayName','Exp Filtered Noise'),hold(hs1,'on'),grid(hs1,'on'),
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,handles.varargin{1}.NoiseOpt.MedFilt),'.-k','DisplayName','Exp Filtered Noise'),hold(hs1,'on'),grid(hs1,'on'),
         if handles.varargin{1}.NoiseOpt.Mph == 0
             totNEP = auxnoise.NEP;
         else
@@ -450,12 +449,12 @@ switch handles.varargin{1}.NoiseOpt.tipo
             loglog(hs1,f,totNEP*1e18,'b','DisplayName','Total Simulation Noise');hold(hs1,'on');grid(hs1,'on');
             h = findobj(hs1,'Color','b');
         else
-            loglog(hs1,f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Jhonson');
+            loglog(hs1,f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson');
             loglog(hs1,f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon');
             loglog(hs1,f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt');
             loglog(hs1,f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid');
             loglog(hs1,f,totNEP*1e18,'DisplayName','Total');
-%             legend(hs1,'Experimental Noise','Exp Filtered Noise','Jhonson','Phonon','Shunt','Squid','Total');
+%             legend(hs1,'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Squid','Total');
 %             legend(hs1,'off');
 %             h = findobj(hs1,'DisplayName','Total');
         end
@@ -475,7 +474,7 @@ title(hs1,strcat(num2str(nearest(r0*100),'%3.2f'),'%Rn'),'FontSize',12);
 % title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
 %         OP.Z0,OP.Zinf
 %debug
-if abs(OP.Z0-OP.Zinf) < 1.5e-3
+if abs(OP.Z0-OP.Zinf) < handles.varargin{1}.Z0_Zinf_Thrs
     set(get(findobj(hs1,'type','axes'),'title'),'Color','r');
 end
 hold(hs1,'off');

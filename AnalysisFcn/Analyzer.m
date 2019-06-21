@@ -628,9 +628,9 @@ switch src.Label
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotABCT(fig);
     case 'Plot Z(w) vs %Rn'
-        fig.hObject = handles.Analyzer;
-        indAxes = findobj(fig.hObject,'Type','Axes');
-        delete(indAxes);
+%         fig.hObject = handles.Analyzer;
+%         indAxes = findobj(fig.hObject,'Type','Axes');
+%         delete(indAxes);
         str = cellstr(num2str(unique([[handles.Session{handles.TES_ID}.TES.PP.Tbath] ...
             [handles.Session{handles.TES_ID}.TES.PN.Tbath]])'));
         [s,~] = listdlg('PromptString','Select Tbath value/s:',...
@@ -656,9 +656,9 @@ switch src.Label
         end % switch
         
     case 'Plot Noise vs %Rn'
-        fig.hObject = handles.Analyzer;
-        indAxes = findobj(fig.hObject,'Type','Axes');
-        delete(indAxes);
+%         fig.hObject = handles.Analyzer;
+%         indAxes = findobj(fig.hObject,'Type','Axes');
+%         delete(indAxes);
         str = cellstr(num2str(unique([[handles.Session{handles.TES_ID}.TES.PP.Tbath] ...
             [handles.Session{handles.TES_ID}.TES.PN.Tbath]])'));
         [s,~] = listdlg('PromptString','Select Tbath value/s:',...
@@ -1443,7 +1443,7 @@ switch eventdata.Source.SelectionType
 end
         
 function SaveGraph(src,evnt)
-ha = findobj(src.UserData.Parent,'Type','Axes');
+ha = findobj(src.UserData,'Type','Axes');
    
 fg = figure;
 copyobj(ha,fg);

@@ -9,6 +9,9 @@ classdef TES_Noise
         Mph = 0;                        % Phonon noise 0,1
         NoiseBaseName = '\HP_noise*';   % \HP_noise*, \PXI_noise*
         NoiseModel = 'irwin';           % irwin, wouter
+        LowFreq = 1e2;
+        HighFreq = 10e4;
+        MedFilt = 40;
     end
     
     methods
