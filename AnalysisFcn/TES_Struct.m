@@ -2668,9 +2668,12 @@ classdef TES_Struct
                                 end
                                 if strcmp(param,'C')||strcmp(param,'C_CI')
                                     Ylabel = 'C(fJ/K)';
+                                    eval(['val' StrRange{k} '(i,:) = val' StrRange{k} '(i,:)*1e15;']);
+                                    eval(['val' StrRange{k} '_CI(i,:) = val' StrRange{k} '_CI(i,:)*1e15;']);
                                 end
                             elseif strcmp(param,'taueff')||strcmp(param,'taueff_CI')
                                 eval(['val' StrRange{k} '(i,:) = val' StrRange{k} '(i,:)*1e6;']);
+                                eval(['val' StrRange{k} '_CI(i,:) = val' StrRange{k} '_CI(i,:)*1e6;']);
                                 Ylabel = '\tau_{eff}(\mus)';
                             elseif strcmp(param,'bi')||strcmp(param,'bi_CI')
                                 Ylabel = '\beta_i';
@@ -2760,9 +2763,12 @@ classdef TES_Struct
                                 end
                                 if strcmp(param,'C')||strcmp(param,'C_CI')
                                     Ylabel = 'C(fJ/K)';
+                                    eval(['val' StrRange{k} '{i} = val' StrRange{k} '{i}*1e15;'])
+                                    eval(['val' StrRange{k} '_CI{i} = val' StrRange{k} '_CI{i}*1e15;'])
                                 end
                             elseif strcmp(param,'taueff')||strcmp(param,'taueff_CI')
                                 eval(['val' StrRange{k} '{i} = val' StrRange{k} '{i}*1e6;']);
+                                eval(['val' StrRange{k} '{i}_CI = val' StrRange{k} '_CI{i}*1e6;']);
                                 Ylabel = '\tau_{eff}(\mus)';
                             elseif strcmp(param,'bi')||strcmp(param,'bi_CI')
                                 Ylabel = '\beta_i';
@@ -2843,9 +2849,12 @@ classdef TES_Struct
                             end
                             if strcmp(param1,'C')||strcmp(param1,'C_CI')
                                 Xlabel = 'C(fJ/K)';
+                                eval(['val' StrRange{k} '1{i} = val' StrRange{k} '1{i}*1e15;'])
+                                eval(['val' StrRange{k} '1{i}_CI = val' StrRange{k} '1{i}_CI*1e15;']);
                             end
                         elseif strcmp(param1,'taueff')||strcmp(param1,'taueff_CI')
                             eval(['val' StrRange{k} '1{i} = val' StrRange{k} '1{i}*1e6;']);
+                            eval(['val' StrRange{k} '1_CI{i} = val' StrRange{k} '1{i}_CI*1e6;']);
                             Xlabel = '\tau_{eff}(\mus)';
                         elseif strcmp(param1,'bi')||strcmp(param1,'bi_CI')
                             Xlabel = '\beta_i';
@@ -2860,9 +2869,12 @@ classdef TES_Struct
                             end
                             if strcmp(param2,'C')||strcmp(param2,'C_CI')
                                 Ylabel = 'C(fJ/K)';
+                                eval(['val' StrRange{k} '2{i} = val' StrRange{k} '2{i}*1e15;'])
+                                eval(['val' StrRange{k} '2{i} = val' StrRange{k} '2_CI{i}*1e15;']);
                             end
                         elseif strcmp(param2,'taueff')||strcmp(param2,'taueff_CI')
                             eval(['val' StrRange{k} '2{i} = val' StrRange{k} '2{i}*1e6;']);
+                            eval(['val' StrRange{k} '2{i} = val' StrRange{k} '2_CI{i}*1e6;']);
                             Ylabel = '\tau_{eff}(\mus)';
                         elseif strcmp(param2,'bi')||strcmp(param2,'bi_CI')
                             Ylabel = '\beta_i';
