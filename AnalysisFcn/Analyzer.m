@@ -934,7 +934,7 @@ switch src.Label
                     if isempty(s)
                         return;
                     end
-                    Tbath = str2double(str(s))';
+                    Tbath_ref = str2double(str(s))';
                     Rn = [];                   
                     
 %                     handles.Session{handles.TES_ID}.TES.PlotTESData(data.param1,[],Tbath,handles.Analyzer);
@@ -943,6 +943,9 @@ switch src.Label
                     Lines_old = [];
                     j = 1;
                     for i = s1
+                        TbathNums = unique([[handles.Session{i}.TES.PP.Tbath] ...
+                            [handles.Session{i}.TES.PN.Tbath]]);
+                        Tbath = intersect(TbathNums,Tbath_ref);
                         SessionName = handles.Session{i}.Tag;
                         SessionName(SessionName == '_') = ' ';
                         handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);

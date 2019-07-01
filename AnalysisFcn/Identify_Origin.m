@@ -21,7 +21,9 @@ if evnt.Button == 3
     end
     
     % En la gráfica los datos están ordenados de menor a mayor
-    [XData, jj] = sort([P(N_meas).p.rp]);
+%     [XData, jj] = sort([P(N_meas).p.rp]);
+    XData = [P(N_meas).p.rp];
+    jj = 1:length(XData);
     x_click = evnt.IntersectionPoint(1);
     [val,ind] = min((abs(XData-x_click)));
     ind_orig = ind;
@@ -36,7 +38,14 @@ if evnt.Button == 3
         end
     else
         for i = 1:length(hps)
-            hp(i) = plot(hps(i),XData(ind_orig),eval(['P(N_meas).p(jj(ind_orig)).' param]),'.',...
+            if strcmp(param,'C')||strcmp(param,'C_CI')
+                multStr = '1e15';
+            elseif strcmp(param,'taueff')||strcmp(param,'taueff_CI')
+                multStr = '1e6';
+            else 
+                multStr = '1';
+            end
+            hp(i) = plot(hps(i),XData(ind_orig),eval(['P(N_meas).p(jj(ind_orig)).' param '*' multStr]),'.',...
                 'MarkerFaceColor',[1 0 0],'MarkerEdgeColor',[1 0 0],'markersize',15);
             set(get(get(hp(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
         end
