@@ -570,8 +570,9 @@ classdef TES_Struct
                     fit_CI = [fit; CI];
                     Gaux = obj.GetGfromFit(fit_CI',model);
                     ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,model))./abs(Paux*1e12)))/length(Paux*1e12);
-                    R = corrcoef([obj.fitP(fit,XDATA,model)' Paux'*1e12]);
-                    R2 = R(1,2)^2;
+                    R2 = goodnessOfFit([obj.fitP(fit,XDATA,model)' Paux'*1e12],'NRMSE');
+%                     R = corrcoef([obj.fitP(fit,XDATA,model)' Paux'*1e12]);
+%                     R2 = R(1,2)^2;
                     eval(['obj.Gset' StrRange{k} '.rp = perc;']);
                     eval(['obj.Gset' StrRange{k} '.model = model.description;']);
                     eval(['obj.Gset' StrRange{k} '.n = Gaux.n;']);
@@ -680,8 +681,9 @@ classdef TES_Struct
                                 fit_CI = [fit; CI];
                                 Gaux(jj) = obj.GetGfromFit(fit_CI,model);%#ok<AGROW,NASGU> %%antes se pasaba fitaux.
                                 ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,model))./abs(Paux*1e12)))/length(Paux*1e12);
-                                R = corrcoef([obj.fitP(fit,XDATA,model)' Paux'*1e12]);
-                                R2 = R(1,2)^2;
+                                
+                                R2 = goodnessOfFit([obj.fitP(fit,XDATA,model)' Paux'*1e12],'NRMSE');
+                                
                                 eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
                                 eval(['obj.Gset' StrRange{k} '(jj).n_CI = Gaux(jj).n_CI;']);
                                 eval(['obj.Gset' StrRange{k} '(jj).K = Gaux(jj).K*1e-12;']);
@@ -717,10 +719,11 @@ classdef TES_Struct
                             fit_CI = [fit; CI];
                             Gaux(jj) = obj.GetGfromFit(fit_CI',model);%#ok<AGROW,
                             ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,model))./abs(Paux*1e12)))/length(Paux*1e12);
-                            R = corrcoef([obj.fitP(fit,XDATA,model)' Paux'*1e12]);
+                            R2 = goodnessOfFit([obj.fitP(fit,XDATA,model)' Paux'*1e12],'NRMSE');
 %                             ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,obj.TESP.Tc,model))./abs(Paux*1e12)))/length(Paux*1e12);
 %                             R = corrcoef([obj.fitP(fit,XDATA,obj.TESP.Tc,model)' Paux'*1e12]);
-                            R2 = R(1,2)^2;
+%                             R2 = R(1,2)^2;
+                            
                             eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
                             eval(['obj.Gset' StrRange{k} '(jj).n_CI = Gaux(jj).n_CI;']);
                             eval(['obj.Gset' StrRange{k} '(jj).K = Gaux(jj).K*1e-12;']);
@@ -1551,8 +1554,8 @@ classdef TES_Struct
                     break;
                 end
             end
-            fS = obj.TFS.f;
-            fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
+%             fS = obj.TFS.f;
+%             fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
             try
                 eval(['[~,Tind] = find(abs([obj.P' CondStr '.Tbath]*1e3-Tbath)==0);']);
                 eval(['ztes = obj.P' CondStr '(Tind).ztes{IndFile};'])
@@ -1562,21 +1565,51 @@ classdef TES_Struct
                 end
             catch
                 data = importdata(FileName);
-                IndFs = find(data(:,2) ~= 0);
-                data = data(data(IndFs,1) >= FreqRange(1) & data(IndFs,1) <= FreqRange(2),:);
+                IndDist = find(data(:,2) ~= 0);
+                data = data(IndDist,:);                
                 tf = data(:,2)+1i*data(:,3);
 %                 tf = data(IndFs,2)+1i*data(IndFs,3);
-                Rth = obj.circuit.Rsh+eval(['obj.TES' CondStr '.Rpar'])+2*pi*obj.circuit.L*data(:,1)*1i;
-                fS = obj.TFS.f(IndFs);
+                Rth = obj.circuit.Rsh+eval(['obj.TES' CondStr '.Rpar'])+2*pi*obj.circuit.L*data(:,1)*1i;                
+                fS = obj.TFS.f(IndDist);                                
+                ztes = (obj.TFS.tf(IndDist)./tf-1).*Rth;
+                
+                ztes = ztes(fS >= FreqRange(1) & fS <= FreqRange(2));
                 fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
-                ztes = (obj.TFS.tf(fS >= FreqRange(1) & fS <= FreqRange(2))./tf-1).*Rth;
+                
+                
             end
             
+            %%
+%             Zreal = medfilt1(real(ztes),40);
+%             Zimag = medfilt1(imag(ztes),40);
+%             ind = find((diff(Zimag) == 0));
+%             Zreal(ind) = [];
+%             Zimag(ind) = [];
+%             
+% %             figure,hold on,plot(real(ztes),imag(ztes))
+% %             plot(Zreal,Zimag,'r');            
+%             
+%             ZiniI = Zimag(1:50);
+%             ZiniR = Zreal(1:50);
+%             [val,indZ0imag] = min(abs(ZiniI));
+%             Z0 = median(ZiniR(indZ0imag));
+%             
+%             ZfinI = Zimag(end-200:end);
+%             ZfinR = Zreal(end-200:end);
+%             [val,indZinfimag] = min(abs(ZfinI));
+%             Zinf = median(ZfinR(indZinfimag));
+%             
+%             [~,indfS] = min(Zimag);
+%             tau0 = 1/(2*pi*fS(indfS));
+%             
+%             p0 = [Zinf Z0 tau0];    
+%             
+            %%
             Zinf = real(ztes(end));
             Z0 = real(ztes(1));
             [~,indfS] = min(imag(ztes));
             tau0 = 1/(2*pi*fS(indfS));
-            opts = optimset('Display','off');
+            opts = optimset('Display','off','Algorithm','levenberg-marquardt');
             switch obj.TFOpt.ElecThermModel
                 case 'One Single Thermal Block'
                     p0 = [Zinf Z0 tau0];          % 3 parameters
@@ -1603,7 +1636,17 @@ classdef TES_Struct
             param = obj.GetModelParameters(p_CI,IV,Ib,CondStr);
             fZ = obj.fitZ(p,fS);
             ERP = sum(abs(abs(ztes-fZ(:,1)+1i*fZ(:,2))./abs(ztes)))/length(ztes);
-            R2 = abs((corr(fZ(:,1)+1i*fZ(:,2),ztes)).^2);
+%             R = corrcoef(fZ(:,1)+1i*fZ(:,2),ztes);
+%             R2 = abs(R(1,2))^2
+%             R2 = abs((corr(fZ(:,1)+1i*fZ(:,2),ztes)).^2);
+            R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),ztes,'NRMSE');
+            fZS = obj.fitZ(p+p_CI(2,:),fS);
+            fZI = obj.fitZ(p-p_CI(2,:),fS);
+            figure,plot(real(ztes),imag(ztes))
+            hold on, plot(fZ(:,1),fZ(:,2),'r')
+            plot(fZS(:,1),fZS(:,2),'g')
+            plot(fZI(:,1),fZI(:,2),'b')
+            
         end
         
         function fz = fitZ(obj,p,f)
