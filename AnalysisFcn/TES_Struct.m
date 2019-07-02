@@ -570,7 +570,7 @@ classdef TES_Struct
                     fit_CI = [fit; CI];
                     Gaux = obj.GetGfromFit(fit_CI',model);
                     ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,model))./abs(Paux*1e12)))/length(Paux*1e12);
-                    R2 = goodnessOfFit([obj.fitP(fit,XDATA,model)' Paux'*1e12],'NRMSE');
+                    R2 = goodnessOfFit(obj.fitP(fit,XDATA,model)', Paux'*1e12,'NRMSE');
 %                     R = corrcoef([obj.fitP(fit,XDATA,model)' Paux'*1e12]);
 %                     R2 = R(1,2)^2;
                     eval(['obj.Gset' StrRange{k} '.rp = perc;']);
@@ -682,7 +682,7 @@ classdef TES_Struct
                                 Gaux(jj) = obj.GetGfromFit(fit_CI,model);%#ok<AGROW,NASGU> %%antes se pasaba fitaux.
                                 ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,model))./abs(Paux*1e12)))/length(Paux*1e12);
                                 
-                                R2 = goodnessOfFit([obj.fitP(fit,XDATA,model)' Paux'*1e12],'NRMSE');
+                                R2 = goodnessOfFit(obj.fitP(fit,XDATA,model)', Paux'*1e12,'NRMSE');
                                 
                                 eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
                                 eval(['obj.Gset' StrRange{k} '(jj).n_CI = Gaux(jj).n_CI;']);
@@ -719,7 +719,7 @@ classdef TES_Struct
                             fit_CI = [fit; CI];
                             Gaux(jj) = obj.GetGfromFit(fit_CI',model);%#ok<AGROW,
                             ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,model))./abs(Paux*1e12)))/length(Paux*1e12);
-                            R2 = goodnessOfFit([obj.fitP(fit,XDATA,model)' Paux'*1e12],'NRMSE');
+                            R2 = goodnessOfFit(obj.fitP(fit,XDATA,model)', Paux'*1e12,'NRMSE');
 %                             ERP = sum(abs(abs(Paux*1e12-obj.fitP(fit,XDATA,obj.TESP.Tc,model))./abs(Paux*1e12)))/length(Paux*1e12);
 %                             R = corrcoef([obj.fitP(fit,XDATA,obj.TESP.Tc,model)' Paux'*1e12]);
 %                             R2 = R(1,2)^2;
@@ -1175,7 +1175,7 @@ classdef TES_Struct
                         obj.TFOpt.TFBaseName = '\PXI_TF*';
                         obj.NoiseOpt.NoiseBaseName = '\PXI_noise*';%%%'\HP*'
                         
-                        if isempty(strfind(obj.TFS.file,'PXI_TF_'))
+                        if (isempty(strfind(obj.TFS.file,'PXI_TF_')))&&(isempty(strfind(obj.TFS.file,'PXI_TFS')))
                             [Path, Name] = fileparts(obj.TFS.file);
                             warndlg('TFS must be a file named PXI_TF_* (PXI card)','ZarTES v2.0');
                             obj.TFS = obj.TFS.importTF([Path filesep]);
@@ -1183,7 +1183,7 @@ classdef TES_Struct
                     case 'HP'
                         obj.TFOpt.TFBaseName = '\TF*';
                         obj.NoiseOpt.NoiseBaseName = '\HP_noise*';%%%'\HP*'
-                        if isempty(strfind(obj.TFS.file,'\TF_'))
+                        if (isempty(strfind(obj.TFS.file,'\TF_')))&&(isempty(strfind(obj.TFS.file,'\TFS')))
                             [Path, Name] = fileparts(obj.TFS.file);
                             warndlg('TFS must be a file named TF_* (HP)','ZarTES v2.0');
                             obj.TFS = obj.TFS.importTF([Path filesep]);
@@ -1642,10 +1642,10 @@ classdef TES_Struct
             R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),ztes,'NRMSE');
             fZS = obj.fitZ(p+p_CI(2,:),fS);
             fZI = obj.fitZ(p-p_CI(2,:),fS);
-            figure,plot(real(ztes),imag(ztes))
-            hold on, plot(fZ(:,1),fZ(:,2),'r')
-            plot(fZS(:,1),fZS(:,2),'g')
-            plot(fZI(:,1),fZI(:,2),'b')
+%             figure,plot(real(ztes),imag(ztes))
+%             hold on, plot(fZ(:,1),fZ(:,2),'r')
+%             plot(fZS(:,1),fZS(:,2),'g')
+%             plot(fZI(:,1),fZI(:,2),'b')
             
         end
         
