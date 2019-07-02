@@ -128,6 +128,9 @@ classdef TES_IVCurveSet
                 file_upd = fileN{iOK};
                 file_upd(file_upd == '_') = ' ';
                 waitbar(iOK/length(T),h,file_upd)
+                if isempty(strfind(fileN{iOK},'matlab.txt'))
+                    continue;
+                end
                 try
                     data = importdata(T{i});
                 catch
@@ -281,10 +284,10 @@ classdef TES_IVCurveSet
                             % Primer paso normalizar a Vout(1) iguales misma Rn
                             if strcmp(obj(1).range,'PosIbias')
                                 [valibias,indmax] = max(obj(i).ibias);
-                                indmax1 = find(obj(indEnd).ibias <= valibias, 1 );
+                                [val,indmax1] = min(abs(obj(indEnd).ibias - valibias));
                             else
                                 [valibias,indmax] = min(obj(i).ibias);
-                                indmax1 = find(obj(indEnd).ibias >= valibias, 1 );
+                                [val,indmax1] = min(abs(obj(indEnd).ibias - valibias));
                             end
                             
                             obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indEnd).vout(indmax1));
