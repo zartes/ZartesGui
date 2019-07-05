@@ -6,6 +6,7 @@ classdef TES_TF_Opt
         boolShow = 1;                               % 0,1
         TFBaseName = '\TF*';                        % \TF*, '\PXI_TF*';
         ElecThermModel = 'One Single Thermal Block' % One Single Thermal Block, Two Thermal Blocks
+        R2Thrs = 0.9;
     end
     
     methods

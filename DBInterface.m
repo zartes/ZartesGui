@@ -54,11 +54,15 @@ function DBInterface_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for DBInterface
 handles.output = hObject;
-handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
+handles.DataBasePath = 'C:\Users\usuario\Documents\GitHub\Zartes\';
+% handles.DataBaseName = 'ZarTESDB';
+% handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
 handles.DataBaseName = 'ZarTESDB';
+
 
 handles.conn = database(handles.DataBaseName,'','');
 t = tables(handles.conn,[handles.DataBasePath handles.DataBaseName '.mdb']);
+% t = tables(handles.conn,[handles.DataBasePath 'ZarTESDB.mdb']);
 
 set(handles.figure1,'Name','ZarTES DataBase v1.0');
 
