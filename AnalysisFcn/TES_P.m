@@ -23,33 +23,71 @@ classdef TES_P
     
     methods
         
-        function obj = Constructor(obj)
+        function obj = Constructor(obj,ETModel)            
             % Function to generate the class with default values
             
-            obj.p.rp = [];
-            obj.p.R0 = [];
-            obj.p.Z0Zinf = [];
-            obj.p.Z0R0 = [];
-            obj.p.L0 = [];
-            obj.p.L0_CI = [];
-            obj.p.ai = [];
-            obj.p.ai_CI = [];
-            obj.p.bi = [];
-            obj.p.bi_CI = [];
-            obj.p.tau0 = [];
-            obj.p.tau0_CI = [];
-            obj.p.taueff = [];
-            obj.p.taueff_CI = [];
-            obj.p.C = [];
-            obj.p.C_CI = [];
-            obj.p.Zinf = [];
-            obj.p.Zinf_CI = [];
-            obj.p.Z0 = [];
-            obj.p.Z0_CI = [];
-            obj.p.ExRes = [];
-            obj.p.ThRes = [];
-            obj.p.M = [];
-            obj.p.Mph = [];
+            if nargin == 2
+                switch ETModel.AvailableModels{ETModel.SelectedModel}
+                    case ETModel.AvailableModels{1}
+                        obj.p.rp = [];
+                        obj.p.R0 = [];
+                        obj.p.Z0Zinf = [];
+                        obj.p.Z0R0 = [];
+                        obj.p.L0 = [];
+                        obj.p.L0_CI = [];
+                        obj.p.ai = [];
+                        obj.p.ai_CI = [];
+                        obj.p.bi = [];
+                        obj.p.bi_CI = [];
+                        obj.p.tau0 = [];
+                        obj.p.tau0_CI = [];
+                        obj.p.taueff = [];
+                        obj.p.taueff_CI = [];
+                        obj.p.C = [];
+                        obj.p.C_CI = [];
+                        obj.p.Zinf = [];
+                        obj.p.Zinf_CI = [];
+                        obj.p.Z0 = [];
+                        obj.p.Z0_CI = [];
+                        obj.p.ExRes = [];
+                        obj.p.ThRes = [];
+                        obj.p.M = [];
+                        obj.p.Mph = [];
+                    case ETModel.AvailableModels{2}
+                        
+                    case ETModel.AvailableModels{3}
+                        
+                    case ETModel.AvailableModels{4}
+                        
+                    otherwise
+                end
+            else
+                obj.p.rp = [];
+                    obj.p.R0 = [];
+                    obj.p.Z0Zinf = [];
+                    obj.p.Z0R0 = [];
+                    obj.p.L0 = [];
+                    obj.p.L0_CI = [];
+                    obj.p.ai = [];
+                    obj.p.ai_CI = [];
+                    obj.p.bi = [];
+                    obj.p.bi_CI = [];
+                    obj.p.tau0 = [];
+                    obj.p.tau0_CI = [];
+                    obj.p.taueff = [];
+                    obj.p.taueff_CI = [];
+                    obj.p.C = [];
+                    obj.p.C_CI = [];
+                    obj.p.Zinf = [];
+                    obj.p.Zinf_CI = [];
+                    obj.p.Z0 = [];
+                    obj.p.Z0_CI = [];
+                    obj.p.ExRes = [];
+                    obj.p.ThRes = [];
+                    obj.p.M = [];
+                    obj.p.Mph = [];
+            end
+                    
         end
         
         function obj = Update(obj,data)
