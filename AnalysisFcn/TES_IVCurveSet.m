@@ -160,7 +160,11 @@ classdef TES_IVCurveSet
                 end                                
                 
                 
-                
+                if strfind(fileN{iOK},'_down_p_')
+                    obj(iOK).range = 'PosIbias';
+                else
+                    obj(iOK).range = 'NegIbias';
+                end
                 obj(iOK).ibias = Dibias;
                 obj(iOK).vout = Dvout;
                 obj(iOK).file = fileN{iOK};
@@ -247,7 +251,10 @@ classdef TES_IVCurveSet
                             end
                             j = j+1;
                         else
-                            PN(j) = NaN;
+                            if (PN(j) < nanmedian(PN)*0.85)||(PN(j) > nanmedian(PN)*1.15)
+                                obj(i).good = 0;
+                                PN(j) = NaN;
+                            end
                             j = j+1;
                         end
                     end
@@ -270,39 +277,108 @@ classdef TES_IVCurveSet
                             end
                             j = j+1;
                         else
-                            PS(j) = NaN;
+                            if (PS(j) < nanmedian(PS)*0.95)||(PS(j) > nanmedian(PS)*1.05)
+                                obj(i).good = 0;
+                                PS(j) = NaN;
+                            end
                             j = j+1;
                         end
                     end
                     
-                    indEnd = find(isnan(PS), 1, 'last' );
-                    if isempty(indEnd)
-                        indEnd = length(PS);
+                    % Buscamos la curva IV de estado normal para Positivas
+                    % y Negativas
+                    
+                    jP = 1;
+                    jN = 1;
+                    if strcmp(obj(1).range,'PosIbias')
+                        for i = 1:length(obj)
+                            
+                            TbathP(jP) = obj(i).Tbath;
+                            IndP(jP) = i;
+                            jP = jP+1;
+                        end
+                        [val,ind] = max(TbathP);
+                        if isnan(PS(IndP(ind)))
+                            indPEnd = IndP(ind);
+                        end
+                        obj(indPEnd).vout = obj(indPEnd).vout - obj(indPEnd).vout(end);
+                        [datafit,xcros,ycros,slopeN,slopeS] = obj.IVcorrection(obj(indPEnd).ibias,obj(indPEnd).vout,ax1);
+                        DataFit(indPEnd) = datafit;
+                    else
+                        for i = 1:length(obj)
+                            TbathN(jN) = obj(i).Tbath;
+                            IndN(jN) = i;
+                            jN = jN+1;
+                        end
+                        [val,ind] = max(TbathN);
+                        if isnan(PS(IndN(ind)))
+                            indNEnd = IndN(ind);
+                        end
+                        obj(indNEnd).vout = obj(indNEnd).vout - obj(indNEnd).vout(end);
+                        [datafit,xcros,ycros,slopeN,slopeS] = obj.IVcorrection(obj(indNEnd).ibias,obj(indNEnd).vout,ax1);
+                        DataFit(indNEnd) = datafit;
                     end
+                    
+                    
+                    
+                   
+                    
+%                     indPEnd = IndP(find(isnan(PS(IndP)), 1, 'last' ));
+%                     indNEnd = IndN(find(isnan(PS(IndN)), 1, 'last' ));
+                        
+                    
+                    
+                    
+%                     indEnd = find(isnan(PS), 1, 'last' );
+%                     if isempty(indEnd)
+%                         indEnd = length(PS);
+%                     end
+                    
                     for i = 1:length(obj)
                         if obj(i).good
                             % Primer paso normalizar a Vout(1) iguales misma Rn
-                            if strcmp(obj(1).range,'PosIbias')
+                            if strcmp(obj(i).range,'PosIbias')
                                 [valibias,indmax] = max(obj(i).ibias);
-                                [val,indmax1] = min(abs(obj(indEnd).ibias - valibias));
+                                [val,indmax1] = min(abs(obj(indPEnd).ibias - valibias));
+                                obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indPEnd).vout(indmax1));
+                                [obj(i).ibias, Id] = unique(obj(i).ibias);
+                                obj(i).vout = obj(i).vout(Id);
+                                [~, I] = sort(abs(obj(i).ibias),'descend');
+                                obj(i).ibias = obj(i).ibias(I);
+                                obj(i).vout = obj(i).vout(I);
                             else
                                 [valibias,indmax] = min(obj(i).ibias);
-                                [val,indmax1] = min(abs(obj(indEnd).ibias - valibias));
+                                [val,indmax1] = min(abs(obj(indNEnd).ibias - valibias));
+                                obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indNEnd).vout(indmax1));
+                                [obj(i).ibias, Id] = unique(obj(i).ibias);
+                                obj(i).vout = obj(i).vout(Id);
+                                [~, I] = sort(obj(i).ibias,'ascend');
+                                obj(i).ibias = obj(i).ibias(I);
+                                obj(i).vout = obj(i).vout(I);
                             end
                             
-                            obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indEnd).vout(indmax1));
+%                             if strcmp(obj(1).range,'PosIbias')
+%                                 [valibias,indmax] = max(obj(i).ibias);
+%                                 [val,indmax1] = min(abs(obj(indEnd).ibias - valibias));
+%                             else
+%                                 [valibias,indmax] = min(obj(i).ibias);
+%                                 [val,indmax1] = min(abs(obj(indEnd).ibias - valibias));
+%                             end
                             
-                            [obj(i).ibias, Id] = unique(obj(i).ibias);
-                            obj(i).vout = obj(i).vout(Id);
-                            [~, I] = sort(abs(obj(i).ibias),'descend');
-                            obj(i).ibias = obj(i).ibias(I);
-                            obj(i).vout = obj(i).vout(I);
+                            
+                            
+                            
                             %                             obj(i).ibias = obj(i).ibias - (obj(i).ibias(1)-obj(end).ibias(1));
                             %                 end
                             [Datafit(i),~,~,~,~] = obj.IVcorrection(obj(i).ibias,obj(i).vout,ax1);
+                            
                             if (Datafit(i).PS(1) > nanmedian(PS)*0.95)||(Datafit(i).PS(1) < nanmedian(PS)*1.05)
                                 ind = i;
-                                [val, indmin] = min(abs(Datafit(ind).SLine-DataFit(indEnd).NLine));
+                                if strcmp(obj(1).range,'PosIbias')
+                                [val, indmin] = min(abs(Datafit(ind).SLine-DataFit(indPEnd).NLine));
+                                else
+                                    [val, indmin] = min(abs(Datafit(ind).SLine-DataFit(indNEnd).NLine));
+                                end
                                 Xcros(i) = Datafit(ind).Xdata(indmin);
                                 Ycros(i) = Datafit(ind).SLine(indmin);
                                 obj(i).ibias = obj(i).ibias-Xcros(i);
@@ -310,7 +386,11 @@ classdef TES_IVCurveSet
                                 
                                 [obj(i).ibias, Id] = unique(obj(i).ibias);
                                 obj(i).vout = obj(i).vout(Id);
-                                [~, I] = sort(abs(obj(i).ibias),'descend');   
+                                if strcmp(obj(i).range,'PosIbias')
+                                    [~, I] = sort(abs(obj(i).ibias),'descend');
+                                else
+                                    [~, I] = sort(obj(i).ibias,'ascend');
+                                end
                                 obj(i).ibias = obj(i).ibias(I);
                                 obj(i).vout = obj(i).vout(I);
                                 
@@ -332,9 +412,14 @@ classdef TES_IVCurveSet
                                 obj(i).ibias = obj(i).ibias(I);
                                 obj(i).vout = obj(i).vout(I);
                             end
-                            plot(ax1,obj(i).ibias*1e6,obj(i).vout)
+                            plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            if strcmp(obj(i).range,'NegIbias')
+                                plot(ax1,-obj(i).ibias*1e6,-obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            end
                         end
                     end
+                    
+%                     figure,ax = axes, hold on,for i = 1:length(obj),if obj(i).good,if strcmp(obj(i).range,'PosIbias'),plot(obj(i).ibias,obj(i).vout),else,plot(-obj(i).ibias,-obj(i).vout),end,end,end
                     %             end
                     %             PN = [Datafit.PN];
                     %             PN = PN(1:2:end);
@@ -536,7 +621,7 @@ classdef TES_IVCurveSet
                 IVsPath = DataPath;
                 obj(1).IVsetPath = DataPath;
             end
-            StrRange = {'p';'n'};
+%             StrRange = {'p';'n','*'};
             switch obj(1).range
                 case 'PosIbias'
                     StrRange = {'p'};
@@ -544,6 +629,9 @@ classdef TES_IVCurveSet
                 case 'NegIbias'
                     StrRange = {'n'};
                     IdRange = 1;
+                otherwise
+                    StrRange = {'*'};
+                    IdRange = 1;                    
             end
             
             for j = IdRange

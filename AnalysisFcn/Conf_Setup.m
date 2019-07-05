@@ -203,12 +203,13 @@ switch varargin{1}.Tag
         set(handles.figure1,'Name','TF Visualization Options');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
         handles.Table.Data = {[]};
-        handles.Table.ColumnEditable = [true true true];
+        handles.Table.ColumnEditable = [true true true true];
         TESProp = properties(handles.varargin{3});
         handles.Table.ColumnName = TESProp';
         handles.Table.ColumnFormat{1} = 'Logical';
         handles.Table.ColumnFormat{2} = {'\TF*','\PXI_TF*'};
         handles.Table.ColumnFormat{3} = {'One Single Thermal Block','Two Thermal Blocks'};
+        handles.Table.ColumnFormat{4} = 'numeric';
         for i = 1:length(TESProp)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
                 if eval(['handles.varargin{3}.' TESProp{i}])

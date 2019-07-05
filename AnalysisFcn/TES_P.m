@@ -27,6 +27,9 @@ classdef TES_P
             % Function to generate the class with default values
             
             obj.p.rp = [];
+            obj.p.R0 = [];
+            obj.p.Z0Zinf = [];
+            obj.p.Z0R0 = [];
             obj.p.L0 = [];
             obj.p.L0_CI = [];
             obj.p.ai = [];

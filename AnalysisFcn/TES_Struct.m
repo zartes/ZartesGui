@@ -29,7 +29,7 @@ classdef TES_Struct
         ZwUB = 100000;
         ZwrpLB = 0;
         ZwrpUB = 1;
-        ZwR2Thrs = 0.9;
+%         ZwR2Thrs = 0.9;
         Z0_Zinf_Thrs = 1.5e-3;
         Kb = 1.38e-23;
         Report;
@@ -1376,7 +1376,7 @@ classdef TES_Struct
                         % alpha
                         if param.C < 0 || param.ai < 0
                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
-                        elseif R2 < obj.ZwR2Thrs % 0.6 By default
+                        elseif R2 < obj.TFOpt.R2Thrs % 0.6 By default
                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
                         else
                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 0;']);
@@ -1614,7 +1614,7 @@ classdef TES_Struct
                 case 'One Single Thermal Block'
                     p0 = [Zinf Z0 tau0];          % 3 parameters
                     StrModel = 'One Single Thermal Block';
-                case 'Two Thermal Blocks (Specify which)'
+                case 'Two Thermal Blocks'
                     ca0 = 1e-1;
                     tauA = 1e-6;
                     p0 = [Zinf Z0 tau0 ca0 tauA];%%%p0 for 2 block model.  % 5 parameters
@@ -1640,8 +1640,8 @@ classdef TES_Struct
 %             R2 = abs(R(1,2))^2
 %             R2 = abs((corr(fZ(:,1)+1i*fZ(:,2),ztes)).^2);
             R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),ztes,'NRMSE');
-            fZS = obj.fitZ(p+p_CI(2,:),fS);
-            fZI = obj.fitZ(p-p_CI(2,:),fS);
+%             fZS = obj.fitZ(p+p_CI(2,:),fS);
+%             fZI = obj.fitZ(p-p_CI(2,:),fS);
 %             figure,plot(real(ztes),imag(ztes))
 %             hold on, plot(fZ(:,1),fZ(:,2),'r')
 %             plot(fZS(:,1),fZS(:,2),'g')
@@ -1702,6 +1702,8 @@ classdef TES_Struct
             P0 = V0.*I0;
             R0 = V0/I0;
             
+            param.R0 = R0;
+            
             rp = p(1,:);
             rp_CI = p(2,:);
             rp(1,3) = abs(rp(3));
@@ -1719,6 +1721,9 @@ classdef TES_Struct
                 
                 param.L0 = (param.Z0-param.Zinf)/(param.Z0+R0);
                 param.L0_CI = sqrt((((param.Zinf+R0)/((param.Z0+R0)^2))*param.Z0_CI)^2 + ((-1/(R0 + param.Z0))*param.Zinf_CI)^2 );
+                
+                param.Z0Zinf = (param.Z0-param.Zinf);
+                param.Z0R0 = (param.Z0+R0);
                 
                 param.ai = param.L0*G0*T0/P0;
                 param.ai_CI = (G0*T0/P0)*param.L0_CI;
