@@ -12,6 +12,7 @@ classdef TES_Struct
         GsetN;
         IC;
         FieldScan;
+        ElectrThermalModel;
         TFOpt;
         NoiseOpt;
         PP;
@@ -1230,11 +1231,15 @@ classdef TES_Struct
                 obj.NoiseOpt.NoiseBaseName = opt.NoiseOpt.NoiseBaseName;
                 
                 % By default FreqRange [0 100000]
-                FreqRange = opt.FreqRange; 
+%                 FreqRange = FreqRange; 
                 
                 % By default intermediate results are not shown
                 obj.TFOpt.boolShow = opt.TFOpt.boolShow;
             end
+            
+            obj.ElectrThermalModel = TES_ElectrThermModel;
+            obj.ElectrThermalModel.SelectedModel = 1;
+            obj.ElectrThermalModel = obj.ElectrThermalModel.Constructor;
             
             StrRange = {'P';'N'};
             StrRangeExt = {'Positive Ibias Range';'Negative Ibias Range'};
@@ -1317,7 +1322,7 @@ classdef TES_Struct
                     
                     iOK = iOK+1;
                     eval(['obj.P' StrRange{k1} '(iOK) = TES_P;']);
-                    eval(['obj.P' StrRange{k1} '(iOK) = obj.P' StrRange{k1} '(iOK).Constructor;']);
+                    eval(['obj.P' StrRange{k1} '(iOK) = obj.P' StrRange{k1} '(iOK).Constructor(obj.ElectrThermalModel);']);
                     %%%buscamos los ficheros a analizar en cada directorio.
                     D = [dirs{i} obj.TFOpt.TFBaseName];
                     filesZ = ListInBiasOrder(D);
@@ -1349,7 +1354,7 @@ classdef TES_Struct
                         end
                         thefile = strcat(dirs{i},'\',filesZ{j1});
                         try
-                            [param, ztes, fZ, fS, ERP, R2, CI, aux1, StrModel, p0] = obj.FitZ(thefile,FreqRange);
+                            [param, ztes, fZ, fS, ERP, R2, CI, aux1, p0] = obj.ElectrThermalModel.FitZ(obj,thefile,FreqRange);
                         catch
                             continue;
                         end
@@ -1365,7 +1370,7 @@ classdef TES_Struct
                         eval(['obj.P' StrRange{k1} '(iOK).CI{jj} = CI;']);
                         eval(['obj.P' StrRange{k1} '(iOK).residuo(jj) = aux1;']);
                         eval(['obj.P' StrRange{k1} '(iOK).fileZ(jj) = {[dirs{i} filesep filesZ{j1}]};']);
-                        eval(['obj.P' StrRange{k1} '(iOK).ElecThermModel(jj) = {StrModel};']);
+                        eval(['obj.P' StrRange{k1} '(iOK).ElecThermModel(jj) = obj.ElectrThermalModel.AvailableModels(obj.ElectrThermalModel.SelectedModel);']);
                         eval(['obj.P' StrRange{k1} '(iOK).ztes{jj} = ztes;']);
                         eval(['obj.P' StrRange{k1} '(iOK).fZ{jj} = fZ;']);
                         eval(['obj.P' StrRange{k1} '(iOK).fS{jj} = fS;']);
@@ -1376,7 +1381,7 @@ classdef TES_Struct
                         % alpha
                         if param.C < 0 || param.ai < 0
                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
-                        elseif R2 < obj.TFOpt.R2Thrs % 0.6 By default
+                        elseif R2 < obj.ElectrThermalModel.R2Thrs % 0.6 By default
                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
                         else
                             eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 0;']);
@@ -1495,14 +1500,15 @@ classdef TES_Struct
                     rp = [];
                 end
                 if ~isempty(rp)
-                    switch obj.TFOpt.ElecThermModel
-                        case 'One Single Thermal Block'
-                            StrModelPar = {'Zinf';'Z0';'taueff'};          % 3 parameters
-                        case 'Two Thermal Blocks (Specify which)'
-                            StrModelPar = {'Zinf';'Z0';'taueff';'ca0';'tauA'};
-                        case 'Three Thermal Blocks (Specify which)'
-                            StrModelPar = {'Zinf';'Z0';'taueff';'tau1';'tau2';'d1';'d2'};
-                    end
+%                     switch obj.TFOpt.ElecThermModel
+%                         case 'One Single Thermal Block'
+%                             StrModelPar = {'Zinf';'Z0';'taueff'};          % 3 parameters
+%                         case 'Two Thermal Blocks (Specify which)'
+%                             StrModelPar = {'Zinf';'Z0';'taueff';'ca0';'tauA'};
+%                         case 'Three Thermal Blocks (Specify which)'
+%                             StrModelPar = {'Zinf';'Z0';'taueff';'tau1';'tau2';'d1';'d2'};
+%                     end
+                    StrModelPar = obj.ElectrThermalModel.StrModelPar;
                     figParam(k1) = figure; %#ok<AGROW>
                     as = nan(1,length(StrModelPar));
                     for i = 1:length(StrModelPar)
@@ -1526,239 +1532,214 @@ classdef TES_Struct
             end
         end
         
-        function [param, ztes, fZ, fS, ERP, R2, CI, aux1, StrModel, p0] = FitZ(obj,FileName,FreqRange)
-            % Function to fit Z(w) according to the selected
-            % electro-thermal model
-            
-            indSep = find(FileName == filesep);
-            Path = FileName(1:indSep(end));
-            Name = FileName(find(FileName == filesep, 1, 'last' )+1:end);
-            Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
-            Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
-            % Buscamos si es Ibias positivos o negativos
-            if ~isempty(strfind(Path,'Negative')) %#ok<STREMP>
-                [~,Tind] = min(abs([obj.IVsetN.Tbath]*1e3-Tbath));
-                IV = obj.IVsetN(Tind);
-                CondStr = 'N';
-            else
-                [~,Tind] = min(abs([obj.IVsetP.Tbath]*1e3-Tbath));
-                IV = obj.IVsetP(Tind);
-                CondStr = 'P';
-            end
-            % Primero valoramos que este en la lista
-            filesZ = ListInBiasOrder([Path obj.TFOpt.TFBaseName])';
-            SearchFiles = strfind(filesZ,Name);
-            for i = 1:length(filesZ)
-                if ~isempty(SearchFiles{i})
-                    IndFile = i;
-                    break;
-                end
-            end
-%             fS = obj.TFS.f;
-%             fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
-            try
-                eval(['[~,Tind] = find(abs([obj.P' CondStr '.Tbath]*1e3-Tbath)==0);']);
-                eval(['ztes = obj.P' CondStr '(Tind).ztes{IndFile};'])
-                eval(['fS = obj.P' CondStr '(Tind).fS{IndFile};'])
-                if isempty(ztes)
-                    error;
-                end
-            catch
-                data = importdata(FileName);
-                IndDist = find(data(:,2) ~= 0);
-                data = data(IndDist,:);                
-                tf = data(:,2)+1i*data(:,3);
-%                 tf = data(IndFs,2)+1i*data(IndFs,3);
-                Rth = obj.circuit.Rsh+eval(['obj.TES' CondStr '.Rpar'])+2*pi*obj.circuit.L*data(:,1)*1i;                
-                fS = obj.TFS.f(IndDist);                                
-                ztes = (obj.TFS.tf(IndDist)./tf-1).*Rth;
-                
-                ztes = ztes(fS >= FreqRange(1) & fS <= FreqRange(2));
-                fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
-                
-                
-            end
-            
-            %%
-%             Zreal = medfilt1(real(ztes),40);
-%             Zimag = medfilt1(imag(ztes),40);
-%             ind = find((diff(Zimag) == 0));
-%             Zreal(ind) = [];
-%             Zimag(ind) = [];
+%         function [param, ztes, fZ, fS, ERP, R2, CI, aux1, StrModel, p0] = FitZ(obj,FileName,FreqRange,Model)
+%             % Function to fit Z(w) according to the selected
+%             % electro-thermal model
 %             
-% %             figure,hold on,plot(real(ztes),imag(ztes))
-% %             plot(Zreal,Zimag,'r');            
+%             indSep = find(FileName == filesep);
+%             Path = FileName(1:indSep(end));
+%             Name = FileName(find(FileName == filesep, 1, 'last' )+1:end);
+%             Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
+%             Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
+%             % Buscamos si es Ibias positivos o negativos
+%             if ~isempty(strfind(Path,'Negative')) %#ok<STREMP>
+%                 [~,Tind] = min(abs([obj.IVsetN.Tbath]*1e3-Tbath));
+%                 IV = obj.IVsetN(Tind);
+%                 CondStr = 'N';
+%             else
+%                 [~,Tind] = min(abs([obj.IVsetP.Tbath]*1e3-Tbath));
+%                 IV = obj.IVsetP(Tind);
+%                 CondStr = 'P';
+%             end
+%             % Primero valoramos que este en la lista
+%             filesZ = ListInBiasOrder([Path obj.TFOpt.TFBaseName])';
+%             SearchFiles = strfind(filesZ,Name);
+%             for i = 1:length(filesZ)
+%                 if ~isempty(SearchFiles{i})
+%                     IndFile = i;
+%                     break;
+%                 end
+%             end
+% %             fS = obj.TFS.f;
+% %             fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
+%             try
+%                 eval(['[~,Tind] = find(abs([obj.P' CondStr '.Tbath]*1e3-Tbath)==0);']);
+%                 eval(['ztes = obj.P' CondStr '(Tind).ztes{IndFile};'])
+%                 eval(['fS = obj.P' CondStr '(Tind).fS{IndFile};'])
+%                 if isempty(ztes)
+%                     error;
+%                 end
+%             catch
+%                 data = importdata(FileName);
+%                 IndDist = find(data(:,2) ~= 0);
+%                 data = data(IndDist,:);                
+%                 tf = data(:,2)+1i*data(:,3);
+% %                 tf = data(IndFs,2)+1i*data(IndFs,3);
+%                 Rth = obj.circuit.Rsh+eval(['obj.TES' CondStr '.Rpar'])+2*pi*obj.circuit.L*data(:,1)*1i;                
+%                 fS = obj.TFS.f(IndDist);                                
+%                 ztes = (obj.TFS.tf(IndDist)./tf-1).*Rth;
+%                 
+%                 ztes = ztes(fS >= FreqRange(1) & fS <= FreqRange(2));
+%                 fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));
+%                 
+%                 
+%             end
 %             
-%             ZiniI = Zimag(1:50);
-%             ZiniR = Zreal(1:50);
-%             [val,indZ0imag] = min(abs(ZiniI));
-%             Z0 = median(ZiniR(indZ0imag));
-%             
-%             ZfinI = Zimag(end-200:end);
-%             ZfinR = Zreal(end-200:end);
-%             [val,indZinfimag] = min(abs(ZfinI));
-%             Zinf = median(ZfinR(indZinfimag));
-%             
-%             [~,indfS] = min(Zimag);
+%             Zinf = real(ztes(end));
+%             Z0 = real(ztes(1));
+%             [~,indfS] = min(imag(ztes));
 %             tau0 = 1/(2*pi*fS(indfS));
+%             opts = optimset('Display','off','Algorithm','levenberg-marquardt');
 %             
-%             p0 = [Zinf Z0 tau0];    
+%             switch Model
+%                 case 'One Single Thermal Block'
+%                     p0 = [Zinf Z0 tau0];          % 3 parameters
+%                     StrModel = 'One Single Thermal Block';
+%                 case 'Two Thermal Blocks'
+%                     ca0 = 1e-1;
+%                     tauA = 1e-6;
+%                     p0 = [Zinf Z0 tau0 ca0 tauA];%%%p0 for 2 block model.  % 5 parameters
+%                     StrModel = 'Two Thermal Blocks (Specify which)';
+%                 case 'Three Thermal Blocks (Specify which)'
+%                     tau1 = 1e-5;
+%                     tau2 = 1e-5;
+%                     d1 = 0.8;
+%                     d2 = 0.1;
+%                     p0 = [Zinf Z0 tau0 tau1 tau2 d1 d2];%%%p0 for 3 block model.   % 7 parameters
+%                     StrModel = 'Three Thermal Blocks (Specify which)';
+%             end
+%             [p,aux1,aux2,aux3,out,lambda,jacob] = lsqcurvefit(@obj.fitZ,p0,fS,...
+%                 [real(ztes) imag(ztes)],[],[],opts);%#ok<ASGLU> %%%uncomment for real parameters.
+%             MSE = (aux2'*aux2)/(length(fS)-length(p)); %#ok<NASGU>
+%             ci = nlparci(p,aux2,'jacobian',jacob);
+%             CI = (ci(:,2)-ci(:,1))';  
+%             p_CI = [p; CI];
+%             param = obj.GetModelParameters(p_CI,IV,Ib,CondStr);
+%             fZ = obj.fitZ(p,fS);
+%             ERP = sum(abs(abs(ztes-fZ(:,1)+1i*fZ(:,2))./abs(ztes)))/length(ztes);
+% %             R = corrcoef(fZ(:,1)+1i*fZ(:,2),ztes);
+% %             R2 = abs(R(1,2))^2
+% %             R2 = abs((corr(fZ(:,1)+1i*fZ(:,2),ztes)).^2);
+%             R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),ztes,'NRMSE');
+% %             fZS = obj.fitZ(p+p_CI(2,:),fS);
+% %             fZI = obj.fitZ(p-p_CI(2,:),fS);
+% %             figure,plot(real(ztes),imag(ztes))
+% %             hold on, plot(fZ(:,1),fZ(:,2),'r')
+% %             plot(fZS(:,1),fZS(:,2),'g')
+% %             plot(fZI(:,1),fZI(:,2),'b')
 %             
-            %%
-            Zinf = real(ztes(end));
-            Z0 = real(ztes(1));
-            [~,indfS] = min(imag(ztes));
-            tau0 = 1/(2*pi*fS(indfS));
-            opts = optimset('Display','off','Algorithm','levenberg-marquardt');
-            switch obj.TFOpt.ElecThermModel
-                case 'One Single Thermal Block'
-                    p0 = [Zinf Z0 tau0];          % 3 parameters
-                    StrModel = 'One Single Thermal Block';
-                case 'Two Thermal Blocks'
-                    ca0 = 1e-1;
-                    tauA = 1e-6;
-                    p0 = [Zinf Z0 tau0 ca0 tauA];%%%p0 for 2 block model.  % 5 parameters
-                    StrModel = 'Two Thermal Blocks (Specify which)';
-                case 'Three Thermal Blocks (Specify which)'
-                    tau1 = 1e-5;
-                    tau2 = 1e-5;
-                    d1 = 0.8;
-                    d2 = 0.1;
-                    p0 = [Zinf Z0 tau0 tau1 tau2 d1 d2];%%%p0 for 3 block model.   % 7 parameters
-                    StrModel = 'Three Thermal Blocks (Specify which)';
-            end
-            [p,aux1,aux2,aux3,out,lambda,jacob] = lsqcurvefit(@obj.fitZ,p0,fS,...
-                [real(ztes) imag(ztes)],[],[],opts);%#ok<ASGLU> %%%uncomment for real parameters.
-            MSE = (aux2'*aux2)/(length(fS)-length(p)); %#ok<NASGU>
-            ci = nlparci(p,aux2,'jacobian',jacob);
-            CI = (ci(:,2)-ci(:,1))';  
-            p_CI = [p; CI];
-            param = obj.GetModelParameters(p_CI,IV,Ib,CondStr);
-            fZ = obj.fitZ(p,fS);
-            ERP = sum(abs(abs(ztes-fZ(:,1)+1i*fZ(:,2))./abs(ztes)))/length(ztes);
-%             R = corrcoef(fZ(:,1)+1i*fZ(:,2),ztes);
-%             R2 = abs(R(1,2))^2
-%             R2 = abs((corr(fZ(:,1)+1i*fZ(:,2),ztes)).^2);
-            R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),ztes,'NRMSE');
-%             fZS = obj.fitZ(p+p_CI(2,:),fS);
-%             fZI = obj.fitZ(p-p_CI(2,:),fS);
-%             figure,plot(real(ztes),imag(ztes))
-%             hold on, plot(fZ(:,1),fZ(:,2),'r')
-%             plot(fZS(:,1),fZS(:,2),'g')
-%             plot(fZI(:,1),fZI(:,2),'b')
-            
-        end
+%         end
         
-        function fz = fitZ(obj,p,f)
-            % Function to fit Z(w) according to the selected
-            % electro-thermal model
-            
-            w = 2*pi*f;
-            D = (1+(w.^2)*(p(3).^2));
-            if length(p) == 3
-                %%%p=[Zinf Z0 tau];
-                rfz = p(1)-(p(1)-p(2))./D;%%%modelo de 1 bloque.
-                imz = -(p(1)-p(2))*w*p(3)./D;%%% modelo de 1 bloque.
-                imz = -abs(imz);
-            elseif length(p) == 5
-                fz = p(1)+(p(1)-p(2)).*(-1+1i*w*p(3).*(1-p(4)*1i*w*p(5)./(1+1i*w*p(5)))).^-1;%%%SRON
-                rfz = real(fz);
-                imz = -abs(imag(fz));
-            elseif length(p) == 7
-                %p=[Zinf Z0 tau_I tau_1 tau_2 d1 d2]. Maasilta IH.
-                fz = p(1)+(p(2)-p(1)).*(1-p(6)-p(7)).*(1+1i*w*p(3)-p(6)./(1+1i*w*p(4))-p(7)./(1+1i*w*p(5))).^-1;
-                rfz = real(fz);
-                imz = -abs(imag(fz));
-            end
-            fz = [rfz imz];
-        end
+%         function fz = fitZ(obj,p,f)
+%             % Function to fit Z(w) according to the selected
+%             % electro-thermal model
+%             
+%             w = 2*pi*f;
+%             D = (1+(w.^2)*(p(3).^2));
+%             if length(p) == 3
+%                 %%%p=[Zinf Z0 tau];
+%                 rfz = p(1)-(p(1)-p(2))./D;%%%modelo de 1 bloque.
+%                 imz = -(p(1)-p(2))*w*p(3)./D;%%% modelo de 1 bloque.
+%                 imz = -abs(imz);
+%             elseif length(p) == 5
+%                 fz = p(1)+(p(1)-p(2)).*(-1+1i*w*p(3).*(1-p(4)*1i*w*p(5)./(1+1i*w*p(5)))).^-1;%%%SRON
+%                 rfz = real(fz);
+%                 imz = -abs(imag(fz));
+%             elseif length(p) == 7
+%                 %p=[Zinf Z0 tau_I tau_1 tau_2 d1 d2]. Maasilta IH.
+%                 fz = p(1)+(p(2)-p(1)).*(1-p(6)-p(7)).*(1+1i*w*p(3)-p(6)./(1+1i*w*p(4))-p(7)./(1+1i*w*p(5))).^-1;
+%                 rfz = real(fz);
+%                 imz = -abs(imag(fz));
+%             end
+%             fz = [rfz imz];
+%         end
         
-        function param = GetModelParameters(obj,p,IVmeasure,Ib,CondStr)
-            % Function to get the model parameters of the electro-thermal
-            % model at an specific Ibias value.
-            
-            Rn = eval(['obj.TES' CondStr '.Rn;']);
-            
-            T0 = eval(['obj.TES' CondStr '.Tc;']); %(K)
-            G0 = eval(['obj.TES' CondStr '.G']);  %(W/K)
-            
-            IVmeasure.vout = IVmeasure.vout+1000;  % Sumo 1000 para que toda la curva IV
-            %sea positiva siempre, que no haya cambios de signo para que los splines no devuelvan valores extraños
-            % Luego se restan los 1000.
-            [iaux,ii] = unique(IVmeasure.ibias,'stable');
-            vaux = IVmeasure.vout(ii);
-            [m,i3] = min(diff(vaux)./diff(iaux)); %#ok<ASGLU>
-            
-            Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
-            IVaux.ibias = Ib;
-            IVaux.vout = Vout-1000;
-            IVaux.Tbath = IVmeasure.Tbath;
-            
-            F = obj.circuit.invMin/(obj.circuit.invMf*obj.circuit.Rf);%36.51e-6;
-            I0 = IVaux.vout*F;
-            Vs = (IVaux.ibias-I0)*obj.circuit.Rsh;%(ibias*1e-6-ites)*Rsh;if Ib in uA.
-            V0 = Vs-I0*eval(['obj.TES' CondStr '.Rpar;']);
-            
-            P0 = V0.*I0;
-            R0 = V0/I0;
-            
-            param.R0 = R0;
-            
-            rp = p(1,:);
-            rp_CI = p(2,:);
-            rp(1,3) = abs(rp(3));
-            if length(rp) == 3
-                param.rp = R0/Rn;
-                
-                param.Zinf = rp(1);
-                param.Zinf_CI = rp_CI(1);
-                
-                param.Z0 = rp(2);
-                param.Z0_CI = rp_CI(2);
-                
-                param.taueff = rp(3);
-                param.taueff_CI = rp_CI(3);
-                
-                param.L0 = (param.Z0-param.Zinf)/(param.Z0+R0);
-                param.L0_CI = sqrt((((param.Zinf+R0)/((param.Z0+R0)^2))*param.Z0_CI)^2 + ((-1/(R0 + param.Z0))*param.Zinf_CI)^2 );
-                
-                param.Z0Zinf = (param.Z0-param.Zinf);
-                param.Z0R0 = (param.Z0+R0);
-                
-                param.ai = param.L0*G0*T0/P0;
-                param.ai_CI = (G0*T0/P0)*param.L0_CI;
-                
-                param.bi = (param.Zinf/R0)-1;
-                param.bi_CI = (1/R0)*param.Zinf_CI;                
-                
-                
-                param.tau0 = param.taueff*(param.L0-1);
-                param.tau0_CI = sqrt(((param.L0-1)*param.taueff_CI)^2 + ((param.taueff)*param.L0_CI)^2 );
-                
-                param.C = param.tau0*G0;
-                param.C_CI = G0*param.tau0_CI;
-                
-                
-                
-            elseif(length(p) == 5)
-                %derived parameters for 2 block model case A
-                param.rp = R0/Rn;
-                param.L0 = (rp(2)-rp(1))/(rp(2)+R0);
-                param.ai = param.L0*G0*T0/P0;
-                param.bi = (rp(1)/R0)-1;
-                param.tau0 = rp(3)*(param.L0-1);
-                param.taueff = rp(3);
-                param.C = param.tau0*G0;
-                param.Zinf = rp(1);
-                param.Z0 = rp(2);
-                param.CA = param.C*rp(4)/(1-rp(4));
-                param.GA = param.CA/rp(5);
-                param.tauA = rp(5);
-                param.ca0 = rp(4);
-            elseif(length(p) == 7)
-                param = nan;
-            end
-        end
+%         function param = GetModelParameters(obj,p,IVmeasure,Ib,CondStr)
+%             % Function to get the model parameters of the electro-thermal
+%             % model at an specific Ibias value.
+%             
+%             Rn = eval(['obj.TES' CondStr '.Rn;']);
+%             
+%             T0 = eval(['obj.TES' CondStr '.Tc;']); %(K)
+%             G0 = eval(['obj.TES' CondStr '.G']);  %(W/K)
+%             
+%             IVmeasure.vout = IVmeasure.vout+1000;  % Sumo 1000 para que toda la curva IV
+%             %sea positiva siempre, que no haya cambios de signo para que los splines no devuelvan valores extraños
+%             % Luego se restan los 1000.
+%             [iaux,ii] = unique(IVmeasure.ibias,'stable');
+%             vaux = IVmeasure.vout(ii);
+%             [m,i3] = min(diff(vaux)./diff(iaux)); %#ok<ASGLU>
+%             
+%             Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
+%             IVaux.ibias = Ib;
+%             IVaux.vout = Vout-1000;
+%             IVaux.Tbath = IVmeasure.Tbath;
+%             
+%             F = obj.circuit.invMin/(obj.circuit.invMf*obj.circuit.Rf);%36.51e-6;
+%             I0 = IVaux.vout*F;
+%             Vs = (IVaux.ibias-I0)*obj.circuit.Rsh;%(ibias*1e-6-ites)*Rsh;if Ib in uA.
+%             V0 = Vs-I0*eval(['obj.TES' CondStr '.Rpar;']);
+%             
+%             P0 = V0.*I0;
+%             R0 = V0/I0;
+%             
+%             param.R0 = R0;
+%             
+%             rp = p(1,:);
+%             rp_CI = p(2,:);
+%             rp(1,3) = abs(rp(3));
+%             if length(rp) == 3
+%                 param.rp = R0/Rn;
+%                 
+%                 param.Zinf = rp(1);
+%                 param.Zinf_CI = rp_CI(1);
+%                 
+%                 param.Z0 = rp(2);
+%                 param.Z0_CI = rp_CI(2);
+%                 
+%                 param.taueff = rp(3);
+%                 param.taueff_CI = rp_CI(3);
+%                 
+%                 param.L0 = (param.Z0-param.Zinf)/(param.Z0+R0);
+%                 param.L0_CI = sqrt((((param.Zinf+R0)/((param.Z0+R0)^2))*param.Z0_CI)^2 + ((-1/(R0 + param.Z0))*param.Zinf_CI)^2 );
+%                 
+%                 param.Z0Zinf = (param.Z0-param.Zinf);
+%                 param.Z0R0 = (param.Z0+R0);
+%                 
+%                 param.ai = param.L0*G0*T0/P0;
+%                 param.ai_CI = (G0*T0/P0)*param.L0_CI;
+%                 
+%                 param.bi = (param.Zinf/R0)-1;
+%                 param.bi_CI = (1/R0)*param.Zinf_CI;                
+%                 
+%                 
+%                 param.tau0 = param.taueff*(param.L0-1);
+%                 param.tau0_CI = sqrt(((param.L0-1)*param.taueff_CI)^2 + ((param.taueff)*param.L0_CI)^2 );
+%                 
+%                 param.C = param.tau0*G0;
+%                 param.C_CI = G0*param.tau0_CI;
+%                 
+%                 
+%                 
+%             elseif(length(p) == 5)
+%                 %derived parameters for 2 block model case A
+%                 param.rp = R0/Rn;
+%                 param.L0 = (rp(2)-rp(1))/(rp(2)+R0);
+%                 param.ai = param.L0*G0*T0/P0;
+%                 param.bi = (rp(1)/R0)-1;
+%                 param.tau0 = rp(3)*(param.L0-1);
+%                 param.taueff = rp(3);
+%                 param.C = param.tau0*G0;
+%                 param.Zinf = rp(1);
+%                 param.Z0 = rp(2);
+%                 param.CA = param.C*rp(4)/(1-rp(4));
+%                 param.GA = param.CA/rp(5);
+%                 param.tauA = rp(5);
+%                 param.ca0 = rp(4);
+%             elseif(length(p) == 7)
+%                 param = nan;
+%             end
+%         end
         
         function [RES, SimRes, M, Mph, fNoise, SigNoise] = fitNoise(obj,FileName, param)
             % Function for Noise analysis.

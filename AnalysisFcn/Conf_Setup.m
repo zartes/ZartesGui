@@ -222,6 +222,29 @@ switch varargin{1}.Tag
             end
         end
         
+    case 'TES_ElectrThermModel'
+        set(handles.figure1,'Name','Electro-Thermal Model Options');
+        set([handles.Add handles.Remove handles.Options],'Visible','off');
+        handles.Table.Data = {[]};
+        handles.Table.ColumnEditable = [true true true true];
+        TESProp = properties(handles.varargin{3});
+        handles.Table.ColumnName = TESProp';
+        handles.Table.ColumnFormat{1} = 'Logical';
+        handles.Table.ColumnFormat{2} = {'\TF*','\PXI_TF*'};
+        handles.Table.ColumnFormat{3} = {'One Single Thermal Block','Two Thermal Blocks'};
+        handles.Table.ColumnFormat{4} = 'numeric';
+        for i = 1:length(TESProp)
+            if strcmp(handles.Table.ColumnFormat{i},'Logical')
+                if eval(['handles.varargin{3}.' TESProp{i}])
+                    handles.Table.Data{1,i} = true;
+                else
+                    handles.Table.Data{1,i} = false;
+                end
+            else
+                handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
+            end
+        end
+        
     case 'TES_Noise_Opt'
         set(handles.figure1,'Name','Noise Visualization Options');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
