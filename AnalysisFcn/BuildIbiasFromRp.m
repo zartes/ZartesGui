@@ -1,4 +1,4 @@
-function Ibs = BuildIbiasFromRp(IVset,rp)
+function [Ibs, Ibs_ok] = BuildIbiasFromRp(IVset,rp)
 % Function to get Ibias (uA) for a specific Rn value
 %
 % Input:
@@ -21,4 +21,7 @@ for i = 1:length(IVset)
     [~,i3] = min(diff(vaux)./diff(iaux));
     Ibs = spline(raux(1:i3),iaux(1:i3),rp)*1e6;
 %     Ibs = spline(raux(1:i3),iaux(1:i3),rp)*1e6;
+
+    rp_ok = raux(find(raux > 1e-3, 1, 'last' ));
+    Ibs_ok = Ibs(rp > rp_ok);
 end

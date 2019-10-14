@@ -2,13 +2,16 @@ classdef Circuit
     % Class defining a Circuit class.
     
     properties              
-        Rpar;           % Parasitic Impedance (TES branch)
-        Rn;             % Impedance of TES in Normal state  
+        
         Rf;             % Impedance of FLL (linked to Squid Rf magnitude)
         Rsh;            % Impedance of the resistive divisor
         invMf;          % Inverse of the relation between Amplitude and flux (input)
         invMin;         % Inverse of the relation between Amplitude and flux (feedback)
         L;              % Inductance of the circuit 
+        Nsquid;         % Basal Noise from Squid device
+        
+        Rpar;           % Parasitic Impedance (TES branch)
+        Rn;             % Impedance of TES in Normal state  
         mN;             % Slope of the IV characterization during Normal state (TES)
         mS;             % Slope of the IV characterization during Superconductor state (TES)
     end
@@ -48,6 +51,10 @@ classdef Circuit
                 obj.L = PhysicalMeasurement;
                 obj.L.Value = circuit.L;
                 obj.L.Units = 'H';
+                
+                obj.Nsquid = PhysicalMeasurement;
+                obj.Nsquid.Value = circuit.Nsquid;
+                obj.Nsquid.Units = 'pA/Hz^{0.5}';
                 
                 obj.mN = PhysicalMeasurement;
                 obj.mN.Value = circuit.mN;

@@ -10,6 +10,14 @@ classdef TES_Dimensions
         gammaAu = 0.729e3;
         rhoMo = 0.107;
         rhoAu = 0.0983;
+        Abs_bool = 0;
+        Abs_sides;
+        Abs_hBi = 50e-6;
+        Abs_hAu = 50e-6;
+        Abs_gammaBi = 0.008e3;
+        Abs_gammaAu = 0.729e3;
+        Abs_rhoBi = 0.0468;
+        Abs_rhoAu = 0.0983;        
     end
     
     methods
@@ -35,7 +43,7 @@ classdef TES_Dimensions
             % be analytically determined
             
             prompt = {'Enter TES length value (m):','Enter TES width value (m):','Enter Mo thickness value (m):','Enter Au thickness value (m):'};
-            name = 'Provide bilayer TES dimension (without absorver)';
+            name = 'Provide bilayer TES dimension (without absorber)';
             numlines = 1;
             try
                 defaultanswer = {num2str(obj.sides(1)),num2str(obj.sides(2)),...
@@ -52,6 +60,37 @@ classdef TES_Dimensions
                 obj.hMo = str2double(answer{3});
                 obj.hAu = str2double(answer{4});
             end
+            
+            ButtonName = questdlg('Is Absorbent presented in TES?', ...
+                'ZarTES', ...
+                'Yes', 'No', 'No');
+            switch ButtonName
+                case 'Yes'
+                    obj.Abs_bool = 1;
+                    prompt = {'Enter Absorbent length value (m):','Enter Absorbent width value (m):','Enter Bi thickness value (m):','Enter Au thickness value (m):'};
+                    name = 'Provide Absorbent dimensions';
+                    numlines = 1;
+                    try
+                        defaultanswer = {num2str(obj.Abs_sides(1)),num2str(obj.Abs_sides(2)),...
+                            num2str(obj.Abs_hBi),num2str(obj.Abs_hAu)};
+                    catch
+                        defaultanswer = {num2str(25e-6),num2str(25e-6),...
+                            num2str(55e-9),num2str(340e-9)};
+                    end
+                    
+                    answer = inputdlg(prompt,name,numlines,defaultanswer);
+                    if ~isempty(answer)
+                        obj.Abs_sides(1) = str2double(answer{1});
+                        obj.Abs_sides(2) = str2double(answer{2});
+                        obj.Abs_hBi = str2double(answer{3});
+                        obj.Abs_hAu = str2double(answer{4});
+                    end
+                otherwise
+                    
+            end % switch
+            
+            waitfor('Device material dimensions provided','ZarTES');
+            
         end
     end
 end

@@ -120,13 +120,13 @@ classdef TES_TFS
             ax = axes;
             grid(ax,'on');
             plot(ax,real(obj.tf),imag(obj.tf),'.','color',[0 0.447 0.741],...
-                'markerfacecolor',[0 0.447 0.741],'markersize',15,'DisplayName',obj.file);
-            set(ax,'linewidth',2,'fontsize',12,'fontweight','bold');
-            xlabel(ax,'Re(mZ)','fontsize',12,'fontweight','bold');
-            ylabel(ax,'Im(mZ)','fontsize',12,'fontweight','bold');
+                'MarkerFaceColor',[0 0.447 0.741],'MarkerSize',15,'DisplayName',obj.file);
+            set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold');
+            xlabel(ax,'Re(mZ)','FontSize',12,'FontWeight','bold');
+            ylabel(ax,'Im(mZ)','FontSize',12,'FontWeight','bold');
             FileName = obj.file(find(obj.file == filesep,1,'last')+1:end);
             title(ax,FileName,'Interpreter','none');
-            set(ax,'FontSize',11,'FontWeight','bold');
+            set(ax,'FontSize',12,'FontWeight','bold','Box','on');
         end
         
         function obj = CheckTF(obj,fig)
@@ -140,7 +140,7 @@ classdef TES_TFS
                 case 'No'
                     obj = obj.Constructor;
                 case 'Yes'
-                    waitfor(msgbox('TF in Superconductor state updated','ZarTES v2.0'));
+                    waitfor(msgbox('TF updated','ZarTES v2.0'));
             end
         end
         

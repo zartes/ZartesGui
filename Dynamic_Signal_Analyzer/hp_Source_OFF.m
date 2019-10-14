@@ -11,3 +11,4 @@ function hp_Source_OFF(dsa)
 % Last update: 06/07/2018
 
 fprintf(dsa.ObjHandle,'SRON0');
+fprintf(dsa.ObjHandle,'SROF');

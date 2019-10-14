@@ -54,9 +54,9 @@ function DBInterface_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for DBInterface
 handles.output = hObject;
-handles.DataBasePath = 'C:\Users\usuario\Documents\GitHub\Zartes\';
+% handles.DataBasePath = 'C:\Users\usuario\Documents\GitHub\Zartes\';
 % handles.DataBaseName = 'ZarTESDB';
-% handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
+handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
 handles.DataBaseName = 'ZarTESDB';
 
 
@@ -103,7 +103,12 @@ curs = exec(handles.conn,sqlquery);
 curs = fetch(curs);
 colnames = columnnames(curs,1);
 atr = attr(curs);
+% if isempty(colnames)
+%     close(handles.conn);
+%     handles.conn = database(handles.DataBaseName,'','');
+% end
 handles.Table1.ColumnName = colnames;
+
 for i = 1:length(atr)
     switch atr(i).typeName
         case 'VARCHAR'
@@ -115,11 +120,11 @@ for i = 1:length(atr)
     end
     switch handles.TableListStr{handles.TableList.Value}
         case 'Enfriada'
-            if (~isequal(colnames{i},'ID_Enfriada')&&~isequal(colnames{i},'ID_TES')&&~isequal(colnames{i},'ID_SQUID'))
+%             if (~isequal(colnames{i},'ID_Enfriada')&&~isequal(colnames{i},'ID_TES')&&~isequal(colnames{i},'ID_SQUID'))
                 handles.Table1.ColumnEditable(i) = true;
-            else
-                handles.Table1.ColumnEditable(i) = false;
-            end
+%             else
+%                 handles.Table1.ColumnEditable(i) = false;
+%             end
         case 'TES_RT'
             if (~isequal(colnames{i},'ID_TES'))
                 handles.Table1.ColumnEditable(i) = true;
@@ -194,7 +199,7 @@ function InsertData_Callback(hObject, eventdata, handles)
 tablename = handles.TableListStr{handles.TableList.Value};
 switch tablename
     case 'Enfriada'
-        PrimaryKeyStr = {'ID_Enfriada'};
+%         PrimaryKeyStr = {'ID_Enfriada'};
     case 'TES_RT'
         PrimaryKeyStr = {'ID_TES'};
     case 'TES_Analysis'
@@ -482,7 +487,12 @@ elseif isnumeric(eventdata.PreviousData)
     if isnan(eventdata.PreviousData)
         query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' IS NULL AND ' handles.Table1.ColumnName{1} ' = ''' eventdata.Source.Data{eventdata.Indices(1),1} ''''];
     else
-        query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData) ' AND ' handles.Table1.ColumnName{1} ' = ''' eventdata.Source.Data{eventdata.Indices(1),1} ''''];
+        if isnan(eventdata.NewData)
+            query = ['update ' tablename ' SET ' ColumnName ' = NULL WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData) ''];
+        else
+            %         query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData) ''];
+            query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData) ' AND ' handles.Table1.ColumnName{1} ' = ''' eventdata.Source.Data{eventdata.Indices(1),1} ''''];
+        end
     end
 end
 curs = exec(handles.conn,query);

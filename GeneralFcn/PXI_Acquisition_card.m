@@ -74,8 +74,8 @@ classdef PXI_Acquisition_card
             
             obj.ConfStructs.Vertical.channelList = '0,1';
             obj.ConfStructs.Trigger.Type = 6;
-            obj.ConfStructs.Horizontal.SR = 2e5;
-            obj.ConfStructs.Horizontal.RL = 2e5;
+%             obj.ConfStructs.Horizontal.SR = 2e5;
+%             obj.ConfStructs.Horizontal.RL = 2e5;
             pxi_ConfigureChannels(obj);      % ConfStructs.Vertical
             pxi_ConfigureHorizontal(obj);    % ConfStructs.Horizontal                                                            
             pxi_ConfigureTrigger(obj);       % ConfStructs.Trigger
@@ -89,7 +89,7 @@ classdef PXI_Acquisition_card
             obj.Options.TimeOut = 5;
             obj.Options.channelList = '1';
             
-            obj.ConfStructs.Horizontal.RL = 2e5;%%%2e5 para fi=1Hz, RL=2e4 para fi=10Hz.
+%             obj.ConfStructs.Horizontal.RL = 2e5;%%%2e5 para fi=1Hz, RL=2e4 para fi=10Hz.
             pxi_ConfigureHorizontal(obj);
             
             pxi_ConfigureChannels(obj);

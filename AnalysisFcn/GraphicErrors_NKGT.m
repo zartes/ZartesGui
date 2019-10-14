@@ -15,17 +15,19 @@ Data = src.UserData;
 fig = src.Parent;
 he = findobj(fig,'Type','ErrorBar','Visible','on');
 if ~isempty(he)
-    StrLabel = 'Deactivate error bars';
+    StrLabel = 'Hide error bars';
 else
-    StrLabel = 'Activate error bars';
+    StrLabel = 'Show error bars';
 end
 
 
 c1 = uimenu(cmenu,'Label',StrLabel,'Callback',{@Handle_Errors},'UserData',Data);
-c3 = uimenu(cmenu,'Label','Hide Negative Ibias Data','Callback',...
-    {@Handle_Errors},'UserData',Data);
-c4 = uimenu(cmenu,'Label','Show Negative Ibias Data','Callback',...
-    {@Handle_Errors},'UserData',Data);
+
+
+% c3 = uimenu(cmenu,'Label','Hide Negative Ibias Data','Callback',...
+%     {@Handle_Errors},'UserData',Data);
+% c4 = uimenu(cmenu,'Label','Show Negative Ibias Data','Callback',...
+%     {@Handle_Errors},'UserData',Data);
 
 c5 = uimenu(cmenu,'Label','Export Graphic Data','Callback',{@ExportGraph},'UserData',src);
 c6 = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',src);
@@ -81,23 +83,23 @@ hne = he(jne);
 
 switch str
     
-    case 'Deactivate error bars'
+    case 'Hide error bars'
         set([hpe; hne],'Visible','off');
         
         
-    case 'Activate error bars'
+    case 'Show error bars'
         try
-            for i = 1:length(hn)
-                if strcmp(hn(i).Visible,'on')
+            if strcmp(hn(1).Visible,'on')
+                for i = 1:length(hne)
                     set(hne(i),'Visible','on');
                 end
             end
-            for i = 1:length(hp)
-                if strcmp(hp(i).Visible,'on')
+            if strcmp(hp(1).Visible,'on')
+                for i = 1:length(hpe)
                     set(hpe(i),'Visible','on');
                 end
             end
-        catch
+        catch            
             warndlg('No Confidence interval was computed','ZarTES v1.0');
         end
 

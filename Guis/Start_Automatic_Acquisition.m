@@ -103,7 +103,7 @@ end
 
 circuit1 = TES_Circuit;
 circuit1 = circuit1.Update(SetupTES.Circuit);
-CircuitProps = {'Rsh';'Rf';'invMf';'invMin';'L';'Nsquid';'Rpar';'Rn';'mS';'mN'};
+CircuitProps = {'Rsh';'Rf';'invMf';'invMin';'L';'Nsquid';'Rn';'Rpar';'mN';'mS'};
 for i = 1:length(CircuitProps)
     eval(['circuit.' CircuitProps{i} ' = circuit1.' CircuitProps{i} ';'])
 end
@@ -166,7 +166,7 @@ for NSummary = 1:size(Conf.Summary,1)
     % Verificar que todas las cosas se han medido en cada temperatura para
     % pasar a la siguiente
     for i = 2:size(Conf.Summary,2)
-        if strcmp(Conf.Summary{NSummary,i},'Running')
+        if strcmp(Conf.Summary{NSummary,i},'Running')||strcmp(Conf.Summary{NSummary,i},'Done')
             Conf.Summary{NSummary,i} = 'Yes';
             handles.Summary_Table.Data{NSummary,i} = 'Yes';
         end
@@ -254,7 +254,7 @@ for NSummary = 1:size(Conf.Summary,1)
         % Es esencial que hayamos medido al menos una curva IV positiva y
         % otra negativa
         if ~isempty(Conf.TF.Zw.rpp)
-            IZvalues.P = BuildIbiasFromRp(IVsetP,Conf.TF.Zw.rpp);
+            [~,IZvalues.P] = BuildIbiasFromRp(IVsetP,Conf.TF.Zw.rpp);                        
             IZvalues.P(IZvalues.P > 500) = 500;
             clear rpp;
             rpp = Conf.TF.Zw.rpp;
@@ -265,7 +265,7 @@ for NSummary = 1:size(Conf.Summary,1)
         end
         
         if ~isempty(Conf.TF.Zw.rpn)
-            IZvalues.N = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
+            [~,IZvalues.N] = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
             IZvalues.N(IZvalues.N < -500) = -500;
             clear rpn;
             rpn = Conf.TF.Zw.rpn;
@@ -384,7 +384,7 @@ RGB = [linspace(120,255,100)' sort(linspace(50,170,100),'descend')' 50*ones(100,
 tic;
 h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
 t  = toc;
-tfin = 30;
+tfin = 120;
 while tfin-t > 0
     if ishandle(h)
         mins = floor((tfin-t)/60);
@@ -397,9 +397,9 @@ while tfin-t > 0
     end
     pause(0.5);
     t  = toc;
-end                
+end
 
-Error = nan(9,1);
+Error = nan(19,1);
 c = true;
 j = 1;
 while c
@@ -415,30 +415,30 @@ while c
     catch
         SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
     end
-    if (mean(Error)) < 0.0001 && j > 10  % Error es 0.0001 K
+    if (mean(Error)) < 0.00015 && j > 19  % Error es 0.0001 K
         c = false;
     else
-        if mean(Error) < 0.0001 % Cuando la temperatura alcanza un valor con un error relativo menor al 0.2%
-%             h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
+        if mean(Error) < 0.00015 % Cuando la temperatura alcanza un valor con un error relativo menor al 0.2%
+            %             h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
             pause(1);
             tfin = 300;
             tic;
             waitbar(0/tfin,h,'5 mins remaining for safety');
             t  = toc;
-            while tfin-t > 0    
+            while tfin-t > 0
                 T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
                 Set_Pt = str2double(SetupTES.SetPt.String);
                 
                 %% Gestion del error de temperatura
                 Error(j) =abs( T_MC-Set_Pt);
-                disp(Error);
+%                 disp(Error);
                 SetupTES.Error_Measured.String = Error(j);
                 try
                     SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
                 catch
                     SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
                 end
-                if mean(Error(j)) < 0.0001
+                if mean(Error) < 0.0001
                     if ishandle(h)
                         close(h);
                     end
@@ -452,7 +452,7 @@ while c
                     else
                         waitbar(t/tfin,h,[num2str(secs,'%1.0f') ' s remaining for safety']);
                     end
-                end            
+                end
                 %                 pause(60*5);
                 pause(0.5);
                 t  = toc;
@@ -461,9 +461,9 @@ while c
         end
         pause(0.5);
     end
-    j = max(mod(j+1,10),1);
+    j = max(mod(j+1,20),1);
     if ishandle(h)
-        waitbar(j/10,h,['SetPt: ' num2str(Set_Pt) ' - M/C: ' num2str(T_MC)]);
+        waitbar(j/20,h,['SetPt: ' num2str(Set_Pt) ' - M/C: ' num2str(T_MC)]);
     end
     pause(0.2);
 end
@@ -487,7 +487,7 @@ elseif Conf.IVcurves.SmartRange.On
     
 end
 
-ThresIbias = 1; % la curva de IV llegará en caso positivo a -1 uA
+ThresIbias = 0.1; % la curva de IV llegará en caso positivo a -0.1 uA
 
 for IB = 1:2 % Positive 1, Negative 2
     slope_curr = 0;
@@ -541,9 +541,9 @@ for IB = 1:2 % Positive 1, Negative 2
         SetupTES.SQ_Set_I.Value = 1;
         SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
         if i == 1
-            pause(1.5)
+            pause(SetupTES.IVDelay.FirstDelay)
         else
-            pause(1);
+            pause(SetupTES.IVDelay.StepDelay);
         end
         averages = 1;
         for i_av = 1:averages
@@ -633,8 +633,8 @@ for IB = 1:2 % Positive 1, Negative 2
     IVmeasure.Tbath = SetupTES.SetPt.String;
     clear data;
     data(:,2) = IVmeasure.ibias;
-    data(:,4) = IVmeasure.vout-IVmeasure.vout(end);  % Centramos la IV en 0,0.
-    IVmeasure.vout = data(:,4)';
+    data(:,4) = IVmeasure.vout;
+    
     
     if IBvals(1) > 0
         pol = 'p';
@@ -654,6 +654,8 @@ for IB = 1:2 % Positive 1, Negative 2
     file = strcat(num2str(Temp*1e3,'%1.1f'),'mK','_Rf',num2str(SetupTES.Circuit.Rf.Value*1e-3),'K_',dire,'_',pol,'_matlab.txt');
     save([handles.IVs_Dir file],'data','-ascii');
     
+    data(:,4) = IVmeasure.vout-IVmeasure.vout(end);  % Centramos la IV en 0,0.
+    IVmeasure.vout = data(:,4)';
     % Importante que el TES_Circuit se haya actualizado con los valores de
     % Rf, mN, mS, Rpar, Rn
     
@@ -669,12 +671,14 @@ for IB = 1:2 % Positive 1, Negative 2
 %     TESDATA.circuit.mS = nanmedian(diff(IVmeasure.vout(end-3:end))./diff(IVmeasure.ibias(end-3:end)));
 %     TESDATA.circuit = TESDATA.circuit.RnRparCalc;
     TESDATA.TES.n = [];
+    TESDATA.TES.Rn = TESDATA.circuit.Rn;
+    TESDATA.TES.Rpar = TESDATA.circuit.Rpar;
     if IB == 1
-        IVsetP = IVCurveSet.GetIVTES(TESDATA);
+        IVsetP = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TES);
         IVsetP.IVsetPath = handles.IVs_Dir;
         IVsetP.range = [Ibvalues.p 0];
     else
-        IVsetN = IVCurveSet.GetIVTES(TESDATA);
+        IVsetN = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TES);
         IVsetN.IVsetPath = handles.IVs_Dir;
         IVsetP.range = [Ibvalues.n 0];
     end
@@ -707,7 +711,9 @@ if ~isfield(SetupTES,'IVset')
         SetupTES.SQ_Set_I.Value = 1;
         SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
         if i == 1
-            pause(1.5);
+            pause(SetupTES.BoptDelay.FirstDelay);
+        else
+            pause(SetupTES.BoptDelay.StepDelay);
         end
         averages = 1;
         for i_av = 1:averages
@@ -773,7 +779,10 @@ if ~isfield(SetupTES,'IVset')
     IVCurveSet = TES_IVCurveSet;
     IVCurveSet = IVCurveSet.Update(IVmeasure);
     TESDATA.TES.n = [];
-    IVset = IVCurveSet.GetIVTES(TESDATA);
+    TESDATA.TES.Rn = SetupTES.Circuit.Rn.Value;
+    TESDATA.TES.Rpar = SetupTES.Circuit.Rpar.Value;
+    
+    IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TES);
 else
     figure(SetupTES.SetupTES)
     IVset = handles.SetupTES.IVset;
@@ -833,9 +842,9 @@ for k = 1:2
                 SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
             end
             if jj == 1
-                pause(1.5);
+                pause(SetupTES.BoptDelay.FirstDelay);
             else
-                pause(1);
+                pause(SetupTES.BoptDelay.StepDelay);
             end
             
             averages = 1;
@@ -918,7 +927,8 @@ SetupTES.SQ_Reset_Closed_Loop.Value = 1;
 SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',...
     SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
 
-step = 0.1;
+step_ini = 5;
+step = step_ini;
 
 for i = 1:length(BfieldValues)
     
@@ -932,7 +942,11 @@ for i = 1:length(BfieldValues)
     SetupTES.CurSource_I.String = num2str(BfieldValues(i)*1e-6);  % Se pasan las corrientes en amperios
     SetupTES.CurSource_Set_I.Value = 1;
     SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
-    pause(1);
+    if i == 1
+        pause(SetupTES.ICDelay.FirstDelay);
+    else
+        pause(SetupTES.ICDelay.StepDelay);
+    end
     
     if i < 4
         i0 = [1 1];
@@ -942,13 +956,22 @@ for i = 1:length(BfieldValues)
             mmn = (ICpairs(i-1).n-ICpairs(i-3).n)/(BfieldValues(i-1)-BfieldValues(i-3));
             icnext_p = ICpairs(i-1).p + mmp*(BfieldValues(i)-BfieldValues(i-1));
             icnext_n = ICpairs(i-1).n + mmn*(BfieldValues(i)-BfieldValues(i-1));
-            ic0_p = 0.9*icnext_p;
-            ic0_n = 0.9*icnext_n;
+            ic0_p = min(0.9*icnext_p,ICpairs(i-1).p*0.9);
+            ic0_n = -min(abs(0.9*icnext_n),abs(ICpairs(i-1).n*0.9));
             tempvalues = 0:step:500;%%%array de barrido en corriente
             ind_p = find(tempvalues <= abs(ic0_p));
             ind_n = find(tempvalues <= abs(ic0_n));
-            
-            i0 = [ind_p(end) ind_n(end)];%%%Calculamos el índice que corresponde a la corriente para empezar el barrido
+            if ind_p(end) == size(tempvalues,2)
+                i0(1,1) = ind_p(end-1);
+            else
+                i0(1,1) = ind_p(end);
+            end
+            if ind_n(end) == size(tempvalues,2)
+                i0(1,2) = ind_n(end-1);
+            else
+                i0(1,2) = ind_n(end);
+            end
+%             i0 = [ind_p(end) ind_n(end)];%%%Calculamos el índice que corresponde a la corriente para empezar el barrido
         catch
             i0 = [1 1];
         end
@@ -958,7 +981,7 @@ for i = 1:length(BfieldValues)
         ICpairs(i).p = aux.p;
         ICpairs(i).n = aux.n;
         ICpairs(i).B = BfieldValues(i);
-        step = min(2,max(0.1,aux.p/20));%por si es cero.
+        step = max(step_ini,aux.p/20);%por si es cero.
     catch
         warning('error de lectura')
         pause(1)
@@ -978,14 +1001,14 @@ for i = 1:length(BfieldValues)
     SetupTES.CurSource_I.String = num2str(0);  % Se pasan las corrientes en amperios
     SetupTES.CurSource_Set_I.Value = 1;
     SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
-    pause(1);
+    pause(0.2);
     
 end
 FileStr = ['ICpairs' num2str(Temp*1e3,'%1.1f') 'mK.mat'];
 save([handles.Barrido_Campo_Dir FileStr],'ICpairs');
-data(:,1) = ICpairs(i).B;
-data(:,2) = ICpairs(i).p;
-data(:,3) = ICpairs(i).n;
+data(:,1) = [ICpairs.B];
+data(:,2) = [ICpairs.p];
+data(:,3) = [ICpairs.n];
 save([handles.Barrido_Campo_Dir 'ICpairs' num2str(Temp*1e3,'%1.1f') '.txt'],'data','-ascii');
 
 SetupTES.CurSource_I_Units.Value = 1;

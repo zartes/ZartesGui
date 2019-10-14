@@ -22,7 +22,7 @@ function varargout = IbvaluesConf(varargin)
 
 % Edit the above text to modify the response to help IbvaluesConf
 
-% Last Modified by GUIDE v2.5 29-Mar-2019 14:20:13
+% Last Modified by GUIDE v2.5 14-Oct-2019 12:54:15
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -165,8 +165,8 @@ Conf.BField.P = 0;
 Conf.BField.N = 0;
 
 Conf.IVcurves.On = 1;
-Conf.IVcurves.Manual.On = 1;
-Conf.IVcurves.SmartRange.On = 0;
+Conf.IVcurves.Manual.On = 0;
+Conf.IVcurves.SmartRange.On = 1;
 Conf.IVcurves.Manual.Values.p = 500:-5:0;
 Conf.IVcurves.Manual.Values.n = -500:5:0;
 
@@ -1151,7 +1151,12 @@ function AQ_IVs_Callback(hObject, eventdata, handles)
 ch = findobj('Parent',handles.Ibias_Range_Panel,'-not','Tag',hObject.Tag,'-not','Tag','Ibias_Panel');
 ch1 = findobj('Parent',handles.Ibias_Panel);
 if hObject.Value
-    set([ch; ch1],'Enable','on');
+    set(ch1,'Enable','on');
+    if handles.ManualIbias.Value
+        set(ch,'Enable','on');
+    else        
+        set(ch,'Enable','off');
+    end
 else
     set([ch; ch1],'Enable','off');
 end

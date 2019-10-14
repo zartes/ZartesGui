@@ -19,8 +19,11 @@ classdef TES_IVCurveSet
         good;
         Tbath;
         IVsetPath;
-%         Rpar;
-%         Rn;
+        CorrectionMethod;
+        PN_lowerTol = 0.85;
+        PN_upperTol = 1.15;
+        PS_lowerTol = 0.95;
+        PS_upperTol = 1.05;
     end
     
     methods
@@ -96,17 +99,36 @@ classdef TES_IVCurveSet
             end
             h = waitbar(0,'Please wait...','Name','ZarTES v2.0 - Loading IV curves');
             pause(0.05);
-            iOK = 1;
-            
+            iOK = 1;            
             
                 
+            if isempty(obj(1).CorrectionMethod)
             ButtonName = questdlg('IV-alignment method', ...
                 'Choose method for the alignment of IV-Curves', ...
-                'Forced zero-zero', 'Respect to Normal Curve', 'Respect to Normal Curve');
+                'Forced zero-zero','Respect to Normal Curve', 'Respect to Normal Curve');
+            else
+                ButtonName = obj(1).CorrectionMethod;
+            end
+            
             switch ButtonName
                 case 'Forced zero-zero'
-                    
+                    obj(1).CorrectionMethod = 'Forced zero-zero';
                 case 'Respect to Normal Curve'
+                    obj(1).CorrectionMethod = 'Respect to Normal Curve';
+                    hfig = findobj('Tag','IV correction');
+                    hax = findobj('Tag','IV axes');
+                    if isempty(hfig)
+                        fig = figure('Tag','IV correction');
+                        ax1 = axes('Tag','IV axes');
+                        hold(ax1,'on');
+                        grid(ax1,'on');
+                    else
+                        fig = hfig;
+                        ax1 = hax;
+                        grid(ax1,'on');
+                    end
+                case 'Zero-crossing point'
+                    obj(1).CorrectionMethod = 'Respect to Normal Curve';
                     hfig = findobj('Tag','IV correction');
                     hax = findobj('Tag','IV axes');
                     if isempty(hfig)
@@ -120,11 +142,12 @@ classdef TES_IVCurveSet
                         grid(ax1,'on');
                     end
                 otherwise
-                    ButtonName = 'Forced zero-zero';
+                    obj(1).CorrectionMethod = 'Forced zero-zero';
             end
             
             
             for i = 1:length(T)
+                obj(i).CorrectionMethod = ButtonName;
                 file_upd = fileN{iOK};
                 file_upd(file_upd == '_') = ' ';
                 waitbar(iOK/length(T),h,file_upd)
@@ -136,9 +159,7 @@ classdef TES_IVCurveSet
                 catch
                     data = fopen(T{i});
                     continue;
-                end                
-                
-%                 IVset = auxS;
+                end      
                 ind_i = strfind(fileN{iOK},'mK_Rf');
                 ind_f = strfind(fileN{iOK},'K_down_');
                 if isempty(ind_f)
@@ -170,16 +191,13 @@ classdef TES_IVCurveSet
                 obj(iOK).file = fileN{iOK};
                 obj(iOK).Tbath = sscanf(char(regexp(fileN{iOK},'\d+.?\d+mK*','match')),'%fmK')*1e-3;
                 obj(iOK).IVsetPath = path;
-                switch ButtonName
+                switch obj(iOK).CorrectionMethod
                     case 'Forced zero-zero'
                         obj(iOK).vout = obj(iOK).vout-obj(iOK).vout(end);
-                        mN(iOK) = mean(obj(iOK).vout(1:5)./obj(iOK).ibias(1:5));
-                        mS(iOK) = nanmean(obj(iOK).vout(end-5:end-1)./obj(iOK).ibias(end-5:end-1));
                         obj(iOK).good = 1;
-                    otherwise                        
-                        
+                    case 'Respect to Normal Curve'                                                
                         try
-                            [datafit,xcros,ycros,slopeN,slopeS] = obj.IVcorrection(Dibias,Dvout,ax1);
+                            [datafit,xcros,ycros,slopeN,slopeS] = obj.IV_estimation_mN_mS(Dibias,Dvout,ax1);
                             if isnan(slopeS)
                                 obj(iOK).good = 0;
                             else
@@ -194,16 +212,22 @@ classdef TES_IVCurveSet
                         catch
                             obj(iOK).good = 0;
                             DataFit(iOK) = datafit;
-                        end
-%                         h_ib(iOK) = plot(ax1,obj(iOK).ibias*1e6,obj(iOK).vout,'.--','DisplayName',[num2str(obj(iOK).Tbath*1e3) ' mK'],...
-%                             'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(iOK).file);                        
-                end                                
-                
-                
-                
-                
-%                 plot(ax1,obj(iOK).ibias,obj(iOK).vout);
-                
+                        end        
+                    case 'Zero-crossing point'
+                        obj(iOK).good = 1;
+                        try
+                        [datafit,xcros,ycros,slopeN,slopeS] = obj.IV_estimation_mN_mS(Dibias,Dvout,ax1);
+                            
+                            SlopeN(iOK) = slopeN;
+                            SlopeS(iOK) = slopeS;
+                            Xcros(iOK) = xcros;
+                            Ycros(iOK) = ycros;
+                            DataFit(iOK) = datafit;
+                            clear data;
+                        catch                            
+                            DataFit(iOK) = datafit;
+                        end        
+                end                                                
                 iOK = iOK+1;                                
             end
             pre_Rf = unique(pre_Rf);
@@ -211,174 +235,137 @@ classdef TES_IVCurveSet
                 warndlg('Unconsistency on Rf values, please check it out','ZarTES v2.0');
             end
             
-            switch ButtonName
+            [obj,mN,mS] = obj.IV_correction_methods(DataFit,ax1);                        
+            if ishandle(h)
+                close(h);
+            end
+        end
+        
+        function [obj,mN,mS] = IV_correction_methods(obj,DataFit,ax1)
+            
+            
+            switch obj(1).CorrectionMethod
                 case 'Forced zero-zero'
+                    for i = 1:length(obj)
+                        mN(i) = mean(obj(i).vout(1:5)./obj(i).ibias(1:5));
+                        mS(i) = nanmean(obj(i).vout(end-5:end-1)./obj(i).ibias(end-5:end-1));
+                    end
                     mN = prctile(mN,50);
                     mS = prctile(mS,50);
-%                     mN = nanmedian(mN);
-%                     mS = nanmedian(mS);
-                case 'Respect to Normal Curve'
-%                     set(h_ib,'UserData',obj);
-%                     set(fig,'UserData',obj);
-%                     
-%                     
-%                     % Revisar las curvas IV y seleccionar aquellas para eliminar del
-%                     % analisis
-%                     waitfor(helpdlg('Before closing this message, please check the IV curves','ZarTES v2.0'));
-%                     obj = get(fig,'UserData');
-%                     %             end
-%                     ax = findobj(fig,'Type','Axes');
-%                     set(ax,'ButtonDownFcn',{@GraphicErrors})
                     
+                case 'Zero-crossing point'
                     
-                    % figure,ax = axes, hold on,for i = 1:length(obj),if obj(i).good,plot(obj(i).ibias,obj(i).vout),end,end
-                    %             if isnan(DataFit(iOK-1).PS)
                     PN = [DataFit.PN];
                     PN = PN(1:2:end);
-                    
-                    % Condición basada en la recta normal
-                    j = 1;
-                    for i = 1:length(obj)
-                        if obj(i).good
-                            if isnan(PN(j))
-                                obj(i).good = 0;
-                                j = j+1;
-                                continue;
-                            end
-                            if (PN(j) < nanmedian(PN)*0.85)||(PN(j) > nanmedian(PN)*1.15)
-                                obj(i).good = 0;
-                                PN(j) = NaN;
-                            end
-                            j = j+1;
-                        else
-                            if (PN(j) < nanmedian(PN)*0.85)||(PN(j) > nanmedian(PN)*1.15)
-                                obj(i).good = 0;
-                                PN(j) = NaN;
-                            end
-                            j = j+1;
-                        end
-                    end
-                    
-                    
                     PS = [DataFit.PS];
                     PS = PS(1:2:end);
-                    j = 1;
-                    % Condición basada en la recta normal
+                    Tbath = [obj.Tbath];
+                    
+                    % Definimos la curva normal como la tomada a mayor
+                    % temperatura
+                    [val,indN] = max(Tbath);
+                    [datafitN,xcrosN,ycrosN,slopeNN,slopeNS] = obj.IV_estimation_mN_mS(obj(indN).ibias,obj(indN).vout,ax1);
+                    mN = 1/slopeNN;
+                    % Definimos la curva superconductora como la tomada
+                    % a menor temperatura
+                    [val,indS] = min(Tbath);
+                    [datafitS,xcrosS,ycrosS,slopeSN,slopeSS] = obj.IV_estimation_mN_mS(obj(indS).ibias,obj(indS).vout,ax1);
+                    mS = 1/slopeSS;
+                    
+                    [val, indmin] = min(abs(datafitS.SLine-datafitN.NLine));
+                    Xcros = datafitN.Xdata(indmin);
+                    Ycros = datafitN.NLine(indmin);
                     for i = 1:length(obj)
-                        if obj(i).good
-                            if isnan(PS(j))
-                                obj(i).good = 0;
-                                j = j+1;
-                                continue;
-                            end
-                            if (PS(j) < nanmedian(PS)*0.95)||(PS(j) > nanmedian(PS)*1.05)
-                                obj(i).good = 0;
-                                PS(j) = NaN;
-                            end
-                            j = j+1;
+                        if strcmp(obj(i).range,'PosIbias')
+                            [~, I] = sort(abs(obj(i).ibias),'descend');
                         else
-                            if (PS(j) < nanmedian(PS)*0.95)||(PS(j) > nanmedian(PS)*1.05)
-                                obj(i).good = 0;
-                                PS(j) = NaN;
-                            end
-                            j = j+1;
+                            [~, I] = sort(obj(i).ibias,'ascend');
                         end
-                    end
-                    
-                    % Buscamos la curva IV de estado normal para Positivas
-                    % y Negativas
-                    
-                    jP = 1;
-                    jN = 1;
-                    if strcmp(obj(1).range,'PosIbias')
-                        for i = 1:length(obj)
-                            
-                            TbathP(jP) = obj(i).Tbath;
-                            IndP(jP) = i;
-                            jP = jP+1;
-                        end
-                        [val,ind] = max(TbathP);
-                        if isnan(PS(IndP(ind)))
-                            indPEnd = IndP(ind);
-                        end
-                        obj(indPEnd).vout = obj(indPEnd).vout - obj(indPEnd).vout(end);
-                        [datafit,xcros,ycros,slopeN,slopeS] = obj.IVcorrection(obj(indPEnd).ibias,obj(indPEnd).vout,ax1);
-                        DataFit(indPEnd) = datafit;
-                    else
-                        for i = 1:length(obj)
-                            TbathN(jN) = obj(i).Tbath;
-                            IndN(jN) = i;
-                            jN = jN+1;
-                        end
-                        [val,ind] = max(TbathN);
-                        if isnan(PS(IndN(ind)))
-                            indNEnd = IndN(ind);
-                        end
-                        obj(indNEnd).vout = obj(indNEnd).vout - obj(indNEnd).vout(end);
-                        [datafit,xcros,ycros,slopeN,slopeS] = obj.IVcorrection(obj(indNEnd).ibias,obj(indNEnd).vout,ax1);
-                        DataFit(indNEnd) = datafit;
-                    end
-                    
-                    
-                    
-                   
-                    
-%                     indPEnd = IndP(find(isnan(PS(IndP)), 1, 'last' ));
-%                     indNEnd = IndN(find(isnan(PS(IndN)), 1, 'last' ));
+                        obj(i).ibias = obj(i).ibias(I);
+                        obj(i).vout = obj(i).vout(I);
                         
+                        obj(i).ibias = obj(i).ibias-Xcros;
+                        obj(i).vout = obj(i).vout-Ycros;
+                        plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                        if strcmp(obj(i).range,'NegIbias')
+                            plot(ax1,-obj(i).ibias*1e6,-obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                        end
+                    end                                                                                          
                     
                     
+                case 'Respect to Normal Curve'
                     
-%                     indEnd = find(isnan(PS), 1, 'last' );
-%                     if isempty(indEnd)
-%                         indEnd = length(PS);
-%                     end
+                    % Condición basada en la recta normal                    
                     
+                    mStr = {'N';'S'}; % primero recta normal y después superconductora
+                    
+                    for k = 1:length(mStr)
+                        eval(['P' mStr{k} ' = [DataFit.P' mStr{k} '];'])
+                        eval(['P' mStr{k} ' = P' mStr{k} '(1:2:end);'])
+                        j = 1;
+                        for i = 1:length(obj)
+                            if obj(i).good
+                                p = eval(['P' mStr{k} '(j)']);
+                                p_all = nanmedian(eval(['P' mStr{k} ]));
+                                
+                                if isnan(p)
+                                    obj(i).good = 0;
+                                    j = j+1;
+                                    continue;
+                                end
+                                if (p < p_all*eval(['obj(1).P' mStr{k} '_lowerTol']))||(p > p_all*eval(['obj(1).P' mStr{k} '_upperTol']))
+                                    obj(i).good = 0;
+                                    eval(['P' mStr{k} '(j) = NaN;']);
+                                end
+                                j = j+1;
+                            else
+                                if (p < p_all*eval(['obj(1).P' mStr{k} '_lowerTol']))||(p > p_all*eval(['obj(1).P' mStr{k} '_upperTol']))
+                                    obj(i).good = 0;
+                                    eval(['P' mStr{k} '(j) = NaN;']);
+                                end
+                                j = j+1;
+                            end
+                        end
+                    end
+                    jP = 1;
+                    for i = 1:length(obj)
+                        TbathP(jP) = obj(i).Tbath;
+                        IndP(jP) = i;
+                        jP = jP+1;
+                    end
+                    [val,ind] = max(TbathP);
+                    if isnan(PS(IndP(ind)))
+                        indPEnd = IndP(ind);
+                    end
+%                     obj(indPEnd).vout = obj(indPEnd).vout - obj(indPEnd).vout(end);
+                    [datafit,xcros,ycros,slopeN,slopeS] = obj.IV_estimation_mN_mS(obj(indPEnd).ibias,obj(indPEnd).vout,ax1);
+                    DataFit(indPEnd) = datafit;
                     for i = 1:length(obj)
                         if obj(i).good
                             % Primer paso normalizar a Vout(1) iguales misma Rn
                             if strcmp(obj(i).range,'PosIbias')
                                 [valibias,indmax] = max(obj(i).ibias);
-                                [val,indmax1] = min(abs(obj(indPEnd).ibias - valibias));
-                                obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indPEnd).vout(indmax1));
-                                [obj(i).ibias, Id] = unique(obj(i).ibias);
-                                obj(i).vout = obj(i).vout(Id);
-                                [~, I] = sort(abs(obj(i).ibias),'descend');
-                                obj(i).ibias = obj(i).ibias(I);
-                                obj(i).vout = obj(i).vout(I);
                             else
                                 [valibias,indmax] = min(obj(i).ibias);
-                                [val,indmax1] = min(abs(obj(indNEnd).ibias - valibias));
-                                obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indNEnd).vout(indmax1));
-                                [obj(i).ibias, Id] = unique(obj(i).ibias);
-                                obj(i).vout = obj(i).vout(Id);
-                                [~, I] = sort(obj(i).ibias,'ascend');
-                                obj(i).ibias = obj(i).ibias(I);
-                                obj(i).vout = obj(i).vout(I);
                             end
                             
-%                             if strcmp(obj(1).range,'PosIbias')
-%                                 [valibias,indmax] = max(obj(i).ibias);
-%                                 [val,indmax1] = min(abs(obj(indEnd).ibias - valibias));
-%                             else
-%                                 [valibias,indmax] = min(obj(i).ibias);
-%                                 [val,indmax1] = min(abs(obj(indEnd).ibias - valibias));
-%                             end
+                            [val,indmax1] = min(abs(obj(indPEnd).ibias - valibias));
+                            obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indPEnd).vout(indmax1));
+                            [obj(i).ibias, Id] = unique(obj(i).ibias);
+                            obj(i).vout = obj(i).vout(Id);
+                            if strcmp(obj(i).range,'PosIbias')
+                                [~, I] = sort(abs(obj(i).ibias),'descend');
+                            else
+                                [~, I] = sort(obj(i).ibias,'ascend');
+                            end
+                            obj(i).ibias = obj(i).ibias(I);
+                            obj(i).vout = obj(i).vout(I);
                             
+                            [Datafit(i),~,~,~,~] = obj.IV_estimation_mN_mS(obj(i).ibias,obj(i).vout,ax1);
                             
-                            
-                            
-                            %                             obj(i).ibias = obj(i).ibias - (obj(i).ibias(1)-obj(end).ibias(1));
-                            %                 end
-                            [Datafit(i),~,~,~,~] = obj.IVcorrection(obj(i).ibias,obj(i).vout,ax1);
-                            
-                            if (Datafit(i).PS(1) > nanmedian(PS)*0.95)||(Datafit(i).PS(1) < nanmedian(PS)*1.05)
+                            if (Datafit(i).PS(1) > nanmedian(PS)*obj(1).PS_lowerTol)||(Datafit(i).PS(1) < nanmedian(PS)*obj(1).PS_upperTol)
                                 ind = i;
-                                if strcmp(obj(1).range,'PosIbias')
                                 [val, indmin] = min(abs(Datafit(ind).SLine-DataFit(indPEnd).NLine));
-                                else
-                                    [val, indmin] = min(abs(Datafit(ind).SLine-DataFit(indNEnd).NLine));
-                                end
                                 Xcros(i) = Datafit(ind).Xdata(indmin);
                                 Ycros(i) = Datafit(ind).SLine(indmin);
                                 obj(i).ibias = obj(i).ibias-Xcros(i);
@@ -394,13 +381,9 @@ classdef TES_IVCurveSet
                                 obj(i).ibias = obj(i).ibias(I);
                                 obj(i).vout = obj(i).vout(I);
                                 
-                            elseif (Datafit(i).PS(1) < nanmedian(PS)*0.95)||(Datafit(i).PS(1) > nanmedian(PS)*1.05)
+                            elseif (Datafit(i).PS(1) < nanmedian(PS)*obj(1).PS_lowerTol)||(Datafit(i).PS(1) > nanmedian(PS)*obj(1).PS_upperTol)
                                 obj(i).good = 0;
                                 continue;
-%                                 Xcros(i) = median(Xcros(i-1:end));
-%                                 Ycros(i) = median(Ycros(i-1:end));
-%                                 obj(i).ibias = obj(i).ibias-Xcros(i);
-%                                 obj(i).vout = obj(i).vout-Ycros(i);
                             elseif isnan(Datafit(i).PS(1))
                                 
                                 obj(i).ibias = obj(i).ibias-obj(i).ibias(end);
@@ -408,7 +391,11 @@ classdef TES_IVCurveSet
                                 
                                 [obj(i).ibias, Id] = unique(obj(i).ibias);
                                 obj(i).vout = obj(i).vout(Id);
-                                [~, I] = sort(abs(obj(i).ibias),'descend');
+                                if strcmp(obj(i).range,'PosIbias')
+                                    [~, I] = sort(abs(obj(i).ibias),'descend');
+                                else
+                                    [~, I] = sort(obj(i).ibias,'ascend');
+                                end
                                 obj(i).ibias = obj(i).ibias(I);
                                 obj(i).vout = obj(i).vout(I);
                             end
@@ -416,35 +403,46 @@ classdef TES_IVCurveSet
                             if strcmp(obj(i).range,'NegIbias')
                                 plot(ax1,-obj(i).ibias*1e6,-obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
                             end
+                        else
+                            obj(i).ibias = obj(i).ibias-Xcros(1);
+                            obj(i).vout = obj(i).vout-Ycros(1);
+%                             obj(i).ibias = obj(i).ibias-obj(i).ibias(end);
+%                             obj(i).vout = obj(i).vout-obj(i).vout(end);
+                            
+                            [obj(i).ibias, Id] = unique(obj(i).ibias);
+                            obj(i).vout = obj(i).vout(Id);
+                            if strcmp(obj(i).range,'PosIbias')
+                                [~, I] = sort(abs(obj(i).ibias),'descend');
+                            else
+                                [~, I] = sort(obj(i).ibias,'ascend');
+                            end
+                            obj(i).ibias = obj(i).ibias(I);
+                            obj(i).vout = obj(i).vout(I);
+                            obj(i).good = 0;
+                            plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            if strcmp(obj(i).range,'NegIbias')
+                                plot(ax1,-obj(i).ibias*1e6,-obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            end
                         end
                     end
                     
-%                     figure,ax = axes, hold on,for i = 1:length(obj),if obj(i).good,if strcmp(obj(i).range,'PosIbias'),plot(obj(i).ibias,obj(i).vout),else,plot(-obj(i).ibias,-obj(i).vout),end,end,end
-                    %             end
-                    %             PN = [Datafit.PN];
-                    %             PN = PN(1:2:end);
-                    mN = prctile(PN,75);
-%                     mN = max(PN);
-                    mS = prctile(PS,75);       
-%                     mS = max(PS);
+                    mN = prctile(PN,50);
+%                     mN = PN(indPEnd);
+                    mS = prctile(PS,75);
+                    
+                otherwise
+                    
             end
-            if ishandle(h)
-                close(h);
-            end
-        end
+            
+        end        
         
-        function [DataFit,Xcros,Ycros,SlopeN,SlopeS] = IVcorrection(obj,ibias,vout,ax1)
+        function [DataFit,Xcros,Ycros,SlopeN,SlopeS] = IV_estimation_mN_mS(obj,ibias,vout,ax1)
             
             [ibias, Id] = unique(ibias);
             vout = vout(Id);
             [~, I] = sort(abs(ibias),'descend');
             ibias = ibias(I);
             vout = vout(I);
-%             if median(sign(ibias(1:10)))
-%                 [ibias, I] = sort(ibias,'descend');
-%             else
-%                 [ibias, I] = sort(ibias,'ascend');
-%             end
             
             Xdata = ((500:-0.001:-10)*1e-6)*median(sign(ibias(1:10)));
             DataFit.Xdata = Xdata;
@@ -462,14 +460,10 @@ classdef TES_IVCurveSet
             
             XN = NaN;
             XS = NaN;
-            %                 figure,hist(pend,700);
-            [h1,X] = hist(pend,700);
-            
+            [h1,X] = hist(pend,700);            
             [~,ind] = max(h1(X < Thres));
-%             [~,ind] = find(h1(X < Thres));
             XN = X(ind);
             hL = length(h1(X < Thres));
-%             [~,ind] = max(h1(X > Thres));
             [~,ind] = find((h1(X > Thres)));
             XS = nanmean(X(ind+hL));
             
@@ -484,8 +478,6 @@ classdef TES_IVCurveSet
                 
                 SlopeN = 1/PN(1);
                 
-%                 plot(ax1,Xdata,NLine,'-.r')
-                
                 DataFit.SLine = NaN;
                 DataFit.PS = [NaN NaN];
                 SlopeS = NaN;
@@ -495,24 +487,21 @@ classdef TES_IVCurveSet
                 DataFit.Ycros = NaN;
                 return;
             end
-%             plot(ax1,ibias(1:end),vout(1:end));hold on;
             if ~isempty(XN)
                 try
-                indPN = find(abs((pend-XN)*100/XN) < 2);
-                dataPN = vout([indPN; indPN(end)+1]);
-                dataXPN = ibias([indPN; indPN(end)+1]);
-                PN = polyfit(dataXPN,dataPN,1);
-                NLine = polyval(PN,Xdata);
-                DataFit.NLine = NLine;
-                DataFit.PN = PN;
-                SlopeN = 1/PN(1);
-%                 plot(ax1,Xdata,NLine,'-.r')
+                    indPN = find(abs((pend-XN)*100/XN) < 2);
+                    dataPN = vout([indPN; indPN(end)+1]);
+                    dataXPN = ibias([indPN; indPN(end)+1]);
+                    PN = polyfit(dataXPN,dataPN,1);
+                    NLine = polyval(PN,Xdata);
+                    DataFit.NLine = NLine;
+                    DataFit.PN = PN;
+                    SlopeN = 1/PN(1);
                 catch
-%             else
-                PN = [NaN NaN];                
-                DataFit.NLine = NaN;
-                DataFit.PN = PN;
-                SlopeN = NaN;                
+                    PN = [NaN NaN];
+                    DataFit.NLine = NaN;
+                    DataFit.PN = PN;
+                    SlopeN = NaN;
                 end
             end
             
@@ -532,7 +521,6 @@ classdef TES_IVCurveSet
                     DataFit.PS = PS;
                     SlopeS = NaN;
                 end
-%                 plot(ax1,Xdata,SLine,'-.r')
             else
                 PS = [NaN NaN];
                 DataFit.SLine = NaN;
@@ -543,7 +531,6 @@ classdef TES_IVCurveSet
             try
                 Xcros = (PS(2)-PN(2))/(PN(1)-PS(1));
                 Ycros = polyval(PS,Xcros);
-%                 plot(ax1,Xcros,Ycros,'*g');
             catch
                 Xcros = NaN;
                 Ycros = NaN;
@@ -562,12 +549,10 @@ classdef TES_IVCurveSet
                 Vs = (obj(i).ibias-obj(i).ites)*circuit.Rsh;%(ibias*1e-6-ites)*Rsh;if Ib in uA.
                 
                 obj(i).vtes = Vs-obj(i).ites*TES.Rpar;
-%                 obj(i).vtes = Vs-obj(i).ites*obj(i).Rpar;
                 obj(i).ptes = obj(i).vtes.*obj(i).ites;
                 obj(i).Rtes = obj(i).vtes./obj(i).ites;
                 obj(i).rtes = obj(i).Rtes/TES.Rn;
-%                 obj(i).rtes = obj(i).Rtes/obj(i).Rn;
-                if min(obj(i).rtes) > 0.05 
+                if min(obj(i).rtes) > 0.05 %|| any(obj(i).rtes < -0.05)
                     obj(i).good = 0;
                 end
                 if ~isempty(TES.n)
@@ -580,6 +565,7 @@ classdef TES_IVCurveSet
                     obj(i).bIV = diff(log(obj(i).Rtes))./diff(log(smI));
                 end
             end
+%             pause;
         end
         
         function [obj,TempLims,TESDATA] = ImportFromFiles(obj,TESDATA,DataPath,TempLims)
@@ -594,7 +580,7 @@ classdef TES_IVCurveSet
                 prompt = {'Mimimun temperature (mK):','Maximum temperature (mK):'};
                 name = 'Input for limiting Temp for analysis';
                 numlines = 1;
-                defaultanswer = {'20','160'};
+                defaultanswer = {'10','250'};
                 answer = inputdlg(prompt,name,numlines,defaultanswer);
                 
                 if isempty(answer)
@@ -621,7 +607,6 @@ classdef TES_IVCurveSet
                 IVsPath = DataPath;
                 obj(1).IVsetPath = DataPath;
             end
-%             StrRange = {'p';'n','*'};
             switch obj(1).range
                 case 'PosIbias'
                     StrRange = {'p'};
@@ -668,7 +653,6 @@ classdef TES_IVCurveSet
                 TESDATA.circuit.Rf = Rf;
                 eval(['TESDATA.TES' upper(StrRange{j}) '.mN = mN;']);
                 eval(['TESDATA.TES' upper(StrRange{j}) '.mS = mS;']);
-%                 eval(['[obj,TESDATA.TES' upper(StrRange{j}) '.mN, TESDATA.TES' upper(StrRange{j}) '.mS] = obj.IVs_Slopes;']);
                 eval(['TESDATA.TES' upper(StrRange{j}) ' = RnRparCalc(TESDATA.TES' upper(StrRange{j}) ',TESDATA.circuit);']);
                 eval(['obj = obj.GetIVTES(TESDATA.circuit,TESDATA.TES' upper(StrRange{j}) ');']);
             end
@@ -735,9 +719,9 @@ classdef TES_IVCurveSet
                     plot(ax(1),ibias*1e6,vout)
                     plot(ax(1),ibias(ind+1)*1e6,vout(ind+1),'.r')
                     
-                    xlabel(ax(1),'I_{bias} (\muA)','fontsize',11,'fontweight','bold');
-                    ylabel(ax(1),'Vout (V)','fontsize',11,'fontweight','bold');
-                    set(ax(1),'fontsize',11,'fontweight','bold');
+                    xlabel(ax(1),'I_{bias} (\muA)','FontSize',12,'FontWeight','bold');
+                    ylabel(ax(1),'Vout (V)','FontSize',12,'FontWeight','bold');
+                    set(ax(1),'FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on');
                 end
             end
             
@@ -755,8 +739,8 @@ classdef TES_IVCurveSet
             if nargin == 2
                 boxplot(ax(2),Values);
                 set(ax(2),'XTick',[1 2],'XTickLabel',{'Normal';'SuperC'})
-                ylabel(ax(2),'Slopes (V/\muA)','fontsize',11,'fontweight','bold');
-                set(ax(2),'fontsize',11,'fontweight','bold');
+                ylabel(ax(2),'Slopes (V/\muA)','FontSize',12,'FontWeight','bold');
+                set(ax(2),'FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on');
             end
             
             mN1 = (prctile(Pendientes(Pendientes < Thres),75)-nanmedian(Pendientes(Pendientes < Thres)))/2+nanmedian(Pendientes(Pendientes < Thres));
@@ -788,6 +772,11 @@ classdef TES_IVCurveSet
             c = distinguishable_colors(length(obj));
             for i = 1:length(obj)
                 if obj(i).good
+                    color = c(i,:);
+                else
+                    color = [0.8 0.8 0.8];
+                end
+                    
                     Ibias = obj(i).ibias;
                     Vout = obj(i).vout;
                     
@@ -796,44 +785,44 @@ classdef TES_IVCurveSet
                         h(1) = subplot(2,2,1);
                     end
                     h_ib(j) = plot(h(1),Ibias*1e6,Vout,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
+                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
                     grid(h(1),'on'),hold(h(1),'on');
                     xlim(h(1),[min(0,sign(Ibias(1))*500) 500]) %%%Podemos controlar apariencia con esto. 300->500
-                    xlabel(h(1),'Ibias(\muA)','fontweight','bold');ylabel(h(1),'Vout(V)','fontweight','bold');
-                    set(h(1),'fontsize',12,'linewidth',2,'fontweight','bold')
+                    xlabel(h(1),'Ibias(\muA)','FontWeight','bold');ylabel(h(1),'Vout(V)','FontWeight','bold');
+                    set(h(1),'FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on')
                     %Curva Ites-Vtes
                     if ~isfield(fig,'subplots')
                         h(3) = subplot(2,2,3);
                     end
                     h_ites(j) = plot(h(3),obj(i).vtes*1e6,obj(i).ites*1e6,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
+                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
                     grid(h(3),'on'),hold(h(3),'on');
                     xlim(h(3),[min(0,sign(Ibias(1))*.5) .5])
-                    xlabel(h(3),'V_{TES}(\muV)','fontweight','bold');ylabel(h(3),'Ites(\muA)','fontweight','bold');
-                    set(h(3),'fontsize',12,'linewidth',2,'fontweight','bold')
+                    xlabel(h(3),'V_{TES}(\muV)','FontWeight','bold');ylabel(h(3),'Ites(\muA)','FontWeight','bold');
+                    set(h(3),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
                     %Curva Ptes-Vtes
                     if ~isfield(fig,'subplots')
                         h(2) = subplot(2,2,2);
                     end
                     h_ptes(j) = plot(h(2),obj(i).vtes*1e6,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
+                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
                     grid(h(2),'on'),hold(h(2),'on');
                     xlim(h(2),[min(0,sign(Ibias(1))*1.0) 1.0])%%%Podemos controlar apariencia con esto. 0.5->1.0
-                    xlabel(h(2),'V_{TES}(\muV)','fontweight','bold');ylabel(h(2),'Ptes(pW)','fontweight','bold');
-                    set(h(2),'fontsize',12,'linewidth',2,'fontweight','bold')
+                    xlabel(h(2),'V_{TES}(\muV)','FontWeight','bold');ylabel(h(2),'Ptes(pW)','FontWeight','bold');
+                    set(h(2),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
                     %Curva Ptes-rtes
                     if ~isfield(fig,'subplots')
                         h(4) = subplot(2,2,4);
                     end
                     h_rtes(j) = plot(h(4),obj(i).rtes,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',c(i,:));
+                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
                     grid(h(4),'on'),hold(h(4),'on');
                     xlim(h(4),[0 1]), ylim(h(4),[0 20]);
-                    xlabel(h(4),'R_{TES}/R_n','fontweight','bold');ylabel(h(4),'Ptes(pW)','fontweight','bold');
-                    set(h(4),'fontsize',12,'linewidth',2,'fontweight','bold')
+                    xlabel(h(4),'R_{TES}/R_n','FontWeight','bold');ylabel(h(4),'Ptes(pW)','FontWeight','bold');
+                    set(h(4),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
                     
                     j = j+1;
-                end
+%                 end
             end
             try
                 axis(h,'tight');
@@ -842,6 +831,8 @@ classdef TES_IVCurveSet
                 set(fig.hObject,'UserData',obj);
             end
         end
+        
+        
         
     end
 end

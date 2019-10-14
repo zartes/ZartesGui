@@ -41,7 +41,8 @@ switch str
         Label = src.Parent.Label;
         h1 = findobj(h,'Tag',Label);
         for i = 1:length(h1)
-            h1(i).Visible = 'off';
+            h1(i).Color = [0.8 0.8 0.8];
+%             h1(i).Visible = 'off';
         end
         
         UserData.IVset(UserData.NumFile).good = 0;
