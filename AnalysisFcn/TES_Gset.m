@@ -7,8 +7,8 @@ classdef TES_Gset
         n_CI;
         K;      % nW/K^n
         K_CI;
-        Tc;     % K
-        Tc_CI;
+        T_fit;     % K
+        T_fit_CI;
         G;      % pW/K
         G_CI;
         G100;
@@ -29,8 +29,8 @@ classdef TES_Gset
             n_CI = [];
             K = [];      % nW/K^n
             K_CI = [];
-            Tc = [];     % K
-            Tc_CI = [];
+            T_fit = [];     % K
+            T_fit_CI = [];
             G = [];      % pW/K
             G_CI = [];
             G100 = [];

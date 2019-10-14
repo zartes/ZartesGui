@@ -4,16 +4,18 @@ classdef TES_Circuit
     %   characterization.
     
     properties
-        Rsh;  %Ohm
+        
         Rf;   %Ohm
+        Rsh;  %Ohm
         invMf;  % uA/phi
         invMin; % uA/phi        
         L;  % H
         Nsquid; % 'pA/Hz^{0.5}'
-%         Rpar;  %Ohm
-%         Rn;  % (%)
-%         mS;  % Ohm
-%         mN;  % Ohm
+        
+        Rpar;  %Ohm
+        Rn;  % (%)
+        mS;  % Ohm
+        mN;  % Ohm
     end
     
     
@@ -28,10 +30,11 @@ classdef TES_Circuit
             obj.invMin = 24.1;            
             obj.L = 7.7e-08;
             obj.Nsquid = 3e-12;
-%             obj.Rpar = 2.035e-05;
-%             obj.Rn = 0.0232;
-%             obj.mS = 8133;
-%             obj.mN = 650.7;
+            
+            obj.Rpar = 2.035e-05;
+            obj.Rn = 0.0232;
+            obj.mS = 8133;
+            obj.mN = 650.7;
         end
         
         function ok = Filled(obj)

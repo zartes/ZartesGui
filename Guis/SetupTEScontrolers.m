@@ -435,6 +435,7 @@ else
     try
         eval(['[a, b] = src.UserData.' src.Label]);
     catch
+        eval(['src.UserData.' src.Label]);
     end
 end
 
@@ -1283,6 +1284,7 @@ else
                 
             end
             
+            % I-V correction by forzing zero crossing
             try
             j = size(Data,2);
             switch j
@@ -1326,10 +1328,12 @@ else
                     IVCurveSet = TES_IVCurveSet;
                     IVCurveSet = IVCurveSet.Update(IVmeasure);
                     TESDATA.TES.n = [];
-                    handles.IVset = IVCurveSet.GetIVTES(TESDATA);
+                    TESDATA.TES.Rn = Rn;
+                    TESDATA.TES.Rpar = Rpar;
+                    handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TES);
                     handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
                     
-                    set([handles.SQ_SetRnBias handles.SQ_Rn.Enable],'Enable','on')
+                    set([handles.SQ_SetRnBias handles.SQ_Rn],'Enable','on')
             end % switch                        
             
                         
@@ -1338,10 +1342,10 @@ else
             switch ButtonName
                 case 'Yes'
                     TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
-                    if sign(Ibias{1}) < 0
-                        filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_n_matlab.txt'];
+                    if mode(sign(Ibias{1})) < 0
+                        filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_n_matlab'];
                     else
-                        filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_p_matlab.txt'];
+                        filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_p_matlab'];
                     end
                     
                     [filename, pathname] = uiputfile( ...
@@ -1402,7 +1406,7 @@ else
         handles.SQ_Ibias_Units.Value = 3;
         SQ_Ibias_Units_Callback(handles.SQ_Ibias_Units,[],handles);
         SQ_Rn_Callback(handles.SQ_Rn,[],handles);
-        handles.SQ_Ibias.String = handles.SQ_Rn.String;
+        handles.SQ_Ibias.String = handles.SQ_Rn_Ibias.String;
         Ibvalue = str2double(handles.SQ_Ibias.String);
         pause(0.3);
         
@@ -1618,7 +1622,7 @@ else
         CurSource_I_Units_Callback(handles.CurSource_I_Units,[],handles);
         I.Value = str2double(handles.CurSource_I.String);
         I.Units = 'A';
-        if abs(I.Value) > 0.005 % 5 mA
+        if abs(I.Value) > 0.007 % handles.CurSource.Imax.Value % 5 mA
             h = msgbox('Current value exceeds security range of 5mA', ...
                 handles.VersionStr);
             tic;
@@ -1629,6 +1633,7 @@ else
             if ishandle(h)
                 close(h);
             end
+            handles.CurSour = handles.CurSour.SetIntensity(I);
         else
             handles.CurSour = handles.CurSour.SetIntensity(I);
         end
@@ -1867,9 +1872,9 @@ else
         else
             FieldValues{1} = cell2mat(handles.FieldRange);
         end
-        vals = FieldValues;
-        clear FieldValues;
-        FieldValues{1} = sort(unique(cell2mat(vals)),'ascend');
+%         vals = FieldValues;
+%         clear FieldValues;
+%         FieldValues{1} = sort(unique(cell2mat(vals)),'ascend');
         
         if ~isempty(handles.TestData.VField)
             ButtonName = questdlg('Do you want to erase current Field Scan?', ...
@@ -1878,6 +1883,7 @@ else
             switch ButtonName
                 case 'Yes'
                     handles.TestData.VField = [];
+                    cla(handles.Result_Axes);
             end % switch
         end
         
@@ -1940,10 +1946,10 @@ else
                 'Yes','No','Yes');
             switch ButtonName
                 case 'Yes'
-                    TMC = num2str(str2double(handles.T_MC.String)*1e3,'%1.1f');
+                    TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
                     Ibias = handles.SQ_realIbias.String;
                     
-                    filename = ['BVScan_' TMC ,'mK_Ibias' Ibias '.txt'];
+                    filename = ['BVScan_' TMC ,'mK_Ibias' Ibias ];
                     
                     [filename, pathname] = uiputfile( ...
                         {[filename '.txt']}, ...
@@ -2013,7 +2019,8 @@ pause(handles.ICDelay.FirstDelay);
 handles.SQ_Reset_Closed_Loop.Value = 1;
 SQ_Reset_Closed_Loop_Callback(handles.SQ_Reset_Closed_Loop,[],handles);
 
-step = 15;
+step_ini = 10;
+step = step_ini;
 
 for i = 1:length(FieldValues{1})
     
@@ -2053,7 +2060,7 @@ for i = 1:length(FieldValues{1})
         ICpairs(i).p = aux.p;
         ICpairs(i).n = aux.n;
         ICpairs(i).B = FieldValues{1}(i);
-        step = max(0.1,aux.p/20);%por si es cero.
+        step = max(step_ini,aux.p/20);%por si es cero.
     catch
 %         pause(1);
         ICpairs(i).p = nan;
@@ -2079,7 +2086,7 @@ try
     button = questdlg('Do you want to store this Critical Current plot?',handles.VersionStr,'Yes','No','Yes');
     switch button
         case 'Yes'
-            FileStr = ['ICpairs' num2str(Temp*1e3,'%1.1') 'mK.txt'];
+            FileStr = ['ICpairs' num2str(Temp*1e3,'%1.1f'), 'mK'];
             [FileStr, pathname] = uiputfile( ...
                 {[FileStr '.txt']}, ...
                 'Save as');
@@ -2576,7 +2583,7 @@ if hObject.Value
                 DSA_Input_Amp_Callback(handles.DSA_Input_Amp,[],handles);
                 Amp = str2double(handles.DSA_Input_Amp.String);
             else
-                Amp = str2double(handles.DSA_Input_Amp.String)*1e1*str2double(handles.SQ_realIbias.String);
+                Amp = (1/100)*str2double(handles.DSA_Input_Amp.String)*1e1*str2double(handles.SQ_realIbias.String);
             end
             handles.DSA = handles.DSA.SineSweeptMode(Amp);
         case 2 % Fixed sine
@@ -2863,14 +2870,15 @@ if hObject.Value
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Action of the device (including line)
-%     handles.PXI.AbortAcquisition;
+    handles.PXI.AbortAcquisition;
     handles.PXI=handles.PXI.TF_Configuration;
+    
     handles.Actions_Str.String = 'PXI Acquisition Card: TF Mode ON';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
     
     if handles.PXI_Input_Amp_Units.Value == 4 % Porcentaje de Ibias
         % Devuelve el valor siempre en uA
-        excitacion = str2double(handles.SQ_realIbias.String)*1e1*str2double(handles.PXI_Input_Amp.String);
+        excitacion = str2double(handles.SQ_realIbias.String)*1e1*str2double(handles.PXI_Input_Amp.String)/100;
     else
         handles.PXI_Input_Amp_Units.Value = 2;
         excitacion = str2double(handles.PXI_Input_Amp.String);

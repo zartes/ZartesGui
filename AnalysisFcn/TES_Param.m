@@ -6,24 +6,26 @@ classdef TES_Param
         n;
         n_CI;
         K;
-        K_CI;        
-        Tc;
-        Tc_CI;
+        K_CI;
+        T_fit;
+        T_fit_CI;        
         G;
         G_CI;
-        G100;        
+        G100;
         rp;
-%         sides = [25e-6 25e-6];
-%         gammaMo = 2e3;
-%         gammaAu = 0.729e3;
-%         rhoMo = 0.107;
-%         rhoAu = 0.0983;
-%         hMo = 55e-9;
-%         hAu = 340e-9;
+        %         sides = [25e-6 25e-6];
+        %         gammaMo = 2e3;
+        %         gammaAu = 0.729e3;
+        %         rhoMo = 0.107;
+        %         rhoAu = 0.0983;
+        %         hMo = 55e-9;
+        %         hAu = 340e-9;
         Rpar;  %Ohm
         Rn;  % (%)
         mS;  % Ohm
         mN;  % Ohm
+        Tc_IVs;
+        IV_Tc;
     end
     
     methods
@@ -48,7 +50,7 @@ classdef TES_Param
             % fields must be filled to be considered as filled, except for sides)
             
             FN = properties(obj);
-            StrNo = {'sides'};
+            StrNo = {'sides';'Tc_IVs';'IV_Tc'};
             for i = 1:length(FN)
                 if isempty(cell2mat(strfind(StrNo,FN{i})))
                     if isempty(eval(['obj.' FN{i}]))
@@ -107,7 +109,27 @@ classdef TES_Param
             obj.Rn = (circuit.Rsh*circuit.Rf*circuit.invMf/(obj.mN*circuit.invMin)-circuit.Rsh-obj.Rpar);
             
         end
+        
+        function obj = Tc_EstimationFromRTs(obj,IVset)
+            
+            try
+                Rn50 = obj.Rn/2;
+                T_IVs = NaN(1,length(IVset));
+                for i = 1:length(IVset)
+                    if IVset(i).good
+                        indup = find(IVset(i).Rtes > Rn50, 1);
+                        inddown = find(IVset(i).Rtes < Rn50, 1);
+                        if ~isempty(indup)&&~isempty(inddown)
+                            T_IVs(i) = IVset(i).ttes(inddown(1));
+                        end
+                    end
+                end
+                [val, ind] = max(T_IVs);
+                obj.Tc_IVs = val;
+                obj.IV_Tc = ind;
+            catch
+            end
+        end
     end
-    
 end
 

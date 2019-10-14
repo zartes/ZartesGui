@@ -89,7 +89,8 @@ switch varargin{1}.Tag
         handles.Options.String = {'Sweept Sine';'Fixed Sine';'White Noise'};
         handles.Options.Value = varargin{2};
         
-        OptStr = {'SSine';'FSine';'WNoise'};
+%         OptStr = {'SSine';'FSine';'WNoise'};
+        OptStr = {'SSine'};
         
         for j = 1:length(OptStr)
             
@@ -101,14 +102,18 @@ switch varargin{1}.Tag
             end
             Srch = cell2mat(Srch);
             if hndl.DSA_Input_Amp_Units.Value == 4 % Porcentaje sobre Ibias
-                Porc = str2double(hndl.DSA_Input_Amp.String);
-                Ireal = hndl.Squid.Read_Current_Value;
-                SLRV_str = Ireal.Value*1e1*Porc;
+                Porc = str2double(hndl.DSA_Input_Amp.String)/100;
+                if ~handles1.SetupTES.LNCS_Active.Value
+                    Ireal = handles1.SetupTES.Squid.Read_Current_Value;
+                else
+                    Ireal = handles1.SetupTES.Squid.Read_Current_Value_LNCS;
+                end
+                SRLV_str = Ireal.Value*1e1*Porc;
             else
                 Str = eval(['DSA_Conf.' OptStr{j} '{Srch == 1};']);
                 SRLV_str = Str(strfind(Str,'SRLV ')+5:end-2);
             end
-            eval(['DSA_Conf.' OptStr{j} '{Srch == 1} = [''SRLV ' SRLV_str 'mV''];'])
+            eval(['DSA_Conf.' OptStr{j} '{Srch == 1} = [''SRLV ' num2str(SRLV_str) 'mV''];'])
         end
         
         Srch = strfind(DSA_Conf.FSine,'FSIN ');
@@ -175,6 +180,19 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Initial Value';'Step';'Final Value'};
         handles.Options.Visible = 'off';
         handles.Table.Data = hndl.FieldRange;
+    case 'Param_Delay'
+        set(handles.figure1,'Name','');
+        set([handles.Add handles.Remove handles.Options],'Visible','off');
+        handles.Table.Data = {[]};
+        handles.Table.ColumnEditable = [false true false];
+        TESProp = properties(handles.varargin{3});
+        handles.Table.ColumnName = {'Parameter';'Value';'Units'};
+        TESUnits = {'s';'s'};
+        handles.Table.Data(1:length(TESProp),1) = TESProp;
+        for i = 1:length(TESProp)
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
+            handles.Table.Data{i,3} = TESUnits{i};
+        end
     case 'TES_Struct'
         set(handles.figure1,'Name','TES Circuit Parameters');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
@@ -182,8 +200,8 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [false true false];
         CircProp = properties(handles.varargin{3}.circuit);
         TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
-        handles.Table.Data(1:length(CircProp),1) = CircProp;
-        for i = 1:length(CircProp)
+        handles.Table.Data(1:length(TESUnits),1) = CircProp(1:length(TESUnits));
+        for i = 1:length(TESUnits)
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i}]);
             handles.Table.Data{i,3} = TESUnits{i};
         end
@@ -203,13 +221,13 @@ switch varargin{1}.Tag
         set(handles.figure1,'Name','TF Visualization Options');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
         handles.Table.Data = {[]};
-        handles.Table.ColumnEditable = [true true true true];
+        handles.Table.ColumnEditable = [true true true];
         TESProp = properties(handles.varargin{3});
         handles.Table.ColumnName = TESProp';
         handles.Table.ColumnFormat{1} = 'Logical';
         handles.Table.ColumnFormat{2} = {'\TF*','\PXI_TF*'};
         handles.Table.ColumnFormat{3} = {'One Single Thermal Block','Two Thermal Blocks'};
-        handles.Table.ColumnFormat{4} = 'numeric';
+
         for i = 1:length(TESProp)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
                 if eval(['handles.varargin{3}.' TESProp{i}])
@@ -221,28 +239,78 @@ switch varargin{1}.Tag
                 handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
             end
         end
-        
     case 'TES_ElectrThermModel'
-        set(handles.figure1,'Name','Electro-Thermal Model Options');
+        set(handles.figure1,'Name','Electro-Thermal Model Z(w) and Noise Fitting Options');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
         handles.Table.Data = {[]};
-        handles.Table.ColumnEditable = [true true true true];
+        
         TESProp = properties(handles.varargin{3});
-        handles.Table.ColumnName = TESProp';
-        handles.Table.ColumnFormat{1} = 'Logical';
-        handles.Table.ColumnFormat{2} = {'\TF*','\PXI_TF*'};
-        handles.Table.ColumnFormat{3} = {'One Single Thermal Block','Two Thermal Blocks'};
-        handles.Table.ColumnFormat{4} = 'numeric';
-        for i = 1:length(TESProp)
-            if strcmp(handles.Table.ColumnFormat{i},'Logical')
+        j = 1;
+        for i = 1:length(TESProp)            
+            if strfind(TESProp{i},'Selected')
+                cellList = eval(['handles.varargin{3}.' TESProp{i-1}])'; 
+                handles.Table.Data{1,j} = char(cellList(eval(['handles.varargin{3}.' TESProp{i}])));
+                j = j+1;
+            elseif strfind(TESProp{i},'bool')
+                handles.Table.ColumnEditable(j) = true;
+                handles.Table.ColumnFormat{j} = 'Logical';
+                handles.Table.ColumnName{j} = TESProp{i};
                 if eval(['handles.varargin{3}.' TESProp{i}])
-                    handles.Table.Data{1,i} = true;
+                    handles.Table.Data{1,j} = true;
                 else
-                    handles.Table.Data{1,i} = false;
+                    handles.Table.Data{1,j} = false;
                 end
-            else
-                handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
+                j = j+1;                
+            elseif iscell(eval(['handles.varargin{3}.' TESProp{i}]))   
+                handles.Table.ColumnEditable(j) = true;
+                handles.Table.ColumnFormat{j} = eval(['handles.varargin{3}.' TESProp{i}])';
+                handles.Table.ColumnName{j} = TESProp{i};                                
+                
+            elseif isnumeric(eval(['handles.varargin{3}.' TESProp{i}]))
+                handles.Table.ColumnEditable(j) = true;
+                handles.Table.ColumnFormat{j} = 'numeric';
+                handles.Table.ColumnName{j} = TESProp{i};
+                handles.Table.Data{1,j} = eval(['handles.varargin{3}.' TESProp{i}]);    
+                j = j+1;
             end
+           
+        end
+        
+    case 'TES_PvTModel'
+        set(handles.figure1,'Name','P vs T Model Fitting Options');
+        set([handles.Add handles.Remove handles.Options],'Visible','off');
+        handles.Table.Data = {[]};
+        
+        TESProp = properties(handles.varargin{3});
+        j = 1;
+        for i = 1:length(TESProp)            
+            if strfind(TESProp{i},'Selected')
+                cellList = eval(['handles.varargin{3}.' TESProp{i-1}])'; 
+                handles.Table.Data{1,j} = char(cellList(eval(['handles.varargin{3}.' TESProp{i}])));
+                j = j+1;
+            elseif strfind(TESProp{i},'bool')
+                handles.Table.ColumnEditable(j) = true;
+                handles.Table.ColumnFormat{j} = 'Logical';
+                handles.Table.ColumnName{j} = TESProp{i};
+                if eval(['handles.varargin{3}.' TESProp{i}])
+                    handles.Table.Data{1,j} = true;
+                else
+                    handles.Table.Data{1,j} = false;
+                end
+                j = j+1; 
+            elseif iscell(eval(['handles.varargin{3}.' TESProp{i}]))   
+                handles.Table.ColumnEditable(j) = true;
+                handles.Table.ColumnFormat{j} = eval(['handles.varargin{3}.' TESProp{i}])';
+                handles.Table.ColumnName{j} = TESProp{i};                                
+                
+            elseif isnumeric(eval(['handles.varargin{3}.' TESProp{i}]))
+                handles.Table.ColumnEditable(j) = true;
+                handles.Table.ColumnFormat{j} = 'numeric';
+                handles.Table.ColumnName{j} = TESProp{i};
+                handles.Table.Data{1,j} = num2str(eval(['handles.varargin{3}.' TESProp{i}]));    
+                j = j+1;
+            end
+           
         end
         
     case 'TES_Noise_Opt'
@@ -305,30 +373,39 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(K)';'Step(K)';'Final Value(K)'};
         handles.Table.Data = {[]};
-        handles.Table.Data = num2cell(hndl.Temp.Values);
+%         handles.Table.Data = num2cell(hndl.Temp.Values);
+        handles.Table.Data = cell(1,3);
+        try
+            handles.Table.Data(1:size(hndl.Temp.Values,1),size(hndl.Temp.Values,2)) = num2cell(hndl.Temp.Values');
+        end
         handles.Options.Visible = 'off';
     case 'AQ_FieldScan_Set'
         set(handles.figure1,'Name','Set Field Value for Scan (max Vout)');
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
-        handles.Table.Data = {[]};
-        handles.Table.Data = hndl.FieldScan.BVvalue;
+        handles.Table.Data = cell(1,3);
+        try
+            handles.Table.Data(1:size(hndl.FieldScan.BVvalues,1),size(hndl.FieldScan.BVvalues,2)) = num2cell(hndl.FieldScan.BVvalues');
+        end
         handles.Options.Visible = 'off';
     case 'AQ_IC_Field_Set'
         set(handles.figure1,'Name','Set Field Values for Critical Currents');
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
-        handles.Table.Data = {[]};
-        handles.Table.Data = hndl.BFieldIC.BVvalue;
+        handles.Table.Data = cell(1,3);
+        try
+            handles.Table.Data(1:size(hndl.BFieldIC.BVvalue,1),size(hndl.BFieldIC.BVvalue,2)) = num2cell(hndl.BFieldIC.BVvalue');
+        catch
+        end
         handles.Options.Visible = 'off';
     case 'Ibias_Set'
         set(handles.figure1,'Name','Set Ibias Values for IV Curves');
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
-        handles.Table.Data = {[]};
+        handles.Table.Data = cell(1,3);
         handles.Table.Data = [hndl.IVcurves.Manual.Values.p; hndl.IVcurves.Manual.Values.n];
         handles.Options.Visible = 'off';
     case 'BFieldIC_Ibias'
@@ -336,7 +413,7 @@ switch varargin{1}.Tag
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(uA)';'Step(uA)';'Final Value(uA)'};
-        handles.Table.Data = {[]};
+        handles.Table.Data = cell(1,3);
         handles.Table.Data = [hndl.BFieldIC.IbiasValues.p; hndl.BFieldIC.IbiasValues.n];
         handles.Options.Visible = 'off';
     case 'AQ_TF_Rn_P_Set'
@@ -344,16 +421,20 @@ switch varargin{1}.Tag
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(%)';'Step(%)';'Final Value(%)'};
-        handles.Table.Data = {[]};
-        handles.Table.Data = hndl.TF_Zw.rpp;
+        handles.Table.Data = cell(1,3);
+        try
+            handles.Table.Data(1:size(hndl.TF_Zw.rpp,1),size(hndl.TF_Zw.rpp,2)) = num2cell(hndl.TF_Zw.rpp);
+        end
         handles.Options.Visible = 'off';
     case 'AQ_TF_Rn_N_Set'
         set(handles.figure1,'Name','Set % of Rn Values for Z(w) and Noise Adquisition');
         hndl = guidata(varargin{1});
         handles.Table.ColumnEditable = [true true true];
         handles.Table.ColumnName = {'Initial Value(%)';'Step(%)';'Final Value(%)'};
-        handles.Table.Data = {[]};
-        handles.Table.Data = hndl.TF_Zw.rpn;
+        handles.Table.Data = cell(1,3);
+        try
+            handles.Table.Data(1:size(hndl.TF_Zw.rpn,1),size(hndl.TF_Zw.rpn,2)) = num2cell(hndl.TF_Zw.rpn);
+        end
         handles.Options.Visible = 'off';
 end
 
@@ -381,7 +462,12 @@ function Add_Callback(hObject, eventdata, handles)
 % hObject    handle to Add (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.Table.Data = [handles.Table.Data; cell(1,size(handles.Table.Data,2))];
+if iscell(handles.Table.Data)
+    handles.Table.Data = [handles.Table.Data; cell(1,size(handles.Table.Data,2))];
+else
+    handles.Table.Data = [handles.Table.Data; NaN];
+end
+guidata(hObject,handles);
 
 % --- Executes on button press in Remove.
 function Remove_Callback(hObject, eventdata, handles)
@@ -391,7 +477,7 @@ function Remove_Callback(hObject, eventdata, handles)
 if size(handles.Table.Data,1) > 1
     handles.Table.Data(end,:) = [];
 end
-
+guidata(hObject,handles);
 
 % --- Executes on selection change in Options.
 function Options_Callback(hObject, eventdata, handles)
@@ -464,6 +550,14 @@ switch handles.varargin{1}.Tag
         handles.varargin{1}.UserData = handles.Table.Data;
     case 'CurSource_Range'
         handles.varargin{1}.UserData = handles.Table.Data;
+            
+    case 'Param_Delay'
+        ParamDelay = properties(handles.varargin{3});
+        for i = 1:length(ParamDelay)
+            eval(['NewOPT.' ParamDelay{i} ' = handles.Table.Data{i,2};']);%
+        end
+        handles.varargin{1}.UserData = NewOPT;
+        guidata(handles.varargin{1},NewOPT);
     case 'TES_Struct'
         ButtonName = questdlg('Do you want to save these Circuit parameters?', ...
             'ZarTES v2.0', ...
@@ -472,15 +566,73 @@ switch handles.varargin{1}.Tag
             case 'Save'
                 CircProp = properties(handles.varargin{3}.circuit);
                 for i = 1:length(CircProp)
-                    if ~ischar(handles.Table.Data{i,2})                        
-                        eval(['NewCircuit.' CircProp{i} ' = handles.Table.Data{i,2};']);
-                    else
-                        eval(['NewCircuit.' CircProp{i} ' = str2double(handles.Table.Data{i,2});']);
+                    try
+                        if ~ischar(handles.Table.Data{i,2})
+                            eval(['NewCircuit.' CircProp{i} ' = handles.Table.Data{i,2};']);
+                        else
+                            eval(['NewCircuit.' CircProp{i} ' = str2double(handles.Table.Data{i,2});']);
+                        end
+                    catch
                     end
                 end
                 handles.varargin{1}.UserData = NewCircuit;
                 guidata(handles.varargin{1},NewCircuit);
         end % switch
+        
+    case 'TES_PvTModel'
+        TESProp = properties(handles.varargin{3});
+        j = 1;
+        for i = 1:length(TESProp)            
+            if strfind(TESProp{i},'Selected')
+                c = strfind(eval(['handles.varargin{3}.' TESProp{i-1}]),handles.Table.Data{1,j});
+                for c1 = 1:length(c)
+                    if c{c1} == 1
+                        break;
+                    end
+                end
+                NewOPT = TES_PvTModel;
+                eval(['NewOPT.Selected_Models = ' num2str(c1) ';']);
+                NewOPT = NewOPT.Constructor;                                                
+                j = j+1;               
+            elseif i >= 5
+                if ~isempty(handles.Table.Data{1,j})
+                    s1 = double(handles.Table.Data{1,j});                    
+                    sj = 1;                    
+                    while ~isempty(s1)                        
+                    [cs, s1] = strtok(s1,32);
+                    eval(['NewOPT.' TESProp{i} '(sj) = ' char(cs) ';']);
+                    sj = sj+1;
+                    end
+                end      
+                j = j+1; 
+            end
+        end
+        handles.varargin{1}.UserData = NewOPT;
+        guidata(handles.varargin{1},NewOPT);
+        
+    case  'TES_ElectrThermModel'
+        TES_TF = properties(handles.varargin{3});
+        
+        for i = 1:length(handles.Table.ColumnName)            
+            if strfind(handles.Table.ColumnName{i},'bool')
+                if handles.Table.Data{1,i}
+                    eval(['NewOPT.' handles.Table.ColumnName{i} ' = 1;']);
+                else
+                    eval(['NewOPT.' handles.Table.ColumnName{i} ' = 0;']);
+                end
+            elseif ischar(handles.Table.Data{1,i}) 
+                List = eval(['handles.varargin{3}.' handles.Table.ColumnName{i}]);
+                ind = strfind(List,handles.Table.Data{1,i});
+                Index = find(not(cellfun('isempty',ind)));                
+                eval(['NewOPT.Selected_' handles.Table.ColumnName{i} ' = Index;']);
+            else
+                eval(['NewOPT.' handles.Table.ColumnName{i} ' = handles.Table.Data{1,i};']);
+            end
+                
+        end
+        handles.varargin{1}.UserData = NewOPT;
+        guidata(handles.varargin{1},NewOPT);
+        
     case 'TES_TF_Opt'
         TES_TF = properties(handles.varargin{3});
         for i = 1:length(TES_TF)
@@ -530,32 +682,53 @@ switch handles.varargin{1}.Tag
         
     case 'AQ_Temp_Set'
         Temp = ExtractFromTable(handles);
+        if size(Temp{1},2) > size(Temp{1},1)
+            Temp{1} = Temp{1}';
+        end
         handles.varargin{1}.UserData = Temp;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
         
     case 'AQ_FieldScan_Set'
         Val = ExtractFromTable(handles);
+        if size(Val{1},2) > size(Val{1},1)
+            Val{1} = Val{1}';
+        end
         handles.varargin{1}.UserData = Val;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
     case 'AQ_IC_Field_Set'
         Val = ExtractFromTable(handles);
+        if size(Val{1},2) > size(Val{1},1)
+            Val{1} = Val{1}';
+        end
         handles.varargin{1}.UserData = Val;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
     case 'Ibias_Set'
         Val = ExtractFromTable(handles);
+        if size(Val{1},2) > size(Val{1},1)
+            Val{1} = Val{1}';
+        end
         handles.varargin{1}.UserData = Val;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
     case 'BFieldIC_Ibias'
         Val = ExtractFromTable(handles);
+        if size(Val{1},2) > size(Val{1},1)
+            Val{1} = Val{1}';
+        end
         handles.varargin{1}.UserData = Val;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
     case 'AQ_TF_Rn_P_Set'
         rpp = ExtractFromTable(handles);
+        if size(rpp{1},2) > size(rpp{1},1)
+            rpp{1} = rpp{1}';
+        end
         handles.varargin{1}.UserData = rpp;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
         
     case 'AQ_TF_Rn_N_Set'
         rpn = ExtractFromTable(handles);
+        if size(rpn{1},2) > size(rpn{1},1)
+            rpn{1} = rpn{1}';
+        end
         handles.varargin{1}.UserData = rpn;
         guidata(handles.varargin{1},guidata(handles.varargin{1}));
         
@@ -586,14 +759,30 @@ switch handles.varargin{1}.Tag
         handles.varargin{3}.DSA_TF_Zw_Menu.Value = handles.Options.Value;
         handles.ConfInstrs{handles.Options.Value} = handles.Table.Data;
         guidata(hObject,handles);
-    case 'AQ_TF_Rn_P_Set'
-        if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
-            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
+    case ''
+        handles.Params = handles.Table.Data(:,2);
+        guidata(hObject,handles);
+        
+    otherwise
+        if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
+        else
+            eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
         end
-    case 'AQ_TF_Rn_N_Set'
-        if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
-            msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
-        end
+        if ~isempty(strfind(handles.varargin{1}.Tag,'_Rn_'))
+            if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
+                msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
+            end
+        end    
+        
+%     case 'AQ_TF_Rn_P_Set'
+%         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
+%             msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
+%         end
+%     case 'AQ_TF_Rn_N_Set'
+%         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
+%             msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
+%         end
 end
 
 

@@ -27,65 +27,36 @@ classdef TES_P
             % Function to generate the class with default values
             
             if nargin == 2
-                switch ETModel.AvailableModels{ETModel.SelectedModel}
-                    case ETModel.AvailableModels{1}
-                        obj.p.rp = [];
-                        obj.p.R0 = [];
-                        obj.p.Z0Zinf = [];
-                        obj.p.Z0R0 = [];
-                        obj.p.L0 = [];
-                        obj.p.L0_CI = [];
-                        obj.p.ai = [];
-                        obj.p.ai_CI = [];
-                        obj.p.bi = [];
-                        obj.p.bi_CI = [];
-                        obj.p.tau0 = [];
-                        obj.p.tau0_CI = [];
-                        obj.p.taueff = [];
-                        obj.p.taueff_CI = [];
-                        obj.p.C = [];
-                        obj.p.C_CI = [];
-                        obj.p.Zinf = [];
-                        obj.p.Zinf_CI = [];
-                        obj.p.Z0 = [];
-                        obj.p.Z0_CI = [];
-                        obj.p.ExRes = [];
-                        obj.p.ThRes = [];
-                        obj.p.M = [];
-                        obj.p.Mph = [];
-                    case ETModel.AvailableModels{2}
+                switch ETModel.Zw_Models{ETModel.Selected_Zw_Models}
+                    case ETModel.Zw_Models{1}  % 1 TB
+                        fieldStr = {'rp';'R0';'Z0Zinf';'Z0R0';'L0';'L0_CI';...
+                            'ai';'ai_CI';'bi';'bi_CI';'tau0';'tau0_CI';'taueff';'taueff_CI';...
+                            'C';'C_CI';'Zinf';'Zinf_CI';'Z0';'Z0_CI';'ExRes';'ThRes';'M';'Mph'};
+                        for i = 1:length(fieldStr)
+                            eval(['obj.p.' fieldStr{i} ' = [];']);
+                        end
+%                        
+                    case ETModel.Zw_Models{2}  % 2 TB (Hanging)
+                        fieldStr = {'rp';'Zinf';'Zinf_CI';'Z0';'Z0_CI';'taueff';'taueff_CI';...
+                            'ca0';'ca0_CI';'tauA';'tauA_CI';'L0';'L0_CI';'ai';'ai_CI';...
+                            'bi';'bi_CI';'tau0';'tau0_CI';'C';'C_CI';'CA';'CA_CI';...
+                            'GA';'GA_CI';'ExRes';'ThRes';'M';'Mph'};
+                        for i = 1:length(fieldStr)
+                            eval(['obj.p.' fieldStr{i} ' = [];']);
+                        end
+                    case ETModel.Zw_Models{3}  % 2 TB (intermediate)
                         
-                    case ETModel.AvailableModels{3}
-                        
-                    case ETModel.AvailableModels{4}
+                    case ETModel.Zw_Models{4}
                         
                     otherwise
                 end
             else
-                obj.p.rp = [];
-                    obj.p.R0 = [];
-                    obj.p.Z0Zinf = [];
-                    obj.p.Z0R0 = [];
-                    obj.p.L0 = [];
-                    obj.p.L0_CI = [];
-                    obj.p.ai = [];
-                    obj.p.ai_CI = [];
-                    obj.p.bi = [];
-                    obj.p.bi_CI = [];
-                    obj.p.tau0 = [];
-                    obj.p.tau0_CI = [];
-                    obj.p.taueff = [];
-                    obj.p.taueff_CI = [];
-                    obj.p.C = [];
-                    obj.p.C_CI = [];
-                    obj.p.Zinf = [];
-                    obj.p.Zinf_CI = [];
-                    obj.p.Z0 = [];
-                    obj.p.Z0_CI = [];
-                    obj.p.ExRes = [];
-                    obj.p.ThRes = [];
-                    obj.p.M = [];
-                    obj.p.Mph = [];
+                fieldStr = {'rp';'R0';'Z0Zinf';'Z0R0';'L0';'L0_CI';...
+                    'ai';'ai_CI';'bi';'bi_CI';'tau0';'tau0_CI';'taueff';'taueff_CI';...
+                    'C';'C_CI';'Zinf';'Zinf_CI';'Z0';'Z0_CI';'ExRes';'ThRes';'M';'Mph'};
+                for i = 1:length(fieldStr)
+                    eval(['obj.p.' fieldStr{i} ' = [];']);
+                end                
             end
                     
         end

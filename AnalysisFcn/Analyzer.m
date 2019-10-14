@@ -107,7 +107,7 @@ MenuTES.Fcn{IndMenu} = {'SummaryTES'};
 IndMenu = IndMenu +1;
 
 MenuTES.Label{IndMenu} = {'Options'};
-MenuTES.SubMenu{IndMenu} = {'Z(w) Options';'Noise Options';'Report Options'};
+MenuTES.SubMenu{IndMenu} = {'P vs T Model Fitting Options';'Electro Thermal Model Fitting Options';'Report Options'};
 MenuTES.Fcn{IndMenu} = {'OptionsTES'};
 IndMenu = IndMenu +1;
 
@@ -287,7 +287,7 @@ switch src.Label
         end
         
         StrLabel = {'TES Data';'Load TES';'TES Analysis';'Set Data Path';'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';...
-            'Options';'Z(w) Options';'Noise Options';'Report Options';'Help';'Guide';'About'};
+            'Options';'P vs T Model Fitting Options';'Electro Thermal Model Fitting Options';'Report Options';'Help';'Guide';'About'};
         for i = 1:length(StrLabel)
             h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
             h.Enable = 'on';
@@ -299,8 +299,8 @@ switch src.Label
         Session.File = [];
         Session.Path = DataPath;
         answer = inputdlg({'Insert a Nick name for the TES'},handles.VersionStr,[1 50],{' '});
-        if isempty(answer{1})
-            errordlg('Invalid Nick name!',handles.VersionStr,'modal');
+        if isempty(answer)
+            errordlg('Invalid Nick name!',handles.VersionStr,'modal');            
             return;
         end
         Session.Tag = answer{1};
@@ -389,22 +389,23 @@ switch src.Label
             'PXI', 'HP', 'HP');
         switch ButtonName
             case 'PXI'
-                opt.TFOpt.TFBaseName = '\PXI_TF*';
-                opt.NoiseOpt.NoiseBaseName = '\PXI_noise*';%%%'\HP*'
+                opt.ElectrThermalModel.Selected_TF_BaseName = 2;
+                opt.ElectrThermalModel.Selected_Noise_BaseName = 2;
             case 'HP'
-                opt.TFOpt.TFBaseName = '\TF*';
-                opt.NoiseOpt.NoiseBaseName = '\HP_noise*';%%%'\HP*'
+                opt.ElectrThermalModel.Selected_TF_BaseName = 1;
+                opt.ElectrThermalModel.Selected_Noise_BaseName = 1;
+                
             otherwise
                 disp('PXI acquisition files were selected by default.')
-                opt.TFOpt.TFBaseName = '\PXI_TF*';
-                opt.NoiseOpt.NoiseBaseName = '\PXI_noise*';%%%'\HP*'
+                opt.ElectrThermalModel.Selected_TF_BaseName = 2;
+                opt.ElectrThermalModel.Selected_Noise_BaseName = 2;                
         end
         
                 
         prompt = {'Mimimum frequency value:','Maximum frequency value:'};
         dlg_title = 'Frequency limitation for Z(w)-Noise analysis';
         num_lines = [1 70];
-        defaultans = {num2str(0),num2str(100000)};
+        defaultans = {num2str(opt.ElectrThermalModel.Zw_LowFreq),num2str(opt.ElectrThermalModel.Zw_HighFreq)};
         answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
         
         if ~isempty(answer)
@@ -419,7 +420,7 @@ switch src.Label
             return;
         end
         opt.FreqRange = [minFreq maxFreq];
-        opt.TFOpt.boolShow = 0;
+        opt.ElectrThermalModel.bool_Show = 0;
         
         for i = s1
             fig = handles.Analyzer;
@@ -465,7 +466,7 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.Update(IVsetP);
         handles.Session{handles.TES_ID}.TES.TESP = handles.Session{handles.TES_ID}.TES.TESP.Update(TESP.TESP);
         
-        
+        handles.Session{handles.TES_ID}.TES.IVsetN(1).CorrectionMethod = handles.Session{handles.TES_ID}.TES.IVsetP(1).CorrectionMethod;
         [IVsetN, TempLims, TESN] = handles.Session{handles.TES_ID}.TES.IVsetN.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath, TempLims);
         handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESN.circuit);
         handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Update(IVsetN);
@@ -491,7 +492,7 @@ switch src.Label
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);        
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],[],fig.hObject);
+        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],fig.hObject);
         
         waitfor(msgbox('Continue to Thermal parameters vs %Rn','ZarTES v2.0')); %handles.VersionStr
 %         fig = handles.Analyzer;
@@ -1207,10 +1208,14 @@ function OptionsTES(src,evnt)
 
 handles = guidata(src);
 switch src.Label
-    case 'Z(w) Options'
-        handles.Session{handles.TES_ID}.TES.TFOpt = handles.Session{handles.TES_ID}.TES.TFOpt.View;
-    case 'Noise Options'
-        handles.Session{handles.TES_ID}.TES.NoiseOpt = handles.Session{handles.TES_ID}.TES.NoiseOpt.View;
+    case 'P vs T Model Fitting Options' 
+        handles.Session{handles.TES_ID}.TES.PvTModel = handles.Session{handles.TES_ID}.TES.PvTModel.View;
+        
+    case 'Electro Thermal Model Fitting Options'
+        handles.Session{handles.TES_ID}.TES.ElectrThermalModel = handles.Session{handles.TES_ID}.TES.ElectrThermalModel.View;
+%         handles.Session{handles.TES_ID}.TES.TFOpt = handles.Session{handles.TES_ID}.TES.TFOpt.View;
+%     case 'Noise Options'
+%         handles.Session{handles.TES_ID}.TES.NoiseOpt = handles.Session{handles.TES_ID}.TES.NoiseOpt.View;
     case 'Report Options'
         handles.Session{handles.TES_ID}.TES.Report = handles.Session{handles.TES_ID}.TES.Report.View;
 end

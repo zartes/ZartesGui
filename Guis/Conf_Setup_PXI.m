@@ -261,7 +261,7 @@ else
     end
 end
 
-% Configuration of the DSA options
+% Configuration of the PXI options
 handles.ConfInstrs = ConfInstrs;
 
 handles.Table.Data = handles.ConfInstrs;

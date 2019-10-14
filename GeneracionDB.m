@@ -4,8 +4,15 @@ conn = database('ZarTESDB','','');
 
 % Crear una tabla
 % Nota: es muy importante darle una length a las variables de tipo varchar
+sqlquery = 'DROP TABLE ';
+curs = exec(conn,sqlquery);
+curs = fetch(curs);
 
-sqlquery = ['CREATE TABLE Enfriada(ID_Enfriada numeric,'...
+sqlquery = 'ALTER TABLE Enfriada MODIFY ID_Enfriada varchar(255);';
+curs = exec(conn,sqlquery);
+curs = fetch(curs);
+
+sqlquery = ['CREATE TABLE Enfriada(ID_Enfriada varchar(255),'...
     'ID_SQUID varchar(255),'...
     'ID_TES varchar(255), Date_dd_mm_yy  varchar(255), Location_Enfriada varchar(255), Complete_Y_N varchar(255))'];
 curs = exec(conn,sqlquery);
@@ -58,7 +65,8 @@ curs = fetch(curs);
 % curs = exec(conn,sqlquery);
 % curs = fetch(curs);
 
-
+ALTER TABLE Enfriada
+    ADD( 
 % %%
 % exec(conn,'ALTER TABLE TesZar2 Alter Column Name varchar(30)') %30 can be any other value
 % 

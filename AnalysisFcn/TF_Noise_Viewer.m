@@ -366,7 +366,7 @@ Z0 = data{1}.p(handles.Files_Ind).Z0;
 Zinf = data{1}.p(handles.Files_Ind).Zinf;
 title(hs,strcat(num2str(nearest(r0*100),'%3.0f'),'%Rn'),'FontSize',12);
 % title(hs,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
-if abs(Z0-Zinf) < handles.varargin{1}.Z0_Zinf_Thrs
+if abs(Z0-Zinf) < handles.varargin{1}.ElectrThermalModel.Z0_Zinf_Thrs
     set(get(findobj(hs,'type','axes'),'title'),'Color','r');
 end
 hold(hs,'off');
@@ -395,7 +395,7 @@ FileName = FileName(find(FileName == filesep,1,'last')+1:end);
 
 Ib = sscanf(FileName,strcat(handles.varargin{1}.NoiseOpt.NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
 eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,IV,handles.varargin{1}.P' StrCond '(ind_Tbath).p,''' StrCond ''');']);
-if handles.varargin{1}.NoiseOpt.Mjo == 1
+if handles.varargin{1}.ElectrThermalModel.bool_Mjo == 1
 %     M = OP.M;
     M = data{1}.p(handles.Files_Ind).M;
 else
@@ -403,22 +403,22 @@ else
 end
 f = logspace(0,5,1000);
 % auxnoise = obj.noisesim(OP,M,f);
-auxnoise = handles.varargin{1}.noisesim(OP,M,f,StrCond);
+auxnoise = handles.varargin{1}.ElectrThermalModel.noisesim(handles.varargin{1},OP,M,f,StrCond);
 
-switch handles.varargin{1}.NoiseOpt.tipo
+switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThermalModel.Selected_tipo}
     case 'current'
         
         loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r','DisplayName','Experimental Noise'); hold(hs1,'on');grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},handles.varargin{1}.NoiseOpt.MedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},handles.varargin{1}.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         
-        if handles.varargin{1}.NoiseOpt.Mph == 0
+        if handles.varargin{1}.ElectrThermalModel.bool_Mph == 0
             totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
         else
             Mexph = OP.Mph;
             totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
         end
         
-        if ~handles.varargin{1}.NoiseOpt.boolcomponents
+        if ~handles.varargin{1}.ElectrThermalModel.bool_components
             loglog(hs1,f,totnoise*1e12,'b','DisplayName','Total Simulation Noise');
             h = findobj(hs1,'Color','b');
         else
@@ -439,13 +439,13 @@ switch handles.varargin{1}.NoiseOpt.tipo
         NEP = real(sqrt(((SigNoise{handles.Files_Ind}*1e-12).^2-auxnoise.squid.^2))./sIaux);
         
         loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise'),hold(hs1,'on'),grid(hs1,'on'),
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,handles.varargin{1}.NoiseOpt.MedFilt),'.-k','DisplayName','Exp Filtered Noise'),hold(hs1,'on'),grid(hs1,'on'),
-        if handles.varargin{1}.NoiseOpt.Mph == 0
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,handles.varargin{1}.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'),hold(hs1,'on'),grid(hs1,'on'),
+        if handles.varargin{1}.ElectrThermalModel.bool_Mph == 0
             totNEP = auxnoise.NEP;
         else
             totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
         end
-        if ~handles.varargin{1}.NoiseOpt.boolcomponents
+        if ~handles.varargin{1}.ElectrThermalModel.bool_components
             loglog(hs1,f,totNEP*1e18,'b','DisplayName','Total Simulation Noise');hold(hs1,'on');grid(hs1,'on');
             h = findobj(hs1,'Color','b');
         else
@@ -474,7 +474,7 @@ title(hs1,strcat(num2str(nearest(r0*100),'%3.0f'),'%Rn'),'FontSize',12);
 % title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
 %         OP.Z0,OP.Zinf
 %debug
-if abs(OP.Z0-OP.Zinf) < handles.varargin{1}.Z0_Zinf_Thrs
+if abs(OP.Z0-OP.Zinf) < handles.varargin{1}.ElectrThermalModel.Z0_Zinf_Thrs
     set(get(findobj(hs1,'type','axes'),'title'),'Color','r');
 end
 hold(hs1,'off');
@@ -570,21 +570,16 @@ data = src.UserData;
 ind_orig = data{2};
 FileStrLabel = data{3};
 
-TFParam = {['Tbath: ' num2str(data{1}.Tbath*1e3) 'mK'];...
-    ['Electro-Thermal Model: ' data{1}.ElecThermModel{ind_orig}];...
-    ['Residuo: ' num2str(data{1}.residuo(ind_orig))];...
-    ['ERP: ' num2str(data{1}.ERP{ind_orig})];...
-    ['R2: ' num2str(data{1}.R2{ind_orig})];...
-    ['rp: ' num2str(data{1}.p(ind_orig).rp)];
-    ['L0: ' num2str(data{1}.p(ind_orig).L0)];...
-    ['alpha i: ' num2str(abs(data{1}.p(ind_orig).ai))];...
-    ['beta i: ' num2str(data{1}.p(ind_orig).bi)];...
-    ['tau0: ' num2str(data{1}.p(ind_orig).tau0)];...
-    ['tau_eff: ' num2str(data{1}.p(ind_orig).taueff)];...
-    ['C: ' num2str(abs(data{1}.p(ind_orig).C*1e15))];...
-    ['Zinf: ' num2str(data{1}.p(ind_orig).Zinf)];...
-    ['Z0: ' num2str(data{1}.p(ind_orig).Z0)]};
-
+param = fieldnames(data{1}.p);
+    
+    
+    TFParam = {['Tbath: ' num2str(data{1}.Tbath*1e3) 'mK'];...
+        ['Residuo: ' num2str(data{1}.residuo(ind_orig))];...        
+        ['R2: ' num2str(data{1}.R2{ind_orig})]};
+    for i = 1:length(param)-5
+        TFParam = [TFParam; {[param{i} ': ' num2str(eval(['data{1}.p(ind_orig).' param{i}]))]}];
+    end
+    
 NoiseParam = {['Noise Model: ' data{1}.NoiseModel{ind_orig}];...
     ['ExRes: ' num2str(data{1}.p(ind_orig).ExRes)];...
     ['ThRes: ' num2str(data{1}.p(ind_orig).ThRes)]; 
@@ -617,7 +612,7 @@ function HandleBoolComp(src,evnt,handles)
 data = get(src,'UserData');
 cmenu = uicontextmenu('Visible','on');
 c1 = uimenu(cmenu,'Label','Noise Components');
-if data.NoiseOpt.boolcomponents    
+if data.ElectrThermalModel.bool_components    
     c2 = uimenu(c1,'Label','Hide','Callback',...
     {@NoiseComp},'UserData',data);
 else
@@ -627,7 +622,7 @@ end
 c3 = uimenu(c1,'Label','Type');
 c4(1) = uimenu(c3,'Label','Current','Callback',{@NoiseComp},'UserData',data);
 c4(2) = uimenu(c3,'Label','NEP','Callback',{@NoiseComp},'UserData',data);
-if strcmp(data.NoiseOpt.tipo,'current')
+if strcmp(data.ElectrThermalModel.tipo{data.ElectrThermalModel.Selected_tipo},'current')
     set(c4(1),'Checked','on');
     set(c4(2),'Checked','off');
 else
@@ -643,16 +638,16 @@ data = get(src,'UserData');
 handles = guidata(src.Parent.Parent);
 switch src.Label 
     case 'Hide'        
-        data.NoiseOpt.boolcomponents = 0;        
+        data.ElectrThermalModel.bool_components = 0;        
     case 'Show'
-        data.NoiseOpt.boolcomponents = 1; 
+        data.ElectrThermalModel.bool_components = 1; 
     case 'Current'
-        data.NoiseOpt.tipo = 'current';
+        data.ElectrThermalModel.Selected_tipo = 1;
         src.Checked = 'on';
         src.Parent.Children(1).Checked = 'off';
         
     case 'NEP'
-        data.NoiseOpt.tipo = 'nep';
+        data.ElectrThermalModel.Selected_tipo = 2;
         src.Checked = 'on';
         src.Parent.Children(2).Checked = 'off';
 end

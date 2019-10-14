@@ -22,7 +22,7 @@ function varargout = ZarTES(varargin)
 
 % Edit the above text to modify the response to help ZarTES
 
-% Last Modified by GUIDE v2.5 28-Nov-2018 10:09:24
+% Last Modified by GUIDE v2.5 09-Oct-2019 19:15:57
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -97,3 +97,16 @@ addpath([pwd filesep 'Guis']);
 run([d filesep 'AnalysisFcn' filesep 'Analyzer']);
 
 %Añadir el path de AnalysisFcn
+
+
+% --- Executes when user attempts to close figure1.
+function figure1_CloseRequestFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: delete(hObject) closes the figure
+
+rmpath([pwd filesep 'AnalysisFcn']);
+rmpath([pwd filesep 'Guis']);
+delete(hObject);

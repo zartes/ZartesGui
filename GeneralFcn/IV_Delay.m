@@ -9,7 +9,7 @@ classdef IV_Delay
     methods        
         function obj = Constructor(obj)
             obj.FirstDelay = 2;
-            obj.StepDelay = 1;
+            obj.StepDelay = 1.5;
         end
         function obj = View(obj)
             % Function to check visually the class values
