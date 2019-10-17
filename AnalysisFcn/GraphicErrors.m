@@ -238,8 +238,8 @@ switch str
             ind_color = 1;
             
             for i = 1:length(handles.Session{handles.TES_ID}.TES.PP)
-                T0 = handles.Session{handles.TES_ID}.TES.TESP.T_fit;
-                G0 = handles.Session{handles.TES_ID}.TES.TESP.G;
+                T0 = handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit;
+                G0 = handles.Session{handles.TES_ID}.TES.TESThermalP.G;
                 TbathStr = [num2str(handles.Session{handles.TES_ID}.TES.PP(i).Tbath*1e3) 'mK-']; %mK
                 NameStr = [TbathStr 'PosIbias-C-Fixed'];
                 k = 1;
@@ -259,7 +259,7 @@ switch str
                 param.rp = rp(IndxGood);
                 param.C_fixed = ones(1,length(param.rp))*sum((gammas.*rhoAs).*...
                     ([handles.Session{handles.TES_ID}.TES.TESDim.hMo handles.Session{handles.TES_ID}.TES.TESDim.hAu].*...
-                    handles.Session{handles.TES_ID}.TES.TESDim.sides(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides(2)).*handles.Session{handles.TES_ID}.TES.TESP.T_fit);
+                    handles.Session{handles.TES_ID}.TES.TESDim.sides(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides(2)).*handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit);
                 
                 taueff = [handles.Session{handles.TES_ID}.TES.PP(i).p(jj(IndxGood)).taueff];
                 P0 = [handles.Session{handles.TES_ID}.TES.PP(i).p(jj(IndxGood)).P0];
@@ -275,8 +275,8 @@ switch str
                 ind_color = ind_color+1;
             end
             for i = 1:length(handles.Session{handles.TES_ID}.TES.PN)
-                T0 = handles.Session{handles.TES_ID}.TES.TESN.T_fit;
-                G0 = handles.Session{handles.TES_ID}.TES.TESN.G;
+                T0 = handles.Session{handles.TES_ID}.TES.TESThermalN.T_fit;
+                G0 = handles.Session{handles.TES_ID}.TES.TESThermalN.G;
                 k = 2;
                 P = handles.Session{handles.TES_ID}.TES.PN;
                 TbathStr = [num2str(handles.Session{handles.TES_ID}.TES.PN(i).Tbath*1e3) 'mK-']; %mK
@@ -294,7 +294,7 @@ switch str
                 param.rp = rp(IndxGood);
                 param.C_fixed = ones(1,length(param.rp))*sum((gammas.*rhoAs).*...
                     ([handles.Session{handles.TES_ID}.TES.TESDim.hMo handles.Session{handles.TES_ID}.TES.TESDim.hAu].*...
-                    handles.Session{handles.TES_ID}.TES.TESDim.sides(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides(2)).*handles.Session{handles.TES_ID}.TES.TESP.T_fit);
+                    handles.Session{handles.TES_ID}.TES.TESDim.sides(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides(2)).*handles.Session{handles.TES_ID}.TES.TESThermalN.T_fit);
                 
                 taueff = [handles.Session{handles.TES_ID}.TES.PN(i).p(jj(IndxGood)).taueff];
                 P0 = [handles.Session{handles.TES_ID}.TES.PN(i).p(jj(IndxGood)).P0];

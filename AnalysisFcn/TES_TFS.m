@@ -10,6 +10,10 @@ classdef TES_TFS
         file;
     end
     
+    properties (Access = private)
+        version = 'ZarTES v2.1';
+    end
+    
     methods
         
         function obj = Constructor(obj)
@@ -62,7 +66,7 @@ classdef TES_TFS
             if Filled(obj1)
                 obj = obj.UpdateTFS(obj1);
             else
-                errordlg('No TF was selected!','ZarTES v2.0')
+                errordlg('No TF was selected!',obj.version)
                 return;
             end
             if nargin == 3
@@ -97,7 +101,7 @@ classdef TES_TFS
                 obj.f = data(:,1);
                 obj.file = T;
             else
-                warndlg('No file selected','ZarTES v2.0')
+                warndlg('No file selected',obj.version)
                 obj.tf = [];
                 obj.re = [];
                 obj.im = [];
@@ -113,7 +117,7 @@ classdef TES_TFS
                 fig = figure;
             end
             if isempty(obj.tf)
-                errordlg('No TF was selected!','ZarTES v2.0');
+                errordlg('No TF was selected!',obj.version);
                 obj = TFfromFile(obj,[],fig);
                 return;
             end
@@ -134,13 +138,13 @@ classdef TES_TFS
             
             obj.PlotTF(fig);
             ButtonName = questdlg('Is this TFS valid?', ...
-                'ZarTES v2.0', ...
+                obj.version, ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
                 case 'No'
                     obj = obj.Constructor;
                 case 'Yes'
-                    waitfor(msgbox('TF updated','ZarTES v2.0'));
+                    waitfor(msgbox('TF updated',obj.version));
             end
         end
         

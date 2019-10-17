@@ -26,6 +26,10 @@ classdef TES_IVCurveSet
         PS_upperTol = 1.05;
     end
     
+    properties (Access = private)
+        version = 'ZarTES v2.1';
+    end
+    
     methods
         
         function obj = Constructor(obj,range)
@@ -45,11 +49,11 @@ classdef TES_IVCurveSet
             if nargin == 2
                 fieldNames = fieldnames(data);
                 for j = 1:length(data)
-                for i = 1:length(fieldNames)
-                    if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
-                        eval(['obj(j).' fieldNames{i} ' = data(j).' fieldNames{i} ';']);
+                    for i = 1:length(fieldNames)
+                        if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
+                            eval(['obj(j).' fieldNames{i} ' = data(j).' fieldNames{i} ';']);
+                        end
                     end
-                end
                 end
             end
         end
@@ -97,7 +101,7 @@ classdef TES_IVCurveSet
                 end
                 fileN = file2;
             end
-            h = waitbar(0,'Please wait...','Name','ZarTES v2.0 - Loading IV curves');
+            h = waitbar(0,'Please wait...','Name',[obj.version ' - Loading IV curves']);
             pause(0.05);
             iOK = 1;            
             
@@ -232,7 +236,7 @@ classdef TES_IVCurveSet
             end
             pre_Rf = unique(pre_Rf);
             if length(pre_Rf) > 1
-                warndlg('Unconsistency on Rf values, please check it out','ZarTES v2.0');
+                warndlg('Unconsistency on Rf values, please check it out',obj.version);
             end
             
             [obj,mN,mS] = obj.IV_correction_methods(DataFit,ax1);                        
@@ -426,7 +430,7 @@ classdef TES_IVCurveSet
                         end
                     end
                     
-                    mN = prctile(PN,50);
+                    mN = prctile(PN,75);
 %                     mN = PN(indPEnd);
                     mS = prctile(PS,75);
                     
@@ -540,7 +544,7 @@ classdef TES_IVCurveSet
                        
         end
 
-        function obj = GetIVTES(obj,circuit,TES)
+        function obj = GetIVTES(obj,circuit,TESParam,TESThermal)
             % Function to estimate ptes, Rtes and rtes from I-V curves
             
             F = circuit.invMin/(circuit.invMf*circuit.Rf);%36.51e-6;
@@ -548,15 +552,15 @@ classdef TES_IVCurveSet
                 obj(i).ites = obj(i).vout*F;
                 Vs = (obj(i).ibias-obj(i).ites)*circuit.Rsh;%(ibias*1e-6-ites)*Rsh;if Ib in uA.
                 
-                obj(i).vtes = Vs-obj(i).ites*TES.Rpar;
+                obj(i).vtes = Vs-obj(i).ites*TESParam.Rpar;
                 obj(i).ptes = obj(i).vtes.*obj(i).ites;
                 obj(i).Rtes = obj(i).vtes./obj(i).ites;
-                obj(i).rtes = obj(i).Rtes/TES.Rn;
+                obj(i).rtes = obj(i).Rtes/TESParam.Rn;
                 if min(obj(i).rtes) > 0.05 %|| any(obj(i).rtes < -0.05)
                     obj(i).good = 0;
                 end
-                if ~isempty(TES.n)
-                    obj(i).ttes = (obj(i).ptes./[TES.K]+obj(i).Tbath.^([TES.n])).^(1./[TES.n]);
+                if ~isempty(TESThermal.n)
+                    obj(i).ttes = (obj(i).ptes./[TESThermal.K]+obj(i).Tbath.^([TESThermal.n])).^(1./[TESThermal.n]);
                     smT = smooth(obj(i).ttes,3);
                     smI = smooth(obj(i).ites,3);
                     %%%%alfa y beta from IV
@@ -590,7 +594,7 @@ classdef TES_IVCurveSet
                     TempLims(2) = str2double(answer{2});
                 end
                 if any(isnan(TempLims))
-                    errordlg('Invalid temperature values!', 'ZarTES v2.0', 'modal');
+                    errordlg('Invalid temperature values!',obj.version, 'modal');
                     return;
                 end
             end
@@ -599,7 +603,7 @@ classdef TES_IVCurveSet
                 if IVsPath ~= 0
                     IVsPath = [IVsPath filesep];
                 else
-                    errordlg('Invalid Data path name!','ZarTES v2.0','modal');
+                    errordlg('Invalid Data path name!',obj.version,'modal');
                     return;
                 end
                 obj(1).IVsetPath = IVsPath;
@@ -651,10 +655,10 @@ classdef TES_IVCurveSet
                 eval([upper(StrRange{j}) 'files = ' upper(StrRange{j}) 'files(Ind,:);']);
                 eval(['[obj, mN, mS, Rf] = obj.ImportFullIV(''' IVsPath ''',' upper(StrRange{j}) 'files);']);
                 TESDATA.circuit.Rf = Rf;
-                eval(['TESDATA.TES' upper(StrRange{j}) '.mN = mN;']);
-                eval(['TESDATA.TES' upper(StrRange{j}) '.mS = mS;']);
-                eval(['TESDATA.TES' upper(StrRange{j}) ' = RnRparCalc(TESDATA.TES' upper(StrRange{j}) ',TESDATA.circuit);']);
-                eval(['obj = obj.GetIVTES(TESDATA.circuit,TESDATA.TES' upper(StrRange{j}) ');']);
+                eval(['TESDATA.TESParam' upper(StrRange{j}) '.mN = mN;']);
+                eval(['TESDATA.TESParam' upper(StrRange{j}) '.mS = mS;']);
+                eval(['TESDATA.TESParam' upper(StrRange{j}) ' = RnRparCalc(TESDATA.TESParam' upper(StrRange{j}) ',TESDATA.circuit);']);
+                eval(['obj = obj.GetIVTES(TESDATA.circuit,TESDATA.TESParam' upper(StrRange{j}) ',TESDATA.TESThermal' upper(StrRange{j}) ');']);
             end
         end
         

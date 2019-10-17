@@ -61,7 +61,7 @@ set(handles.figure1,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
-handles.VersionStr = 'ZarTES v2.0';
+handles.VersionStr = 'ZarTES v2.1';
 set(handles.figure1,'Name',handles.VersionStr);
 % Updating the popup menu
 
@@ -357,7 +357,8 @@ ylabel(hs,'Im(mZ)','FontSize',12,'fontweight','bold');%title('Ztes with fits (re
 ImZmin = min(imag(1e3*ztes));
 % ylim(hs,[min(-15,min(ImZmin)-1) 1])
 
-plot(hs,1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,'ButtonDownFcn',{@DisplayResults},'UserData',data,'DisplayName',eval(['handles.varargin{1}.P' StrCond '(ind_Tbath).ElecThermModel{handles.Files_Ind}']));
+plot(hs,1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,'ButtonDownFcn',{@DisplayResults},'UserData',data,'DisplayName',...
+    eval(['handles.varargin{1}.P' StrCond '(ind_Tbath).ElecThermModel{handles.Files_Ind}']));
 % legend(hs,'Experimental',);
 
 axis(hs,'tight');
@@ -408,8 +409,11 @@ auxnoise = handles.varargin{1}.ElectrThermalModel.noisesim(handles.varargin{1},O
 switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThermalModel.Selected_tipo}
     case 'current'
         
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r','DisplayName','Experimental Noise'); hold(hs1,'on');grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},handles.varargin{1}.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r','DisplayName','Experimental Noise'); 
+        hold(hs1,'on');
+        grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},handles.varargin{1}.ElectrThermalModel.DataMedFilt),...
+            '.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         
         if handles.varargin{1}.ElectrThermalModel.bool_Mph == 0
             totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
@@ -439,7 +443,10 @@ switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThe
         NEP = real(sqrt(((SigNoise{handles.Files_Ind}*1e-12).^2-auxnoise.squid.^2))./sIaux);
         
         loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise'),hold(hs1,'on'),grid(hs1,'on'),
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,handles.varargin{1}.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'),hold(hs1,'on'),grid(hs1,'on'),
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,handles.varargin{1}.ElectrThermalModel.DataMedFilt),'.-k',...
+            'DisplayName','Exp Filtered Noise');
+        hold(hs1,'on');
+        grid(hs1,'on');
         if handles.varargin{1}.ElectrThermalModel.bool_Mph == 0
             totNEP = auxnoise.NEP;
         else

@@ -32,6 +32,9 @@ classdef TES_ElectrThermModel
         DataMedFilt = 40;
         Kb = 1.38e-23;
     end
+    properties (Access = private)
+        version = 'ZarTES v2.1';
+    end
     
     methods
         
@@ -110,7 +113,7 @@ classdef TES_ElectrThermModel
                 IndDist = find(data(:,2) ~= 0);
                 data = data(IndDist,:);                
                 tf = data(:,2)+1i*data(:,3);
-                Rth = TES.circuit.Rsh+eval(['TES.TES' CondStr '.Rpar'])+2*pi*TES.circuit.L*data(:,1)*1i;                
+                Rth = TES.circuit.Rsh+eval(['TES.TESParam' CondStr '.Rpar'])+2*pi*TES.circuit.L*data(:,1)*1i;                
                 fS = TES.TFS.f(IndDist);                                
                 ztes = (TES.TFS.tf(IndDist)./tf-1).*Rth;                
                 ztes = ztes(fS >= FreqRange(1) & fS <= FreqRange(2));
@@ -181,7 +184,7 @@ classdef TES_ElectrThermModel
         end
         
         function param = GetModelParameters(obj,TES,p,IVmeasure,Ib,CondStr)
-            Rn = eval(['TES.TES' CondStr '.Rn;']);
+            Rn = eval(['TES.TESParam' CondStr '.Rn;']);
             
 %             
             
@@ -200,7 +203,7 @@ classdef TES_ElectrThermModel
             F = TES.circuit.invMin/(TES.circuit.invMf*TES.circuit.Rf);%36.51e-6;
             I0 = IVaux.vout*F;
             Vs = (IVaux.ibias-I0)*TES.circuit.Rsh;%(ibias*1e-6-ites)*Rsh;if Ib in uA.
-            V0 = Vs-I0*eval(['TES.TES' CondStr '.Rpar;']);
+            V0 = Vs-I0*eval(['TES.TESParam' CondStr '.Rpar;']);
             
             P0 = V0.*I0;
             R0 = V0/I0;
@@ -208,7 +211,7 @@ classdef TES_ElectrThermModel
             param.R0 = R0;
             param.P0 = P0;
             if size(eval(['[TES.Gset' CondStr '.n]']),2) > 1
-                rp = R0/eval(['TES.TES' CondStr '.Rn']);
+                rp = R0/Rn;
                 [val, ind] = min(abs(eval(['[TES.Gset' CondStr '.rp]'])-rp));
                 eval(['T0 = TES.Gset' CondStr '(ind).T_fit;'])   
                 % Si fijo n, cojo T0 y G0 se toman segun su rp (variables)
@@ -217,8 +220,8 @@ classdef TES_ElectrThermModel
 %                 param.G0 = TES.TESP.n*TES.TESP.K*T0^(TES.TESP.n-1);
             else
                 % Un solo valor de n, K, G y T_fit
-                T0 = eval(['TES.TES' CondStr '.T_fit;']); %(K)
-                G0 = eval(['TES.TES' CondStr '.G']);  %(W/K)
+                T0 = eval(['TES.TESThermal' CondStr '.T_fit;']); %(K)
+                G0 = eval(['TES.TESThermal' CondStr '.G']);  %(W/K)
             end            
             
             
@@ -262,7 +265,7 @@ classdef TES_ElectrThermModel
                         
                         gammas = [TES.TESDim.Abs_gammaBi TES.TESDim.Abs_gammaAu];
                         rhoAs = [TES.TESDim.Abs_rhoBi TES.TESDim.Abs_rhoAu];                                                
-                        param.C_fixed = sum((gammas.*rhoAs).*([TES.TESDim.hMo TES.TESDim.hAu].*TES.TESDim.Abs_sides(1)*TES.TESDim.Abs_sides(2)).*eval(['TES.TES' CondStr '.T_fit']));
+                        param.C_fixed = sum((gammas.*rhoAs).*([TES.TESDim.hMo TES.TESDim.hAu].*TES.TESDim.Abs_sides(1)*TES.TESDim.Abs_sides(2)).*eval(['TES.TESThermal' CondStr '.T_fit']));
                         param.tau0_fixed = param.C_fixed/G0;
                         param.L0_fixed = (param.tau0_fixed/param.taueff) + 1;
                         param.ai_fixed = param.L0_fixed*G0*T0/P0;
@@ -406,9 +409,9 @@ classdef TES_ElectrThermModel
 %             G = eval(['TES.TES' CondStr '.G;']);
             alfa = OP.ai;
             bI = OP.bi;
-            Rn = eval(['TES.TES' CondStr '.Rn;']);
+            Rn = eval(['TES.TESParam' CondStr '.Rn;']);
             Rs = TES.circuit.Rsh;
-            Rpar = eval(['TES.TES' CondStr '.Rpar;']);
+            Rpar = eval(['TES.TESParam' CondStr '.Rpar;']);
             RL = Rs+Rpar;
             R0 = OP.R0;
             beta = (R0-Rs)/(R0+Rs);
@@ -418,22 +421,22 @@ classdef TES_ElectrThermModel
             I0 = OP.I0;
             V0 = OP.V0;
             if size(eval(['[TES.Gset' CondStr '.n]']),2) > 1
-                rp = R0/eval(['TES.TES' CondStr '.Rn']);
+                rp = R0/Rn;
                 [val, ind] = min(abs(eval(['[TES.Gset' CondStr '.rp]'])-rp));
                 eval(['T0 = TES.Gset' CondStr '(ind).T_fit;'])   
                 % Si fijo n, cojo T0 y G0 se toman segun su rp (variables)
-                G = eval(['TES.TES' CondStr '.G']);  %(W/K)
+                G = eval(['TES.TESThermal' CondStr '.G']);  %(W/K)
 %                 eval(['G = TES.Gset' CondStr '(ind).G;'])   
 %                 param.G0 = TES.TESP.n*TES.TESP.K*T0^(TES.TESP.n-1);
             else
                 % Un solo valor de n, K, G y T_fit
-                T0 = eval(['TES.TES' CondStr '.T_fit;']); %(K)
-                G = eval(['TES.TES' CondStr '.G']);  %(W/K)
+                T0 = eval(['TES.TESThermal' CondStr '.T_fit;']); %(K)
+                G = eval(['TES.TESThermal' CondStr '.G']);  %(W/K)
             end           
             
             L0 = P0*alfa/(G*T0);
 %             n = obj.TES.n;
-            n = eval(['TES.TES' CondStr '.n;']);
+            n = eval(['TES.TESThermal' CondStr '.n;']);
             
             if isfield(TES.circuit,'Nsquid')
                 Nsquid = TES.circuit.Nsquid;
@@ -529,7 +532,7 @@ classdef TES_ElectrThermModel
                     noise.squid = Nsquid;
                     noise.squidarray = Nsquid*ones(1,length(f));
                 otherwise
-                    warndlg('no valid model','ZarTES v2.0');
+                    warndlg('no valid model',obj.version);
                     noise = [];
             end
         end
@@ -538,29 +541,30 @@ classdef TES_ElectrThermModel
             
             R0=OP.R0;
             if size(eval(['[TES.Gset' CondStr '.n]']),2) > 1
-                rp = R0/eval(['TES.TES' CondStr '.Rn']);
+                rp = R0/eval(['TES.TESParam' CondStr '.Rn']);
                 [val, ind] = min(abs(eval(['[TES.Gset' CondStr '.rp]'])-rp));
                 eval(['T0 = TES.Gset' CondStr '(ind).T_fit;'])   
                 % Si fijo n, cojo T0 y G0 se toman segun su rp (variables)
-                G = eval(['TES.TES' CondStr '.G']);  %(W/K)
+                G = eval(['TES.TESThermal' CondStr '.G']);  %(W/K)
 %                 eval(['G = TES.Gset' CondStr '(ind).G;'])   
 %                 param.G0 = TES.TESP.n*TES.TESP.K*T0^(TES.TESP.n-1);
             else
                 % Un solo valor de n, K, G y T_fit
-                T0 = eval(['TES.TES' CondStr '.T_fit;']); %(K)
-                G = eval(['TES.TES' CondStr '.G']);  %(W/K)
+                T0 = eval(['TES.TESThermal' CondStr '.T_fit;']); %(K)
+                G = eval(['TES.TESThermal' CondStr '.G']);  %(W/K)
             end          
             
             Circuit = TES.circuit;
-            TES = eval(['TES.TES' CondStr ';']);
+            TESThemal = eval(['TES.TESThermal' CondStr ';']);
+            TES = eval(['TES.TESParam' CondStr ';']);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %             G = TES.G;
 %             T0 = TES.T_fit;
             
             Rn = TES.Rn;
-            n = TES.n;
             Rpar=TES.Rpar;
+            n = TESThemal.n;            
             
             Rs=Circuit.Rsh;            
             L=Circuit.L;

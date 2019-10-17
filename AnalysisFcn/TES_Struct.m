@@ -6,6 +6,8 @@ classdef TES_Struct
         circuit;
         TFS;
         TFN;
+        NoiseS;
+        NoiseN;
         IVsetP;
         IVsetN;
         PvTModel;
@@ -18,8 +20,10 @@ classdef TES_Struct
         NoiseOpt;
         PP;
         PN;
-        TESP;
-        TESN;
+        TESParamP;
+        TESParamN;
+        TESThermalP;
+        TESThermalN;
         TESDim;
         JohnsonExcess = [2e2 4.5e4];
         PhononExcess = [1e2 1e3];
@@ -33,6 +37,10 @@ classdef TES_Struct
         Report;
     end
     
+    properties (Access = private)
+        version = 'ZarTES v2.1';
+    end
+    
     methods
         
         function obj = Constructor(obj)
@@ -42,6 +50,8 @@ classdef TES_Struct
             obj.circuit = obj.circuit.Constructor;
             obj.TFS = TES_TFS;
             obj.TFN = TES_TFS;
+            obj.NoiseS = TES_BasalNoises;
+            obj.NoiseN = TES_BasalNoises;
             obj.IVsetP = TES_IVCurveSet;
             obj.IVsetP = obj.IVsetP.Constructor;
             obj.IVsetN = TES_IVCurveSet;
@@ -62,8 +72,10 @@ classdef TES_Struct
             obj.PP = obj.PP.Constructor;
             obj.PN = TES_P;
             obj.PN = obj.PN.Constructor;
-            obj.TESP = TES_Param;
-            obj.TESN = TES_Param;
+            obj.TESParamP = TES_Param;
+            obj.TESParamN = TES_Param;
+            obj.TESThermalP = TES_ThermalParam;
+            obj.TESThermalN = TES_ThermalParam;
             obj.TESDim = TES_Dimensions;
             obj.Report = TES_Report;
         end
@@ -91,7 +103,7 @@ classdef TES_Struct
                 
                 % Revisar las curvas IV y seleccionar aquellas para eliminar del
                 % analisis
-                waitfor(helpdlg('Before closing this message, please check the IV curves','ZarTES v2.0'));
+                waitfor(helpdlg('Before closing this message, please check the IV curves',obj.version));
                 eval(['obj.IVset' StrRange{j} ' = get(figIV.hObject,''UserData'');']);                
             end
             ax = findobj(figIV.hObject,'Type','Axes');
@@ -193,11 +205,11 @@ classdef TES_Struct
                             if ~isempty(answer)
                                 eval(['perc' StrRange{k} ' = eval(answer{1});']);
                                 if ~isnumeric(eval(['perc' StrRange{k} ]))
-                                    warndlg('Invalid %Rn values','ZarTES v2.0');
+                                    warndlg('Invalid %Rn values',handles.version);
                                     return;
                                 end
                             else
-                                warndlg('Invalid %Rn values','ZarTES v2.0');
+                                warndlg('Invalid %Rn values',handles.version);
                                 return;
                             end
                         else
@@ -254,8 +266,7 @@ classdef TES_Struct
                                 indP = find(abs(dptes./drtes) < obj.PvsR_Thrs, 1 );
                             case 'Minimum I-V curve transition'
                                 [~,i3] = min(diff(IVTESset(i).vout)./diff(IVTESset(i).ibias));
-                                [val, indP] = min(abs(IVTESset(i).vout(1:i3)));
-                                
+                                [val, indP] = min(abs(IVTESset(i).vout(1:i3)));                                
                         end
                         
                         
@@ -341,13 +352,14 @@ classdef TES_Struct
                     ylabel(ax(axInd(1),1),'Ptes(pW)','FontWeight','bold');
                     set([ax(axInd(1),1) ax(axInd(2),2)],'FontSize',12,'LineWidth',2,'FontWeight','bold','Box','on')
                     axis([ax(axInd(1),1) ax(axInd(2),2)],'tight');
-                    eval(['obj.TES' StrRange{k} '.n = obj.Gset' StrRange{k} '.n;']);
-                    eval(['obj.TES' StrRange{k} '.K = obj.Gset' StrRange{k} '.K;']);
+                    eval(['obj.TESThermal' StrRange{k} '.n = obj.Gset' StrRange{k} '.n;']);
+                    eval(['obj.TESThermal' StrRange{k} '.K = obj.Gset' StrRange{k} '.K;']);
                     
                     for i = 1:length(eval(['obj.IVset' StrRange{k}]))
-                        eval(['obj.IVset' StrRange{k} '(i).ttes = (obj.IVset' StrRange{k} '(i).ptes./[obj.TES' StrRange{k} '.K]+obj.IVset' StrRange{k} '(i).Tbath.^([obj.TES' StrRange{k} '.n])).^(1./[obj.TES' StrRange{k} '.n]);'])
+                        eval(['obj.IVset' StrRange{k} '(i).ttes = (obj.IVset' StrRange{k} '(i).ptes./'...
+                            '[obj.TESThermal' StrRange{k} '.K]+obj.IVset' StrRange{k} '(i).Tbath.^([obj.TESThermal' StrRange{k} '.n])).^(1./[obj.TESThermal' StrRange{k} '.n]);'])
                     end
-                    eval(['obj.TES' StrRange{k} ' = obj.TES' StrRange{k} '.Tc_EstimationFromRTs(obj.IVset' StrRange{k} ');']);
+                    eval(['obj.TESParam' StrRange{k} ' = obj.TESParam' StrRange{k} '.Tc_EstimationFromRTs(obj.IVset' StrRange{k} ');']);
                 end
                 %%
                 
@@ -453,6 +465,7 @@ classdef TES_Struct
                     xlabel(ax,'T_{bath}(K)','FontSize',12,'FontWeight','bold')
                     ylabel(ax,'P_{TES}(pW)','FontSize',12,'FontWeight','bold')
                     set(ax,'FontSize',12,'LineWidth',2,'FontWeight','bold','Box','on')
+                    eval(['obj.TESParam' StrRange{k} ' = obj.TESParam' StrRange{k} '.Tc_EstimationFromRTs(obj.IVset' StrRange{k} ');']);
                 end
                 
 %                 eval(['obj.TES' StrRange{k} ' = obj.TES' StrRange{k} '.Tc_EstimationFromRTs(obj.IVset' StrRange{k} ');']);
@@ -486,14 +499,14 @@ classdef TES_Struct
             StrRange = {'P';'N'};
             StrCond = {'Positive';'Negative'};
             for k = 1:2
-                indIV = eval(['obj.TES' StrRange{k} '.IV_Tc']);
+                indIV = eval(['obj.TESParam' StrRange{k} '.IV_Tc']);
                 for i = 1:length(eval(['obj.IVset' StrRange{k} '']))
                     if eval(['obj.IVset' StrRange{k} '(i).good'])
                         TbathStr = num2str(eval(['obj.IVset' StrRange{k} '(i).Tbath'])*1e3);
                         eval(['plot(ax,obj.IVset' StrRange{k} '(i).ttes,obj.IVset' StrRange{k} '(i).Rtes*1e3,''DisplayName'',''Tbath: ' TbathStr ' mK - ' StrCond{k} ''');'])
                         if i == indIV
-                            ind = eval(['find(obj.IVset' StrRange{k} '(i).ttes == obj.TES' StrRange{k} '.Tc_IVs);']);
-                            TcStr = num2str(eval(['obj.TES' StrRange{k} '.Tc_IVs*1e3;']));
+                            ind = eval(['find(obj.IVset' StrRange{k} '(i).ttes == obj.TESParam' StrRange{k} '.Tc_RT);']);
+                            TcStr = num2str(eval(['obj.TESParam' StrRange{k} '.Tc_RT*1e3;']));
                             eval(['plot(ax,obj.IVset' StrRange{k} '(indIV).ttes(ind),obj.IVset' StrRange{k} '(indIV).Rtes(ind)*1e3,'...
                                 '''DisplayName'',''Tc: ' TcStr ' mK - ' StrCond{k} ''',''Marker'',''hexagram'',''MarkerEdgeColor'',''r'',''MarkerFaceColor'',''g'');'])
                         end
@@ -527,19 +540,19 @@ classdef TES_Struct
             
             if size([obj.GsetP.n],2) == 1
                 for k = 1:2
-                    eval(['obj.TES' StrRange{k} '.n = obj.Gset' StrRange{k} '.n;']);
-                    eval(['obj.TES' StrRange{k} '.T_fit = obj.Gset' StrRange{k} '.T_fit;']);
-                    eval(['obj.TES' StrRange{k} '.K = obj.Gset' StrRange{k} '.K;']);
-                    eval(['obj.TES' StrRange{k} '.G = obj.Gset' StrRange{k} '.G;']);
-                    eval(['obj.TES' StrRange{k} '.n_CI = obj.Gset' StrRange{k} '.n_CI;']);
-                    eval(['obj.TES' StrRange{k} '.T_fit_CI = obj.Gset' StrRange{k} '.T_fit_CI;']);
-                    eval(['obj.TES' StrRange{k} '.K_CI = obj.Gset' StrRange{k} '.K_CI;']);
-                    eval(['obj.TES' StrRange{k} '.G_CI = obj.Gset' StrRange{k} '.G_CI;']);
-                    eval(['obj.TES' StrRange{k} '.G100 = obj.Gset' StrRange{k} '.G100;']);
-                    eval(['obj.TES' StrRange{k} '.rp = mean(obj.Gset' StrRange{k} '.rp);']);
+                    eval(['obj.TESThermal' StrRange{k} '.n = obj.Gset' StrRange{k} '.n;']);
+                    eval(['obj.TESThermal' StrRange{k} '.T_fit = obj.Gset' StrRange{k} '.T_fit;']);
+                    eval(['obj.TESThermal' StrRange{k} '.K = obj.Gset' StrRange{k} '.K;']);
+                    eval(['obj.TESThermal' StrRange{k} '.G = obj.Gset' StrRange{k} '.G;']);
+                    eval(['obj.TESThermal' StrRange{k} '.n_CI = obj.Gset' StrRange{k} '.n_CI;']);
+                    eval(['obj.TESThermal' StrRange{k} '.T_fit_CI = obj.Gset' StrRange{k} '.T_fit_CI;']);
+                    eval(['obj.TESThermal' StrRange{k} '.K_CI = obj.Gset' StrRange{k} '.K_CI;']);
+                    eval(['obj.TESThermal' StrRange{k} '.G_CI = obj.Gset' StrRange{k} '.G_CI;']);
+                    eval(['obj.TESThermal' StrRange{k} '.G100 = obj.Gset' StrRange{k} '.G100;']);
+%                     eval(['obj.TES' StrRange{k} '.rp = mean(obj.Gset' StrRange{k} '.rp);']);
                 end
-                    obj.TESP.CheckValues('PosIbias');
-                    obj.TESN.CheckValues('NegIbias');
+                    obj.TESThermalP.CheckValues('PosIbias');
+                    obj.TESThermalN.CheckValues('NegIbias');
                 return;
             end
             
@@ -555,7 +568,7 @@ classdef TES_Struct
                     
                 try
 %                     eval(['TES_OP_y = find([Gset.T_fit] == obj.TES' StrRange{k} '.T_fit*1e-3,1,''last'');']);
-                    eval(['TES_OP_y = find([Gset.T_fit] == obj.TES' StrRange{k} '.T_fit,1,''last'');']);
+                    eval(['TES_OP_y = find([Gset.T_fit] == obj.TESThermal' StrRange{k} '.T_fit,1,''last'');']);
                 catch
                 end
                 if isfield(fig,'subplots')
@@ -600,7 +613,7 @@ classdef TES_Struct
                 set(h,'Visible','on');
             end
             if nargin < 2
-                warndlg('TESDATA.fitPvsTset must be firstly applied.','ZarTES v2.0')
+                warndlg('TESDATA.fitPvsTset must be firstly applied.',handles.version)
                 fig = [];
             end
             
@@ -612,7 +625,7 @@ classdef TES_Struct
                 if nargin < 3
                     
                     pause(0.2)
-                    waitfor(helpdlg('After closing this message, select a point for TES characterization','ZarTES v2.0'));
+                    waitfor(helpdlg('After closing this message, select a point for TES characterization',obj.version));
                     figure(fig.hObject);
                     
                     % Seleccion mediante teclado de la Rn
@@ -622,12 +635,12 @@ classdef TES_Struct
                     defaultanswer = {'0.8'};
                     answer = inputdlg(prompt,name,numlines,defaultanswer);
                     if isempty(answer)
-                        warndlg('No %Rn value selected','ZarTES v2.0');
+                        warndlg('No %Rn value selected',handles.version);
                         return;
                     else
                         X = str2double(answer{1});
                         if isnan(X)
-                            warndlg('Invalid %Rn value','ZarTES v2.0');
+                            warndlg('Invalid %Rn value',handles.version);
                             return;
                         end
                     end
@@ -648,35 +661,36 @@ classdef TES_Struct
                
                 for i = 1:length(StrField)
                     eval(['val = [obj.Gset' StrRange{k} '.' StrField{i} ']*' TESmult{i} ';']);
-                    eval(['obj.TES' StrRange{k} '.' StrField{i} ' = val(ind_rp);']);
+                    eval(['obj.TESThermal' StrRange{k} '.' StrField{i} ' = val(ind_rp);']);
                     eval(['val_CI = [obj.Gset' StrRange{k} '.' StrField{i} '_CI]*' TESmult{i} ';']);
-                    eval(['obj.TES' StrRange{k} '.' StrField{i} '_CI = val_CI(ind_rp);']);
+                    eval(['obj.TESThermal' StrRange{k} '.' StrField{i} '_CI = val_CI(ind_rp);']);
                     
                     eval(['plot(h(i),obj.Gset' StrRange{k} '(ind_rp).rp,val(ind_rp),''.-'','...
                         '''Color'',''none'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',color{k},'...
                         '''LineWidth'',LS,''Marker'',''hexagram'',''MarkerSize'',2*MS,''DisplayName'',[''Operation Point ' StrIbias{k} ' Ibias'']);']);
                     axis(h(i),'tight')                                        
                 end
-                eval(['obj.TES' StrRange{k} '.T_fit = obj.TES' StrRange{k} '.T_fit;']);
-                eval(['obj.TES' StrRange{k} '.K = obj.TES' StrRange{k} '.K*1e-9;']);
-                eval(['obj.TES' StrRange{k} '.K_CI = obj.TES' StrRange{k} '.K_CI*1e-9;']);
-                eval(['obj.TES' StrRange{k} '.G = obj.TES' StrRange{k} '.G*1e-12;']);
-                eval(['obj.TES' StrRange{k} '.G_CI = obj.TES' StrRange{k} '.G_CI*1e-12;']);                
-                eval(['obj.TES' StrRange{k} '.G100 = obj.TES' StrRange{k} '.G_calc(0.1);']);
+%                 eval(['obj.TESThermal' StrRange{k} '.T_fit = obj.TES' StrRange{k} '.T_fit;']);
+                eval(['obj.TESThermal' StrRange{k} '.K = obj.TESThermal' StrRange{k} '.K*1e-9;']);
+                eval(['obj.TESThermal' StrRange{k} '.K_CI = obj.TESThermal' StrRange{k} '.K_CI*1e-9;']);
+                eval(['obj.TESThermal' StrRange{k} '.G = obj.TESThermal' StrRange{k} '.G*1e-12;']);
+                eval(['obj.TESThermal' StrRange{k} '.G_CI = obj.TESThermal' StrRange{k} '.G_CI*1e-12;']);                
+                eval(['obj.TESThermal' StrRange{k} '.G100 = obj.TESThermal' StrRange{k} '.G_calc(0.1);']);
                 
                 if nargin < 3
-                    uiwait(msgbox({['n: ' num2str(eval(['obj.TES' StrRange{k} '.n']))]; ['K: ' num2str(eval(['obj.TES' StrRange{k} '.K*1e9'])) ' nW/K^n'];... 
-                        ['T_{fit}: ' num2str(eval(['obj.TES' StrRange{k} '.T_fit*1e3'])) ' mK'];['G: ' num2str(eval(['obj.TES' StrRange{k} '.G*1e12'])) ' pW/K']},'TES Operating Point','modal'));
+                    uiwait(msgbox({['n: ' num2str(eval(['obj.TESThermal' StrRange{k} '.n']))]; ['K: ' num2str(eval(['obj.TESThermal' StrRange{k} '.K*1e9'])) ' nW/K^n'];... 
+                        ['T_{fit}: ' num2str(eval(['obj.TESThermal' StrRange{k} '.T_fit*1e3'])) ' mK'];['G: ' num2str(eval(['obj.TESThermal' StrRange{k} '.G*1e12'])) ' pW/K']},'TES Operating Point','modal'));
                 end
-                eval(['obj.TES' StrRange{k} '.T_fit = obj.TES' StrRange{k} '.T_fit;']);
-                eval(['obj.TES' StrRange{k} '.T_fit_CI = obj.TES' StrRange{k} '.T_fit_CI;']);
-                eval(['obj.TES' StrRange{k} '.G100 = obj.TES' StrRange{k} '.G_calc(0.1);']);
-                eval(['obj.TES' StrRange{k} '.rp = obj.Gset' StrRange{k} '(ind_rp).rp;']);
+%                 eval(['obj.TES' StrRange{k} '.T_fit = obj.TES' StrRange{k} '.T_fit;']);
+%                 eval(['obj.TES' StrRange{k} '.T_fit_CI = obj.TES' StrRange{k} '.T_fit_CI;']);
+%                 eval(['obj.TESThermal' StrRange{k} '.G100 = obj.TESThermal' StrRange{k} '.G_calc(0.1);']);
+%                 eval(['obj.TES' StrRange{k} '.rp = obj.Gset' StrRange{k} '(ind_rp).rp;']);
                 
                 for i = 1:length(eval(['obj.IVset' StrRange{k}]))
-                    eval(['obj.IVset' StrRange{k} '(i).ttes = (obj.IVset' StrRange{k} '(i).ptes./[obj.TES' StrRange{k} '.K]+obj.IVset' StrRange{k} '(i).Tbath.^([obj.TES' StrRange{k} '.n])).^(1./[obj.TES' StrRange{k} '.n]);'])
+                    eval(['obj.IVset' StrRange{k} '(i).ttes = (obj.IVset' StrRange{k} '(i).ptes./[obj.TESThermal' StrRange{k} '.K]'...
+                        '+obj.IVset' StrRange{k} '(i).Tbath.^([obj.TESThermal' StrRange{k} '.n])).^(1./[obj.TESThermal' StrRange{k} '.n]);'])
                 end
-                eval(['obj.TES' StrRange{k} ' = obj.TES' StrRange{k} '.Tc_EstimationFromRTs(obj.IVset' StrRange{k} ');']);                
+                eval(['obj.TESParam' StrRange{k} ' = obj.TESParam' StrRange{k} '.Tc_EstimationFromRTs(obj.IVset' StrRange{k} ');']);                
             end
             
         end
@@ -691,7 +705,7 @@ classdef TES_Struct
 %                 TFBaseName = {'\TF*';'\PXI_TF*'};
 %                 NoiseBaseName = {'\HP_noise*';'\PXI_noise*'};
                 ButtonName = questdlg('Select Files Acquisition device', ...
-                    'ZarTES v2.0', ...
+                    obj.version, ...
                     'PXI', 'HP', 'Previously Selected','HP');
                 switch ButtonName
                     case 'PXI'
@@ -700,7 +714,7 @@ classdef TES_Struct
                                                 
                         if (isempty(strfind(obj.TFS.file,'PXI_TF_')))&&(isempty(strfind(obj.TFS.file,'PXI_TFS')))
                             [Path, Name] = fileparts(obj.TFS.file);
-                            warndlg('TFS must be a file named PXI_TF_* (PXI card)','ZarTES v2.0');
+                            warndlg('TFS must be a file named PXI_TF_* (PXI card)',handles.version);
                             obj.TFS = obj.TFS.importTF([Path filesep]);
                         end
                     case 'HP'
@@ -708,7 +722,7 @@ classdef TES_Struct
                         obj.ElectrThermalModel.Selected_NoiseBaseName = 1;
                         if (isempty(strfind(obj.TFS.file,'\TF_')))&&(isempty(strfind(obj.TFS.file,'\TFS')))
                             [Path, Name] = fileparts(obj.TFS.file);
-                            warndlg('TFS must be a file named TF_* (HP)','ZarTES v2.0');
+                            warndlg('TFS must be a file named TF_* (HP)',handles.version);
                             obj.TFS = obj.TFS.importTF([Path filesep]);
                         end
                     case 'Previously Selected'
@@ -729,17 +743,17 @@ classdef TES_Struct
                     minFreq = eval(answer{1});
                     maxFreq = eval(answer{2});
                     if ~isnumeric(minFreq)||~isnumeric(maxFreq)
-                        warndlg('Cancelled by user','ZarTES v2.0');
+                        warndlg('Cancelled by user',handles.version);
                         return;
                     end
                 else
-                    warndlg('Cancelled by user','ZarTES v2.0');
+                    warndlg('Cancelled by user',handles.version);
                     return;
                 end
                 FreqRange = [minFreq maxFreq];
                 
                 ButtonName = questdlg('Do you want to show the data and fits?', ...
-                    'ZarTES v2.0', ...
+                    obj.version, ...
                     'Yes', 'No', 'Yes');
                 switch ButtonName
                     case 'Yes'
@@ -801,7 +815,7 @@ classdef TES_Struct
                     if DataPath ~= 0
                         DataPath = [DataPath filesep];
                     else
-                        errordlg('Invalid Data path name!','ZarTES v2.0','modal');
+                        errordlg('Invalid Data path name!',handles.version,'modal');
                         return;
                     end
                     
@@ -817,7 +831,7 @@ classdef TES_Struct
                         end
                     end
                     if isempty(dirs{1})
-                        errordlg('Invalid Data path name!','ZarTES v2.0','modal');
+                        errordlg('Invalid Data path name!',handles.version,'modal');
                         return;
                     end
                 end
@@ -993,7 +1007,7 @@ classdef TES_Struct
                         dat.fig = fig;
                         set(fig,'UserData',dat);
                         pause(0.2)
-                        waitfor(helpdlg('After closing this message, check the validity of the curves and fittings','ZarTES v2.0'));
+                        waitfor(helpdlg('After closing this message, check the validity of the curves and fittings',handles.version));
                         Data = get(fig(1),'UserData'); %#ok<NASGU>
                         eval(['obj.P' StrRange{k1} ' = Data.P;']);
                     catch
@@ -1061,8 +1075,8 @@ classdef TES_Struct
             OP.ibias = Ib;
             OP.Tbath = IV.Tbath;            
             
-            Rpar = eval(['obj.TES' CondStr '.Rpar;']);
-            Rn = eval(['obj.TES' CondStr '.Rn;']);
+            Rpar = eval(['obj.TESParam' CondStr '.Rpar;']);
+            Rn = eval(['obj.TESParam' CondStr '.Rn;']);
             F = obj.circuit.invMin/(obj.circuit.invMf*obj.circuit.Rf);%36.51e-6;
             ites = OP.vout*F;
             Vs = (OP.ibias-ites)*obj.circuit.Rsh;%(ibias*1e-6-ites)*Rsh;if Ib in uA.
@@ -1168,6 +1182,8 @@ classdef TES_Struct
         end
         
         function L = fitLcircuit(obj)
+            % Function to compute circuit value L from positive bias
+            % parameters
             opts = optimset('Display','off');
             L = lsqcurvefit(@(x,y)fitLfcn(x,y,obj),100e-9,obj.TFS.f,imag(obj.TFS.tf./obj.TFN.tf),[],[],opts);                        
         end
@@ -1281,16 +1297,6 @@ classdef TES_Struct
                             eval('h_ax = [];');
                         end
                         
-%                         try
-%                             eval(['h_ax(' num2str(i) ',' num2str(j) ') = ' PlotStr{j} '(h(' num2str(j) '),' DataStr_fixed{j} ...
-%                                 ',''' MarkerStr{i} ''',''Color'',[colors(ind_color,:)],''LineWidth'',LW1,''MarkerSize'',MS,''DisplayName'',''' NameStr ''''...
-%                                 ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}]);']);
-% %                             eval(['set(h(' num2str(j) '),''FontSize'',12,''FontWeight'',''bold'',''Box'',''on'');']);
-% %                             eval(['axis(h(' num2str(j) '),''tight'');']);
-%                         catch
-%                             eval('h_ax_fixed = [];');
-%                         end
-                        
                         try
                             eval(['erbad(ind) = errorbar(h(' num2str(j) '),' DataStrBad{j} ',' DataStrBad_CI{j} ',''Visible'',''off'',''Color'',[1 1 1]*160/255,'...
                                 '''linestyle'',''none'',''DisplayName'',''Filtered Error Bar'',''Clipping'',''on'');']);
@@ -1316,7 +1322,7 @@ classdef TES_Struct
                     set(get(get(teob,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                     set(h([2 4]),'YScale','log');
                     if ~isempty(obj.TESDim.sides)
-                        CN = sum((gammas.*rhoAs).*([hMo hAu].*sides(1)*sides(2)).*eval(['obj.TES' StrRange{k} '.T_fit'])); %%%calculo de cada contribucion por separado.                        
+                        CN = sum((gammas.*rhoAs).*([hMo hAu].*sides(1)*sides(2)).*eval(['obj.TESThermal' StrRange{k} '.T_fit'])); %%%calculo de cada contribucion por separado.                        
                         teo(1) = plot(h(1),rpaux,CN*1e15*ones(1,length(rpaux)),'-.r','LineWidth',2,'DisplayName','{C_{LB}}^{teo}');
                         set(get(get(teo(1),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         teo(2) = plot(h(1),rpaux,2.43*CN*1e15*ones(1,length(rpaux)),'-.r','LineWidth',2,'DisplayName','{C_{UB}}^{teo}');
@@ -1746,7 +1752,7 @@ classdef TES_Struct
 %                 delete([findobj(fig,'Type','Line'); findobj(fig,'Type','ErrorBar'); findobj(fig,'Type','Axes')]);
 %             end
             if ~ischar(param)
-                warndlg('param must be string','ZarTES v2.0');
+                warndlg('param must be string',handles.version);
                 return;
             elseif size(param,1) == 1
                 
@@ -2099,7 +2105,7 @@ classdef TES_Struct
             trace(ActXWord.Visible);
             WordHandle = invoke(ActXWord.Documents,'Add');
             
-            answer = inputdlg({'Insert Name of the TES or date'},'ZarTES v2.0',[1 50],{' '});
+            answer = inputdlg({'Insert Name of the TES or date'},obj.version,[1 50],{' '});
             if isempty(answer)
                 return;
             end
@@ -2117,7 +2123,7 @@ classdef TES_Struct
             
             CircProp = properties(obj.circuit);
             TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
-            for i = 1:length(CircProp)
+            for i = 1:length(TESUnits)
                 CircProp{i} = [CircProp{i} ': ' num2str(eval(['obj.circuit.' CircProp{i}])) ' ' TESUnits{i}];
                 ActXWord.Selection.TypeText(CircProp{i});
                 ActXWord.Selection.TypeParagraph;
@@ -2129,10 +2135,21 @@ classdef TES_Struct
             ActXWord.Selection.TypeParagraph;
             
             TESProp = properties(obj.TESDim);
-            TESUnits = {'m';'m';'m';'';'';'';'';''};
-            for i = 1:length(TESProp)
+            TESUnits = {'m';'m';'m';'';'';'';''};
+            for i = 1:length(TESUnits)
                 TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESDim.' TESProp{i}])) ' ' TESUnits{i}];
                 ActXWord.Selection.TypeText(TESProp{i});
+                ActXWord.Selection.TypeParagraph;
+            end
+            if obj.TESDim.Abs_bool == 1
+                ActXWord.Selection.TypeText('Absorbent: Yes');
+                TESUnits = {'m';'m';'m';'';'';'';'';''};
+                j = 1;
+                for i = length(TESUnits+2):length(TESProp)
+                    TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESDim.' TESProp{i}])) ' ' TESUnits{j}];
+                    ActXWord.Selection.TypeText(TESProp{i});
+                    j = j+1;
+                end
                 ActXWord.Selection.TypeParagraph;
             end
             ActXWord.Selection.TypeParagraph; %enter
@@ -2143,10 +2160,25 @@ classdef TES_Struct
             ActXWord.Selection.TypeText('TES Thermal Parameters (Positive bias):');
             ActXWord.Selection.TypeParagraph;
             
-            TESProp = properties(obj.TESP);
-            TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K';'%Rn';'Ohm';'Ohm';'uA/V';'uA/V'};
+            TESProp = properties(obj.TESThermalP);
+            TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K'};
             for i = 1:length(TESProp)
-                TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESP.' TESProp{i}])) ' ' TESUnits{i}];
+                TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESThermalP.' TESProp{i}])) ' ' TESUnits{i}];
+                ActXWord.Selection.TypeText(TESProp{i});
+                ActXWord.Selection.TypeParagraph;
+            end
+            ActXWord.Selection.TypeParagraph; %enter
+            ActXWord.Selection.TypeParagraph;
+            
+            ActXWord.Selection.TypeParagraph; %enter
+            ActXWord.Selection.TypeParagraph;
+            ActXWord.Selection.TypeText('TES Parameters (Positive bias):');
+            ActXWord.Selection.TypeParagraph;
+            
+            TESProp = properties(obj.TESParamP);
+            TESUnits = {'Ohm';'Ohm';'S';'S';'K';'#'};
+            for i = 1:length(TESProp)
+                TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESParamP.' TESProp{i}])) ' ' TESUnits{i}];
                 ActXWord.Selection.TypeText(TESProp{i});
                 ActXWord.Selection.TypeParagraph;
             end
@@ -2158,15 +2190,31 @@ classdef TES_Struct
             ActXWord.Selection.TypeText('TES Thermal Parameters (Negative bias):');
             ActXWord.Selection.TypeParagraph;
             
-            TESProp = properties(obj.TESN);
-            TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K';'%Rn';'Ohm';'Ohm';'uA/V';'uA/V'};
+            TESProp = properties(obj.TESThermalN);
+            TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K'};
             for i = 1:length(TESProp)
-                TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESN.' TESProp{i}])) ' ' TESUnits{i}];
+                TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESThermalN.' TESProp{i}])) ' ' TESUnits{i}];
                 ActXWord.Selection.TypeText(TESProp{i});
                 ActXWord.Selection.TypeParagraph;
             end
             ActXWord.Selection.TypeParagraph; %enter
             ActXWord.Selection.TypeParagraph;
+            
+            ActXWord.Selection.TypeParagraph; %enter
+            ActXWord.Selection.TypeParagraph;
+            ActXWord.Selection.TypeText('TES Parameters (Negative bias):');
+            ActXWord.Selection.TypeParagraph;
+            
+            TESProp = properties(obj.TESParamN);
+            TESUnits = {'Ohm';'Ohm';'S';'S';'K';'#'};
+            for i = 1:length(TESProp)
+                TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESParamN.' TESProp{i}])) ' ' TESUnits{i}];
+                ActXWord.Selection.TypeText(TESProp{i});
+                ActXWord.Selection.TypeParagraph;
+            end
+            ActXWord.Selection.TypeParagraph; %enter
+            ActXWord.Selection.TypeParagraph;
+            
             
             %% Pintar curvas IV
             if obj.Report.IV_Curves
@@ -2292,18 +2340,18 @@ classdef TES_Struct
             if obj.Report.NKGTset                
             
                 if size([obj.GsetP.n],2) == 1
-                    TESProp = properties(obj.TESP);
+                    TESProp = properties(obj.TESThermalP);
                     for i = 1:length(TESProp)
-                        TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESP.' TESProp{i}]))];
+                        TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESThermalP.' TESProp{i}]))];
                         ActXWord.Selection.TypeText(TESProp{i});
                         ActXWord.Selection.TypeParagraph;
                     end
                     ActXWord.Selection.TypeParagraph; %enter
                     ActXWord.Selection.TypeParagraph;
                     
-                    TESProp = properties(obj.TESN);
+                    TESProp = properties(obj.TESThermalN);
                     for i = 1:length(TESProp)
-                        TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESN.' TESProp{i}]))];
+                        TESProp{i} = [TESProp{i} ': ' num2str(eval(['obj.TESThermalN.' TESProp{i}]))];
                         ActXWord.Selection.TypeText(TESProp{i});
                         ActXWord.Selection.TypeParagraph;
                     end
@@ -2333,7 +2381,7 @@ classdef TES_Struct
                         end
                         Gset = eval(['obj.Gset' StrRange{k}]);
                         
-                        TES_OP_y = find([Gset.T_fit] == eval(['obj.TES' StrRange{k} '.T_fit']),1,'last');
+                        TES_OP_y = find([Gset.T_fit] == eval(['obj.TESThermal' StrRange{k} '.T_fit']),1,'last');
                         
                         if isfield(fig,'subplots')
                             h = fig.subplots;

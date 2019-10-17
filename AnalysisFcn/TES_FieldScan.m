@@ -10,6 +10,9 @@ classdef TES_FieldScan
         Tbath;
     end
     
+    properties (Access = private)
+        version = 'ZarTES v2.1';
+    end
     
     methods
         
@@ -61,7 +64,7 @@ classdef TES_FieldScan
             end
             
             if isequal(path,0)
-                errordlg('Invalid Data path name!','ZarTES v2.0','modal');                
+                errordlg('Invalid Data path name!',obj.version,'modal');                
                 return;
             end
             
@@ -69,7 +72,7 @@ classdef TES_FieldScan
             if isempty(d)
                 d = dir([path filesep 'BVscan*.txt']);
                 if isempty(d)
-                    errordlg('No Data on this path!','ZarTES v2.0','modal');
+                    errordlg('No Data on this path!',obj.version,'modal');
                     return;                    
                 end
             end                        

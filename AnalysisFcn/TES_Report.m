@@ -10,6 +10,8 @@ classdef TES_Report
         FitZset = 1;
         NoiseSet = 1;
         RTs = 1;
+        ICs = 0;
+        BVscan = 0;
     end
     
     methods
