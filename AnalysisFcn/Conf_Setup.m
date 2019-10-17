@@ -60,6 +60,7 @@ set(handles.figure1,'Color',[0 0.2 0.5],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','ButtonDownFcn',{@ExportData});
 
+handles.versionStr = 'ZarTES v2.1';
 
 switch varargin{1}.Tag
     case 'Squid_Pulse_Input_Conf'
@@ -205,13 +206,25 @@ switch varargin{1}.Tag
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i}]);
             handles.Table.Data{i,3} = TESUnits{i};
         end
-    case 'TES_Param'
+    case 'TES_ThermalParam'
         set(handles.figure1,'Name',['TES Operating Point - ' handles.varargin{1}.Name]);
         set([handles.Add handles.Remove handles.Options handles.Save],'Visible','off');
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false false false];
         TESProp = properties(handles.varargin{3});
-        TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K';'%Rn';'Ohm';'Ohm'};
+        TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K'};
+        handles.Table.Data(1:length(TESUnits),1) = TESProp(1:length(TESUnits));
+        for i = 1:length(TESProp(1:length(TESUnits)))
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
+            handles.Table.Data{i,3} = TESUnits{i};
+        end
+    case 'TES_Param'
+        set(handles.figure1,'Name',['TES Parameters - ' handles.varargin{1}.Name]);
+        set([handles.Add handles.Remove handles.Options handles.Save],'Visible','off');
+        handles.Table.ColumnName = {'Parameter';'Value';'Units'};
+        handles.Table.ColumnEditable = [false false false];
+        TESProp = properties(handles.varargin{3});
+        TESUnits = {'Ohm';'Ohm';'S';'S';'K';'#'};
         handles.Table.Data(1:length(TESUnits),1) = TESProp(1:length(TESUnits));
         for i = 1:length(TESProp(1:length(TESUnits)))
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
@@ -560,7 +573,7 @@ switch handles.varargin{1}.Tag
         guidata(handles.varargin{1},NewOPT);
     case 'TES_Struct'
         ButtonName = questdlg('Do you want to save these Circuit parameters?', ...
-            'ZarTES v2.0', ...
+            handles.versionStr, ...
             'Save', 'Cancel', 'Save');
         switch ButtonName
             case 'Save'
@@ -771,7 +784,7 @@ switch handles.varargin{1}.Tag
         end
         if ~isempty(strfind(handles.varargin{1}.Tag,'_Rn_'))
             if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
-                msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
+                msgbox('Rn(%) Values must be between 0 and 1',handles.versionStr);
             end
         end    
         

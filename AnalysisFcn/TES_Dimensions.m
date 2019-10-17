@@ -19,6 +19,9 @@ classdef TES_Dimensions
         Abs_rhoBi = 0.0468;
         Abs_rhoAu = 0.0983;        
     end
+    properties (Access = private)
+        version = 'ZarTES v2.1';
+    end
     
     methods
         
@@ -62,7 +65,7 @@ classdef TES_Dimensions
             end
             
             ButtonName = questdlg('Is Absorbent presented in TES?', ...
-                'ZarTES', ...
+                obj.version, ...
                 'Yes', 'No', 'No');
             switch ButtonName
                 case 'Yes'
@@ -89,7 +92,7 @@ classdef TES_Dimensions
                     
             end % switch
             
-            waitfor('Device material dimensions provided','ZarTES');
+            waitfor('Device material dimensions provided',obj.version);
             
         end
     end
