@@ -384,21 +384,22 @@ switch src.Label
             end
         end
         
+        opt.ElectrThermalModel = TES_ElectrThermModel;
         ButtonName = questdlg('Select Files Acquisition device', ...
             handles.VersionStr, ...
             'PXI', 'HP', 'HP');
         switch ButtonName
             case 'PXI'
                 opt.ElectrThermalModel.Selected_TF_BaseName = 2;
-                opt.ElectrThermalModel.Selected_Noise_BaseName = 2;
+                opt.ElectrThermalModel.Selected_NoiseBaseName = 2;
             case 'HP'
                 opt.ElectrThermalModel.Selected_TF_BaseName = 1;
-                opt.ElectrThermalModel.Selected_Noise_BaseName = 1;
+                opt.ElectrThermalModel.Selected_NoiseBaseName = 1;
                 
             otherwise
                 disp('PXI acquisition files were selected by default.')
                 opt.ElectrThermalModel.Selected_TF_BaseName = 2;
-                opt.ElectrThermalModel.Selected_Noise_BaseName = 2;                
+                opt.ElectrThermalModel.Selected_NoiseBaseName = 2;                
         end
         
                 
@@ -427,7 +428,7 @@ switch src.Label
             % Fit P vs T
             indAxes = findobj(fig,'Type','Axes');
             delete(indAxes);
-            handles.Session{i}.TES = handles.Session{i}.TES.fitPvsTset(perc,[],fig);  %perc = 0.2:0.01:0.7; model = []; fig
+            handles.Session{i}.TES = handles.Session{i}.TES.fitPvsTset(perc,fig);  %perc = 0.2:0.01:0.7; model = []; fig
             % Thermal parameters
             clear fig;
             fig.hObject = handles.Analyzer;
@@ -438,7 +439,7 @@ switch src.Label
             indAxes = findobj(fig,'Type','Axes');
             delete(indAxes);          
             
-            handles.Session{i}.TES = handles.Session{i}.TES.FitZset(fig,opt);
+            handles.Session{i}.TES = handles.Session{i}.TES.FitZset(fig.hObject,opt);
             
         end        
         
@@ -446,6 +447,12 @@ switch src.Label
     case 'TES Dimensions'
         handles.Session{handles.TES_ID}.TES.TESDim = handles.Session{handles.TES_ID}.TES.TESDim.EnterDimensions;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
+    case 'TES Parameters'
+        handles.Session{handles.TES_ID}.TES.TESParamP.CheckValues('Positive Ibias');
+        handles.Session{handles.TES_ID}.TES.TESParamN.CheckValues('Negative Ibias');
+        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'Circuit Values'
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
@@ -1492,6 +1499,13 @@ try
 catch
 end
 
+if Session.TES.TESParamP.Filled||Session.TES.TESParamN.Filled
+    StrLabel_On = {'TES Parameters'};
+        for i = 1:length(StrLabel_On)
+            h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+            h.Enable = StrEnable{(~TES_ID+1)};
+        end
+end
 
 % --- Executes when user attempts to close Analyzer.
 function Analyzer_CloseRequestFcn(hObject, eventdata, handles)
