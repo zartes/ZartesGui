@@ -355,20 +355,14 @@ switch varargin{1}.Tag
             end
         end
     case 'TES_Report_Opt'
-        set(handles.figure1,'Name','Noise Visualization Options');
+        set(handles.figure1,'Name','Report Options');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
         handles.Table.Data = {[]};
         TESProp = properties(handles.varargin{3});
         handles.Table.ColumnName = TESProp';
-        handles.Table.ColumnFormat{1} = 'Logical';
-        handles.Table.ColumnFormat{2} = 'Logical';
-        handles.Table.ColumnFormat{3} = 'Logical';
-        handles.Table.ColumnFormat{4} = 'Logical';
-        handles.Table.ColumnFormat{5} = 'Logical';
-        handles.Table.ColumnFormat{6} = 'Logical';
-        handles.Table.ColumnFormat{7} = 'Logical';
-        handles.Table.ColumnEditable = [true true true true true true true];
         for i = 1:length(TESProp)
+            handles.Table.ColumnFormat{i} = 'Logical';
+            handles.Table.ColumnEditable(i) = true;
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
                 if eval(['handles.varargin{3}.' TESProp{i}])
                     handles.Table.Data{1,i} = true;
