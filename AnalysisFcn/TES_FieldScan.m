@@ -54,9 +54,10 @@ classdef TES_FieldScan
             end
         end
         
-        function obj = ImportScan(obj,DataPath,fig)
+        function [obj, Status] = ImportScan(obj,DataPath,fig)
             % Function to complete the class with experimental data (Rf, mN and
             % mS)
+            Status = 1;
             if exist(DataPath,'dir')
                 path = uigetdir(DataPath,'Pick a Data path containing Field Scan files (Barrido_Campo dir)');
             else
@@ -64,7 +65,8 @@ classdef TES_FieldScan
             end
             
             if isequal(path,0)
-                errordlg('Invalid Data path name!',obj.version,'modal');                
+                waitfor(errordlg('Invalid Data path name!',obj.version,'modal'));
+                Status = 0;
                 return;
             end
             
@@ -72,7 +74,8 @@ classdef TES_FieldScan
             if isempty(d)
                 d = dir([path filesep 'BVscan*.txt']);
                 if isempty(d)
-                    errordlg('No Data on this path!',obj.version,'modal');
+                    waitfor(errordlg('No Data on this path!',obj.version,'modal'));
+                    Status = 0;
                     return;                    
                 end
             end                        

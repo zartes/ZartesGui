@@ -54,9 +54,10 @@ classdef TES_IC
             end
         end
         
-        function obj = ImportICs(obj,DataPath,fig)
+        function [obj, Status] = ImportICs(obj,DataPath,fig)
             % Function to complete the class with experimental data (Rf, mN and
             % mS)
+            Status = 1;
             if exist(DataPath,'dir')
                 path = uigetdir(DataPath,'Pick a Data path containing IC files (Barrido_Campo dir)');
             else
@@ -64,14 +65,16 @@ classdef TES_IC
             end
             
             if isequal(path,0)
-                errordlg('Invalid Data path name!',obj.version,'modal');                
+                waitfor(errordlg('Invalid Data path name!',obj.version,'modal'));   
+                Status = 0;
                 return;
             end
             d = dir([path filesep 'ICpairs*.mat']);
             if isempty(d)
                 d = dir([path filesep 'ICpairs*.txt']);
                 if isempty(d)
-                    errordlg('No Data on this path!',obj.version,'modal');
+                    waitfor(errordlg('No Data on this path!',obj.version,'modal'));
+                    Status = 0;
                     return;                    
                 end
             end                        

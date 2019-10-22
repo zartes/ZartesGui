@@ -3,21 +3,35 @@ classdef TES_ThermalParam
     %   Characteristics of TES device
     
     properties
-        n;
-        n_CI;
-        K;
-        K_CI;
-        T_fit;
-        T_fit_CI;        
-        G;
-        G_CI;
-        G100;
+        n = PhysicalMeasurement;  
+        n_CI = PhysicalMeasurement;
+        K = PhysicalMeasurement;
+        K_CI = PhysicalMeasurement;
+        T_fit = PhysicalMeasurement;
+        T_fit_CI = PhysicalMeasurement;      
+        G = PhysicalMeasurement;
+        G_CI = PhysicalMeasurement;
+        G100 = PhysicalMeasurement;
+        Rn = PhysicalMeasurement;
     end
     properties (Access = private)
         version = 'ZarTES v2.1';
     end
     
     methods
+        function obj = Constructor(obj)
+            obj.n.Units = 'adim';
+            obj.n_CI.Units = 'adim';
+            obj.K.Units = 'W/K^n';
+            obj.K_CI.Units = 'W/K^n';
+            obj.T_fit.Units = 'K';
+            obj.T_fit_CI.Units = 'K';
+            obj.G.Units = 'W/K';
+            obj.G_CI.Units = 'W/K';
+            obj.G100.Units = 'W/K';            
+            obj.Rn.Units = '%';
+            
+        end
         
         function obj = Update(obj,data)
             % Function to update the class values
@@ -27,7 +41,7 @@ classdef TES_ThermalParam
                 fieldNames = fieldnames(data);
                 for i = 1:length(fieldNames)
                     if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
-                        eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
+                        eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
                     end
                 end
                 
@@ -40,7 +54,7 @@ classdef TES_ThermalParam
             
             FN = properties(obj);
             for i = 1:length(FN)
-                if isempty(eval(['obj.' FN{i}]))
+                if isempty(eval(['obj.' FN{i} '.Value']))
                     ok = 0;  % Empty field
                     return;
                 end
@@ -76,12 +90,11 @@ classdef TES_ThermalParam
                         return;
                     end
                 end
-                G_new = obj.n*obj.K*Temp^(obj.n-1);
-                uiwait(msgbox(['G(' num2str(Temp) ') = ' num2str(G_new)],obj.version,'modal'));
+                G_new = obj.n.Value*obj.K.Value*Temp^(obj.n.Value-1);
+                uiwait(msgbox(['G(' num2str(Temp) ') = ' num2str(G_new) ' W/K'],obj.version,'modal'));
             end
             try
-                G_new = obj.n*obj.K*Temp^(obj.n-1);
-                
+                G_new = obj.n.Value*obj.K.Value*Temp^(obj.n.Value-1);                
             catch
                 disp('TES Thermal Parameter values are empty.')
             end

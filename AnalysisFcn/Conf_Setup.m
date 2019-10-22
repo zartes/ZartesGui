@@ -200,11 +200,11 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false true false];
         CircProp = properties(handles.varargin{3}.circuit);
-        TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
-        handles.Table.Data(1:length(TESUnits),1) = CircProp(1:length(TESUnits));
-        for i = 1:length(TESUnits)
-            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i}]);
-            handles.Table.Data{i,3} = TESUnits{i};
+%         TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
+        handles.Table.Data(1:6,1) = CircProp(1:6);
+        for i = 1:6
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i} '.Value']);
+            handles.Table.Data{i,3} = eval(['handles.varargin{3}.circuit.' CircProp{i} '.Units']);
         end
     case 'TES_ThermalParam'
         set(handles.figure1,'Name',['TES Operating Point - ' handles.varargin{1}.Name]);
@@ -212,11 +212,11 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false false false];
         TESProp = properties(handles.varargin{3});
-        TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K'};
-        handles.Table.Data(1:length(TESUnits),1) = TESProp(1:length(TESUnits));
-        for i = 1:length(TESProp(1:length(TESUnits)))
-            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
-            handles.Table.Data{i,3} = TESUnits{i};
+%         TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K'};
+        handles.Table.Data(1:length(TESProp),1) = TESProp;
+        for i = 1:length(TESProp)
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i} '.Value']);
+            handles.Table.Data{i,3} = eval(['handles.varargin{3}.' TESProp{i} '.Units']);
         end
     case 'TES_Param'
         set(handles.figure1,'Name',['TES Parameters - ' handles.varargin{1}.Name]);
@@ -224,11 +224,11 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false false false];
         TESProp = properties(handles.varargin{3});
-        TESUnits = {'Ohm';'Ohm';'S';'S';'K';'#'};
-        handles.Table.Data(1:length(TESUnits),1) = TESProp(1:length(TESUnits));
-        for i = 1:length(TESProp(1:length(TESUnits)))
-            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
-            handles.Table.Data{i,3} = TESUnits{i};
+%         TESUnits = {'Ohm';'Ohm';'V/uA';'V/uA';'K';'#'};
+        handles.Table.Data(1:length(TESProp),1) = TESProp(1:length(TESProp));
+        for i = 1:length(TESProp)
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i} '.Value']);
+            handles.Table.Data{i,3} = eval(['handles.varargin{3}.' TESProp{i} '.Units']);
         end
     case 'TES_TF_Opt'
         set(handles.figure1,'Name','TF Visualization Options');
