@@ -191,13 +191,13 @@ handles.TES_ID = get(hObject,'Value');
 indAxes = findobj(handles.Analyzer,'Type','Axes');
 delete(indAxes);
 Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
-StrLabel = {'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
-if length(handles.Session) > 1
-    for i = 1:length(StrLabel)
-        h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
-        h.Enable = 'on';
-    end
-end
+% StrLabel = {'Plot NKGT Sets';'Plot ABCT Sets';'Plot TESs Data';'Plots Critical Currents';'Plots Field Scan'};
+% if length(handles.Session) > 1
+%     for i = 1:length(StrLabel)
+%         h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
+%         h.Enable = 'on';
+%     end
+% end
 guidata(hObject,handles);
 
 
@@ -259,17 +259,17 @@ switch src.Label
             end
             set(handles.LoadedStr,'Visible','on')
             set(handles.Loaded_TES,'String',char(ListStr),'Value',handles.TES_ID,'Visible','on');
-                      
             
+            guidata(src,handles);
             Enabling(Session,handles.TES_ID,handles.Analyzer);
             
-            StrLabel = {'Macro';'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
+            %             StrLabel = {'Macro';'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
             if length(handles.Session) > 1
-                for i = 1:length(StrLabel)
-                    h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
-                    h.Enable = 'on';
-                end
+                %                 for i = 1:length(StrLabel)
+                h = findobj(handles.Analyzer,'Label','Macro','Tag','Analyzer');
+                h.Enable = 'on';
             end
+            %             end
         end
         
     case 'Set Data Path'
@@ -334,12 +334,13 @@ switch src.Label
         else
             warndlg('Caution! Circuit parameters were not loaded, check it manually',handles.VersionStr);
         end
-        StrLabel = {'Macro';'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
+        guidata(src,handles);
+        %         StrLabel = {'Macro';'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
         if length(handles.Session) > 1
-            for i = 1:length(StrLabel)
-                h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
-                h.Enable = 'on';
-            end
+            %             for i = 1:length(StrLabel)
+            h = findobj(handles.Analyzer,'Label','Macro','Tag','Analyzer');
+            h.Enable = 'on';
+            %             end
         end
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
@@ -507,6 +508,7 @@ switch src.Label
         delete(indAxes);        
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'TES Thermal Parameters vs. %Rn'
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
@@ -630,7 +632,7 @@ switch src.Label
             'Yes', 'No', 'No');
         switch ButtonName
             case 'Yes'
-                handles.Session{handles.TES_ID}.TES.circuit.L = L;
+                handles.Session{handles.TES_ID}.TES.circuit.L.Value = L;
                 msgbox('Parameter L updated',handles.VersionStr)
         end % switch
         
@@ -646,27 +648,28 @@ switch src.Label
         
     case 'Import Critical Currents'
         fig = handles.Analyzer;
-        handles.Session{handles.TES_ID}.TES.IC = handles.Session{handles.TES_ID}.TES.IC.ImportICs(handles.Session{handles.TES_ID}.Path,fig);
-        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
-        
-        h = findobj('Label','Plot Critical Currents','Tag','Analyzer','Enable','on');
-        if ~isempty(h)
-            indAxes = findobj(fig,'Type','Axes');
-            delete(indAxes);
+        [handles.Session{handles.TES_ID}.TES.IC, Status]= handles.Session{handles.TES_ID}.TES.IC.ImportICs(handles.Session{handles.TES_ID}.Path,fig);        
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);
+        if Status
             handles.Session{handles.TES_ID}.TES.PlotCriticalCurrent(fig);
+        else
+            handles.Session{handles.TES_ID}.TES.IC = handles.Session{handles.TES_ID}.TES.IC.Constructor;
         end
-        
+        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
     case 'Import Field Scan'
         fig = handles.Analyzer;
-        handles.Session{handles.TES_ID}.TES.FieldScan = handles.Session{handles.TES_ID}.TES.FieldScan.ImportScan(handles.Session{handles.TES_ID}.Path,fig);
-        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
-        h = findobj('Label','Plot Field Scan','Tag','Analyzer','Enable','on');
-        if ~isempty(h)
-            indAxes = findobj(fig,'Type','Axes');
-            delete(indAxes);
+        [handles.Session{handles.TES_ID}.TES.FieldScan, Status] = handles.Session{handles.TES_ID}.TES.FieldScan.ImportScan(handles.Session{handles.TES_ID}.Path,fig);
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);
+        if Status
             handles.Session{handles.TES_ID}.TES.PlotFieldScan(fig);
+        else
+            handles.Session{handles.TES_ID}.TES.FieldScan.Constructor;
         end
+        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'Save TES Data'
         handles.Session{handles.TES_ID}.TES.Save([handles.Session{handles.TES_ID}.Path 'TES_' handles.Session{handles.TES_ID}.Tag]);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
@@ -683,7 +686,7 @@ switch src.Label
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
-        rp = [handles.Session{handles.TES_ID}.TES.TESP.rp handles.Session{handles.TES_ID}.TES.TESN.rp];
+        rp = [handles.Session{handles.TES_ID}.TES.TESThermalP.Rn.Value handles.Session{handles.TES_ID}.TES.TESThermalN.Rn.Value];
         handles.Session{handles.TES_ID}.TES.plotNKGTset(fig,rp);
         
     case 'Plot RTs Set'
@@ -823,7 +826,10 @@ switch src.Label
         for i = s
             SessionName = handles.Session{i}.Tag;
             SessionName(SessionName == '_') = ' ';
-            rp = [handles.Session{i}.TES.TESP.rp handles.Session{i}.TES.TESN.rp];
+            rp = [handles.Session{i}.TES.TESThermalP.Rn.Value handles.Session{i}.TES.TESThermalN.Rn.Value];
+            if isempty(rp)
+                continue;
+            end
             handles.Session{i}.TES.plotNKGTset(fig,rp);
             Lines = findobj(fig.hObject,'Type','Line');
             Lines = setdiff(Lines,Lines_old);
@@ -1306,19 +1312,21 @@ switch src.Label
     case 'Guide'
         winopen('TES_Analyzer_UserGuide.pdf');
     case 'About'
-        fig = figure('Visible','off','NumberTitle','off','Name',handles.VersionStr,'MenuBar','none','Units','Normalized');
-        
+        fig = figure('Visible','off','NumberTitle','off','Name',handles.VersionStr,'MenuBar','none','Units','Normalized','Position',[0.35 0.35 0.3 0.22]);
+%         
+%         set(fig,'Units','Normalized','Position',[0.35 0.35 0.3 0.22]);
         d = dir('Analyzer.m');
-        figure(fig);
-        axtext = subplot(2,3,1);
+%         figure(fig);
+        
+        axtext = subplot(2,3,1,'Visible','off');
         text(0,0.6,'Software developed by Juan Bolea for QMAD ICMA-CSIC.');
         text(0,0.3,['Last update: ' d.date]);
         text(0,0,['Current version: ' handles.VersionStr]);
-        axtext.Visible = 'off';
         
-        ax1 = subplot(2,3,4);
-        ax2 = subplot(2,3,5);
-        ax3 = subplot(2,3,6);
+        
+        ax1 = subplot(2,3,4,'Visible','off');
+        ax2 = subplot(2,3,5,'Visible','off');
+        ax3 = subplot(2,3,6,'Visible','off');
         try
             axes(ax1);
             data = imread('gatete.png');
@@ -1343,6 +1351,7 @@ guidata(src,handles);
 
 
 function Enabling(Session,TES_ID,fig)
+handles = guidata(fig);
 StrEnable = {'on';'off'};
 % Verificar si todos los campos están completos
 % TES_Circuit (circuit)
@@ -1468,7 +1477,7 @@ end
 
 try
     if Session.TES.IC.Filled
-        StrLabel_On = {'Plot Critical Currents'};
+        StrLabel_On = {'Plot';'Plot Critical Currents'};
         for i = 1:length(StrLabel_On)
             h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
             h.Enable = StrEnable{(~TES_ID+1)};
@@ -1482,7 +1491,7 @@ try
     end
     
     if Session.TES.FieldScan.Filled
-        StrLabel_On = {'Plot Field Scan'};
+        StrLabel_On = {'Plot';'Plot Field Scan'};
         for i = 1:length(StrLabel_On)
             h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
             h.Enable = StrEnable{(~TES_ID+1)};
@@ -1507,6 +1516,59 @@ if Session.TES.TESParamP.Filled||Session.TES.TESParamN.Filled
         end
 end
 
+
+% Enabling menus in Macro mode.
+Ok_Thermal = zeros(1,length(handles.Session));
+Ok_PP = zeros(1,length(handles.Session));
+Ok_IC = zeros(1,length(handles.Session));
+Ok_FieldScan = zeros(1,length(handles.Session));
+for i = 1:length(handles.Session)
+    Ok_Thermal(1,i) = or(handles.Session{i}.TES.TESThermalP.Filled,handles.Session{i}.TES.TESThermalN.Filled);
+    Ok_PP(1,i) = any([handles.Session{i}.TES.PP.Filled handles.Session{i}.TES.PN.Filled]);
+    Ok_IC(1,i) = handles.Session{i}.TES.IC.Filled;
+    Ok_FieldScan(1,i) = handles.Session{i}.TES.FieldScan.Filled;
+end
+StrLabel_On = {'Plot NKGT Sets';'Plot RTs Sets'};
+for i = 1:length(StrLabel_On)
+    h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+    if any(Ok_Thermal)
+        h.Enable = 'on';
+    else
+        h.Enable = 'off';
+    end
+end
+
+StrLabel_On = {'Plot ABCT Sets';'Plot TESs Data'};
+for i = 1:length(StrLabel_On)
+    h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+    if any(Ok_PP)
+        h.Enable = 'on';
+    else
+        h.Enable = 'off';
+    end
+end
+
+StrLabel_On = {'Plots Critical Currents'};
+for i = 1:length(StrLabel_On)
+    h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+    if any(Ok_IC)
+        h.Enable = 'on';
+    else
+        h.Enable = 'off';
+    end
+end
+StrLabel_On = {'Plots Field Scan'};
+for i = 1:length(StrLabel_On)
+    h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+    if any(Ok_FieldScan)
+        h.Enable = 'on';
+    else
+        h.Enable = 'off';
+    end
+end
+
+
+
 % --- Executes when user attempts to close Analyzer.
 function Analyzer_CloseRequestFcn(hObject, eventdata, handles)
 % hObject    handle to Analyzer (see GCBO)
@@ -1514,6 +1576,13 @@ function Analyzer_CloseRequestFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: delete(hObject) closes the figure
+ButtonName = questdlg('Are you sure to close Analyzer?', ...
+        handles.VersionStr, ...
+        'Yes', 'No', 'Yes');
+    switch ButtonName
+        case 'No'
+            return;
+    end
 
 if handles.TES_ID ~= 0
     ButtonName = questdlg('Do you want to save before exit?', ...

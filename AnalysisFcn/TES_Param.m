@@ -4,18 +4,27 @@ classdef TES_Param
     
     properties
         
-        Rpar;  %Ohm
-        Rn;  % Ohm
-        mS;  % 1/Ohm
-        mN;  % 1/Ohm
-        Tc_RT; % mK
-        IV_Tc; % # 
+        Rpar  = PhysicalMeasurement;  %Ohm
+        Rn = PhysicalMeasurement;  % Ohm
+        mS = PhysicalMeasurement; % 1/Ohm
+        mN = PhysicalMeasurement; % 1/Ohm
+        Tc_RT = PhysicalMeasurement; % mK
+        IV_Tc = PhysicalMeasurement; % # 
     end
+    
     properties (Access = private)
         version = 'ZarTES v2.1';
     end
     
     methods
+        function obj = Constructor(obj)
+            obj.Rpar.Units = 'Ohm';
+            obj.Rn.Units = 'Ohm';
+            obj.mS.Units = 'V/uA';
+            obj.mN.Units = 'V/uA';
+            obj.Tc_RT.Units = 'K';
+            obj.IV_Tc.Units = 'number';
+        end
         
         function obj = Update(obj,data)
             % Function to update the class values
@@ -25,7 +34,7 @@ classdef TES_Param
                 fieldNames = fieldnames(data);
                 for i = 1:length(fieldNames)
                     if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
-                        eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
+                        eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
                     end
                 end
                 
@@ -40,7 +49,7 @@ classdef TES_Param
 %             StrNo = {'sides';'Tc_RTs';'IV_Tc'};
             for i = 1:length(FN)
 %                 if isempty(cell2mat(strfind(StrNo,FN{i})))
-                    if isempty(eval(['obj.' FN{i}]))
+                    if isempty(eval(['obj.' FN{i} '.Value']))
                         ok = 0;  % Empty field
                         return;
                     end
@@ -64,15 +73,15 @@ classdef TES_Param
             % Function to compute Rn and Rpar trough the values of the
             % circuit.
             
-            obj.Rpar = (circuit.Rf*circuit.invMf/(obj.mS*circuit.invMin)-1)*circuit.Rsh;
-            obj.Rn = (circuit.Rsh*circuit.Rf*circuit.invMf/(obj.mN*circuit.invMin)-circuit.Rsh-obj.Rpar);
+            obj.Rpar.Value = (circuit.Rf.Value*circuit.invMf.Value/(obj.mS.Value*circuit.invMin.Value)-1)*circuit.Rsh.Value;
+            obj.Rn.Value = (circuit.Rsh.Value*circuit.Rf.Value*circuit.invMf.Value/(obj.mN.Value*circuit.invMin.Value)-circuit.Rsh.Value-obj.Rpar.Value);
             
         end
         
         function obj = Tc_EstimationFromRTs(obj,IVset)
             
             try
-                Rn50 = obj.Rn/2;
+                Rn50 = obj.Rn.Value/2;
                 T_IVs = NaN(1,length(IVset));
                 for i = 1:length(IVset)
                     if IVset(i).good
@@ -84,8 +93,8 @@ classdef TES_Param
                     end
                 end
                 [val, ind] = max(T_IVs);
-                obj.Tc_RT = val;
-                obj.IV_Tc = ind;
+                obj.Tc_RT.Value = val;
+                obj.IV_Tc.Value = ind;
             catch
             end
         end

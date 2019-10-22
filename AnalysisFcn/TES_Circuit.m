@@ -5,17 +5,17 @@ classdef TES_Circuit
     
     properties
         
-        Rf;   %Ohm
-        Rsh;  %Ohm
-        invMf;  % uA/phi
-        invMin; % uA/phi        
-        L;  % H
-        Nsquid; % 'pA/Hz^{0.5}'
+        Rf = PhysicalMeasurement;   %Ohm
+        Rsh = PhysicalMeasurement;  %Ohm
+        invMf = PhysicalMeasurement;  % uA/phi
+        invMin = PhysicalMeasurement; % uA/phi        
+        L = PhysicalMeasurement;  % H
+        Nsquid = PhysicalMeasurement; % 'pA/Hz^{0.5}'
         
-        Rpar;  %Ohm
-        Rn;  % (%)
-        mS;  % Ohm
-        mN;  % Ohm
+        Rpar = PhysicalMeasurement;  %Ohm
+        Rn = PhysicalMeasurement;  % (%)
+        mS = PhysicalMeasurement;  % Ohm
+        mN = PhysicalMeasurement;  % Ohm
     end
     
     
@@ -24,17 +24,27 @@ classdef TES_Circuit
         function obj = Constructor(obj)
             % Function to generate the class with default values
             
-            obj.Rsh = 0.002;
-            obj.Rf = 1e4;
-            obj.invMf = 66;
-            obj.invMin = 24.1;            
-            obj.L = 7.7e-08;
-            obj.Nsquid = 3e-12;
+            obj.Rsh.Value = 0.002;
+            obj.Rsh.Units = 'Ohm';
+            obj.Rf.Value = 1e4;
+            obj.Rf.Units = 'Ohm';
+            obj.invMf.Value = 66;
+            obj.invMf.Units = 'uA/phi';
+            obj.invMin.Value = 24.1;     
+            obj.invMin.Units = 'uA/phi';            
+            obj.L.Value = 7.7e-08;
+            obj.L.Units = 'H';
+            obj.Nsquid.Value = 3e-12;
+            obj.Nsquid.Units = 'pA/Hz^{0.5}';
             
-            obj.Rpar = 2.035e-05;
-            obj.Rn = 0.0232;
-            obj.mS = 8133;
-            obj.mN = 650.7;
+            obj.Rpar.Value = 2.035e-05;
+            obj.Rpar.Units = 'Ohm';
+            obj.Rn.Value = 0.0232;
+            obj.Rn.Units = 'Ohm';
+            obj.mS.Value = 8133;
+            obj.mS.Units = 'V/uA';
+            obj.mN.Value = 650.7;
+            obj.mN.Units = 'V/uA';
         end
         
         function ok = Filled(obj)
@@ -43,7 +53,7 @@ classdef TES_Circuit
             
             FN = properties(obj);
             for i = 1:length(FN)
-                if isempty(eval(['obj.' FN{i}]))
+                if isempty(eval(['obj.' FN{i} '.Value']))
                     ok = 0;  % Empty field
                     return;
                 end
@@ -60,9 +70,13 @@ classdef TES_Circuit
                 for i = 1:length(fieldNames)
                     if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
                         if isa(data,'Circuit')
-                            eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} '.Value;']);
+                            eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
                         else
-                            eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
+                            try
+                                eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
+                            catch
+                                eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} ';']);
+                            end
                         end
                     end
                 end

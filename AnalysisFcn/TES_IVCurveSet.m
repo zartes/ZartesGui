@@ -238,8 +238,12 @@ classdef TES_IVCurveSet
             if length(pre_Rf) > 1
                 warndlg('Unconsistency on Rf values, please check it out',obj.version);
             end
-            
-            [obj,mN,mS] = obj.IV_correction_methods(DataFit,ax1);                        
+            if exist('DataFit','var')
+                [obj,mN,mS] = obj.IV_correction_methods(DataFit,ax1);                        
+            else
+                [obj,mN,mS] = obj.IV_correction_methods;
+            end
+                
             if ishandle(h)
                 close(h);
             end
@@ -547,20 +551,20 @@ classdef TES_IVCurveSet
         function obj = GetIVTES(obj,circuit,TESParam,TESThermal)
             % Function to estimate ptes, Rtes and rtes from I-V curves
             
-            F = circuit.invMin/(circuit.invMf*circuit.Rf);%36.51e-6;
+            F = circuit.invMin.Value/(circuit.invMf.Value*circuit.Rf.Value);%36.51e-6;
             for i = 1:length(obj)
                 obj(i).ites = obj(i).vout*F;
-                Vs = (obj(i).ibias-obj(i).ites)*circuit.Rsh;%(ibias*1e-6-ites)*Rsh;if Ib in uA.
+                Vs = (obj(i).ibias-obj(i).ites)*circuit.Rsh.Value;%(ibias*1e-6-ites)*Rsh;if Ib in uA.
                 
-                obj(i).vtes = Vs-obj(i).ites*TESParam.Rpar;
+                obj(i).vtes = Vs-obj(i).ites*TESParam.Rpar.Value;
                 obj(i).ptes = obj(i).vtes.*obj(i).ites;
                 obj(i).Rtes = obj(i).vtes./obj(i).ites;
-                obj(i).rtes = obj(i).Rtes/TESParam.Rn;
+                obj(i).rtes = obj(i).Rtes/TESParam.Rn.Value;
                 if min(obj(i).rtes) > 0.05 %|| any(obj(i).rtes < -0.05)
                     obj(i).good = 0;
                 end
-                if ~isempty(TESThermal.n)
-                    obj(i).ttes = (obj(i).ptes./[TESThermal.K]+obj(i).Tbath.^([TESThermal.n])).^(1./[TESThermal.n]);
+                if ~isempty(TESThermal.n.Value)
+                    obj(i).ttes = (obj(i).ptes./[TESThermal.K.Value]+obj(i).Tbath.^([TESThermal.n.Value])).^(1./[TESThermal.n.Value]);
                     smT = smooth(obj(i).ttes,3);
                     smI = smooth(obj(i).ites,3);
                     %%%%alfa y beta from IV
@@ -654,9 +658,9 @@ classdef TES_IVCurveSet
                 [Val,Ind] = sort(TempStr); %#ok<ASGLU>
                 eval([upper(StrRange{j}) 'files = ' upper(StrRange{j}) 'files(Ind,:);']);
                 eval(['[obj, mN, mS, Rf] = obj.ImportFullIV(''' IVsPath ''',' upper(StrRange{j}) 'files);']);
-                TESDATA.circuit.Rf = Rf;
-                eval(['TESDATA.TESParam' upper(StrRange{j}) '.mN = mN;']);
-                eval(['TESDATA.TESParam' upper(StrRange{j}) '.mS = mS;']);
+                TESDATA.circuit.Rf.Value = Rf;
+                eval(['TESDATA.TESParam' upper(StrRange{j}) '.mN.Value = mN;']);
+                eval(['TESDATA.TESParam' upper(StrRange{j}) '.mS.Value = mS;']);
                 eval(['TESDATA.TESParam' upper(StrRange{j}) ' = RnRparCalc(TESDATA.TESParam' upper(StrRange{j}) ',TESDATA.circuit);']);
                 eval(['obj = obj.GetIVTES(TESDATA.circuit,TESDATA.TESParam' upper(StrRange{j}) ',TESDATA.TESThermal' upper(StrRange{j}) ');']);
             end

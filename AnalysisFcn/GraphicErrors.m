@@ -231,15 +231,15 @@ switch str
         h = findobj(handles.Analyzer,'Type','Line','Tag','Fixed');
         if isempty(h)
             
-            gammas = [handles.Session{handles.TES_ID}.TES.TESDim.gammaMo handles.Session{handles.TES_ID}.TES.TESDim.gammaAu];
-            rhoAs = [handles.Session{handles.TES_ID}.TES.TESDim.rhoMo handles.Session{handles.TES_ID}.TES.TESDim.rhoAu];
+            gammas = [handles.Session{handles.TES_ID}.TES.TESDim.gammaMo.Value handles.Session{handles.TES_ID}.TES.TESDim.gammaAu.Value];
+            rhoAs = [handles.Session{handles.TES_ID}.TES.TESDim.rhoMo.Value handles.Session{handles.TES_ID}.TES.TESDim.rhoAu.Value];
             h = flip(findobj(handles.Analyzer,'Type','Axes')); % C tau ai bi
             colors = distinguishable_colors((length(handles.Session{handles.TES_ID}.TES.PP)+length(handles.Session{handles.TES_ID}.TES.PN)));
             ind_color = 1;
             
             for i = 1:length(handles.Session{handles.TES_ID}.TES.PP)
-                T0 = handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit;
-                G0 = handles.Session{handles.TES_ID}.TES.TESThermalP.G;
+                T0 = handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit.Value;
+                G0 = handles.Session{handles.TES_ID}.TES.TESThermalP.G.Value;
                 TbathStr = [num2str(handles.Session{handles.TES_ID}.TES.PP(i).Tbath*1e3) 'mK-']; %mK
                 NameStr = [TbathStr 'PosIbias-C-Fixed'];
                 k = 1;
@@ -258,8 +258,8 @@ switch str
                 
                 param.rp = rp(IndxGood);
                 param.C_fixed = ones(1,length(param.rp))*sum((gammas.*rhoAs).*...
-                    ([handles.Session{handles.TES_ID}.TES.TESDim.hMo handles.Session{handles.TES_ID}.TES.TESDim.hAu].*...
-                    handles.Session{handles.TES_ID}.TES.TESDim.sides(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides(2)).*handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit);
+                    ([handles.Session{handles.TES_ID}.TES.TESDim.hMo.Value handles.Session{handles.TES_ID}.TES.TESDim.hAu.Value].*...
+                    handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(2)).*handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit.Value);
                 
                 taueff = [handles.Session{handles.TES_ID}.TES.PP(i).p(jj(IndxGood)).taueff];
                 P0 = [handles.Session{handles.TES_ID}.TES.PP(i).p(jj(IndxGood)).P0];
@@ -275,8 +275,8 @@ switch str
                 ind_color = ind_color+1;
             end
             for i = 1:length(handles.Session{handles.TES_ID}.TES.PN)
-                T0 = handles.Session{handles.TES_ID}.TES.TESThermalN.T_fit;
-                G0 = handles.Session{handles.TES_ID}.TES.TESThermalN.G;
+                T0 = handles.Session{handles.TES_ID}.TES.TESThermalN.T_fit.Value;
+                G0 = handles.Session{handles.TES_ID}.TES.TESThermalN.G.Value;
                 k = 2;
                 P = handles.Session{handles.TES_ID}.TES.PN;
                 TbathStr = [num2str(handles.Session{handles.TES_ID}.TES.PN(i).Tbath*1e3) 'mK-']; %mK
@@ -293,8 +293,8 @@ switch str
                 IndxGood = find(cell2mat(P(i).Filtered(jj))== 0);
                 param.rp = rp(IndxGood);
                 param.C_fixed = ones(1,length(param.rp))*sum((gammas.*rhoAs).*...
-                    ([handles.Session{handles.TES_ID}.TES.TESDim.hMo handles.Session{handles.TES_ID}.TES.TESDim.hAu].*...
-                    handles.Session{handles.TES_ID}.TES.TESDim.sides(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides(2)).*handles.Session{handles.TES_ID}.TES.TESThermalN.T_fit);
+                    ([handles.Session{handles.TES_ID}.TES.TESDim.hMo.Value handles.Session{handles.TES_ID}.TES.TESDim.hAu.Value].*...
+                    handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(2)).*handles.Session{handles.TES_ID}.TES.TESThermalN.T_fit.Value);
                 
                 taueff = [handles.Session{handles.TES_ID}.TES.PN(i).p(jj(IndxGood)).taueff];
                 P0 = [handles.Session{handles.TES_ID}.TES.PN(i).p(jj(IndxGood)).P0];

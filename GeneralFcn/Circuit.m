@@ -58,11 +58,11 @@ classdef Circuit
                 
                 obj.mN = PhysicalMeasurement;
                 obj.mN.Value = circuit.mN;
-                obj.mN.Units = 'Ohm';
+                obj.mN.Units = 'V/uA';
                 
                 obj.mS = PhysicalMeasurement;
                 obj.mS.Value = circuit.mS;
-                obj.mS.Units = 'Ohm';
+                obj.mS.Units = 'V/uA';
                 
             else
                 
@@ -96,11 +96,11 @@ classdef Circuit
                 
                 obj.mN = PhysicalMeasurement;
                 obj.mN.Value = 650.7;
-                obj.mN.Units = 'Ohm';
+                obj.mN.Units = 'V/uA';
                 
                 obj.mS = PhysicalMeasurement;
                 obj.mS.Value = 8133;
-                obj.mS.Units = 'Ohm';
+                obj.mS.Units = 'V/ua';
             end
         end
     end
