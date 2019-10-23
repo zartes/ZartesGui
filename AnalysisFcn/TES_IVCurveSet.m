@@ -197,7 +197,12 @@ classdef TES_IVCurveSet
                 obj(iOK).IVsetPath = path;
                 switch obj(iOK).CorrectionMethod
                     case 'Forced zero-zero'
-                        obj(iOK).vout = obj(iOK).vout-obj(iOK).vout(end);
+                        if strcmp(obj(iOK).range,'PosIbias')
+                            ind = find(obj(iOK).ibias >= 0,1,'last');
+                        else
+                            ind = find(obj(iOK).ibias >= 0,1,'first');
+                        end
+                        obj(iOK).vout = obj(iOK).vout-obj(iOK).vout(ind);
                         obj(iOK).good = 1;
                     case 'Respect to Normal Curve'                                                
                         try
@@ -258,8 +263,8 @@ classdef TES_IVCurveSet
                         mN(i) = mean(obj(i).vout(1:5)./obj(i).ibias(1:5));
                         mS(i) = nanmean(obj(i).vout(end-5:end-1)./obj(i).ibias(end-5:end-1));
                     end
-                    mN = prctile(mN,50);
-                    mS = prctile(mS,50);
+                    mN = prctile(mN,75);
+                    mS = prctile(mS,75);
                     
                 case 'Zero-crossing point'
                     
