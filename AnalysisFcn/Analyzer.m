@@ -92,12 +92,12 @@ IndMenu = IndMenu +1;
 
 MenuTES.Label{IndMenu} = {'Plot'};
 MenuTES.SubMenu{IndMenu} = {'Plot NKGT Set';'Plot RTs Set';'Plot ABCT Set';...
-    'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';'Plot Critical Currents';'Plot Field Scan'};
+    'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';'Plot IV-Z';'Plot Critical Currents';'Plot Field Scan'};
 MenuTES.Fcn{IndMenu} = {'Plot'};
 IndMenu = IndMenu +1;
 
 MenuTES.Label{IndMenu} = {'Macro'};
-MenuTES.SubMenu{IndMenu} = {'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plots Critical Currents';'Plots Field Scan'};
+MenuTES.SubMenu{IndMenu} = {'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot IV-Zs';'Plots Critical Currents';'Plots Field Scan'};
 MenuTES.Fcn{IndMenu} = {'MacroTES'};
 IndMenu = IndMenu +1;
 
@@ -790,6 +790,23 @@ switch src.Label
         else
             return;
         end
+        
+    case 'Plot IV-Z'
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
+        delete(indAxes);
+        str = cellstr(num2str(unique([[handles.Session{handles.TES_ID}.TES.PP.Tbath] ...
+            [handles.Session{handles.TES_ID}.TES.PN.Tbath]])'));
+        [s,~] = listdlg('PromptString','Select Tbath value/s:',...
+            'SelectionMode','multiple',...
+            'ListString',str);
+        if isempty(s)
+            return;
+        end
+        Tbath = str2double(str(s))';
+        handles.Session{handles.TES_ID}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetP,handles.Session{handles.TES_ID}.TES.PP,Tbath,fig)
+        handles.Session{handles.TES_ID}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetN,handles.Session{handles.TES_ID}.TES.PN,Tbath,fig)
+        
     case 'Plot Critical Currents'
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
@@ -1459,14 +1476,14 @@ end
 % TES_P (PP o PN)
 %   Si están vacios (FitZset)
 if any(Session.TES.PP.Filled) || any(Session.TES.PN.Filled)
-    StrLabel_On = {'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';...
+    StrLabel_On = {'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';'Plot IV-Z';...
         'Summary';'Z(w)-Noise Viewer';'Word Graphical Report'};
     for i = 1:length(StrLabel_On)
         h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
-    StrLabel_Off = {'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';...
+    StrLabel_Off = {'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';'Plot IV-Z';...
         'Summary';'Z(w)-Noise Viewer';'Word Graphical Report'};
     for i = 1:length(StrLabel_Off)
         h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
