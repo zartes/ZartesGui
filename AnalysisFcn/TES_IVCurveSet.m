@@ -83,7 +83,13 @@ classdef TES_IVCurveSet
             elseif ~exist('fileN','var')
                 [fileN,path] = uigetfile([path '\*.txt'],'','multiselect','on');
             end
-            
+            if isempty(path)
+                waitfor(msgbox('Cancelled by user',obj.version));
+                mN = [];
+                mS = [];
+                pre_Rf = [];
+                return;
+            end
             T = strcat(path,fileN);
             if ~iscell(T)
                 [ii,~] = size(T);
@@ -565,7 +571,7 @@ classdef TES_IVCurveSet
                 obj(i).ptes = obj(i).vtes.*obj(i).ites;
                 obj(i).Rtes = obj(i).vtes./obj(i).ites;
                 obj(i).rtes = obj(i).Rtes/TESParam.Rn.Value;
-                if min(obj(i).rtes) > 0.05 %|| any(obj(i).rtes < -0.05)
+                if min(obj(i).rtes) > 0.05 || max(obj(i).rtes) > 1
                     obj(i).good = 0;
                 end
                 if ~isempty(TESThermal.n.Value)
@@ -596,8 +602,11 @@ classdef TES_IVCurveSet
                 defaultanswer = {'10','250'};
                 answer = inputdlg(prompt,name,numlines,defaultanswer);
                 
-                if isempty(answer)
-                    TempLims = [0 Inf];
+                if isempty(char(answer))
+                    waitfor(msgbox('Cancelled by user',obj.version));
+                    TempLims = [];
+                    return;
+%                     TempLims = [0 Inf];
                 else
                     TempLims(1) = str2double(answer{1});
                     TempLims(2) = str2double(answer{2});
@@ -663,6 +672,9 @@ classdef TES_IVCurveSet
                 [Val,Ind] = sort(TempStr); %#ok<ASGLU>
                 eval([upper(StrRange{j}) 'files = ' upper(StrRange{j}) 'files(Ind,:);']);
                 eval(['[obj, mN, mS, Rf] = obj.ImportFullIV(''' IVsPath ''',' upper(StrRange{j}) 'files);']);
+                if isempty(mN)
+                    return;
+                end
                 TESDATA.circuit.Rf.Value = Rf;
                 eval(['TESDATA.TESParam' upper(StrRange{j}) '.mN.Value = mN;']);
                 eval(['TESDATA.TESParam' upper(StrRange{j}) '.mS.Value = mS;']);

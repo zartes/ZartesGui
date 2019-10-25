@@ -767,9 +767,57 @@ switch handles.varargin{1}.Tag
         handles.ConfInstrs{handles.Options.Value} = handles.Table.Data;
         guidata(hObject,handles);
     case ''
-        handles.Params = handles.Table.Data(:,2);
+        handles.Params = handles.Table.Data(:,2);        
         guidata(hObject,handles);
-        
+    case 'TES_ElectrThermModel'
+        handles.Params = handles.Table.Data(:,2);        
+        guidata(hObject,handles);
+    case 'TES_PvTModel'
+        if isequal(eventdata.Indices,[1,1])&& ~strcmp(eventdata.PreviousData,eventdata.NewData)
+            ind = strfind(handles.varargin{3}.Models,char(eventdata.NewData));
+            c = true;
+            j = 1;
+            while c
+                if ~isempty(ind{j})
+                    c = false;
+                    break;
+                end
+                j = j+1;
+            end
+            handles.varargin{3}.Selected_Models = j;
+            handles.varargin{3} = handles.varargin{3}.BuildPTbModel;
+            TESProp = properties(handles.varargin{3});
+            j = 1;
+            for i = 1:length(TESProp)
+                if strfind(TESProp{i},'Selected')
+                    cellList = eval(['handles.varargin{3}.' TESProp{i-1}])';
+                    handles.Table.Data{1,j} = char(cellList(eval(['handles.varargin{3}.' TESProp{i}])));
+                    j = j+1;
+                elseif strfind(TESProp{i},'bool')
+                    handles.Table.ColumnEditable(j) = true;
+                    handles.Table.ColumnFormat{j} = 'Logical';
+                    handles.Table.ColumnName{j} = TESProp{i};
+                    if eval(['handles.varargin{3}.' TESProp{i}])
+                        handles.Table.Data{1,j} = true;
+                    else
+                        handles.Table.Data{1,j} = false;
+                    end
+                    j = j+1;
+                elseif iscell(eval(['handles.varargin{3}.' TESProp{i}]))
+                    handles.Table.ColumnEditable(j) = true;
+                    handles.Table.ColumnFormat{j} = eval(['handles.varargin{3}.' TESProp{i}])';
+                    handles.Table.ColumnName{j} = TESProp{i};
+                    
+                elseif isnumeric(eval(['handles.varargin{3}.' TESProp{i}]))
+                    handles.Table.ColumnEditable(j) = true;
+                    handles.Table.ColumnFormat{j} = 'numeric';
+                    handles.Table.ColumnName{j} = TESProp{i};
+                    handles.Table.Data{1,j} = num2str(eval(['handles.varargin{3}.' TESProp{i}]));
+                    j = j+1;
+                end
+                
+            end
+        end
     otherwise
         if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         

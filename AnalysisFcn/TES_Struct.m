@@ -442,21 +442,24 @@ classdef TES_Struct
                         plot(ax,Tbath,obj.PvTModel.fitP(fit,XDATA),'LineStyle','-','Color',c(jj,:),'LineWidth',1,'DisplayName',IVTESset(i).file,...
                             'ButtonDownFcn',{@Identify_Origin_PT},'UserData',{k;jj;i;obj},'Visible','off');
                         
+                        if obj.PvTModel.Selected_Models == 1
+                            
+                            DefaultModel = TES_PvTModel;
+                            DefaultModel.Selected_Models = 2;
+                            DefaultModel = DefaultModel.BuildPTbModel;
+                            XDATA = Tbath;
+                            opts = optimset('Display','off');
+                            fitfun = @(x,y)DefaultModel.fitP(x,y);
+                            [fit,~,aux2,~,~,~,auxJ] = lsqcurvefit(fitfun,DefaultModel.X0,XDATA,Paux*1e12,DefaultModel.LB,DefaultModel.UB,opts);
+                            ci = nlparci(fit,aux2,'jacobian',auxJ); %%%confidence intervals.
+                            
+                            CI = diff(ci');
+                            fit_CI = [fit; CI];
+                            Gaux2(jj) = DefaultModel.GetGfromFit(fit_CI');%#ok<AGROW,
+                            eval(['obj.Gset' StrRange{k} '(jj).K = Gaux2(jj).K*1e-12;']);
+                            eval(['obj.Gset' StrRange{k} '(jj).K_CI = Gaux2(jj).K_CI*1e-12;']);
+                        end
                         
-                        DefaultModel = TES_PvTModel;
-                        DefaultModel.Selected_Models = 2;
-                        DefaultModel = DefaultModel.BuildPTbModel;
-                        XDATA = Tbath;
-                        opts = optimset('Display','off');
-                        fitfun = @(x,y)DefaultModel.fitP(x,y);
-                        [fit,~,aux2,~,~,~,auxJ] = lsqcurvefit(fitfun,DefaultModel.X0,XDATA,Paux*1e12,DefaultModel.LB,DefaultModel.UB,opts);
-                        ci = nlparci(fit,aux2,'jacobian',auxJ); %%%confidence intervals.
-                        
-                        CI = diff(ci');
-                        fit_CI = [fit; CI];
-                        Gaux2(jj) = DefaultModel.GetGfromFit(fit_CI');%#ok<AGROW,
-                        eval(['obj.Gset' StrRange{k} '(jj).K = Gaux2(jj).K*1e-12;']);
-                        eval(['obj.Gset' StrRange{k} '(jj).K_CI = Gaux2(jj).K_CI*1e-12;']);
                         
                         plot(ax,Tbath,Paux*1e12,'Marker','o','MarkerFaceColor',c(jj,:),'MarkerEdgeColor',c(jj,:),'DisplayName',['Rn(%): ' num2str(eval(['perc' StrRange{k} '(jj)']))],...
                             'ButtonDownFcn',{@Identify_Origin_PT},'UserData',SetIbias,'LineStyle','none','Visible','off')
