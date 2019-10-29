@@ -472,7 +472,10 @@ classdef TES_ElectrThermModel
                     %%%calculo factor F. See McCammon p11.
                     %n = 3.1;
                     %F = t^(n+1)*(t^(n+2)+1)/2;%F de boyle y rogers. n =  exponente de la ley de P(T). El primer factor viene de la pag22 del cap de Irwin.
-                    F = (t^(n+2)+1)/2;%%%specular limit
+                    
+%                     F = (t^(n+2)+1)/2;%%%specular limit
+                    bb = n-1;
+                     F=(t^(bb+2)+1)/2;
                     %F = t^(n+1)*(n+1)*(t^(2*n+3)-1)/((2*n+3)*(t^(n+1)-1));%F de Mather. La
                     %diferencia entre las dos fórmulas es menor del 1%.
                     %F = (n+1)*(t^(2*n+3)-1)/((2*n+3)*(t^(n+1)-1));%%%diffusive limit.
