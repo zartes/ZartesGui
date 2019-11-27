@@ -65,7 +65,38 @@ classdef TES_BasalNoises
             
         end
         
-        function obj = Plot(obj,fig)
+        function  [f,N, obj] = NnoiseModel(obj,TES,Tbath)
+            %%%Función para devolver el modelo de ruido total en estado normal o
+            %%%superconductor
+            
+            RL = TES.circuit.Rsh.Value+TES.circuit.Rpar.Value;
+            RTES = TES.circuit.Rn.Value+RL;
+            
+            tau = TES.circuit.L.Value/(RL+TES.circuit.Rn.Value);
+            f = logspace(0,6);
+            w = 2*pi*f;
+            
+            i_jo = sqrt(4*TES.ElectrThermalModel.Kb*Tbath/(RTES))./(1+tau*w);
+            %[sqrt(4*Kb*Tbath/RL) sqrt(4*Kb*Tbath/RN) sqrt(4*Kb*Tbath/RTES)]
+            %N=sqrt(i_sh.^2+i_jo.^2+i_squid^2);
+            N = sqrt(i_jo.^2+TES.circuit.Nsquid.Value^2);           
+            
+        end
+        
+        function [f,N,obj] = SnoiseModel(obj,TES,Tbath)
+                        
+            RL = TES.circuit.Rsh.Value+TES.circuit.Rpar.Value;
+                        
+            tau = TES.circuit.L.Value/RL;
+            f = logspace(0,6);
+            w = 2*pi*f;
+            %(Rf*invMf/invMin) factor para convertir en Voltaje.
+            i_sh = sqrt(4*TES.ElectrThermalModel.Kb*Tbath/RL)./(1+tau*w);            
+            N = sqrt(i_sh.^2+TES.circuit.Nsquid.Value^2);
+            
+        end
+        
+        function obj = Plot(obj,fig,TES,Type)
             % Function that visualizes TFS
             
             if nargin < 2
@@ -81,8 +112,40 @@ classdef TES_BasalNoises
             ylabel(ax,'pA/Hz^{0.5}');
             xlabel(ax,'\nu (Hz)');
             [path,file] = fileparts(obj.fileNoise);
+            try
+                offsetstr = strfind(file,'mK_')-1;
+                onsetstr = strfind(file,'_');
+                onsetstr = onsetstr(find(offsetstr-onsetstr > 0,1,'last'))+1;
+                Tbath = str2double(file(onsetstr:offsetstr))*1e-3;
+            catch
+                file(file == '_') = ' ';
+                title(ax,file);
+                waitfor(msgbox('Tbath was not identified from noise file in terms of ''_XXmK'' value, please provide a Tbath(mK) to continue',obj.version));
+                prompt = {'Enter the Tbath value in mK:'};
+                name = 'Theorical Noise estimation';
+                numlines = 1;
+                defaultanswer = {'50'};
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                Tbath = str2double(char(answer));
+                if isnan(Tbath)
+                    warndlg('Invalid Tbath value',obj.version);                    
+                    return;
+                end
+            end
             file(file == '_') = ' ';
             title(ax,file);
+            
+            % Autodetecta la temperatura del baño con _XXmK_
+            switch Type
+                case 'Normal'
+                    [f,N, obj] = obj.NnoiseModel(TES,Tbath);
+                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Normal Noise');
+                case 'Superconductor'
+                    [f,N, obj] = obj.SnoiseModel(TES,Tbath);
+                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Superconductor Noise');                    
+            end
+             %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+            
         end
         
         function obj = Check(obj,fig)

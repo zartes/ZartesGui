@@ -35,7 +35,7 @@ classdef TES_Circuit
             obj.L.Value = 7.7e-08;
             obj.L.Units = 'H';
             obj.Nsquid.Value = 3e-12;
-            obj.Nsquid.Units = 'pA/Hz^{0.5}';
+            obj.Nsquid.Units = 'A/Hz^{0.5}';
             
             obj.Rpar.Value = 2.035e-05;
             obj.Rpar.Units = 'Ohm';
