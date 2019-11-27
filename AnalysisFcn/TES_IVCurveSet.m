@@ -20,8 +20,8 @@ classdef TES_IVCurveSet
         Tbath;
         IVsetPath;
         CorrectionMethod;
-        PN_lowerTol = 0.85;
-        PN_upperTol = 1.15;
+        PN_lowerTol = 0.8;
+        PN_upperTol = 1.2;
         PS_lowerTol = 0.95;
         PS_upperTol = 1.05;
     end
@@ -183,11 +183,11 @@ classdef TES_IVCurveSet
                 j = size(data,2);
                 switch j
                     case 2
-                        Dibias = data(:,1)*1e-6;
+                        Dibias = (data(:,1)-data(end,1))*1e-6;
                         Dvout = data(:,4);
                     case 4
                         Dibias = data(:,2)*1e-6;
-                        Dvout = data(:,4);                        
+                        Dvout = data(:,4)-data(end,4);                        
                 end                                
                 
                 
@@ -475,12 +475,13 @@ classdef TES_IVCurveSet
             
             MaxP = max(pend);
             MinP = min(pend);
-            Thres = (MaxP-MinP)/2;
+            Thres = (MaxP-MinP)/2 +MinP;
             
             XN = NaN;
             XS = NaN;
-            [h1,X] = hist(pend,700);            
-            [~,ind] = max(h1(X < Thres));
+            [h1,X] = hist(pend,700);  
+%             h1(1) = 0; % Proteccion ante falsas detecciones
+            [~,ind] = find(h1 == max(h1(X < Thres)),1,'last');            
             XN = X(ind);
             hL = length(h1(X < Thres));
             [~,ind] = find((h1(X > Thres)));
@@ -508,7 +509,7 @@ classdef TES_IVCurveSet
             end
             if ~isempty(XN)
                 try
-                    indPN = find(abs((pend-XN)*100/XN) < 2);
+                    indPN = find(abs((pend-XN)*100/XN) < 5); % 5 porciento de error relativo
                     dataPN = vout([indPN; indPN(end)+1]);
                     dataXPN = ibias([indPN; indPN(end)+1]);
                     PN = polyfit(dataXPN,dataPN,1);
@@ -526,7 +527,7 @@ classdef TES_IVCurveSet
             
             if ~isempty(XS)
                 try
-                    indPS = find(abs((pend-XS)*100/XS) < 2);
+                    indPS = find(abs((pend-XS)*100/XS) < 5); % 5 porciento de error relativo
                     dataPS = vout([indPS; indPS(end)+1]);
                     dataXPS = ibias([indPS; indPS(end)+1]);
                     PS = polyfit(dataXPS,dataPS,1);

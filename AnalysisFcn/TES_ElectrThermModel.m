@@ -210,19 +210,29 @@ classdef TES_ElectrThermModel
             
             param.R0 = R0;
             param.P0 = P0;
-            if size(eval(['[TES.Gset' CondStr '.n]']),2) > 1
-                rp = R0/Rn;
-                [val, ind] = min(abs(eval(['[TES.Gset' CondStr '.rp]'])-rp));
-                eval(['T0 = TES.Gset' CondStr '(ind).T_fit;'])   
-                % Si fijo n, cojo T0 y G0 se toman segun su rp (variables)
-%                 G0 = eval(['TES.TES' CondStr '.G']);  %(W/K)
-                eval(['G0 = TES.Gset' CondStr '(ind).G;'])   
-%                 param.G0 = TES.TESP.n*TES.TESP.K*T0^(TES.TESP.n-1);
-            else
-                % Un solo valor de n, K, G y T_fit
-                T0 = eval(['TES.TESThermal' CondStr '.T_fit.Value;']); %(K)
-                G0 = eval(['TES.TESThermal' CondStr '.G.Value']);  %(W/K)
-            end            
+            % La forma correcta consiste en considerar n y K constantes
+            % físicas que se obtienen en el ajuste de P vs T. La
+            % propagación para las z(w) dependerá del punto de operación en
+            % cada caso. 
+            n = eval(['TES.TESThermal' CondStr '.n.Value']);
+            K = eval(['TES.TESThermal' CondStr '.K.Value']);
+            T0 = ((param.P0/K)+((IVaux.Tbath)^n)/K)^(1/n);
+            G0 = n*K*(IVaux.Tbath^(n-1));
+            
+            % Antiguas formas de propagar los valores de T0 y G0.
+%             if size(eval(['[TES.Gset' CondStr '.n]']),2) > 1
+%                 rp = R0/Rn;
+%                 [val, ind] = min(abs(eval(['[TES.Gset' CondStr '.rp]'])-rp));
+%                 eval(['T0 = TES.Gset' CondStr '(ind).T_fit;'])   
+%                 % Si fijo n, cojo T0 y G0 se toman segun su rp (variables)
+% %                 G0 = eval(['TES.TES' CondStr '.G']);  %(W/K)
+%                 eval(['G0 = TES.Gset' CondStr '(ind).G;'])   
+% %                 param.G0 = TES.TESP.n*TES.TESP.K*T0^(TES.TESP.n-1);
+%             else
+%                 % Un solo valor de n, K, G y T_fit
+%                 T0 = eval(['TES.TESThermal' CondStr '.T_fit.Value;']); %(K)
+%                 G0 = eval(['TES.TESThermal' CondStr '.G.Value']);  %(W/K)
+%             end            
             
             
             switch obj.Zw_Models{obj.Selected_Zw_Models}
