@@ -72,7 +72,7 @@ classdef TES_BasalNoises
             RL = TES.circuit.Rsh.Value+TES.circuit.Rpar.Value;
             RTES = TES.circuit.Rn.Value+RL;
             
-            tau = TES.circuit.L.Value/(RL+TES.circuit.Rn.Value);
+            tau = TES.circuit.L.Value/RTES;
             f = logspace(0,6);
             w = 2*pi*f;
             
