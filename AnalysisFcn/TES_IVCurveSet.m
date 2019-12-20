@@ -445,9 +445,10 @@ classdef TES_IVCurveSet
                         end
                     end
                     
-                    mN = prctile(PN,50);
-%                     mN = PN(indPEnd);
-                    mS = prctile(PS,50);
+%                     mN = prctile(PN,50);
+                    mN = PN(indPEnd);
+                    mS = PS(1);
+%                     mS = prctile(PS,50);
                     
                 otherwise
                     
@@ -572,7 +573,10 @@ classdef TES_IVCurveSet
                 obj(i).ptes = obj(i).vtes.*obj(i).ites;
                 obj(i).Rtes = obj(i).vtes./obj(i).ites;
                 obj(i).rtes = obj(i).Rtes/TESParam.Rn.Value;
-                if min(obj(i).rtes) > 0.05 || max(obj(i).rtes) > 1
+%                 if min(obj(i).rtes) > 0.05 || max(obj(i).rtes) > 1
+%                     obj(i).good = 0;
+%                 end
+                if min(obj(i).rtes) > 0.5 || max(obj(i).rtes) > 1.1
                     obj(i).good = 0;
                 end
                 if ~isempty(TESThermal.n.Value)
