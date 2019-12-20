@@ -445,9 +445,9 @@ classdef TES_IVCurveSet
                         end
                     end
                     
-                    mN = prctile(PN,75);
+                    mN = prctile(PN,50);
 %                     mN = PN(indPEnd);
-                    mS = prctile(PS,75);
+                    mS = prctile(PS,50);
                     
                 otherwise
                     
