@@ -552,7 +552,7 @@ switch src.Label
             handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Constructor;
         end
         handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.NoisefromFile(FileName,fig,handles.Session{handles.TES_ID}.TES);
-        handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig,handles.Session{handles.TES_ID}.TES,'Normal');
+        handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig,handles.Session{handles.TES_ID}.TES,'Superconductor');
 %         handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig);
         
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
