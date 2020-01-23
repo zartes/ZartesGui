@@ -372,13 +372,37 @@ classdef TES_IVCurveSet
                             obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indPEnd).vout(indmax1));
                             [obj(i).ibias, Id] = unique(obj(i).ibias);
                             obj(i).vout = obj(i).vout(Id);
-                            if strcmp(obj(i).range,'PosIbias')
-                                [~, I] = sort(abs(obj(i).ibias),'descend');
+                            IndMas = find(sign(obj(i).ibias) ~= -1);
+                            IndMenos = find(sign(obj(i).ibias) == -1);
+                            if strcmp(obj(i).range,'PosIbias')                                
+                                [~, Imas] = sort(obj(i).ibias(IndMas),'descend');
+                                try
+                                    [~, Imenos] = sort(obj(i).ibias(IndMenos),'ascend');
+                                end
+                                obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
+                                obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                             else
-                                [~, I] = sort(obj(i).ibias,'ascend');
+                                [~, Imas] = sort(obj(i).ibias(IndMas),'ascend');
+                                try
+                                    [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');
+                                end
+                                obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
+                                obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                             end
-                            obj(i).ibias = obj(i).ibias(I);
-                            obj(i).vout = obj(i).vout(I);
+                                
+%                             if any(signo == 1)||any(signo == 0)
+%                                 [~, Imas] = sort(obj(i).ibias(signo ~= -1),'descend');
+%                             end
+%                             if any(signo == -1)
+%                                 [~, Imenos] = sort(obj(i).ibias(signo == -1),'descend');
+%                             end
+%                             if strcmp(obj(i).range,'PosIbias')
+%                                 [~, I] = sort(abs(obj(i).ibias),'descend');
+%                             else
+%                                 [~, I] = sort(obj(i).ibias,'ascend');
+%                             end
+%                             obj(i).ibias = obj(i).ibias(I);
+%                             obj(i).vout = obj(i).vout(I);
                             
                             [Datafit(i),~,~,~,~] = obj.IV_estimation_mN_mS(obj(i).ibias,obj(i).vout,ax1);
                             
@@ -392,13 +416,30 @@ classdef TES_IVCurveSet
                                 
                                 [obj(i).ibias, Id] = unique(obj(i).ibias);
                                 obj(i).vout = obj(i).vout(Id);
+                                IndMas = find(sign(obj(i).ibias) ~= -1);
+                                IndMenos = find(sign(obj(i).ibias) == -1);
                                 if strcmp(obj(i).range,'PosIbias')
-                                    [~, I] = sort(abs(obj(i).ibias),'descend');
+                                    [~, Imas] = sort(obj(i).ibias(IndMas),'descend');
+                                    try
+                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'ascend');
+                                    end
+                                    obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
+                                    obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                                 else
-                                    [~, I] = sort(obj(i).ibias,'ascend');
+                                    [~, Imas] = sort(obj(i).ibias(IndMas),'ascend');
+                                    try
+                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');
+                                    end
+                                    obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
+                                    obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                                 end
-                                obj(i).ibias = obj(i).ibias(I);
-                                obj(i).vout = obj(i).vout(I);
+%                                 if strcmp(obj(i).range,'PosIbias')
+%                                     [~, I] = sort(abs(obj(i).ibias),'descend');
+%                                 else
+%                                     [~, I] = sort(obj(i).ibias,'ascend');
+%                                 end
+%                                 obj(i).ibias = obj(i).ibias(I);
+%                                 obj(i).vout = obj(i).vout(I);
                                 
                             elseif (Datafit(i).PS(1) < nanmedian(PS)*obj(1).PS_lowerTol)||(Datafit(i).PS(1) > nanmedian(PS)*obj(1).PS_upperTol)
                                 obj(i).good = 0;
@@ -410,33 +451,78 @@ classdef TES_IVCurveSet
                                 
                                 [obj(i).ibias, Id] = unique(obj(i).ibias);
                                 obj(i).vout = obj(i).vout(Id);
+                                IndMas = find(sign(obj(i).ibias) ~= -1);
+                                IndMenos = find(sign(obj(i).ibias) == -1);
                                 if strcmp(obj(i).range,'PosIbias')
-                                    [~, I] = sort(abs(obj(i).ibias),'descend');
+                                    [~, Imas] = sort(obj(i).ibias(IndMas),'descend');
+                                    try
+                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'ascend');
+                                    end
+                                    obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
+                                    obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                                 else
-                                    [~, I] = sort(obj(i).ibias,'ascend');
+                                    [~, Imas] = sort(obj(i).ibias(IndMas),'ascend');
+                                    try
+                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');
+                                    end
+                                    obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
+                                    obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                                 end
-                                obj(i).ibias = obj(i).ibias(I);
-                                obj(i).vout = obj(i).vout(I);
+%                                 if strcmp(obj(i).range,'PosIbias')
+%                                     [~, I] = sort(abs(obj(i).ibias),'descend');
+%                                 else
+%                                     [~, I] = sort(obj(i).ibias,'ascend');
+%                                 end
+%                                 obj(i).ibias = obj(i).ibias(I);
+%                                 obj(i).vout = obj(i).vout(I);
                             end
                             plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
                             if strcmp(obj(i).range,'NegIbias')
                                 plot(ax1,-obj(i).ibias*1e6,-obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
                             end
                         else
-                            obj(i).ibias = obj(i).ibias-Xcros(1);
-                            obj(i).vout = obj(i).vout-Ycros(1);
+                            if strcmp(obj(i).range,'PosIbias')
+                                [valibias,indmax] = max(obj(i).ibias);
+                            else
+                                [valibias,indmax] = min(obj(i).ibias);
+                            end
+                            
+                            [val,indmax1] = min(abs(obj(indPEnd).ibias - valibias));
+                            obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indPEnd).vout(indmax1));
+                            [obj(i).ibias, Id] = unique(obj(i).ibias);
+                            obj(i).vout = obj(i).vout(Id);
+                            
+%                             obj(i).ibias = obj(i).ibias-Xcros(1);
+%                             obj(i).vout = obj(i).vout-Ycros(1);
 %                             obj(i).ibias = obj(i).ibias-obj(i).ibias(end);
 %                             obj(i).vout = obj(i).vout-obj(i).vout(end);
                             
                             [obj(i).ibias, Id] = unique(obj(i).ibias);
                             obj(i).vout = obj(i).vout(Id);
-                            if strcmp(obj(i).range,'PosIbias')
-                                [~, I] = sort(abs(obj(i).ibias),'descend');
+                            IndMas = find(sign(obj(i).ibias) ~= -1);
+                            IndMenos = find(sign(obj(i).ibias) == -1);
+                            if strcmp(obj(i).range,'PosIbias')                                
+                                [~, Imas] = sort(obj(i).ibias(IndMas),'descend');
+                                try
+                                    [~, Imenos] = sort(obj(i).ibias(IndMenos),'ascend');
+                                end
+                                obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
+                                obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                             else
-                                [~, I] = sort(obj(i).ibias,'ascend');
+                                [~, Imas] = sort(obj(i).ibias(IndMas),'ascend');
+                                try
+                                    [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');
+                                end
+                                obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
+                                obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                             end
-                            obj(i).ibias = obj(i).ibias(I);
-                            obj(i).vout = obj(i).vout(I);
+%                             if strcmp(obj(i).range,'PosIbias')
+%                                 [~, I] = sort(abs(obj(i).ibias),'descend');
+%                             else
+%                                 [~, I] = sort(obj(i).ibias,'ascend');
+%                             end
+%                             obj(i).ibias = obj(i).ibias(I);
+%                             obj(i).vout = obj(i).vout(I);
                             obj(i).good = 0;
                             plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
                             if strcmp(obj(i).range,'NegIbias')
@@ -447,7 +533,7 @@ classdef TES_IVCurveSet
                     
 %                     mN = prctile(PN,50);
                     mN = PN(indPEnd);
-                    mS = PS(1);
+                    mS = PS(find(isnan(PS) ~= 1,1)); % El primer valor de PS que sea distinto de NaN.
 %                     mS = prctile(PS,50);
                     
                 otherwise
@@ -573,12 +659,14 @@ classdef TES_IVCurveSet
                 obj(i).ptes = obj(i).vtes.*obj(i).ites;
                 obj(i).Rtes = obj(i).vtes./obj(i).ites;
                 obj(i).rtes = obj(i).Rtes/TESParam.Rn.Value;
+                
+%                 figure,plot(obj(i).rtes,obj(i).ptes*1e12)
 %                 if min(obj(i).rtes) > 0.05 || max(obj(i).rtes) > 1
 %                     obj(i).good = 0;
 %                 end
-                if min(obj(i).rtes) > 0.5 || max(obj(i).rtes) > 1.1
-                    obj(i).good = 0;
-                end
+%                 if min(obj(i).rtes) > 0.5 || max(obj(i).rtes) > 1.1
+%                     obj(i).good = 0;
+%                 end
                 if ~isempty(TESThermal.n.Value)
                     obj(i).ttes = (obj(i).ptes./[TESThermal.K.Value]+obj(i).Tbath.^([TESThermal.n.Value])).^(1./[TESThermal.n.Value]);
                     smT = smooth(obj(i).ttes,3);
@@ -851,6 +939,7 @@ classdef TES_IVCurveSet
                     xlabel(h(4),'R_{TES}/R_n','FontWeight','bold');ylabel(h(4),'Ptes(pW)','FontWeight','bold');
                     set(h(4),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
                     
+                    
                     j = j+1;
 %                 end
             end
@@ -859,6 +948,7 @@ classdef TES_IVCurveSet
                 set([h_ib h_ites h_ptes h_rtes],'UserData',obj);
                 %             linkprop([h_ib h_ites h_ptes h_rtes],'Color');
                 set(fig.hObject,'UserData',obj);
+                xlim(h(4),[0 1]);
             end
         end
         
