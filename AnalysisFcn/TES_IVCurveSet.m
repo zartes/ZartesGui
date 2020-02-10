@@ -383,11 +383,11 @@ classdef TES_IVCurveSet
                                 obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                             else
                                 [~, Imas] = sort(obj(i).ibias(IndMas),'ascend');
-                                try
-                                    [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');
-                                end
-                                obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
-                                obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
+                                    try
+                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'ascend');
+                                    end
+                                    obj(i).ibias = [obj(i).ibias(IndMenos(Imenos)); obj(i).ibias(IndMas(Imas))];
+                                    obj(i).vout = [obj(i).vout(IndMenos(Imenos)); obj(i).vout(IndMas(Imas))];
                             end
                                 
 %                             if any(signo == 1)||any(signo == 0)
@@ -428,10 +428,10 @@ classdef TES_IVCurveSet
                                 else
                                     [~, Imas] = sort(obj(i).ibias(IndMas),'ascend');
                                     try
-                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');
+                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'ascend');
                                     end
-                                    obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
-                                    obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
+                                    obj(i).ibias = [obj(i).ibias(IndMenos(Imenos)); obj(i).ibias(IndMas(Imas))];
+                                    obj(i).vout = [obj(i).vout(IndMenos(Imenos)); obj(i).vout(IndMas(Imas))];
                                 end
 %                                 if strcmp(obj(i).range,'PosIbias')
 %                                     [~, I] = sort(abs(obj(i).ibias),'descend');
@@ -463,10 +463,10 @@ classdef TES_IVCurveSet
                                 else
                                     [~, Imas] = sort(obj(i).ibias(IndMas),'ascend');
                                     try
-                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');
+                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'ascend');
                                     end
-                                    obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
-                                    obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
+                                    obj(i).ibias = [obj(i).ibias(IndMenos(Imenos)); obj(i).ibias(IndMas(Imas))];
+                                    obj(i).vout = [obj(i).vout(IndMenos(Imenos)); obj(i).vout(IndMas(Imas))];
                                 end
 %                                 if strcmp(obj(i).range,'PosIbias')
 %                                     [~, I] = sort(abs(obj(i).ibias),'descend');
@@ -510,11 +510,11 @@ classdef TES_IVCurveSet
                                 obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                             else
                                 [~, Imas] = sort(obj(i).ibias(IndMas),'ascend');
-                                try
-                                    [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');
-                                end
-                                obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
-                                obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
+                                    try
+                                        [~, Imenos] = sort(obj(i).ibias(IndMenos),'ascend');
+                                    end
+                                    obj(i).ibias = [obj(i).ibias(IndMenos(Imenos)); obj(i).ibias(IndMas(Imas))];
+                                    obj(i).vout = [obj(i).vout(IndMenos(Imenos)); obj(i).vout(IndMas(Imas))];
                             end
 %                             if strcmp(obj(i).range,'PosIbias')
 %                                 [~, I] = sort(abs(obj(i).ibias),'descend');

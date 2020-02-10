@@ -491,7 +491,7 @@ ThresIbias = 0.1; % la curva de IV llegará en caso positivo a -0.1 uA
 
 for IB = 1:2 % Positive 1, Negative 2
     slope_curr = 0;
-    Res_Orig = 10;
+    Res_Orig = 5;
     Res = Res_Orig;
     if IB == 1
         %             Field = Bfield.p;
@@ -582,7 +582,7 @@ for IB = 1:2 % Positive 1, Negative 2
                 
                 if abs(slope_curr - nanmean(slope)) > 20*abs(nanstd(slope))
                     if slope_curr < 0
-                        Res = 2;
+                        Res = 1;
                     else
                         Res = max(Res_Orig*0.5,1);
                     end
@@ -1429,7 +1429,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
                 pause(0.2);
                 % Guardamos los datos en un fichero
                 file = strcat('TF_',Itxt,'uA','.txt');
-                save([Path file],'datos','-ascii');%salva los datos a fichero.
+                uisave([Path filesep file],'datos','-ascii');%salva los datos a fichero.
             end
         end
         

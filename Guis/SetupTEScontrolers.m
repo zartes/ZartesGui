@@ -130,6 +130,8 @@ handles.IVset = [];
 
 handles.IVDelay = IV_Delay;
 handles.IVDelay = handles.IVDelay.Constructor;
+handles.IVDelay.OriginalRes = 5;
+handles.IVDelay.MinRes = 1;
 
 handles.BoptDelay = IV_Delay;
 handles.BoptDelay = handles.BoptDelay.Constructor;
@@ -335,13 +337,13 @@ function ChangeDelayParam(src,evnt)
 handles = guidata(src);
 switch src.Label
     case 'I-V parameters'  
-        handles.IVDelay = handles.IVDelay.View;        
+        handles.IVDelay = handles.IVDelay.View(src.Label);        
         handles.Actions_Str.String = 'I-V Curve time slots have changed';        
     case 'B opt parameters'        
-        handles.BoptDelay = handles.BoptDelay.View;
+        handles.BoptDelay = handles.BoptDelay.View(src.Label);
         handles.Actions_Str.String = 'B opt time slots have changed';
     case 'Critical I parameters'
-        handles.ICDelay = handles.ICDelay.View;
+        handles.ICDelay = handles.ICDelay.View(src.Label);
         handles.Actions_Str.String = 'Critical I time slots have changed';        
 end
 Actions_Str_Callback(handles.Actions_Str,[],handles);
@@ -2548,6 +2550,22 @@ if hObject.Value
     Data(:,2) = handles.TestData.Noise.DSA{end}(:,2);
     ManagingData2Plot(Data,DataName,handles,hObject);
     
+    ButtonName = questdlg('Do you want to save current Noise (DSA) test values?', ...
+        handles.VersionStr, ...
+        'Yes', 'No', 'Yes');
+    switch ButtonName
+        case 'Yes'
+            Itxt = handles.SQ_realIbias.String;
+            filename = strcat('HP_noise_',Itxt,'uA','.txt');            
+            [filename, pathname] = uiputfile('*.txt','Save current noise acquisition',filename);
+            if isequal(filename,0) || isequal(pathname,0)
+                waitfor(warndlg('User pressed cancel',handles.VersionStr));
+            else
+                save([pathname filename],'datos','-ascii');%salva los datos a fichero.
+            end
+    end % swit
+    
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     hObject.BackgroundColor = handles.Disable_Color;
     hObject.Value = 0;
@@ -2633,6 +2651,21 @@ if hObject.Value
     Data(:,2) = handles.TestData.TF.DSA{end}(:,2);
     Data(:,3) = handles.TestData.TF.DSA{end}(:,3);
     ManagingData2Plot(Data,DataName,handles,hObject)
+    
+    ButtonName = questdlg('Do you want to save current TF (DSA) test values?', ...
+        handles.VersionStr, ...
+        'Yes', 'No', 'Yes');
+    switch ButtonName
+        case 'Yes'
+            Itxt = handles.SQ_realIbias.String;
+            filename = strcat('TF_',Itxt,'uA','.txt');            
+            [filename, pathname] = uiputfile('*.txt','Save current TF acquisition',filename);
+            if isequal(filename,0) || isequal(pathname,0)
+                waitfor(warndlg('User pressed cancel',handles.VersionStr));
+            else
+                save([pathname filename],'datos','-ascii');%salva los datos a fichero.
+            end
+    end % swit
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     hObject.BackgroundColor = handles.Disable_Color;
@@ -2949,6 +2982,23 @@ if hObject.Value
         Data{5} = handles.PXI_TF_DataXY(:,2);
         Data{6} = handles.PXI_TF_DataXY(:,3);
         ManagingData2Plot(Data,DataName,handles,hObject)
+        
+        ButtonName = questdlg('Do you want to save current TF (PXI) test values?', ...
+            handles.VersionStr, ...
+            'Yes', 'No', 'Yes');
+        switch ButtonName
+            case 'Yes'
+                Itxt = handles.SQ_realIbias.String;
+                filename = strcat('PXI_TF_',Itxt,'uA','.txt');
+                [filename, pathname] = uiputfile('*.txt','Save current TF acquisition',filename);
+                if isequal(filename,0) || isequal(pathname,0)
+                    waitfor(warndlg('User pressed cancel',handles.VersionStr));
+                else
+                    datos = handles.PXI_TF_DataXY;
+                    save([pathname filename],'datos','-ascii');%salva los datos a fichero.
+                end
+        end % swit
+        
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3036,6 +3086,20 @@ if hObject.Value
         
         ManagingData2Plot(Data,DataName,handles,hObject)
         
+        ButtonName = questdlg('Do you want to save current Noise (PXI) test values?', ...
+            handles.VersionStr, ...
+            'Yes', 'No', 'Yes');
+        switch ButtonName
+            case 'Yes'
+                Itxt = handles.SQ_realIbias.String;
+                filename = strcat('PXI_noise_',Itxt,'uA','.txt');
+                [filename, pathname] = uiputfile('*.txt','Save current Noise acquisition',filename);
+                if isequal(filename,0) || isequal(pathname,0)
+                    waitfor(warndlg('User pressed cancel',handles.VersionStr));
+                else                    
+                    save([pathname filename],'datos','-ascii');%salva los datos a fichero.
+                end
+        end % swit
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     hObject.BackgroundColor = handles.Disable_Color;

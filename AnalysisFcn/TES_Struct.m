@@ -1118,7 +1118,10 @@ classdef TES_Struct
                     if length(p) > 1                        
                         for i = 1:length(param)
                             if ~isempty(strfind(param{i},'_CI'))||~strcmp(param{i},'R0')
+                                try  % añadiendo el P0 da error
                                 eval(['OP.' param{i} ' = ppval(spline([p.rp],real([p.' param{i} '])),OP.r0);']);
+                                catch
+                                end
                             end
                         end
                     else

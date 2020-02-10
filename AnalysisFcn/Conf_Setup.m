@@ -182,17 +182,24 @@ switch varargin{1}.Tag
         handles.Options.Visible = 'off';
         handles.Table.Data = hndl.FieldRange;
     case 'Param_Delay'
-        set(handles.figure1,'Name','');
+        set(handles.figure1,'Name',handles.varargin{1}.UserData);
         set([handles.Add handles.Remove handles.Options],'Visible','off');
         handles.Table.Data = {[]};
         handles.Table.ColumnEditable = [false true false];
         TESProp = properties(handles.varargin{3});
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
-        TESUnits = {'s';'s'};
-        handles.Table.Data(1:length(TESProp),1) = TESProp;
+        if length(TESProp) == 2
+            TESUnits = {'s';'s'};
+        else
+            TESUnits = {'s';'s';'';''};
+        end
+%         handles.Table.Data(1:length(TESProp),1) = TESProp;
         for i = 1:length(TESProp)
-            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
-            handles.Table.Data{i,3} = TESUnits{i};
+            if ~isempty(eval(['handles.varargin{3}.' TESProp{i}]))
+                handles.Table.Data{i,1} = TESProp{i};
+                handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i}]);
+                handles.Table.Data{i,3} = TESUnits{i};
+            end
         end
     case 'TES_Struct'
         set(handles.figure1,'Name','TES Circuit Parameters');

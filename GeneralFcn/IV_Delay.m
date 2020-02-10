@@ -3,18 +3,22 @@ classdef IV_Delay
     
     properties              
         FirstDelay;           % First Delay in seconds until the first measurement
-        StepDelay;             % Delay in seconds between measurements 
+        StepDelay;             % Delay in seconds between measurements     
+    end
+    properties (Access = public)
+        OriginalRes;
+        MinRes;        
     end
     
     methods        
         function obj = Constructor(obj)
             obj.FirstDelay = 2;
-            obj.StepDelay = 1.5;
+            obj.StepDelay = 1.5;            
         end
-        function obj = View(obj)
+        function obj = View(obj,Parent)
             % Function to check visually the class values
             
-            h = figure('Visible','off','Tag','Param_Delay');
+            h = figure('Visible','off','Tag','Param_Delay','UserData',Parent);
             waitfor(Conf_Setup(h,[],obj));
             PD = guidata(h);
             if ~isempty(PD)
