@@ -12,12 +12,18 @@ classdef TES_Dimensions
         rhoAu = PhysicalMeasurement; 
         Abs_bool = 0;
         Abs_sides = PhysicalMeasurement;
+        Abs_thick = PhysicalMeasurement;
         Abs_hBi = PhysicalMeasurement; 
         Abs_hAu = PhysicalMeasurement; 
         Abs_gammaBi = PhysicalMeasurement; 
         Abs_gammaAu = PhysicalMeasurement;
         Abs_rhoBi = PhysicalMeasurement;
         Abs_rhoAu = PhysicalMeasurement;
+        SputteringID;
+        Membrane_bool = 0;
+        Membrane_thick = PhysicalMeasurement;
+        Membrane_length = PhysicalMeasurement;
+        Membrane_width = PhysicalMeasurement;
     end
     properties (Access = private)
         version = 'ZarTES v2.1';
@@ -42,6 +48,8 @@ classdef TES_Dimensions
             
             obj.Abs_sides.Value = [25e-6 25e-6];
             obj.Abs_sides.Units = {'m';'m'};
+            obj.Abs_thick.Value = 25e-6;
+            obj.Abs_thick.Units = {'m'};
             obj.Abs_hBi.Value = 50e-6;
             obj.Abs_hBi.Units = 'm';
             obj.Abs_hAu.Value = 50e-6;
@@ -55,6 +63,14 @@ classdef TES_Dimensions
             obj.Abs_rhoAu.Value = 0.0983;  
             obj.Abs_rhoAu.Units = 'mole/cm^3';
             
+            obj.SputteringID = '';
+            obj.Membrane_thick.Value = 0;
+            obj.Membrane_thick.Units = 'm';
+            obj.Membrane_thick.Value = 0;
+            obj.Membrane_length.Units = 'm';
+            obj.Membrane_length.Value = 0;
+            obj.Membrane_width.Units = 'm';
+            obj.Membrane_width.Value = 0;
         end
         
         function obj = Update(obj,data)
@@ -99,34 +115,63 @@ classdef TES_Dimensions
                 obj.hMo.Value = str2double(answer{3});
                 obj.hAu.Value = str2double(answer{4});
             end
-            
-            ButtonName = questdlg('Is Absorbent presented in TES?', ...
-                obj.version, ...
-                'Yes', 'No', 'No');
-            switch ButtonName
-                case 'Yes'
-                    obj.Abs_bool = 1;
-                    prompt = {'Enter Absorbent length value (m):','Enter Absorbent width value (m):','Enter Bi thickness value (m):','Enter Au thickness value (m):'};
-                    name = 'Provide Absorbent dimensions';
-                    numlines = 1;
-                    try
-                        defaultanswer = {num2str(obj.Abs_sides.Value(1)),num2str(obj.Abs_sides.Value(2)),...
-                            num2str(obj.Abs_hBi.Value),num2str(obj.Abs_hAu.Value)};
-                    catch
-                        defaultanswer = {num2str(25e-6),num2str(25e-6),...
-                            num2str(55e-9),num2str(340e-9)};
-                    end
-                    
-                    answer = inputdlg(prompt,name,numlines,defaultanswer);
-                    if ~isempty(answer)
-                        obj.Abs_sides.Value(1) = str2double(answer{1});
-                        obj.Abs_sides.Value(2) = str2double(answer{2});
-                        obj.Abs_hBi.Value = str2double(answer{3});
-                        obj.Abs_hAu.Value = str2double(answer{4});
-                    end
-                otherwise
-                    
-            end % switch
+            if obj.Abs_bool == 0
+                ButtonName = questdlg('No Absorbent presented in TES by default, is this correct?', ...
+                    obj.version, ...
+                    'Yes', 'No', 'No');
+                switch ButtonName
+                    case 'No'
+                        obj.Abs_bool = 1;
+                        prompt = {'Enter Absorbent length value (m):','Enter Absorbent width value (m):','Enter Bi thickness value (m):','Enter Au thickness value (m):'};
+                        name = 'Provide Absorbent dimensions';
+                        numlines = 1;
+                        try
+                            defaultanswer = {num2str(obj.Abs_sides.Value(1)),num2str(obj.Abs_sides.Value(2)),...
+                                num2str(obj.Abs_hBi.Value),num2str(obj.Abs_hAu.Value)};
+                        catch
+                            defaultanswer = {num2str(25e-6),num2str(25e-6),...
+                                num2str(55e-9),num2str(340e-9)};
+                        end
+                        
+                        answer = inputdlg(prompt,name,numlines,defaultanswer);
+                        if ~isempty(answer)
+                            obj.Abs_sides.Value(1) = str2double(answer{1});
+                            obj.Abs_sides.Value(2) = str2double(answer{2});
+                            obj.Abs_hBi.Value = str2double(answer{3});
+                            obj.Abs_hAu.Value = str2double(answer{4});
+                        end
+                    otherwise
+                        
+                end % switch
+            end      
+            if obj.Membrane_bool == 0
+                ButtonName = questdlg('No Membrane presented in TES by default, is this correct?', ...
+                    obj.version, ...
+                    'Yes', 'No', 'No');
+                switch ButtonName
+                    case 'No'
+                        obj.Membrane_bool = 1;
+                        prompt = {'Enter Membrane thickness value (m):','Enter Membrane length value (m):','Enter Membrane width value (m):'};
+                        name = 'Provide Membrane dimensions';
+                        numlines = 1;
+                        try
+                            defaultanswer = {num2str(obj.Membrane_thick.Value(1)),num2str(obj.Membrane_length.Value(2)),...
+                                num2str(obj.Membrane_width.Value)};
+                        catch
+                            defaultanswer = {num2str(0.5e-6),num2str(250e-6),...
+                                num2str(250e-6)};
+                        end
+                        
+                        answer = inputdlg(prompt,name,numlines,defaultanswer);
+                        if ~isempty(answer)
+                            obj.Membrane_thick.Value(1) = str2double(answer{1});
+                            obj.Membrane_length.Value(2) = str2double(answer{2});
+                            obj.Membrane_width.Value = str2double(answer{3});
+                        end
+                    otherwise
+                        
+                end % switch
+            end
             
             waitfor('Device material dimensions provided',obj.version);
             

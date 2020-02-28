@@ -8,6 +8,12 @@ classdef TES_Analyzer_Session
         Tag = [];
         TES = [];
         ID = [];
+        TES_Idn = [];
+        Squid_Idn = [];
+        Colddown_Idn = [];
+        NickName = [];
+        BFieldCond = [];
+        Comments = [];
     end
     
     methods
