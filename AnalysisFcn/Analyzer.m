@@ -298,7 +298,53 @@ switch src.Label
         Session = TES_Analyzer_Session;
         Session.File = [];
         Session.Path = DataPath;
-        answer = inputdlg({'Insert a Nick name for the TES'},handles.VersionStr,[1 50],{' '});
+        
+        Indx = find(DataPath(1:end-1) == filesep,3,'last');
+        YearStr = DataPath(Indx(1)+1:Indx(2)-1);
+        MonthStr = DataPath(Indx(2)+1:Indx(3)-1);
+        RunStr = DataPath(Indx(3)+1:end-1);
+        
+        % Conectando con la base de datos en busca de algún parámetro para
+        % cargar
+        
+        try
+            DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
+            DataBaseName = 'ZarTESDB';
+            conn = database(DataBaseName,'','');
+            
+            
+            % Enlace con el archivo EXCEL
+            d = dir([DataPath(1:find(DataPath(1:end-1) == filesep,1,'last')) '*.xls']);
+            [~, ~, alltext] = xlsread([DataPath(1:find(DataPath(1:end-1) == filesep,1,'last')) filesep d(1).name]);
+            
+            TES_Idn = alltext{2,3};
+            Squid_Idn = alltext{2,2};
+            Colddown_Idn = alltext{2,1};                                    
+            
+            [~, ~, alltext] = xlsread([DataPath(1:find(DataPath(1:end-1) == filesep,1,'last')) filesep d(1).name],2);
+            
+            RawIndx = str2double(strtok(RunStr,'RUN'));
+            BFieldCond = [num2str(alltext{RawIndx,2}) '/' num2str(alltext{RawIndx,3})];            
+            Comments = alltext{RawIndx,4};
+            
+            sqlquery = ['SELECT * FROM TES_Device WHERE ID_TES = ''' TES_Idn ''''];
+            curs1 = exec(conn,sqlquery);
+            curs1 = fetch(curs1);
+            if strcmp(curs1.Data,'No Data')
+                waitfor(msgbox('No information of this TES in the Database yet',handles.VersionStr));
+            end
+            NickName = [RunStr '_' MonthStr '_' YearStr '_' curs1.Data{1}];
+            
+        catch
+            NickName = [RunStr '_' MonthStr '_' YearStr];
+            TES_Idn = 'Not provided';
+            Squid_Idn = 'Not provided';
+            Colddown_Idn = 'Not provided';
+            BFieldCond = 'Not provided';
+            Comments = 'Not provided';
+        end
+        
+        answer = inputdlg({'Insert a Nick name for the TES'},handles.VersionStr,[1 50],{NickName});
         if isempty(answer)
             errordlg('Invalid Nick name!',handles.VersionStr,'modal');            
             return;
@@ -314,11 +360,45 @@ switch src.Label
         for i = 1:handles.TES_ID
             ListStr(i) = {handles.Session{i}.Tag};
         end
+                        
         set(handles.LoadedStr,'Visible','on')
         set(handles.Loaded_TES,'String',char(ListStr),'Value',handles.TES_ID,'Visible','on');
         
         handles.Session{handles.TES_ID}.TES = TES_Struct;
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.Constructor;
+        
+        handles.Session{handles.TES_ID}.NickName = NickName;
+        try
+            handles.Session{handles.TES_ID}.BFieldCond = BFieldCond;
+            handles.Session{handles.TES_ID}.Comments = Comments;
+            handles.Session{handles.TES_ID}.TES_Idn = TES_Idn;
+            handles.Session{handles.TES_ID}.Squid_Idn = Squid_Idn;
+            handles.Session{handles.TES_ID}.Colddown_Idn = Colddown_Idn;
+            handles.Session{handles.TES_ID}.TES.TESDim.SputteringID = curs1.Data{2};
+            [hMo,s] = strtok(curs1.Data{3},'/');
+            handles.Session{handles.TES_ID}.TES.TESDim.hMo.Value = str2double(hMo)*1e-9;
+            [hAu,s] = strtok(s,'/');
+            hAu = str2double(hAu)+str2double(s(2:end));
+            handles.Session{handles.TES_ID}.TES.TESDim.hAu.Value = hAu*1e-9;
+            [Dim1,s] = strtok(curs1.Data{4},'x');
+            handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(1) = str2double(Dim1)*1e-6;
+            handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(2) = str2double(s(2:end))*1e-6;
+            if strcmp(curs1.Data{9},'Y')
+                handles.Session{handles.TES_ID}.TES.TESDim.Membrane_bool = 1;
+                handles.Session{handles.TES_ID}.TES.TESDim.Membrane_thick.Value = curs1.Data{6}*1e-6;
+                handles.Session{handles.TES_ID}.TES.TESDim.Membrane_length.Value = curs1.Data{7}*1e-6;
+                handles.Session{handles.TES_ID}.TES.TESDim.Membrane_width.Value = curs1.Data{8}*1e-6;
+            end
+            if strcmp(curs1.Data{9},'Y')
+                handles.Session{handles.TES_ID}.TES.TESDim.Abs_bool = 1;
+                handles.Session{handles.TES_ID}.TES.TESDim.Abs_sides.Value(1) = curs1.Data{11}*1e-6;
+                handles.Session{handles.TES_ID}.TES.TESDim.Abs_sides.Value(2) = curs1.Data{11}*1e-6;
+            end
+            
+        catch
+            
+        end
+            
         
         % Searching for Circuir variable (inside session or in circuit)
         [filename, pathname] = uigetfile({'sesion*';'circuit*'}, 'Pick a MATLAB file refering to circuit values',[Session.Path 'circuit.mat']);
@@ -561,7 +641,7 @@ switch src.Label
             fig = handles.Analyzer;
             indAxes = findobj(fig,'Type','Axes');
             delete(indAxes);
-            handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig);
+            handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig,handles.Session{handles.TES_ID}.TES,'Superconductor');
         else
             waitfor(msgbox('No file previously loaded',handles.VersionStr));
         end
@@ -609,7 +689,7 @@ switch src.Label
             fig = handles.Analyzer;
             indAxes = findobj(fig,'Type','Axes');
             delete(indAxes);
-            handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.Plot(fig);
+            handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.Plot(fig,handles.Session{handles.TES_ID}.TES,'Normal');
         else
             waitfor(msgbox('No file previously loaded',handles.VersionStr));
         end
@@ -809,8 +889,8 @@ switch src.Label
             return;
         end
         Tbath = str2double(str(s))';
-        handles.Session{handles.TES_ID}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetP,handles.Session{handles.TES_ID}.TES.PP,Tbath,fig)
-        handles.Session{handles.TES_ID}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetN,handles.Session{handles.TES_ID}.TES.PN,Tbath,fig)
+        handles.Session{handles.TES_ID}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetP,handles.Session{handles.TES_ID}.TES.PP,Tbath,fig);
+        handles.Session{handles.TES_ID}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetN,handles.Session{handles.TES_ID}.TES.PN,Tbath,fig);
         
     case 'Plot Critical Currents'
         fig.hObject = handles.Analyzer;
@@ -1322,7 +1402,7 @@ switch src.Label
     case 'Z(w)-Noise Viewer'
         handles.Session{handles.TES_ID}.TES.TFNoiseViever;
     case 'Word Graphical Report'
-        handles.Session{handles.TES_ID}.TES.GraphsReport;
+        handles.Session{handles.TES_ID}.TES.GraphsReport(handles.Session{handles.TES_ID});
         
 end
 guidata(src,handles);

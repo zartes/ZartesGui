@@ -12,7 +12,7 @@ classdef TES_ElectrThermModel
         TF_BaseName = {'HP';'PXI'};% 0,1
         Selected_TF_BaseName = 1;
         Zw_R2Thrs = 0.9;
-        Zw_LowFreq = 0;
+        Zw_LowFreq = 1;
         Zw_HighFreq = 100000;
         Zw_rpLB = 0;
         Zw_rpUB = 1;        

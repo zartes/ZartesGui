@@ -942,6 +942,7 @@ classdef TES_IVCurveSet
                     
                     j = j+1;
 %                 end
+                    set(h,'FontUnits','Normalized');
             end
             try
                 axis(h,'tight');
