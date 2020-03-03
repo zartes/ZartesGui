@@ -110,7 +110,7 @@ classdef TES_TFS
             end
         end
         
-        function obj = PlotTF(obj,fig)
+        function [obj,fig] = PlotTF(obj,fig)
             % Function that visualizes TFS
             
             if nargin < 2
@@ -135,7 +135,9 @@ classdef TES_TFS
         
         function obj = CheckTF(obj,fig)
             % Function to check TFS visually
-            
+            if nargin < 2
+                fig = figure;                
+            end
             obj.PlotTF(fig);
             ButtonName = questdlg('Is this TFS valid?', ...
                 obj.version, ...

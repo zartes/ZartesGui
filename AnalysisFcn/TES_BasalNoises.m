@@ -96,7 +96,7 @@ classdef TES_BasalNoises
             
         end
         
-        function obj = Plot(obj,fig,TES,Type)
+        function [obj, fig] = Plot(obj,fig,TES,Type)
             % Function that visualizes TFS
             
             if nargin < 2
@@ -106,11 +106,11 @@ classdef TES_BasalNoises
             ax = axes;
             hold on;
             grid on;
-            loglog(ax,obj.fNoise(:,1),obj.SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-            loglog(ax,obj.fNoise(:,1),medfilt1(obj.SigNoise,40),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-            set(ax,'XScale','log','YScale','log')
-            ylabel(ax,'pA/Hz^{0.5}');
-            xlabel(ax,'\nu (Hz)');
+            loglog(ax,obj.fNoise(:,1),obj.SigNoise,'.-r','DisplayName','Experimental Noise','LineWidth',1.5); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+            loglog(ax,obj.fNoise(:,1),medfilt1(obj.SigNoise,40),'.-k','DisplayName','Exp Filtered Noise','LineWidth',1.5); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+            set(ax,'XScale','log','YScale','log','FontSize',12,'LineWidth',2,'FontWeight','bold','Box','on');
+            ylabel(ax,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold');
+            xlabel(ax,'\nu (Hz)','FontSize',12,'FontWeight','bold');
             [path,file] = fileparts(obj.fileNoise);
             try
                 offsetstr = strfind(file,'mK_')-1;
@@ -139,10 +139,10 @@ classdef TES_BasalNoises
             switch Type
                 case 'Normal'
                     [f,N, obj] = obj.NnoiseModel(TES,Tbath);
-                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Normal Noise');
+                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Normal Noise','LineWidth',2);
                 case 'Superconductor'
                     [f,N, obj] = obj.SnoiseModel(TES,Tbath);
-                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Superconductor Noise');                    
+                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Superconductor Noise','LineWidth',2);                    
             end
              %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
             

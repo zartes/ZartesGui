@@ -2073,14 +2073,22 @@ classdef TES_Struct
             if exist('fig','var')
                 figure(fig.hObject);
             else
-                fig = figure;
+                fig.hObject = figure;
             end
-            h(1) = subplot(2,1,1);
-            grid(h(1),'on');
-            hold(h(1),'on');
-            h(2) = subplot(2,1,2);
-            grid(h(2),'on');
-            hold(h(2),'on');
+            if ~isfield(fig,'subplot')
+                h(1) = subplot(2,1,1);
+%                 set(h(1),'FontUnits','Normalized');
+                grid(h(1),'on');
+                hold(h(1),'on');
+                h(2) = subplot(2,1,2);
+%                 set(h(2),'FontUnits','Normalized');
+                grid(h(2),'on');
+                hold(h(2),'on');
+                fig.subplot = h;
+            else
+                h = fig.subplot;
+            end
+            
             
             for i = 1:length(Tbath)
                 %Extraemos la IV y la P asociadas a la Tbath de interés.
@@ -2133,14 +2141,12 @@ classdef TES_Struct
                 end
                 %plot(xiv(indx1),a_eff(indx1),'.-',xz(indx2),Za_eff(indx2),'.-',xz(indx2),Za_effAprox(indx2),'.-','linewidth',2,'markersize',15);
                 plot(h(1),xiv(indx11),medfilt1(real(a_eff(indx11)),15),'LineWidth',2,'MarkerSize',15,'LineStyle','-.','DisplayName',['IV - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK - ' RngLabel]);
-                plot(h(1),xz(indx22),Za_eff(indx22),'LineStyle','-.','LineWidth',2,'MarkerSize',15,...
+                plot(h(1),xz(indx22),Za_eff(indx22)*1e-2,'LineStyle','-.','LineWidth',2,'MarkerSize',15,...
                     'DisplayName',['Z - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK']);
                 
                 xlim(h(1),[xiv_min 0.95]);
 %                 ylim(h(1),[0 250]);
-                ylabel(h(1),'\alpha_{eff}','FontSize',12,'FontWeight','bold');
-                xlabel(h(1),'R_{TES}/R_n','FontSize',12,'FontWeight','bold');
-                set(h(1),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on');
+                
                 %legend('IV','Z','Z_{aprox}')
 %                 legend(h(1),'IV','Z');
                 
@@ -2149,15 +2155,20 @@ classdef TES_Struct
                     plot(h(2),xz(indx2),Zb_eff(indx2),'LineStyle','-.','LineWidth',2,'MarkerSize',15,'DisplayName',['Z - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK']);
                 xlim(h(2),[xiv_min 0.95]);
 %                 ylim(h(2),[-5 5]);
-                ylabel(h(2),'\beta_{eff}','FontSize',12,'FontWeight','bold');
-                xlabel(h(2),'R_{TES}/R_n','FontSize',12,'FontWeight','bold');
-                set(h(2),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized');
+                
 %                 legend(h(2),'IV','Z');
             end
+            ylabel(h(1),'\alpha_{eff}','FontSize',12,'FontWeight','bold');
+            xlabel(h(1),'R_{TES}/R_n','FontSize',12,'FontWeight','bold');
+            set(h(1),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on');
+            ylabel(h(2),'\beta_{eff}','FontSize',12,'FontWeight','bold');
+            xlabel(h(2),'R_{TES}/R_n','FontSize',12,'FontWeight','bold');
+            set(h(2),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on');
+            pause(0.1)
+%             set(h,'Box','on','FontUnits','Normalized');
             
         end
-        
-        
+                
         function fig = PlotCriticalCurrent(obj,fig)
             % Function to plot Critical currents vs BField searching
             % optimum field across bath temperatures
@@ -2264,7 +2275,7 @@ classdef TES_Struct
             if isempty(answer)
                 return;
             end
-            
+            FileName = answer;
             Style='Título 1';
             WordText(ActXWord,['Informe análisis TES: ' Session.TES_Idn],Style,[0,1]);%no enter
             Style='Normal';
@@ -2338,7 +2349,7 @@ classdef TES_Struct
             TESProp = properties(obj.TESParamP);
             clear DataCell;
             DataCell(1,1:4) = {'Parametros','Ibias Positivas','Ibias Negativas','Unidades'};
-            for i = 1:length(TESProp) 
+            for i = 1:length(TESProp)-1 
                 DataCell(i+1,1:4) = {TESProp{i}, num2str(eval(['obj.TESParamP.' TESProp{i} '.Value'])),...
                     num2str(eval(['obj.TESParamN.' TESProp{i} '.Value'])), eval(['obj.TESParamN.' TESProp{i} '.Units'])};
             end
@@ -2360,6 +2371,7 @@ classdef TES_Struct
                 DataCell(i+1,1:4) = {TESProp{i}, num2str(eval(['obj.TESThermalP.' TESProp{i} '.Value'])),...
                     num2str(eval(['obj.TESThermalN.' TESProp{i} '.Value'])), eval(['obj.TESThermalN.' TESProp{i} '.Units'])};
             end
+            DataCell{length(TESProp)+1,1} = '%Rn Selected';
             [NoRows,NoCols]=size(DataCell);
             %create table with data from DataCell
             Style = 'Cita';
@@ -2367,17 +2379,18 @@ classdef TES_Struct
             WordCreateTable(ActXWord,NoRows,NoCols,DataCell,[1 1]);%enter before table
             
             Style = 'normal';
-            TextString = ['Positive Thermal Parameters obtained considering %Rn: ' num2str(obj.GsetP(1).rp)...
+            TextString = ['Parametros termicos (rama positiva) obtenidos considerando %Rn: ' num2str(obj.GsetP(1).rp)...
                 ':' num2str(obj.GsetP(2).rp-obj.GsetP(1).rp) ':' num2str(obj.GsetP(end).rp)];            
             WordText(ActXWord,TextString,Style,[0,1]);%enter after text
-            TextString = ['Negative Thermal Parameters obtained considering %Rn: ' num2str(obj.GsetN(1).rp)...
+            TextString = ['Parametros termicos (rama negativa) obtenidos considerando %Rn: ' num2str(obj.GsetN(1).rp)...
                 ':' num2str(obj.GsetN(2).rp-obj.GsetN(1).rp) ':' num2str(obj.GsetN(end).rp)];            
             WordText(ActXWord,TextString,Style,[0,1]);%enter after text
             
             FigNum = 1;
             
             %% Pintar curvas IV
-            if obj.Report.IV_Curves
+            if obj.Report.IV_Curves                                
+               
                 figIV.hObject = figure('Visible','off');
                 for i = 1:4
                     h(i) = subplot(2,2,i);
@@ -2423,6 +2436,9 @@ classdef TES_Struct
                 Style = 'Título 2';
                 TextString = 'IV Curves';                
                 WordText(ActXWord,TextString,Style,[0,1]);                                
+                
+                Style = 'normal';
+                WordText(ActXWord,['Método de corrección I-Vs: ' obj.IVsetP(1).CorrectionMethod],Style,[0,1]);%enter after text
                 
                 print(figIV.hObject,'-dmeta');
                 invoke(ActXWord.Selection,'Paste');
@@ -2609,20 +2625,92 @@ classdef TES_Struct
                 end
             end
             
+            if obj.Report.BVscan && obj.FieldScan.Filled
+                Style='Título 2';
+                TextString = 'Campo óptimo';
+                WordText(ActXWord,TextString,Style,[0,1]);
+                Style='normal';
+                WordText(ActXWord,'',Style,[0,1]);
+                fig = obj.PlotFieldScan;
+                set(fig.Children,'FontUnits','Normalized');
+                set(fig, 'Position', get(0, 'Screensize')); 
+                print(fig,'-dmeta');
+                invoke(ActXWord.Selection,'Paste');
+                close(fig);
+                pause(0.3)
+                clear fig;
+                ActXWord.Selection.TypeParagraph;
+                Style='Cita';
+                TextString = ['Fig. ' num2str(FigNum) '. Barrido de Vout para la determinación del campo óptimo.'];
+                WordText(ActXWord,TextString,Style,[0,1]);
+                FigNum = FigNum+1;
+            end
+            
+            if obj.Report.TF_Normal
+                [obj.TFN, fig] = obj.TFN.PlotTF;
+                Style='normal';
+                WordText(ActXWord,'',Style,[0,1]);
+                print(fig,'-dmeta');
+                invoke(ActXWord.Selection,'Paste');
+                ActXWord.Selection.TypeParagraph;
+                close(fig);
+                pause(0.3)
+                clear fig;
+                Style='Cita';
+                TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Normal, archivo: ' obj.TFN.file.'];
+                WordText(ActXWord,TextString,Style,[0,1]);
+                FigNum = FigNum+1;
+            end
+            if obj.Report.TF_Super
+                [obj.TFS, fig] = obj.TFS.PlotTF;
+                Style='normal';
+                WordText(ActXWord,'',Style,[0,1]);
+                print(fig,'-dmeta');
+                invoke(ActXWord.Selection,'Paste');
+                ActXWord.Selection.TypeParagraph;
+                close(fig);
+                pause(0.3)
+                clear fig;
+                Style='Cita';
+                TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Superconductor, archivo: ' obj.TFS.file.'];
+                WordText(ActXWord,TextString,Style,[0,1]);
+                FigNum = FigNum+1;
+            end
+            
             if obj.Report.FitZset
                 
                 Style='Título 2';
                 TextString = 'Z(w) Analysis';                
-                WordText(ActXWord,TextString,Style,[0,1]);   
+                WordText(ActXWord,TextString,Style,[0,1]);  
                 Style='normal';
-                WordText(ActXWord,'',Style,[0,1]);
+                TextString = ['Fig. ' num2str(FigNum) '. Parámetros dinámicos calculados usando el modelo de ' obj.PP(1).ElecThermModel{1}];
+                WordText(ActXWord,TextString,Style,[0,1]);
 %                 Rn = [obj.PP(1).p.rp];
                 clear fig;
-                fig = obj.PlotTFTbathRp([],[]);
+                
+                str = cellstr(num2str(unique([[obj.PP.Tbath] ...
+                    [obj.PN.Tbath]])'));
+                [s,~] = listdlg('PromptString','Select Tbath value/s:',...
+                    'SelectionMode','multiple',...
+                    'ListString',str);
+                if isempty(s)
+                    return;
+                end
+                Tbath = str2double(str(s))';
+                prompt = {'Enter the %Rn range:'};
+                name = '%Rn range (0 < %Rn < 1)';
+                numlines = [1 70];
+                defaultanswer = {'0.5:0.05:0.8'};
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                Rn = eval(['[' answer{1} ']']);
+%                 handles.Session{handles.TES_ID}.TES.PlotTFTbathRp(Tbath,Rn);
+                
+                
+                fig = obj.PlotTFTbathRp(Tbath,Rn);
                 try
                     FigSubNum = 1;    
                     Temps = num2str([obj.PP.Tbath]'*1e3);
-                    for i = 1:length(Temps)
+                    for i = 1:length([obj.PP.Tbath])
                         Style = 'normal';
                         StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
                         StrIni(end) = [];
@@ -2649,7 +2737,7 @@ classdef TES_Struct
                 try
                     FigSubNum = 1;    
                     Temps = num2str([obj.PN.Tbath]'*1e3);
-                    for j = 1:length(Temps)
+                    for j = 1:length([obj.PN.Tbath])
                         i = i+1;
                         Style = 'normal';
                         StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
@@ -2676,17 +2764,74 @@ classdef TES_Struct
                 clear fig;
             end
             
+            if obj.Report.Noise_Normal
+                fig = figure;
+                [obj.NoiseN, fig] = obj.NoiseN.Plot(fig,obj,'Normal'); 
+                Style='normal';
+                WordText(ActXWord,'',Style,[0,1]);
+                set(fig.Children,'FontUnits','Normalized','Box','on');
+                set(fig, 'Position', get(0, 'Screensize'));
+                print(fig,'-dmeta');
+                invoke(ActXWord.Selection,'Paste');
+                ActXWord.Selection.TypeParagraph;
+                close(fig);
+                pause(0.3)
+                clear fig;
+                Style='Cita';
+                TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Normal, archivo: ' obj.NoiseN.fileNoise];
+                WordText(ActXWord,TextString,Style,[0,1]);
+                FigNum = FigNum+1;
+            end
+            if obj.Report.Noise_Super
+                fig = figure;
+                [obj.NoiseS, fig] = obj.NoiseS.Plot(fig,obj,'Superconductor');                
+                Style='normal';
+                WordText(ActXWord,'',Style,[0,1]);
+                set(fig.Children,'FontUnits','Normalized');
+                set(fig, 'Position', get(0, 'Screensize'));
+                print(fig,'-dmeta');
+                invoke(ActXWord.Selection,'Paste');
+                ActXWord.Selection.TypeParagraph;
+                close(fig);
+                pause(0.3)
+                clear fig;
+                Style='Cita';
+                TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Superconductor, archivo: ' obj.NoiseS.fileNoise];
+                WordText(ActXWord,TextString,Style,[0,1]);
+                FigNum = FigNum+1;
+            end
+            
             if obj.Report.NoiseSet
                 
                 Style='Título 2';
                 TextString = 'Noise Analysis';
                 WordText(ActXWord,TextString,Style,[0,1]);
-                ActXWord.Selection.TypeParagraph;
-                fig = obj.PlotNoiseTbathRp([],[]);
+                Style='normal';
+                TextString = ['Fig. ' num2str(FigNum) '. Parámetros dinámicos calculados usando el modelo de ' obj.PP(1).ElecThermModel{1}];
+                WordText(ActXWord,TextString,Style,[0,1]);
+                
+                str = cellstr(num2str(unique([[obj.PP.Tbath] ...
+                    [obj.PN.Tbath]])'));
+                [s,~] = listdlg('PromptString','Select Tbath value/s:',...
+                    'SelectionMode','multiple',...
+                    'ListString',str);
+                if isempty(s)
+                    return;
+                end
+                Tbath = str2double(str(s))';
+                prompt = {'Enter the %Rn range:'};
+                name = '%Rn range (0 < %Rn < 1)';
+                numlines = [1 70];
+                defaultanswer = {'0.5:0.05:0.8'};
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                Rn = eval(['[' answer{1} ']']);
+%                 handles.Session{handles.TES_ID}.TES.PlotNoiseTbathRp(Tbath,Rn);
+                
+                fig = obj.PlotNoiseTbathRp(Tbath,Rn);
                 try
                     FigSubNum = 1;                    
                     Temps = num2str([obj.PP.Tbath]'*1e3);
-                    for i = 1:length(Temps)
+                    for i = 1:length([obj.PP.Tbath])
                         Style = 'normal';
                         StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
                         StrIni(end) = [];
@@ -2712,7 +2857,7 @@ classdef TES_Struct
                 try
                     FigSubNum = 1;
                     Temps = num2str([obj.PN.Tbath]'*1e3);
-                    for j = 1:length(Temps)
+                    for j = 1:length([obj.PN.Tbath])
                         i = i+1;
                         Style = 'normal';
                         StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
@@ -2794,6 +2939,10 @@ classdef TES_Struct
                 
             end
             
+            if obj.Report.RT_4points
+                
+            end
+            
             % Añadir la representación de las Ic's y del BVscan
             if obj.Report.IV_Z
                 FigSubNum = 1;
@@ -2804,15 +2953,17 @@ classdef TES_Struct
                 WordText(ActXWord,'',Style,[0,1]);
                 Tbath = unique([[obj.PP.Tbath] [obj.PN.Tbath]]);
                 fig = obj.CompareIV_Z(obj.IVsetP,obj.PP,Tbath);
-                legend(fig.Children(1),'show','Location','Northwest')
+                legend(fig.hObject.Children(1),'show','Location','Northwest')
+                pause(0.1)
                 Style='Normal';
                 TextString = 'Positive Ibias';
                 WordText(ActXWord,TextString,Style,[0,1]);
-                set(fig.Children,'FontUnits','Normalized');
-                set(fig, 'Position', get(0, 'Screensize')); 
-                print(fig,'-dmeta');
+                set(fig.hObject.Children,'FontUnits','Normalized');
+                set(fig.hObject, 'Position', get(0, 'Screensize')); 
+                pause(0.1)
+                print(fig.hObject,'-dmeta');
                 invoke(ActXWord.Selection,'Paste');
-                close(fig);
+                close(fig.hObject);
                 pause(0.3)
                 ActXWord.Selection.TypeParagraph;
                 clear fig;
@@ -2822,18 +2973,19 @@ classdef TES_Struct
                 FigSubNum = FigSubNum+1;
                                 
                 fig = obj.CompareIV_Z(obj.IVsetN,obj.PN,Tbath);
-                legend(fig.Children(1),'show','Location','Northwest')
-                
+                legend(fig.hObject.Children(1),'show','Location','best')
+                pause(0.1)
                 Style='Normal';
                 TextString = 'Negative Ibias';
                 WordText(ActXWord,TextString,Style,[0,1]);
                 Style='normal';
                 WordText(ActXWord,'',Style,[0,1]);
-                set(fig.Children,'FontUnits','Normalized');
-                set(fig, 'Position', get(0, 'Screensize')); 
-                print(fig,'-dmeta');
+                set(fig.hObject.Children,'FontUnits','Normalized');
+                set(fig.hObject, 'Position', get(0, 'Screensize')); 
+                pause(0.1)
+                print(fig.hObject,'-dmeta');
                 invoke(ActXWord.Selection,'Paste');
-                close(fig);
+                close(fig.hObject);
                 pause(0.3)
                 clear fig;
                 ActXWord.Selection.TypeParagraph;
@@ -2851,6 +3003,7 @@ classdef TES_Struct
                 Style='normal';
                 WordText(ActXWord,'',Style,[0,1]);
                 fig = obj.PlotCriticalCurrent;
+                legend(fig.Children,'show','Location','Northeast');
                 set(fig.Children,'FontUnits','Normalized');
                 set(fig, 'Position', get(0, 'Screensize')); 
                 print(fig,'-dmeta');
@@ -2863,16 +3016,19 @@ classdef TES_Struct
                 TextString = ['Fig. ' num2str(FigNum) '. Corrientes críticas obtenidas a diferentes temperaturas del baño.'];
                 WordText(ActXWord,TextString,Style,[0,1]);
                 FigNum = FigNum+1;
-                legend(fig.Children(1),'show','Location','Northeast');
+                
             end
             
-            if obj.Report.BVscan && obj.FieldScan.Filled
+            if obj.Report.BaselineRes
                 Style='Título 2';
-                TextString = 'Campo óptimo';
+                TextString = 'Baseline Resolution';
                 WordText(ActXWord,TextString,Style,[0,1]);
                 Style='normal';
                 WordText(ActXWord,'',Style,[0,1]);
-                fig = obj.PlotFieldScan;
+                fig = figure;
+                Tbath = unique([[obj.PP.Tbath] [obj.PN.Tbath]]);
+                obj.PlotTESData('ExRes',[],Tbath,fig);
+                legend(fig.Children,'show','Location','Northeastoutside');
                 set(fig.Children,'FontUnits','Normalized');
                 set(fig, 'Position', get(0, 'Screensize')); 
                 print(fig,'-dmeta');
@@ -2882,14 +3038,62 @@ classdef TES_Struct
                 clear fig;
                 ActXWord.Selection.TypeParagraph;
                 Style='Cita';
-                TextString = ['Fig. ' num2str(FigNum) '. Barrido de Vout para la determinación del campo óptimo.'];
+                TextString = ['Fig. ' num2str(FigNum) '. Baseline resolution.'];
+                WordText(ActXWord,TextString,Style,[0,1]);
+                FigNum = FigNum+1;
+            end            
+            if obj.Report.Mph
+                Style='Título 2';
+                TextString = 'Phonon noise';
+                WordText(ActXWord,TextString,Style,[0,1]);
+                Style='normal';
+                WordText(ActXWord,'',Style,[0,1]);
+                fig = figure;
+                Tbath = unique([[obj.PP.Tbath] [obj.PN.Tbath]]);
+                obj.PlotTESData('Mph',[],Tbath,fig);
+                legend(fig.Children,'show','Location','Northeastoutside');
+                set(fig.Children,'FontUnits','Normalized');
+                set(fig, 'Position', get(0, 'Screensize')); 
+                print(fig,'-dmeta');
+                invoke(ActXWord.Selection,'Paste');
+                close(fig);
+                pause(0.3)
+                clear fig;
+                ActXWord.Selection.TypeParagraph;
+                Style='Cita';
+                TextString = ['Fig. ' num2str(FigNum) '. Phonon noise contribution.'];
                 WordText(ActXWord,TextString,Style,[0,1]);
                 FigNum = FigNum+1;
             end
+            if obj.Report.M
+                Style='Título 2';
+                TextString = 'Johnson noise';
+                WordText(ActXWord,TextString,Style,[0,1]);
+                Style='normal';
+                WordText(ActXWord,'',Style,[0,1]);
+                fig = figure;
+                Tbath = unique([[obj.PP.Tbath] [obj.PN.Tbath]]);
+                obj.PlotTESData('M',[],Tbath,fig);
+                legend(fig.Children,'show','Location','Northeastoutside');
+                set(fig.Children,'FontUnits','Normalized');
+                set(fig, 'Position', get(0, 'Screensize')); 
+                print(fig,'-dmeta');
+                invoke(ActXWord.Selection,'Paste');
+                close(fig);
+                pause(0.3)
+                clear fig;
+                ActXWord.Selection.TypeParagraph;
+                Style='Cita';
+                TextString = ['Fig. ' num2str(FigNum) '.  Johnson noise contribution.'];
+                WordText(ActXWord,TextString,Style,[0,1]);
+                FigNum = FigNum+1;
+            end            
+            
+            
             
             % Falta añadir visualizar el Ruido y las funciones de
             % transferencia en estado normal y superconductor.
-            FileSpec = [pwd filesep answer{1} '.doc'];
+            FileSpec = [pwd filesep FileName{1} '.doc'];
             CloseWord(ActXWord,WordHandle,FileSpec);   
             
 %             if ~exist(FileSpec,'file')
