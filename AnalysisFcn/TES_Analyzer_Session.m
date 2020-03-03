@@ -11,6 +11,7 @@ classdef TES_Analyzer_Session
         TES_Idn = [];
         Squid_Idn = [];
         Colddown_Idn = [];
+        Colddown_Date = [];
         NickName = [];
         BFieldCond = [];
         Comments = [];

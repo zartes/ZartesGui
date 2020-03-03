@@ -356,6 +356,9 @@ classdef TES_IVCurveSet
                     if isnan(PS(IndP(ind)))
                         indPEnd = IndP(ind);
                     end
+                    if ~exist('indPEnd','var')
+                        indPEnd = ind(end);
+                    end
 %                     obj(indPEnd).vout = obj(indPEnd).vout - obj(indPEnd).vout(end);
                     [datafit,xcros,ycros,slopeN,slopeS] = obj.IV_estimation_mN_mS(obj(indPEnd).ibias,obj(indPEnd).vout,ax1);
                     DataFit(indPEnd) = datafit;

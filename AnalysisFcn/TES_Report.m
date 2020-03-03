@@ -7,12 +7,20 @@ classdef TES_Report
         FitPTset = 1;
         NKGTset = 1;
         ABCTset = 1;
+        TF_Normal = 1;
+        TF_Super = 1;
         FitZset = 1;
+        Noise_Normal = 1;
+        Noise_Super = 1;
         NoiseSet = 1;
         RTs = 1;
+        RT_4points = 1;
         IV_Z = 1;
-        ICs = 0;
-        BVscan = 0;
+        ICs = 1;
+        BVscan = 1;
+        BaselineRes = 1;
+        Mph = 1;
+        M = 1;
     end
     
     methods

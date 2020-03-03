@@ -319,7 +319,8 @@ switch src.Label
             
             TES_Idn = alltext{2,3};
             Squid_Idn = alltext{2,2};
-            Colddown_Idn = alltext{2,1};                                    
+            Colddown_Idn = alltext{2,1};   
+            Colddown_Date = alltext{2,4};
             
             [~, ~, alltext] = xlsread([DataPath(1:find(DataPath(1:end-1) == filesep,1,'last')) filesep d(1).name],2);
             
@@ -340,6 +341,7 @@ switch src.Label
             TES_Idn = 'Not provided';
             Squid_Idn = 'Not provided';
             Colddown_Idn = 'Not provided';
+            Colddown_Date = 'Not provided';
             BFieldCond = 'Not provided';
             Comments = 'Not provided';
         end
@@ -374,6 +376,7 @@ switch src.Label
             handles.Session{handles.TES_ID}.TES_Idn = TES_Idn;
             handles.Session{handles.TES_ID}.Squid_Idn = Squid_Idn;
             handles.Session{handles.TES_ID}.Colddown_Idn = Colddown_Idn;
+            handles.Session{handles.TES_ID}.Colddown_Date = Colddown_Date;
             handles.Session{handles.TES_ID}.TES.TESDim.SputteringID = curs1.Data{2};
             [hMo,s] = strtok(curs1.Data{3},'/');
             handles.Session{handles.TES_ID}.TES.TESDim.hMo.Value = str2double(hMo)*1e-9;
@@ -614,7 +617,7 @@ switch src.Label
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');
         delete(indAxes);
-        handles.Session{handles.TES_ID}.TES.TFS = handles.Session{handles.TES_ID}.TES.TFS.CheckTF(handles.Analyzer);
+        handles.Session{handles.TES_ID}.TES.TFS = handles.Session{handles.TES_ID}.TES.TFS.PlotTF(handles.Analyzer);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
     case 'Load Noise in Superconductor State'
@@ -660,7 +663,7 @@ switch src.Label
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');
         delete(indAxes);
-        handles.Session{handles.TES_ID}.TES.TFN = handles.Session{handles.TES_ID}.TES.TFN.CheckTF(handles.Analyzer);
+        handles.Session{handles.TES_ID}.TES.TFN = handles.Session{handles.TES_ID}.TES.TFN.PlotTF(handles.Analyzer);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
     
     case 'Load Noise in Normal State'
@@ -889,7 +892,7 @@ switch src.Label
             return;
         end
         Tbath = str2double(str(s))';
-        handles.Session{handles.TES_ID}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetP,handles.Session{handles.TES_ID}.TES.PP,Tbath,fig);
+        fig = handles.Session{handles.TES_ID}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetP,handles.Session{handles.TES_ID}.TES.PP,Tbath,fig);
         handles.Session{handles.TES_ID}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetN,handles.Session{handles.TES_ID}.TES.PN,Tbath,fig);
         
     case 'Plot Critical Currents'
