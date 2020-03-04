@@ -26,7 +26,7 @@ classdef TES_Dimensions
         Membrane_width = PhysicalMeasurement;
     end
     properties (Access = private)
-        version = 'ZarTES v2.1';
+        version = 'ZarTES v2.2';
     end
     
     methods
