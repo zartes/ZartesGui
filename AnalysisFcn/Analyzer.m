@@ -61,7 +61,7 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','Toolbar','figure');
 
-handles.VersionStr = 'ZarTES v2.1';
+handles.VersionStr = 'ZarTES v2.2';
 set(handles.Analyzer,'Name',handles.VersionStr);
 
 handles.TES_ID = 0;

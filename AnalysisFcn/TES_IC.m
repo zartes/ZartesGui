@@ -11,7 +11,7 @@ classdef TES_IC
     end
     
     properties (Access = private)
-        version = 'ZarTES v2.1';
+        version = 'ZarTES v2.2';
     end
     
     methods
