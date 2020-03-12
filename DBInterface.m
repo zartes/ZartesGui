@@ -568,4 +568,8 @@ if isequal(atr.message,'Invalid Cursor')
     return;
 end
 refreshTable(hObject);
+C = strsplit(curs.columnnames,''',''');
+C{1}(1) = [];
+C{end}(end) = [];
+handles.Table1.ColumnName = C;
 handles.Table1.Data = curs.Data;
