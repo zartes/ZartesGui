@@ -275,7 +275,7 @@ classdef TES_ElectrThermModel
                         
                         gammas = [TES.TESDim.Abs_gammaBi.Value TES.TESDim.Abs_gammaAu.Value];
                         rhoAs = [TES.TESDim.Abs_rhoBi.Value TES.TESDim.Abs_rhoAu.Value];                                                
-                        param.C_fixed = sum((gammas.*rhoAs).*([TES.TESDim.hMo.Value TES.TESDim.hAu.Value].*TES.TESDim.Abs_sides.Value(1)*TES.TESDim.Abs_sides.Value(2)).*eval(['TES.TESThermal' CondStr '.T_fit.Value']));
+                        param.C_fixed = sum((gammas.*rhoAs).*([TES.TESDim.hMo.Value TES.TESDim.hAu.Value].*TES.TESDim.Abs_width.Value*TES.TESDim.Abs_length.Value).*eval(['TES.TESThermal' CondStr '.T_fit.Value']));
                         param.tau0_fixed = param.C_fixed/G0;
                         param.L0_fixed = (param.tau0_fixed/param.taueff) + 1;
                         param.ai_fixed = param.L0_fixed*G0*T0/P0;

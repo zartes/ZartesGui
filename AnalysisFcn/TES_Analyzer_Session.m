@@ -7,14 +7,9 @@ classdef TES_Analyzer_Session
         Path = [];
         Tag = [];
         TES = [];
-        ID = [];
-        TES_Idn = [];
-        Squid_Idn = [];
-        Colddown_Idn = [];
-        Colddown_Date = [];
+        ID = [];        
         NickName = [];
-        BFieldCond = [];
-        Comments = [];
+        ZTDB = TES_ZTDataBase;
     end
     
     methods
