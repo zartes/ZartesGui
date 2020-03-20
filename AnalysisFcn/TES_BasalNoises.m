@@ -113,7 +113,7 @@ classdef TES_BasalNoises
             xlabel(ax,'\nu (Hz)','FontSize',12,'FontWeight','bold');
             [path,file] = fileparts(obj.fileNoise);
             try
-                offsetstr = strfind(file,'mK_')-1;
+                offsetstr = strfind(file,'mK')-1;
                 onsetstr = strfind(file,'_');
                 onsetstr = onsetstr(find(offsetstr-onsetstr > 0,1,'last'))+1;
                 Tbath = str2double(file(onsetstr:offsetstr))*1e-3;
@@ -126,7 +126,7 @@ classdef TES_BasalNoises
                 numlines = 1;
                 defaultanswer = {'50'};
                 answer = inputdlg(prompt,name,numlines,defaultanswer);
-                Tbath = str2double(char(answer));
+                Tbath = str2double(char(answer))*1e-3;
                 if isnan(Tbath)
                     warndlg('Invalid Tbath value',obj.version);                    
                     return;

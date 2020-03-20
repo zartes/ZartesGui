@@ -3,15 +3,20 @@ classdef TES_Dimensions
     %   Characteristics of TES device
     
     properties
-        sides  = PhysicalMeasurement;        
+        % Bilayer
+        width  = PhysicalMeasurement;
+        length  = PhysicalMeasurement;
         hMo = PhysicalMeasurement;
         hAu = PhysicalMeasurement;
         gammaMo = PhysicalMeasurement;
         gammaAu = PhysicalMeasurement;
         rhoMo = PhysicalMeasurement;
         rhoAu = PhysicalMeasurement; 
+        % Absorbent (Usually Au but it can contain also other material
+        % Bi,etc
         Abs_bool = 0;
-        Abs_sides = PhysicalMeasurement;
+        Abs_width = PhysicalMeasurement;
+        Abs_length = PhysicalMeasurement;
         Abs_thick = PhysicalMeasurement;
         Abs_hBi = PhysicalMeasurement; 
         Abs_hAu = PhysicalMeasurement; 
@@ -19,11 +24,13 @@ classdef TES_Dimensions
         Abs_gammaAu = PhysicalMeasurement;
         Abs_rhoBi = PhysicalMeasurement;
         Abs_rhoAu = PhysicalMeasurement;
-        SputteringID;
+        
+        % Membrane
         Membrane_bool = 0;
         Membrane_thick = PhysicalMeasurement;
-        Membrane_length = PhysicalMeasurement;
         Membrane_width = PhysicalMeasurement;
+        Membrane_length = PhysicalMeasurement;
+        
     end
     properties (Access = private)
         version = 'ZarTES v2.2';
@@ -31,8 +38,10 @@ classdef TES_Dimensions
     
     methods
         function obj = Constructor(obj)
-            obj.sides.Value = [25e-6 25e-6];
-            obj.sides.Units = {'m';'m'};
+            obj.width.Value = 25e-6;
+            obj.width.Units = 'm';
+            obj.length.Value = 25e-6;
+            obj.length.Units = 'm';
             obj.hMo.Value = 55e-9;
             obj.hMo.Units = 'm';
             obj.hAu.Value = 340e-9;
@@ -46,10 +55,12 @@ classdef TES_Dimensions
             obj.rhoAu.Value = 0.0983;
             obj.rhoAu.Units = 'mole/cm^3';
             
-            obj.Abs_sides.Value = [25e-6 25e-6];
-            obj.Abs_sides.Units = {'m';'m'};
             obj.Abs_thick.Value = 25e-6;
             obj.Abs_thick.Units = {'m'};
+            obj.Abs_width.Value = 25e-6;
+            obj.Abs_width.Units = 'm';
+            obj.Abs_length.Value = 25e-6;
+            obj.Abs_length.Units = 'm';            
             obj.Abs_hBi.Value = 50e-6;
             obj.Abs_hBi.Units = 'm';
             obj.Abs_hAu.Value = 50e-6;
@@ -61,16 +72,16 @@ classdef TES_Dimensions
             obj.Abs_rhoBi.Value = 0.0468;
             obj.Abs_rhoBi.Units = 'mole/cm^3';
             obj.Abs_rhoAu.Value = 0.0983;  
-            obj.Abs_rhoAu.Units = 'mole/cm^3';
+            obj.Abs_rhoAu.Units = 'mole/cm^3';            
             
-            obj.SputteringID = '';
             obj.Membrane_thick.Value = 0;
             obj.Membrane_thick.Units = 'm';
             obj.Membrane_thick.Value = 0;
-            obj.Membrane_length.Units = 'm';
-            obj.Membrane_length.Value = 0;
             obj.Membrane_width.Units = 'm';
             obj.Membrane_width.Value = 0;
+            obj.Membrane_length.Units = 'm';
+            obj.Membrane_length.Value = 0;
+            
         end
         
         function obj = Update(obj,data)
@@ -97,11 +108,11 @@ classdef TES_Dimensions
             % If this data is available, then theoretical C value could
             % be analytically determined
             
-            prompt = {'Enter TES length value (m):','Enter TES width value (m):','Enter Mo thickness value (m):','Enter Au thickness value (m):'};
+            prompt = {'Enter TES width value (m):','Enter TES length value (m):','Enter Mo thickness value (m):','Enter Au thickness value (m):'};
             name = 'Provide bilayer TES dimension (without absorber)';
             numlines = 1;
             try
-                defaultanswer = {num2str(obj.sides.Value(1)),num2str(obj.sides.Value(2)),...
+                defaultanswer = {num2str(obj.width.Value),num2str(obj.length.Value),...
                     num2str(obj.hMo.Value),num2str(obj.hAu.Value)};
             catch
                 defaultanswer = {num2str(25e-6),num2str(25e-6),...
@@ -110,8 +121,8 @@ classdef TES_Dimensions
             
             answer = inputdlg(prompt,name,numlines,defaultanswer);
             if ~isempty(answer)
-                obj.sides.Value(1) = str2double(answer{1});
-                obj.sides.Value(2) = str2double(answer{2});
+                obj.width.Value = str2double(answer{1});
+                obj.length.Value = str2double(answer{2});
                 obj.hMo.Value = str2double(answer{3});
                 obj.hAu.Value = str2double(answer{4});
             end
@@ -122,11 +133,11 @@ classdef TES_Dimensions
                 switch ButtonName
                     case 'No'
                         obj.Abs_bool = 1;
-                        prompt = {'Enter Absorbent length value (m):','Enter Absorbent width value (m):','Enter Bi thickness value (m):','Enter Au thickness value (m):'};
+                        prompt = {'Enter Absorbent width value (m):','Enter Absorbent length value (m):','Enter Bi thickness value (m):','Enter Au thickness value (m):'};
                         name = 'Provide Absorbent dimensions';
                         numlines = 1;
                         try
-                            defaultanswer = {num2str(obj.Abs_sides.Value(1)),num2str(obj.Abs_sides.Value(2)),...
+                            defaultanswer = {num2str(obj.Abs_width.Value),num2str(obj.Abs_length.Value),...
                                 num2str(obj.Abs_hBi.Value),num2str(obj.Abs_hAu.Value)};
                         catch
                             defaultanswer = {num2str(25e-6),num2str(25e-6),...
@@ -135,15 +146,34 @@ classdef TES_Dimensions
                         
                         answer = inputdlg(prompt,name,numlines,defaultanswer);
                         if ~isempty(answer)
-                            obj.Abs_sides.Value(1) = str2double(answer{1});
-                            obj.Abs_sides.Value(2) = str2double(answer{2});
+                            obj.Abs_width.Value = str2double(answer{1});
+                            obj.Abs_length.Value = str2double(answer{2});
                             obj.Abs_hBi.Value = str2double(answer{3});
                             obj.Abs_hAu.Value = str2double(answer{4});
                         end
                     otherwise
                         
                 end % switch
-            end      
+            else
+                prompt = {'Enter Absorbent width value (m):','Enter Absorbent length value (m):','Enter Bi thickness value (m):','Enter Au thickness value (m):'};
+                name = 'Provide Absorbent dimensions';
+                numlines = 1;
+                try
+                    defaultanswer = {num2str(obj.Abs_width.Value),num2str(obj.Abs_length.Value),...
+                        num2str(obj.Abs_hBi.Value),num2str(obj.Abs_hAu.Value)};
+                catch
+                    defaultanswer = {num2str(25e-6),num2str(25e-6),...
+                        num2str(55e-9),num2str(340e-9)};
+                end
+                
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                if ~isempty(answer)
+                    obj.Abs_width.Value = str2double(answer{1});
+                    obj.Abs_length.Value = str2double(answer{2});
+                    obj.Abs_hBi.Value = str2double(answer{3});
+                    obj.Abs_hAu.Value = str2double(answer{4});
+                end
+            end
             if obj.Membrane_bool == 0
                 ButtonName = questdlg('No Membrane presented in TES by default, is this correct?', ...
                     obj.version, ...
@@ -151,12 +181,12 @@ classdef TES_Dimensions
                 switch ButtonName
                     case 'No'
                         obj.Membrane_bool = 1;
-                        prompt = {'Enter Membrane thickness value (m):','Enter Membrane length value (m):','Enter Membrane width value (m):'};
+                        prompt = {'Enter Membrane thickness value (m):','Enter Membrane width value (m):','Enter Membrane length value (m):'};
                         name = 'Provide Membrane dimensions';
                         numlines = 1;
                         try
-                            defaultanswer = {num2str(obj.Membrane_thick.Value(1)),num2str(obj.Membrane_length.Value(2)),...
-                                num2str(obj.Membrane_width.Value)};
+                            defaultanswer = {num2str(obj.Membrane_thick.Value(1)),num2str(obj.Membrane_width.Value(2)),...
+                                num2str(obj.Membrane_length.Value)};
                         catch
                             defaultanswer = {num2str(0.5e-6),num2str(250e-6),...
                                 num2str(250e-6)};
@@ -164,13 +194,31 @@ classdef TES_Dimensions
                         
                         answer = inputdlg(prompt,name,numlines,defaultanswer);
                         if ~isempty(answer)
-                            obj.Membrane_thick.Value(1) = str2double(answer{1});
-                            obj.Membrane_length.Value(2) = str2double(answer{2});
+                            obj.Membrane_thick.Value = str2double(answer{1});
+                            obj.Membrane_length.Value = str2double(answer{2});
                             obj.Membrane_width.Value = str2double(answer{3});
                         end
                     otherwise
                         
                 end % switch
+            else
+                prompt = {'Enter Membrane thickness value (m):','Enter Membrane width value (m):','Enter Membrane length value (m):'};
+                name = 'Provide Membrane dimensions';
+                numlines = 1;
+                try
+                    defaultanswer = {num2str(obj.Membrane_thick.Value(1)),num2str(obj.Membrane_width.Value(2)),...
+                        num2str(obj.Membrane_length.Value)};
+                catch
+                    defaultanswer = {num2str(0.5e-6),num2str(250e-6),...
+                        num2str(250e-6)};
+                end
+                
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                if ~isempty(answer)
+                    obj.Membrane_thick.Value = str2double(answer{1});
+                    obj.Membrane_length.Value = str2double(answer{2});
+                    obj.Membrane_width.Value = str2double(answer{3});
+                end
             end
             
             waitfor('Device material dimensions provided',obj.version);

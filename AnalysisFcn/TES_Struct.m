@@ -526,6 +526,16 @@ classdef TES_Struct
             set(ax,'FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
         end
         
+        function [obj, fig] = plotRTs4points(obj,fig,ZTDB)
+            try
+                for i = 1:size(ZTDB.RTs4p,1)
+                    fig(i) = openfig(ZTDB.RTs4p{i},'Visible');                    
+                end
+            catch
+                waitfor(msgbox('Error connecting to ZarTES Database.',obj.version));
+            end                        
+        end
+        
         function obj = plotNKGTset(obj,fig,opt)
             % Function to visualize n, K, G and T with respect to RTes/Rn
             %
@@ -963,7 +973,7 @@ classdef TES_Struct
                             h(h_i) = plot(ax,1e3*ztes(ind),'.','Color',[0 0.447 0.741],...
                                 'markerfacecolor',[0 0.447 0.741],'MarkerSize',15,'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj}]);
                             %%% Paso marker de 'o' a '.'
-                            set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized');
+                            set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold');
                             xlabel(ax,'Re(mZ)','FontSize',12,'FontWeight','bold');
                             ylabel(ax,'Im(mZ)','FontSize',12,'FontWeight','bold');%title('Ztes with fits (red)');
                             ImZmin(jj) = min(imag(1e3*ztes));
@@ -1229,11 +1239,11 @@ classdef TES_Struct
             MS = 10;
             LW1 = 1;
             
-            if ~isempty(obj.TESDim.sides.Value)
+            if ~isempty(obj.TESDim.width.Value)
 
                 gammas = [obj.TESDim.gammaMo.Value obj.TESDim.gammaAu.Value];
                 rhoAs = [obj.TESDim.rhoMo.Value obj.TESDim.rhoAu.Value];                
-                sides = obj.TESDim.sides.Value;
+                sides = [obj.TESDim.width.Value obj.TESDim.length.Value];
                 hMo = obj.TESDim.hMo.Value;
                 hAu = obj.TESDim.hAu.Value;
                 
@@ -1349,7 +1359,7 @@ classdef TES_Struct
                     teob = plot(h(4),0.1:0.01:0.9,1./(0.1:0.01:0.9)-1,'-.r','LineWidth',2,'DisplayName','Beta^{teo}');
                     set(get(get(teob,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                     set(h([2 4]),'YScale','log');
-                    if ~isempty(obj.TESDim.sides.Value)
+                    if ~isempty(obj.TESDim.width.Value)
                         CN = sum((gammas.*rhoAs).*([hMo hAu].*sides(1)*sides(2)).*eval(['obj.TESThermal' StrRange{k} '.T_fit.Value'])); %%%calculo de cada contribucion por separado.                        
                         teo(1) = plot(h(1),rpaux,CN*1e15*ones(1,length(rpaux)),'-.r','LineWidth',1,'DisplayName','{C_{LB}}^{teo}');
                         set(get(get(teo(1),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
@@ -2277,7 +2287,7 @@ classdef TES_Struct
             end
             FileName = answer;
             Style='Título 1';
-            WordText(ActXWord,['Informe análisis TES: ' Session.TES_Idn],Style,[0,1]);%no enter
+            WordText(ActXWord,['Informe análisis TES: ' Session.ZTDB.TES_Idn],Style,[0,1]);%no enter
             Style='Normal';
             try
                 d = dir(obj.IVsetP(1).IVsetPath(1:end-4));
@@ -2286,14 +2296,14 @@ classdef TES_Struct
                 WordText(ActXWord,'Fecha medidas: ',Style,[0,1]);%no enter  
             end
                                                             
-            WordText(ActXWord,['TES con depósito (' num2str(obj.TESDim.SputteringID) ') con '...
+            WordText(ActXWord,['TES con depósito (' num2str(Session.ZTDB.SputteringID) ') con '...
                 num2str(obj.TESDim.hMo.Value*1e9) '/' num2str(obj.TESDim.hAu.Value*1e9)...
-                ' de espesores y ' num2str(obj.TESDim.sides.Value(1)*1e6) ' µm x '...
-                num2str(obj.TESDim.sides.Value(2)*1e6) ' µm de área.'],Style,[0,1]);%no enter
+                ' de espesores y ' num2str(obj.TESDim.width.Value*1e6) ' µm x '...
+                num2str(obj.TESDim.length.Value*1e6) ' µm de área.'],Style,[0,1]);%no enter
             
             if obj.TESDim.Membrane_bool
-                WordText(ActXWord,['Membrana ' num2str(obj.TESDim.Membrane_thick)*1e6...
-                    ' µm grosor, ' num2str(obj.TESDim.Membrane_length)*1e6 'x' num2str(obj.TESDim.Membrane_width)*1e6...
+                WordText(ActXWord,['Membrana ' num2str(obj.TESDim.Membrane_thick.Value*1e6)...
+                    ' µm grosor, ' num2str(obj.TESDim.Membrane_length.Value*1e6) 'x' num2str(obj.TESDim.Membrane_width.Value*1e6)...
                     ' µm de tamaño'],Style,[0,1]);%no enter
             else
                 WordText(ActXWord,'No presenta membrana.',Style,[0,1]);%no enter
@@ -2301,13 +2311,15 @@ classdef TES_Struct
             
             
             if obj.TESDim.Abs_bool
+                WordText(ActXWord,['Absorbente de ' num2str(obj.TESDim.Abs_thick.Value*1e6) ' µm grosor'],Style,[0,1]);%no enter...
+                    
                 WordText(ActXWord,['Absorbente de Au/Bi de ' num2str(obj.TESDim.Abs_hAu.Value*1e6)...
                     ' x ' num2str(obj.TESDim.Abs_hBi.Value*1e6) ' µm.'],Style,[0,1]);%no enter
             else                
                 WordText(ActXWord,'No presenta absorbente.',Style,[0,1]);%no enter
             end
             
-            WordText(ActXWord,['SQUID: ' Session.Squid_Idn ' chip 2x16 Polarizado: Ib = 10.727 µA, Vb = 957.05 µV, phi_b = 7.85 µA.'],...
+            WordText(ActXWord,['SQUID: ' Session.ZTDB.Squid_Idn ' chip 2x16 Polarizado: Ib = 10.727 µA, Vb = 957.05 µV, phi_b = 7.85 µA.'],...
                 Style,[0,1]);%no enter            
             WordText(ActXWord,['delta_phi = 1/Mf = ' num2str(obj.circuit.invMf.Value) ' µA/phi0'],Style,[0,1]);%no enter            
             WordText(ActXWord,['1/Min = ' num2str(obj.circuit.invMin.Value) ' µA/phi0'],Style,[0,1]);%no enter
@@ -2317,8 +2329,8 @@ classdef TES_Struct
                 ind = findstr(obj.IVsetP(1).IVsetPath,filesep); %#ok<FSTR>
                 RunStr = obj.IVsetP(1).IVsetPath(ind(end-2)+1:ind(end-1)-1);
                 WordText(ActXWord,['RUNs analizados: ' RunStr ],Style,[0,1]);
-                WordText(ActXWord,['(Rama Positiva/Negativa; Campo óptimo = ' Session.BFieldCond ' µA).'],Style,[0,1]);%no enter
-                WordText(ActXWord,['Comentario: ' Session.Comments],Style,[0,1]);
+                WordText(ActXWord,['(Rama Positiva/Negativa; Campo óptimo = ' Session.ZTDB.BFieldCond ' µA).'],Style,[0,1]);%no enter
+                WordText(ActXWord,['Comentario: ' Session.ZTDB.Comments],Style,[0,1]);
             catch
                 WordText(ActXWord,'Carpeta de datos: ',Style,[0,1]);%no enter
                 WordText(ActXWord,'RUNs analizados:      (Con/Sin Campo óptimo = X µA).',Style,[0,1]);%no enter
@@ -2452,8 +2464,12 @@ classdef TES_Struct
                 FigNum = FigNum+1;
                 
                 Style = 'normal';
-                WordText(ActXWord,['Curvas I-V Positivas eliminadas: ' TbathsP(1:end-1) ' mK' ],Style,[0,1]);%enter after text
-                WordText(ActXWord,['Curvas I-V Negativas eliminadas: ' TbathsN(1:end-1) ' mK' ],Style,[0,1]);%enter after text
+                if ~isempty(TbathsP(1:end-1))
+                    WordText(ActXWord,['Curvas I-V Positivas eliminadas: ' TbathsP(1:end-1) ' mK' ],Style,[0,1]);%enter after text
+                end
+                if ~isempty(TbathsN(1:end-1))                    
+                    WordText(ActXWord,['Curvas I-V Negativas eliminadas: ' TbathsN(1:end-1) ' mK' ],Style,[0,1]);%enter after text
+                end
                 
             end
             
@@ -2657,7 +2673,7 @@ classdef TES_Struct
                 pause(0.3)
                 clear fig;
                 Style='Cita';
-                TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Normal, archivo: ' obj.TFN.file.'];
+                TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Normal, archivo: ' obj.TFN.file];
                 WordText(ActXWord,TextString,Style,[0,1]);
                 FigNum = FigNum+1;
             end
@@ -2672,7 +2688,7 @@ classdef TES_Struct
                 pause(0.3)
                 clear fig;
                 Style='Cita';
-                TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Superconductor, archivo: ' obj.TFS.file.'];
+                TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Superconductor, archivo: ' obj.TFS.file];
                 WordText(ActXWord,TextString,Style,[0,1]);
                 FigNum = FigNum+1;
             end
@@ -2709,8 +2725,8 @@ classdef TES_Struct
                 fig = obj.PlotTFTbathRp(Tbath,Rn);
                 try
                     FigSubNum = 1;    
-                    Temps = num2str([obj.PP.Tbath]'*1e3);
-                    for i = 1:length([obj.PP.Tbath])
+                    Temps = num2str(Tbath'*1e3);
+                    for i = 1:length(Tbath)
                         Style = 'normal';
                         StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
                         StrIni(end) = [];
@@ -2736,8 +2752,8 @@ classdef TES_Struct
                 end
                 try
                     FigSubNum = 1;    
-                    Temps = num2str([obj.PN.Tbath]'*1e3);
-                    for j = 1:length([obj.PN.Tbath])
+                    Temps = num2str(Tbath'*1e3);
+                    for j = 1:length(Tbath)
                         i = i+1;
                         Style = 'normal';
                         StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
@@ -2765,40 +2781,48 @@ classdef TES_Struct
             end
             
             if obj.Report.Noise_Normal
-                fig = figure;
-                [obj.NoiseN, fig] = obj.NoiseN.Plot(fig,obj,'Normal'); 
-                Style='normal';
-                WordText(ActXWord,'',Style,[0,1]);
-                set(fig.Children,'FontUnits','Normalized','Box','on');
-                set(fig, 'Position', get(0, 'Screensize'));
-                print(fig,'-dmeta');
-                invoke(ActXWord.Selection,'Paste');
-                ActXWord.Selection.TypeParagraph;
-                close(fig);
-                pause(0.3)
-                clear fig;
-                Style='Cita';
-                TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Normal, archivo: ' obj.NoiseN.fileNoise];
-                WordText(ActXWord,TextString,Style,[0,1]);
-                FigNum = FigNum+1;
+                try
+                    fig = figure;
+                    [obj.NoiseN, fig] = obj.NoiseN.Plot(fig,obj,'Normal');
+                    Style='normal';
+                    WordText(ActXWord,'',Style,[0,1]);
+                    set(fig.Children,'FontUnits','Normalized','Box','on');
+                    set(fig, 'Position', get(0, 'Screensize'));
+                    print(fig,'-dmeta');
+                    invoke(ActXWord.Selection,'Paste');
+                    ActXWord.Selection.TypeParagraph;
+                    close(fig);
+                    pause(0.3)
+                    clear fig;
+                    Style='Cita';
+                    TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Normal, archivo: ' obj.NoiseN.fileNoise];
+                    WordText(ActXWord,TextString,Style,[0,1]);
+                    FigNum = FigNum+1;
+                catch
+                    close(fig);
+                end
             end
             if obj.Report.Noise_Super
-                fig = figure;
-                [obj.NoiseS, fig] = obj.NoiseS.Plot(fig,obj,'Superconductor');                
-                Style='normal';
-                WordText(ActXWord,'',Style,[0,1]);
-                set(fig.Children,'FontUnits','Normalized');
-                set(fig, 'Position', get(0, 'Screensize'));
-                print(fig,'-dmeta');
-                invoke(ActXWord.Selection,'Paste');
-                ActXWord.Selection.TypeParagraph;
-                close(fig);
-                pause(0.3)
-                clear fig;
-                Style='Cita';
-                TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Superconductor, archivo: ' obj.NoiseS.fileNoise];
-                WordText(ActXWord,TextString,Style,[0,1]);
-                FigNum = FigNum+1;
+                try
+                    fig = figure;
+                    [obj.NoiseS, fig] = obj.NoiseS.Plot(fig,obj,'Superconductor');
+                    Style='normal';
+                    WordText(ActXWord,'',Style,[0,1]);
+                    set(fig.Children,'FontUnits','Normalized');
+                    set(fig, 'Position', get(0, 'Screensize'));
+                    print(fig,'-dmeta');
+                    invoke(ActXWord.Selection,'Paste');
+                    ActXWord.Selection.TypeParagraph;
+                    close(fig);
+                    pause(0.3)
+                    clear fig;
+                    Style='Cita';
+                    TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Superconductor, archivo: ' obj.NoiseS.fileNoise];
+                    WordText(ActXWord,TextString,Style,[0,1]);
+                    FigNum = FigNum+1;
+                catch
+                    close(fig);
+                end
             end
             
             if obj.Report.NoiseSet
@@ -2830,8 +2854,8 @@ classdef TES_Struct
                 fig = obj.PlotNoiseTbathRp(Tbath,Rn);
                 try
                     FigSubNum = 1;                    
-                    Temps = num2str([obj.PP.Tbath]'*1e3);
-                    for i = 1:length([obj.PP.Tbath])
+                    Temps = num2str(Tbath'*1e3);
+                    for i = 1:length(Tbath)
                         Style = 'normal';
                         StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
                         StrIni(end) = [];
@@ -2856,8 +2880,8 @@ classdef TES_Struct
                 end
                 try
                     FigSubNum = 1;
-                    Temps = num2str([obj.PN.Tbath]'*1e3);
-                    for j = 1:length([obj.PN.Tbath])
+                    Temps = num2str(Tbath'*1e3);
+                    for j = 1:length(Tbath)
                         i = i+1;
                         Style = 'normal';
                         StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
@@ -2940,6 +2964,34 @@ classdef TES_Struct
             end
             
             if obj.Report.RT_4points
+                Style='Título 2';
+                TextString = 'RTs 4 points Figure';
+                WordText(ActXWord,TextString,Style,[0,1]);
+                Style='normal';
+                WordText(ActXWord,'',Style,[0,1]);
+                
+                hdfig = findobj('Tag','Analyzer','Name',obj.version);
+                hd = guidata(hdfig);
+                if ~isempty(hd.Session{hd.TES_ID}.ZTDB.RTs4p)
+                
+                    [obj,fig] = obj.plotRTs4points([],hd.Session{hd.TES_ID}.ZTDB);
+                    for i = 1:length(fig)
+                        print(fig(i),'-dmeta');
+                        invoke(ActXWord.Selection,'Paste');
+                        close(fig(i));
+                        pause(0.3)
+                        ActXWord.Selection.TypeParagraph;
+                        
+                        Style='Cita';
+                        TextString = ['Fig. ' num2str(FigNum) '. Medida de las R(T) por 4 puntas.'];
+                        WordText(ActXWord,TextString,Style,[0,1]);
+                        FigNum = FigNum+1;
+                    end
+                    clear fig;
+                else
+                    WordText(ActXWord,'No information provided in Database.',Style,[0,1]);
+                end
+                
                 
             end
             

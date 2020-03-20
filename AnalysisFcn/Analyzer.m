@@ -64,6 +64,9 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
 handles.VersionStr = 'ZarTES v2.2';
 set(handles.Analyzer,'Name',handles.VersionStr);
 
+handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
+handles.DataBaseName = 'ZarTESDB';
+
 handles.TES_ID = 0;
 handles.NewTES = {[]};
 handles.NewTES_DataPath = {[]};
@@ -91,13 +94,13 @@ MenuTES.Fcn{IndMenu} = {'TESData'};
 IndMenu = IndMenu +1;
 
 MenuTES.Label{IndMenu} = {'Plot'};
-MenuTES.SubMenu{IndMenu} = {'Plot NKGT Set';'Plot RTs Set';'Plot ABCT Set';...
+MenuTES.SubMenu{IndMenu} = {'Plot NKGT Set';'Plot RTs Set';'Plot RT 4 points';'Plot ABCT Set';...
     'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';'Plot IV-Z';'Plot Critical Currents';'Plot Field Scan'};
 MenuTES.Fcn{IndMenu} = {'Plot'};
 IndMenu = IndMenu +1;
 
 MenuTES.Label{IndMenu} = {'Macro'};
-MenuTES.SubMenu{IndMenu} = {'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot IV-Zs';'Plots Critical Currents';'Plots Field Scan'};
+MenuTES.SubMenu{IndMenu} = {'Plot NKGT Sets';'Plot RTs Sets';'Plot RTs 4 points';'Plot ABCT Sets';'Plot TESs Data';'Plot IV-Zs';'Plots Critical Currents';'Plots Field Scan'};
 MenuTES.Fcn{IndMenu} = {'MacroTES'};
 IndMenu = IndMenu +1;
 
@@ -273,7 +276,11 @@ switch src.Label
         end
         
     case 'Set Data Path'
-        DataPath = uigetdir('', 'Pick a Data path named Z(w)-Ruido');
+        try
+            DataPath = uigetdir(handles.Session{handles.TES_ID(end)}.Path, 'Pick a Data path named Z(w)-Ruido');
+        catch
+            DataPath = uigetdir('', 'Pick a Data path named Z(w)-Ruido');
+        end
         if DataPath ~= 0
             DataPath = [DataPath filesep];
         else
@@ -298,6 +305,7 @@ switch src.Label
         Session = TES_Analyzer_Session;
         Session.File = [];
         Session.Path = DataPath;
+        Session.ZTDB = Session.ZTDB.Constructor(handles.DataBaseName,handles.DataBasePath);
         
         Indx = find(DataPath(1:end-1) == filesep,3,'last');
         YearStr = DataPath(Indx(1)+1:Indx(2)-1);
@@ -305,45 +313,13 @@ switch src.Label
         RunStr = DataPath(Indx(3)+1:end-1);
         
         % Conectando con la base de datos en busca de algún parámetro para
-        % cargar
+        % cargar        
+        Session.ZTDB = Session.ZTDB.UpdateFromExcel(Session);
         
-        try
-            DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
-            DataBaseName = 'ZarTESDB';
-            conn = database(DataBaseName,'','');
-            
-            
-            % Enlace con el archivo EXCEL
-            d = dir([DataPath(1:find(DataPath(1:end-1) == filesep,1,'last')) '*.xls']);
-            [~, ~, alltext] = xlsread([DataPath(1:find(DataPath(1:end-1) == filesep,1,'last')) filesep d(1).name]);
-            
-            TES_Idn = alltext{2,3};
-            Squid_Idn = alltext{2,2};
-            Colddown_Idn = alltext{2,1};   
-            Colddown_Date = alltext{2,4};
-            
-            [~, ~, alltext] = xlsread([DataPath(1:find(DataPath(1:end-1) == filesep,1,'last')) filesep d(1).name],2);
-            
-            RawIndx = str2double(strtok(RunStr,'RUN'));
-            BFieldCond = [num2str(alltext{RawIndx,2}) '/' num2str(alltext{RawIndx,3})];            
-            Comments = alltext{RawIndx,4};
-            
-            sqlquery = ['SELECT * FROM TES_Device WHERE ID_TES = ''' TES_Idn ''''];
-            curs1 = exec(conn,sqlquery);
-            curs1 = fetch(curs1);
-            if strcmp(curs1.Data,'No Data')
-                waitfor(msgbox('No information of this TES in the Database yet',handles.VersionStr));
-            end
-            NickName = [RunStr '_' MonthStr '_' YearStr '_' curs1.Data{1}];
-            
+        try                                                                        
+            NickName = [RunStr '_' MonthStr '_' YearStr '_' Session.ZTDB.TES_Idn];            
         catch
             NickName = [RunStr '_' MonthStr '_' YearStr];
-            TES_Idn = 'Not provided';
-            Squid_Idn = 'Not provided';
-            Colddown_Idn = 'Not provided';
-            Colddown_Date = 'Not provided';
-            BFieldCond = 'Not provided';
-            Comments = 'Not provided';
         end
         
         answer = inputdlg({'Insert a Nick name for the TES'},handles.VersionStr,[1 50],{NickName});
@@ -370,39 +346,9 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.Constructor;
         
         handles.Session{handles.TES_ID}.NickName = NickName;
-        try
-            handles.Session{handles.TES_ID}.BFieldCond = BFieldCond;
-            handles.Session{handles.TES_ID}.Comments = Comments;
-            handles.Session{handles.TES_ID}.TES_Idn = TES_Idn;
-            handles.Session{handles.TES_ID}.Squid_Idn = Squid_Idn;
-            handles.Session{handles.TES_ID}.Colddown_Idn = Colddown_Idn;
-            handles.Session{handles.TES_ID}.Colddown_Date = Colddown_Date;
-            handles.Session{handles.TES_ID}.TES.TESDim.SputteringID = curs1.Data{2};
-            [hMo,s] = strtok(curs1.Data{3},'/');
-            handles.Session{handles.TES_ID}.TES.TESDim.hMo.Value = str2double(hMo)*1e-9;
-            [hAu,s] = strtok(s,'/');
-            hAu = str2double(hAu)+str2double(s(2:end));
-            handles.Session{handles.TES_ID}.TES.TESDim.hAu.Value = hAu*1e-9;
-            [Dim1,s] = strtok(curs1.Data{4},'x');
-            handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(1) = str2double(Dim1)*1e-6;
-            handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(2) = str2double(s(2:end))*1e-6;
-            if strcmp(curs1.Data{9},'Y')
-                handles.Session{handles.TES_ID}.TES.TESDim.Membrane_bool = 1;
-                handles.Session{handles.TES_ID}.TES.TESDim.Membrane_thick.Value = curs1.Data{6}*1e-6;
-                handles.Session{handles.TES_ID}.TES.TESDim.Membrane_length.Value = curs1.Data{7}*1e-6;
-                handles.Session{handles.TES_ID}.TES.TESDim.Membrane_width.Value = curs1.Data{8}*1e-6;
-            end
-            if strcmp(curs1.Data{9},'Y')
-                handles.Session{handles.TES_ID}.TES.TESDim.Abs_bool = 1;
-                handles.Session{handles.TES_ID}.TES.TESDim.Abs_sides.Value(1) = curs1.Data{11}*1e-6;
-                handles.Session{handles.TES_ID}.TES.TESDim.Abs_sides.Value(2) = curs1.Data{11}*1e-6;
-            end
-            
-        catch
-            
-        end
-            
-        
+        [ZTDB, Session] = handles.Session{handles.TES_ID}.ZTDB.Update(handles.Session{handles.TES_ID});
+        Session.ZTDB = ZTDB;
+        handles.Session{handles.TES_ID} = Session;
         % Searching for Circuir variable (inside session or in circuit)
         [filename, pathname] = uigetfile({'sesion*';'circuit*'}, 'Pick a MATLAB file refering to circuit values',[Session.Path 'circuit.mat']);
         if ~isequal(filename,0)
@@ -782,6 +728,11 @@ switch src.Label
         indAxes = findobj(fig,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotRTs(fig);
+    case 'Plot RT 4 points'
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);
+        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotRTs4points(fig,handles.Session{handles.TES_ID}.ZTDB);
         
     case 'Plot ABCT Set'
         fig.hObject = handles.Analyzer;
@@ -1007,6 +958,22 @@ switch src.Label
             Lines_old = [Lines_old;Lines];
             j = j+1;            
         end
+        
+    case 'Plot RTs 4 points'
+        str = cellstr(handles.Loaded_TES.String);
+        [s,~] = listdlg('PromptString','Select Loaded TES:',...
+            'SelectionMode','multiple',...
+            'ListString',str);
+        if isempty(s)
+            return;
+        end
+        fig = handles.Analyzer;
+        indAxes = findobj(fig,'Type','Axes');
+        delete(indAxes);
+        for i = s
+            handles.Session{i}.TES.plotRTs4points(fig,handles.Session{i}.ZTDB);
+        end
+        
         
     case 'Plot ABCT Sets'
         str = cellstr(handles.Loaded_TES.String);
@@ -1525,6 +1492,21 @@ else
         h.Enable = StrEnable{(~TES_ID+1)+1};
     end
 end
+
+if ~isempty(Session.ZTDB.RTs4p)
+    StrLabel_On = {'Plot';'Plot RT 4 points'};
+    for i = 1:length(StrLabel_On)
+        h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)};
+    end
+else
+    StrLabel_Off = {'Plot RT 4 points'};
+    for i = 1:length(StrLabel_Off)
+        h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
+        h.Enable = StrEnable{(~TES_ID+1)+1};
+    end
+end
+    
 % TES_Param (TES)
 %   Si están vacios (plotNKGT)
 if (Session.TES.TESThermalP.Filled && Session.TES.TFS.Filled)
@@ -1613,6 +1595,7 @@ try
 catch
 end
 
+
 if Session.TES.TESParamP.Filled||Session.TES.TESParamN.Filled
     StrLabel_On = {'TES Parameters'};
         for i = 1:length(StrLabel_On)
@@ -1642,6 +1625,21 @@ for i = 1:length(StrLabel_On)
         h.Enable = 'off';
     end
 end
+StrLabel_On = {'Plot RTs 4 points'};
+
+a = 0;
+for i = 1:length(handles.Session)
+    a = or(a,~isempty(handles.Session{i}.ZTDB.RTs4p));
+end
+for i = 1:length(StrLabel_On)
+    h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
+    if a
+        h.Enable = 'on';
+    else
+        h.Enable = 'off';
+    end
+end
+
 
 StrLabel_On = {'Plot ABCT Sets';'Plot TESs Data'};
 for i = 1:length(StrLabel_On)
