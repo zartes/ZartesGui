@@ -315,6 +315,8 @@ switch src.Label
         % Conectando con la base de datos en busca de algún parámetro para
         % cargar        
         Session.ZTDB = Session.ZTDB.UpdateFromExcel(Session);
+        % De aquí pueden salir los valores de Rsh, L, invMf y invMin (Por
+        % ahora no)
         
         try                                                                        
             NickName = [RunStr '_' MonthStr '_' YearStr '_' Session.ZTDB.TES_Idn];            
