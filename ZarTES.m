@@ -59,6 +59,8 @@ position = get(handles.figure1,'Position');
 set(handles.figure1,'Color',[0 120 180]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
+handles.VersionStr = 'ZarTES v3';
+set(handles.figure1,'Name',handles.VersionStr);
 % Update handles structure
 guidata(hObject, handles);
 
@@ -106,10 +108,27 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: delete(hObject) closes the figure
-
-rmpath([pwd filesep 'AnalysisFcn']);
-rmpath([pwd filesep 'Guis']);
-rmpath([pwd filesep 'DataBase']);
+% Hint: delete(hObject) closes the figure
+ButtonName = questdlg('Are you sure to close ZarTES?', ...
+        handles.VersionStr, ...
+        'Yes', 'No', 'Yes');
+    switch ButtonName
+        case 'No'
+            return;
+    end
+    warning off
+try
+    rmpath([pwd filesep 'AnalysisFcn']);
+catch
+end
+try
+    rmpath([pwd filesep 'Guis']);
+catch
+end
+try
+    rmpath([pwd filesep 'DataBase']);
+catch
+end
 delete(hObject);
 
 
