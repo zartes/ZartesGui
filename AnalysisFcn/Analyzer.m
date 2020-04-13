@@ -61,11 +61,32 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','Toolbar','figure');
 
-handles.VersionStr = 'ZarTES v2.2';
+handles.VersionStr = 'ZarTES v3.0';
 set(handles.Analyzer,'Name',handles.VersionStr);
 
 handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
 handles.DataBaseName = 'ZarTESDB';
+
+%%% Cargar la última version
+% Busca las versiones disponibles
+dv = dir([fileparts(mfilename('fullpath')) filesep 'v*']);
+% De estos tiene que seleccionar solo los directorios
+indv = [];
+dvName = {[]};
+dvNum = [];
+for i = 1:length(dv)
+    if ~dv(i).isdir
+        indv(i) = i;
+    else
+        dvName{i} = dv(i).name;
+        dvNum(i) = str2double(dv(i).name(2:end));
+    end
+end
+dv(indv) = [];
+handles.VersionNum = dvNum;
+% handles.VersionPath = [fileparts(mfilename('fullpath')) filesep handles.VersionStr(end-3:end)];
+%% Añadir la última version
+% addpath(handles.VersionPath);
 
 handles.TES_ID = 0;
 handles.NewTES = {[]};
@@ -181,7 +202,6 @@ end
 
 set(handles.Analyzer,'Visible','on');
 
-
 % --- Executes on selection change in Loaded_TES.
 function Loaded_TES_Callback(hObject, eventdata, handles)
 % hObject    handle to Loaded_TES (see GCBO)
@@ -202,9 +222,6 @@ Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
 %     end
 % end
 guidata(hObject,handles);
-
-
-
 
 % --- Executes during object creation, after setting all properties.
 function Loaded_TES_CreateFcn(hObject, eventdata, handles)
@@ -228,11 +245,7 @@ switch src.Label
         StrLabel = {'TES Data';'Help';'Guide';'About'};
         for i = 1:length(StrLabel)
             h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
-            %             for j = 1:length(h)
-            %                 if strcmp(get(get(h(j),'Parent'),'Name'),'Analyzer')
             h.Enable = 'on';
-            %                 end
-            %             end
         end
         indAxes = findobj(handles.Analyzer,'Type','Axes','Tag','Analyzer');
         delete(indAxes);
@@ -265,14 +278,10 @@ switch src.Label
             
             guidata(src,handles);
             Enabling(Session,handles.TES_ID,handles.Analyzer);
-            
-            %             StrLabel = {'Macro';'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
             if length(handles.Session) > 1
-                %                 for i = 1:length(StrLabel)
                 h = findobj(handles.Analyzer,'Label','Macro','Tag','Analyzer');
                 h.Enable = 'on';
             end
-            %             end
         end
         
     case 'Set Data Path'
@@ -1488,7 +1497,7 @@ if (Session.TES.TESThermalP.Filled)||Session.TES.TESThermalN.Filled
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
-    StrLabel_Off = {'Plot';'Plot RTs Set'};
+    StrLabel_Off = {'Plot RTs Set'};
     for i = 1:length(StrLabel_Off)
         h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)+1};
@@ -1548,7 +1557,7 @@ end
 % TES_P (PP o PN)
 %   Si están vacios (FitZset)
 if any(Session.TES.PP.Filled) || any(Session.TES.PN.Filled)
-    StrLabel_On = {'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';'Plot IV-Z';...
+    StrLabel_On = {'Plot';'Plot ABCT Set';'Plot Z(w) vs %Rn';'Plot Noise vs %Rn';'Plot TES Data';'Plot IV-Z';...
         'Summary';'Z(w)-Noise Viewer';'Word Graphical Report'};
     for i = 1:length(StrLabel_On)
         h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');

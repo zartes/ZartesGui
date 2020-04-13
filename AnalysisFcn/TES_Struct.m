@@ -35,11 +35,12 @@ classdef TES_Struct
         
         Kb = 1.38e-23;
         Report;
+        version = 'ZarTES v3.0';
     end
-    
-    properties (Access = private)
-        version = 'ZarTES v2.2';
-    end
+%     
+%     properties (Access = private)
+%         
+%     end
     
     methods
         
@@ -914,7 +915,7 @@ classdef TES_Struct
                             multiwaitbar(2,[i/length(dirs) j1/length(filesZ)],{Path,NameStr},H);
                         else
                             H = multiwaitbar(2,[i/length(dirs) j1/length(filesZ)],{Path,NameStr});
-                            H.figure.Name = 'ZarTES v2.0';
+                            H.figure.Name = 'ZarTES v2.2';
                         end
                         thefile = strcat(dirs{i},'\',filesZ{j1});
                         try
@@ -2059,8 +2060,11 @@ classdef TES_Struct
                         end
                         
                         try
-                            eval(['e = errorbar(ax,val' StrRange{k} '2{i},val' StrRange{k} '1{i},val' StrRange{k} '1_CI{i}/2,val' StrRange{k} '1_CI{i}/2,val' StrRange{k} '2_CI{i}/2,val' StrRange{k} '2_CI{i}/2,''LineStyle'',''none'',''Marker'',''o'''...
-                                ',''DisplayName'',[''T_{bath}: '' num2str(Tbaths' StrRange{k} '1(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'',''Clipping'',''on'');']);
+                            eval(['e = errorbar(ax,val' StrRange{k} '2{i},val'...
+                                StrRange{k} '1{i},val' StrRange{k} '1_CI{i}/2,val' StrRange{k}...
+                                '1_CI{i}/2,val' StrRange{k} '2_CI{i}/2,val' StrRange{k} '2_CI{i}/2,''LineStyle'',''none'',''Marker'',''o'''...
+                                ',''DisplayName'',[''T_{bath}: '' num2str(Tbaths' StrRange{k}...
+                                '1(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'',''Clipping'',''on'');']);
                             set(get(get(e,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         catch
                         end

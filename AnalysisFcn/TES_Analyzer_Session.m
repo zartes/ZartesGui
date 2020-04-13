@@ -15,14 +15,15 @@ classdef TES_Analyzer_Session
     methods
         function obj = LoadTES(obj)
             % Function to load TES data previously saved.
-            
+            H = findobj('Type','Figure','Tag','Analyzer');
+            hd = guidata(H);
             [filename, pathname] = uigetfile('*.mat', 'Pick a MATLAB file');
             if isequal(filename,0) || isequal(pathname,0)
                 obj = 0;
             else
                 obj.File = filename;
                 obj.Path = pathname;
-                answer = inputdlg({'Insert a Nick name for the TES'},'ZarTES v2.2',[1 50],{' '});               
+                answer = inputdlg({'Insert a Nick name for the TES'},hd.VersionStr,[1 50],{' '});               
                 if ~isempty(char(answer))
                     answer{1} = filename;
                 else
@@ -30,9 +31,28 @@ classdef TES_Analyzer_Session
                 end
                 obj.Tag = answer{1};
                 tes = load(fullfile(obj.Path, obj.File));
+%                 if isempty(tes.obj.TESParamP)
+%                     rmpath(hd.VersionPath);
+%                     addpath([hd.VersionPath(1:find(hd.VersionPath==filesep,1,'last')) 'v2.1']);
+%                     pause(2);
+%                     tes = load(fullfile(obj.Path, obj.File));
+%                 end
                 FN = fieldnames(tes);
                 if isa(eval(['tes.' FN{1}]),'TES_Struct')
-                    obj.TES = eval(['tes.' FN{1}]);
+                    %%%%%%%
+                    %% Actualización de la estructura a la nueva version
+                    obj.TES = TES_Struct;
+                    obj.TES = obj.TES.Constructor;
+                    %%%%%%%
+                    
+                    FN = fieldnames(obj.TES);
+                    for i = 1:length(FN)
+                        try
+                            eval(['obj.TES.' FN{i} ' = obj.TES.' FN{i} '.Update(tes.obj.' FN{i} ');']);
+                        catch
+                        end
+                    end
+                    
                 else
                     ZTES = eval(['tes.' FN{1} ';']);
                     
