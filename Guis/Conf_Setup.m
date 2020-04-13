@@ -22,7 +22,7 @@ function varargout = Conf_Setup(varargin)
 
 % Edit the above text to modify the response to help Conf_Setup
 
-% Last Modified by GUIDE v2.5 14-Jan-2019 10:35:17
+% Last Modified by GUIDE v2.5 14-Jan-2019 10:34:41
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -59,7 +59,8 @@ position = get(handles.figure1,'Position');
 set(handles.figure1,'Color',[0 0.2 0.5],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','ButtonDownFcn',{@ExportData});
-handles.versionStr = 'ZarTES v2.1';
+
+handles.versionStr = 'ZarTES v2.2';
 
 switch varargin{1}.Tag
     case 'Squid_Pulse_Input_Conf'
@@ -206,11 +207,11 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false true false];
         CircProp = properties(handles.varargin{3}.circuit);
-        TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
-        handles.Table.Data(1:length(TESUnits),1) = CircProp(1:length(TESUnits));
-        for i = 1:length(TESUnits)
-            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i}]);
-            handles.Table.Data{i,3} = TESUnits{i};
+%         TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
+        handles.Table.Data(1:6,1) = CircProp(1:6);
+        for i = 1:6
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i} '.Value']);
+            handles.Table.Data{i,3} = eval(['handles.varargin{3}.circuit.' CircProp{i} '.Units']);
         end
     case 'TES_ThermalParam'
         set(handles.figure1,'Name',['TES Operating Point - ' handles.varargin{1}.Name]);
@@ -246,6 +247,7 @@ switch varargin{1}.Tag
         handles.Table.ColumnFormat{1} = 'Logical';
         handles.Table.ColumnFormat{2} = {'\TF*','\PXI_TF*'};
         handles.Table.ColumnFormat{3} = {'One Single Thermal Block','Two Thermal Blocks'};
+
         for i = 1:length(TESProp)
             if strcmp(handles.Table.ColumnFormat{i},'Logical')
                 if eval(['handles.varargin{3}.' TESProp{i}])
@@ -257,31 +259,6 @@ switch varargin{1}.Tag
                 handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
             end
         end
-    case 'TES_Noise_Opt'
-        set(handles.figure1,'Name','Noise Visualization Options');
-        set([handles.Add handles.Remove handles.Options],'Visible','off');
-        handles.Table.Data = {[]};
-        TESProp = properties(handles.varargin{3});
-        handles.Table.ColumnName = TESProp';
-        handles.Table.ColumnFormat{1} = {'current','nep'};
-        handles.Table.ColumnFormat{2} = 'Logical';
-        handles.Table.ColumnFormat{3} = 'Logical';
-        handles.Table.ColumnFormat{4} = 'Logical';
-        handles.Table.ColumnFormat{5} = {'\HP_noise*','\PXI_noise*'};
-        handles.Table.ColumnFormat{6} = {'irwin','wouter'};
-        handles.Table.ColumnEditable = [true true true true true true];
-        for i = 1:length(TESProp)
-            if strcmp(handles.Table.ColumnFormat{i},'Logical')
-                if eval(['handles.varargin{3}.' TESProp{i}])
-                    handles.Table.Data{1,i} = true;
-                else
-                    handles.Table.Data{1,i} = false;
-                end
-            else
-                handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
-            end
-        end
-        
     case 'TES_ElectrThermModel'
         set(handles.figure1,'Name','Electro-Thermal Model Z(w) and Noise Fitting Options');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
@@ -354,8 +331,36 @@ switch varargin{1}.Tag
                 j = j+1;
             end
            
-        end    
+        end
         
+    case 'TES_Noise_Opt'
+        set(handles.figure1,'Name','Noise Visualization Options');
+        set([handles.Add handles.Remove handles.Options],'Visible','off');
+        handles.Table.Data = {[]};
+        TESProp = properties(handles.varargin{3});
+        handles.Table.ColumnName = TESProp';
+        handles.Table.ColumnFormat{1} = {'current','nep'};
+        handles.Table.ColumnFormat{2} = 'Logical';
+        handles.Table.ColumnFormat{3} = 'Logical';
+        handles.Table.ColumnFormat{4} = 'Logical';
+        handles.Table.ColumnFormat{5} = {'\HP_noise*','\PXI_noise*'};
+        handles.Table.ColumnFormat{6} = {'irwin','wouter'};
+        handles.Table.ColumnFormat{7} = 'numeric';
+        handles.Table.ColumnFormat{8} = 'numeric';
+        handles.Table.ColumnFormat{9} = 'numeric';
+        handles.Table.ColumnEditable = [true true true true true true true true true];
+        
+        for i = 1:length(TESProp)
+            if strcmp(handles.Table.ColumnFormat{i},'Logical')
+                if eval(['handles.varargin{3}.' TESProp{i}])
+                    handles.Table.Data{1,i} = true;
+                else
+                    handles.Table.Data{1,i} = false;
+                end
+            else
+                handles.Table.Data{1,i} = eval(['handles.varargin{3}.' TESProp{i}]);
+            end
+        end
     case 'TES_Report_Opt'
         set(handles.figure1,'Name','Report Options');
         set([handles.Add handles.Remove handles.Options],'Visible','off');
@@ -496,6 +501,8 @@ function Options_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns Options contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Options
+
+
 handles.Table.Data = handles.ConfInstrs{hObject.Value};
 guidata(hObject,handles);
 
@@ -557,7 +564,7 @@ switch handles.varargin{1}.Tag
         handles.varargin{1}.UserData = handles.Table.Data;
     case 'CurSource_Range'
         handles.varargin{1}.UserData = handles.Table.Data;
-        
+            
     case 'Param_Delay'
         ParamDelay = properties(handles.varargin{3});
         for i = 1:length(ParamDelay)
@@ -571,7 +578,7 @@ switch handles.varargin{1}.Tag
             'Save', 'Cancel', 'Save');
         switch ButtonName
             case 'Save'
-                CircProp = properties(handles.varargin{3}.circuit);                
+                CircProp = properties(handles.varargin{3}.circuit);
                 for i = 1:length(CircProp)
                     try
                         if ~ischar(handles.Table.Data{i,2})
@@ -585,6 +592,7 @@ switch handles.varargin{1}.Tag
                 handles.varargin{1}.UserData = NewCircuit;
                 guidata(handles.varargin{1},NewCircuit);
         end % switch
+        
     case 'TES_PvTModel'
         TESProp = properties(handles.varargin{3});
         j = 1;
@@ -740,6 +748,8 @@ switch handles.varargin{1}.Tag
         
 end
 
+
+
 figure1_DeleteFcn(handles.figure1,eventdata,handles);
 
 
@@ -764,7 +774,7 @@ switch handles.varargin{1}.Tag
         handles.ConfInstrs{handles.Options.Value} = handles.Table.Data;
         guidata(hObject,handles);
     case ''
-        handles.Params = handles.Table.Data(:,2);
+        handles.Params = handles.Table.Data(:,2);        
         guidata(hObject,handles);
     case 'TES_ElectrThermModel'
         handles.Params = handles.Table.Data(:,2);        
@@ -825,41 +835,16 @@ switch handles.varargin{1}.Tag
             if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
                 msgbox('Rn(%) Values must be between 0 and 1',handles.versionStr);
             end
-        end
+        end    
+        
 %     case 'AQ_TF_Rn_P_Set'
-%         
-%         
-%     case 'AQ_TF_Rn_N_Set'
-%         if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
-%             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
-%         else
-%             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
-%         end
 %         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
-%             msgbox('Rn(%) Values must be between 0 and 1','ZarTES v1.0');
+%             msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
 %         end
-%     case 'AQ_Temp_Set'
-%         if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
-%             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
-%         else
-%             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
+%     case 'AQ_TF_Rn_N_Set'
+%         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
+%             msgbox('Rn(%) Values must be between 0 and 1','ZarTES v2.0');
 %         end
-%             
-%     case 'AQ_IC_Field_Set' 
-%         if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
-%             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
-%         else
-%             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
-%         end
-%     case 'AQ_FieldScan_Set'
-%         if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
-%             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
-%         else
-%             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
-%         end
-%     otherwise
-        
-        
 end
 
 
@@ -900,7 +885,6 @@ else
     Value{1} = sort(unique(cell2mat(vals)),'ascend');
 end
 Value{1}(find(isnan(Value{1}))) = [];
-
 
 function ExportData(src,evnt)
     
