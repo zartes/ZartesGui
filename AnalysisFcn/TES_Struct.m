@@ -227,7 +227,8 @@ classdef TES_Struct
                           
                 eval(['obj.Gset' StrRange{k} ' = [];']);
                 eval(['obj.Gset' StrRange{k} ' = TES_Gset;']);
-                eval(['obj.Gset' StrRange{k} ' = obj.Gset' StrRange{k} '.Constructor;']);
+                eval(['obj.Gset' StrRange{k} ' = obj.Gset' StrRange{k} '.Constructor;']);                
+                eval(['obj.Gset' StrRange{k} '.opt = ButtonName;']);
                 if isempty(eval(['obj.IVset' StrRange{k} '.ibias']))
                     continue;
                 end
@@ -1431,134 +1432,129 @@ classdef TES_Struct
                         ind = N:-1:1;
                         eval(['files' StrCond{iP} ' = files' StrCond{iP} '(ind);']);
                     end
-                    if nargin < 4
-                        fig(IndFig) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
-                    end
-%                     if nargin < 4
-%                         
-%                         fig(IndFig) = figure('Name',StrCond_Label{iP});
-%                     end
-                    [ncols,~] = SmartSplit(N);
-                    hs = nan(N,1);
-                    j = 0;
-                    for i = 1:N
-                        hs(i) = subplot(ceil(N/ncols),ncols,i);
-                        hold(hs(i),'on');
-                        grid(hs(i),'on');
-                        xlabel(hs(i),'\nu (Hz)');
-                        if ~mod(j,ncols)
-                            switch obj.ElectrThermalModel.Selected_tipo
-                                case 1 % current
-                                    ylabel(hs(i),'pA/Hz^{0.5}');
-                                case 2 % nep
-                                    ylabel(hs(i),'aW/Hz^{0.5}');
+                    
+                    N_figs = floor(N/4);
+                    N_figs = N_figs + rem(N,4);
+                    j = 1;
+                    for k = 1:N_figs
+                        fig(k,iP) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
+                        clear hs;
+                        
+                        for i = 1:4
+                            if j <= N
+                                hs(i) = subplot(2,2,i);
+                                hold(hs(i),'on');
+                                grid(hs(i),'on');
+                                xlabel(hs(i),'\nu (Hz)');
+                                
+                                switch obj.ElectrThermalModel.Selected_tipo
+                                    case 1 % current
+                                        ylabel(hs(i),'pA/Hz^{0.5}');
+                                    case 2 % nep
+                                        ylabel(hs(i),'aW/Hz^{0.5}');
+                                end
+                                eval(['FileName = files' StrCond{iP} '{i};']);
+                                FileName = FileName(find(FileName == filesep,1,'last')+1:end);
+                                if ~isempty(strfind(upper(FileName),'PXI_noise_'))
+                                    Ib = sscanf(FileName,'PXI_noise_%fuA.txt')*1e-6;
+                                else
+                                    Ib = sscanf(FileName,'HP_noise_%fuA.txt')*1e-6;
+                                end
+                                %                         Ib = sscanf(FileName,strcat(NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
+                                eval(['OP = obj.setTESOPfromIb(Ib,IV,obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
+                                if obj.ElectrThermalModel.bool_Mjo == 1
+                                    M = OP.M;
+                                else
+                                    M = 0;
+                                end
+                                SigNoise = eval(['obj.P' StrCond{iP} '(ind_Tbath).SigNoise{ind(j)};']);
+                                fNoise = eval(['obj.P' StrCond{iP} '(ind_Tbath).fNoise{ind(j)};']);
+                                
+                                f = logspace(0,5,1000);
+                                auxnoise = obj.ElectrThermalModel.noisesim(obj,OP,M,f,StrCond{iP});
+                                
+                                
+                                switch obj.NoiseOpt.tipo
+                                    case 'current'
+                                        
+                                        loglog(hs(i),fNoise(:,1),SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                                        loglog(hs(i),fNoise(:,1),medfilt1(SigNoise,obj.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                                        
+                                        if obj.ElectrThermalModel.bool_Mph == 0
+                                            totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
+                                        else
+                                            Mexph = OP.Mph;
+                                            totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+                                        end
+                                        if ~obj.ElectrThermalModel.bool_components
+                                            loglog(hs(i),f,totnoise*1e12,'b','DisplayName','Total Simulation Noise');
+                                            h = findobj(hs(i),'Color','b');
+                                        else
+                                            %                                     loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
+                                            loglog(hs(i),f,auxnoise.jo*1e12,'DisplayName','Johnson');
+                                            loglog(hs(i),f,auxnoise.ph*1e12,'DisplayName','Phonon');
+                                            loglog(hs(i),f,auxnoise.sh*1e12,'DisplayName','Shunt');
+                                            loglog(hs(i),f,auxnoise.squidarray*1e12,'DisplayName','Squid');
+                                            loglog(hs(i),f,totnoise*1e12,'DisplayName','Total');
+                                            %                                     legend(hs(i),'Experimental','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
+                                            %                                     legend(hs(i),'off');
+                                            %                                     h = findobj(hs,'displayname','total');
+                                        end
+                                    case 'nep'
+                                        sIaux = ppval(spline(f,auxnoise.sI),fNoise(:,1));
+                                        
+                                        NEP = real(sqrt((SigNoise*1e-12).^2-auxnoise.squid.^2)./sIaux);
+                                        loglog(hs(i),fNoise(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(hs(i),'on'),grid(hs(i),'on'),
+                                        loglog(hs(i),fNoise(:,1),medfilt1(NEP*1e18,obj.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise');hold(hs(i),'on'),grid(hs(i),'on'),
+                                        if obj.ElectrThermalModel.bool_Mph == 0
+                                            totNEP = auxnoise.NEP;
+                                        else
+                                            totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
+                                        end
+                                        if ~obj.ElectrThermalModel.bool_components
+                                            loglog(hs(i),f,totNEP*1e18,'b','DisplayName','Total Simulation Noise');hold(hs(i),'on');grid(hs(i),'on');
+                                            h = findobj(hs(i),'Color','b');
+                                        else
+                                            %                                     loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
+                                            loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson');
+                                            loglog(hs(i),f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon');
+                                            loglog(hs(i),f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt');
+                                            loglog(hs(i),f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid');
+                                            loglog(hs(i),f,totNEP*1e18,'DisplayName','Total');
+                                            %                                     legend(hs(i),'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
+                                            %                                     legend(hs(i),'off');
+                                            %                                     h = findobj(hs(i),'displayname','total');
+                                        end
+                                end
+                                axis(hs(i),[1e1 1e5 2 1e3])
+                                title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
+                                if abs(OP.Z0-OP.Zinf) < obj.ElectrThermalModel.Z0_Zinf_Thrs
+                                    set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
+                                end
+                                
+                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                
+                                
+                                %%%%Pruebas sobre la cotribución de cada frecuencia a la
+                                %%%%Resolucion.
+                                if obj.ElectrThermalModel.Selected_tipo == 2 % nep
+                                    %                         if strcmpi(obj.NoiseOpt,'nep')
+                                    RESJ = sqrt(2*log(2)./trapz(f,1./totNEP.^2));
+                                    disp(num2str(RESJ));
+                                    semilogx(hs(i),f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19);
+                                    hold(hs(i),'on');
+                                    grid(hs(i),'on');
+                                    RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
+                                    disp(num2str(RESJ2));
+                                    semilogx(hs(i),fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise(:,1)))))/1.609e-19,'r')
+                                end
                             end
-                            j = 0;
+                            j = j+1;
                         end
-                        j = j+1;
-                    end
-                    set(hs,'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized',...
-                        'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-',...
-                        'xtick',[10 100 1000 1e4 1e5],'xticklabel',{'10' '10^2' '10^3' '10^4' '10^5'},...
-                        'XScale','log','YScale','log');
-                                                            
-                    for i = 1:N
-                        eval(['FileName = files' StrCond{iP} '{i};']);
-                        FileName = FileName(find(FileName == filesep,1,'last')+1:end);
-                        if ~isempty(strfind(upper(FileName),'PXI_noise_'))
-                            Ib = sscanf(FileName,'PXI_noise_%fuA.txt')*1e-6;
-                        else
-                            Ib = sscanf(FileName,'HP_noise_%fuA.txt')*1e-6;
-                        end
-%                         Ib = sscanf(FileName,strcat(NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
-                        eval(['OP = obj.setTESOPfromIb(Ib,IV,obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
-                        if obj.ElectrThermalModel.bool_Mjo == 1
-                            M = OP.M;
-                        else
-                            M = 0;
-                        end
-                        SigNoise = eval(['obj.P' StrCond{iP} '(ind_Tbath).SigNoise{ind(i)};']);
-                        fNoise = eval(['obj.P' StrCond{iP} '(ind_Tbath).fNoise{ind(i)};']);
-                        
-                        f = logspace(0,5,1000);
-                        auxnoise = obj.ElectrThermalModel.noisesim(obj,OP,M,f,StrCond{iP});
-                        
-                        
-                        switch obj.NoiseOpt.tipo
-                            case 'current'
-                                
-                                loglog(hs(i),fNoise(:,1),SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                                loglog(hs(i),fNoise(:,1),medfilt1(SigNoise,obj.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                                
-                                if obj.ElectrThermalModel.bool_Mph == 0
-                                    totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
-                                else
-                                    Mexph = OP.Mph;
-                                    totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
-                                end
-                                if ~obj.ElectrThermalModel.bool_components
-                                    loglog(hs(i),f,totnoise*1e12,'b','DisplayName','Total Simulation Noise');
-                                    h = findobj(hs(i),'Color','b');
-                                else
-%                                     loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
-                                    loglog(hs(i),f,auxnoise.jo*1e12,'DisplayName','Johnson');
-                                    loglog(hs(i),f,auxnoise.ph*1e12,'DisplayName','Phonon');
-                                    loglog(hs(i),f,auxnoise.sh*1e12,'DisplayName','Shunt');
-                                    loglog(hs(i),f,auxnoise.squidarray*1e12,'DisplayName','Squid');
-                                    loglog(hs(i),f,totnoise*1e12,'DisplayName','Total');
-%                                     legend(hs(i),'Experimental','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
-%                                     legend(hs(i),'off');
-%                                     h = findobj(hs,'displayname','total');
-                                end
-                            case 'nep'
-                                sIaux = ppval(spline(f,auxnoise.sI),fNoise(:,1));
-                                
-                                NEP = real(sqrt((SigNoise*1e-12).^2-auxnoise.squid.^2)./sIaux);
-                                loglog(hs(i),fNoise(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(hs(i),'on'),grid(hs(i),'on'),
-                                loglog(hs(i),fNoise(:,1),medfilt1(NEP*1e18,obj.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise');hold(hs(i),'on'),grid(hs(i),'on'),
-                                if obj.ElectrThermalModel.bool_Mph == 0
-                                    totNEP = auxnoise.NEP;
-                                else
-                                    totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
-                                end
-                                if ~obj.ElectrThermalModel.bool_components
-                                    loglog(hs(i),f,totNEP*1e18,'b','DisplayName','Total Simulation Noise');hold(hs(i),'on');grid(hs(i),'on');
-                                    h = findobj(hs(i),'Color','b');
-                                else
-%                                     loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
-                                    loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson');
-                                    loglog(hs(i),f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon');
-                                    loglog(hs(i),f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt');
-                                    loglog(hs(i),f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid');
-                                    loglog(hs(i),f,totNEP*1e18,'DisplayName','Total');
-%                                     legend(hs(i),'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
-%                                     legend(hs(i),'off');
-%                                     h = findobj(hs(i),'displayname','total');
-                                end
-                        end
-                        axis(hs(i),[1e1 1e5 2 1e3])
-                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
-                        if abs(OP.Z0-OP.Zinf) < obj.ElectrThermalModel.Z0_Zinf_Thrs
-                            set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
-                        end
-                        
-                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                        
-                        
-                        %%%%Pruebas sobre la cotribución de cada frecuencia a la
-                        %%%%Resolucion.
-                        if obj.ElectrThermalModel.Selected_tipo == 2 % nep
-%                         if strcmpi(obj.NoiseOpt,'nep')
-                            RESJ = sqrt(2*log(2)./trapz(f,1./totNEP.^2));
-                            disp(num2str(RESJ));
-                            semilogx(hs(i),f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19);
-                            hold(hs(i),'on');
-                            grid(hs(i),'on');
-                            RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
-                            disp(num2str(RESJ2));
-                            semilogx(hs(i),fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise(:,1)))))/1.609e-19,'r')
-                        end
-                        
+                        set(hs,'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized',...
+                            'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-',...
+                            'xtick',[10 100 1000 1e4 1e5],'xticklabel',{'10' '10^2' '10^3' '10^4' '10^5'},...
+                            'XScale','log','YScale','log');
                     end
                     if nargin < 3
                         n = get(fig(IndFig),'number');
@@ -1568,6 +1564,7 @@ classdef TES_Struct
                         print(fi,name,'-dpng','-r0');
                     end
                     IndFig = IndFig+1;
+                    
                 end
             end
         end
@@ -1618,56 +1615,58 @@ classdef TES_Struct
                         ind = N:-1:1;
                         eval(['files' StrCond{iP} ' = files' StrCond{iP} '(ind);']);
                     end
-                    if nargin < 4
-                        fig(IndFig) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
-                    end                    
+%                     if nargin < 4
+%                         fig(IndFig) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
+%                     end                    
 %                     try
 %                         eval(['[~,Tind] = min(abs([obj.IVset' StrCond{iP} '.Tbath]-Tbath));'])
 %                     catch
 %                         Tind = ind_Tbath;
 %                     end
 %                     eval(['IV = obj.IVset' StrCond{iP} '(Tind);'])                    
-                    
-                    [ncols,~] = SmartSplit(N);
-                    hs = nan(N,1);
-                    j = 0;
-                    for i = 1:N
-                        hs(i) = subplot(ceil(N/ncols),ncols,i);
-                        hold(hs(i),'on');
-                        grid(hs(i),'on');
-                        xlabel(hs(i),'Re(mZ)','FontSize',9);
-                        if ~mod(j,ncols)
-                            ylabel(hs(i),'Im(mZ)','FontSize',9);
-                            j = 0;
+                    N_figs = floor(N/4);
+                    N_figs = N_figs + rem(N,4);
+                    j = 1;
+                    for k = 1:N_figs
+                        fig(k,iP) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);                       
+                        clear hs;
+%                         hs = nan(4,1);                        
+                        
+                        for i = 1:4
+                            if j <= N
+                                hs(i) = subplot(2,2,i);
+                                hold(hs(i),'on');
+                                grid(hs(i),'on');
+                                xlabel(hs(i),'Re(mZ)','FontSize',9);
+                                ylabel(hs(i),'Im(mZ)','FontSize',9);
+                                
+                                eval(['FileName = files' StrCond{iP} '{j};']);
+                                FileName = FileName(find(FileName == filesep,1,'last')+1:end);
+                                if ~isempty(strfind(upper(FileName),'PXI_TF'))
+                                    Ib = sscanf(FileName,'PXI_TF_%fuA.txt')*1e-6;
+                                else
+                                    Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
+                                end
+                                eval(['OP = obj.setTESOPfromIb(Ib,IV,obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
+                                
+                                ztes = eval(['obj.P' StrCond{iP} '(ind_Tbath).ztes{ind(j)};']);
+                                fZ = eval(['obj.P' StrCond{iP} '(ind_Tbath).fZ{ind(j)};']);
+                                
+                                plot(hs(i),1e3*ztes,'.','Color',[0 0.447 0.741],...
+                                    'markerfacecolor',[0 0.447 0.741],'MarkerSize',15,'DisplayName','Experimental Data');
+                                
+                                ImZmin = min(imag(1e3*ztes));
+                                ylim(hs(i),[min(-15,min(ImZmin)-1) 1])
+                                plot(hs(i),1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,'DisplayName',eval(['obj.P' StrCond{iP} '(ind_Tbath).ElecThermModel{ind(j)}']));
+                                title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
+                                if abs(OP.Z0-OP.Zinf) < obj.ElectrThermalModel.Z0_Zinf_Thrs
+                                    set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
+                                end
+                                j = j+1;
+                            end
+                            
                         end
-                        j = j+1;
-                    end
-                    set(hs,'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized');
-                    
-                    for i = 1:N
-                        eval(['FileName = files' StrCond{iP} '{i};']);
-                        FileName = FileName(find(FileName == filesep,1,'last')+1:end);
-                        if ~isempty(strfind(upper(FileName),'PXI_TF'))
-                            Ib = sscanf(FileName,'PXI_TF_%fuA.txt')*1e-6;
-                        else
-                            Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
-                        end
-                        eval(['OP = obj.setTESOPfromIb(Ib,IV,obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
-                        
-                        ztes = eval(['obj.P' StrCond{iP} '(ind_Tbath).ztes{ind(i)};']);
-                        fZ = eval(['obj.P' StrCond{iP} '(ind_Tbath).fZ{ind(i)};']);
-                        
-                        plot(hs(i),1e3*ztes,'.','Color',[0 0.447 0.741],...
-                            'markerfacecolor',[0 0.447 0.741],'MarkerSize',15,'DisplayName','Experimental Data');
-                        
-                        ImZmin = min(imag(1e3*ztes));
-                        ylim(hs(i),[min(-15,min(ImZmin)-1) 1])
-                        plot(hs(i),1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,'DisplayName',eval(['obj.P' StrCond{iP} '(ind_Tbath).ElecThermModel{ind(i)}']));
-                        title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
-                        if abs(OP.Z0-OP.Zinf) < obj.ElectrThermalModel.Z0_Zinf_Thrs
-                            set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
-                        end
-                        
+                        set(hs,'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized');
                     end
                     if nargin < 3
                         n = get(fig(IndFig),'number');
@@ -2154,8 +2153,8 @@ classdef TES_Struct
                     RngLabel = 'Negative Ibias';
                 end
                 %plot(xiv(indx1),a_eff(indx1),'.-',xz(indx2),Za_eff(indx2),'.-',xz(indx2),Za_effAprox(indx2),'.-','linewidth',2,'markersize',15);
-                plot(h(1),xiv(indx11),medfilt1(real(a_eff(indx11)),15),'LineWidth',2,'MarkerSize',15,'LineStyle','-.','DisplayName',['IV - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK - ' RngLabel]);
-                plot(h(1),xz(indx22),Za_eff(indx22)*1e-2,'LineStyle','-.','LineWidth',2,'MarkerSize',15,...
+                plot(h(1),xiv(indx11),medfilt1(real(a_eff(indx11)),15),'LineWidth',2,'Marker','.','MarkerSize',15,'LineStyle','-.','DisplayName',['IV - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK - ' RngLabel]);
+                plot(h(1),xz(indx22),Za_eff(indx22)*1e-2,'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,...
                     'DisplayName',['Z - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK']);
                 
                 xlim(h(1),[xiv_min 0.95]);
@@ -2165,8 +2164,8 @@ classdef TES_Struct
 %                 legend(h(1),'IV','Z');
                 
                 
-                plot(h(2),xiv(indx1),b_eff(indx1),'LineStyle','-.','LineWidth',2,'MarkerSize',15,'DisplayName',['IV - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK - ' RngLabel]);
-                    plot(h(2),xz(indx2),Zb_eff(indx2),'LineStyle','-.','LineWidth',2,'MarkerSize',15,'DisplayName',['Z - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK']);
+                plot(h(2),xiv(indx1),b_eff(indx1),'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,'DisplayName',['IV - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK - ' RngLabel]);
+                    plot(h(2),xz(indx2),Zb_eff(indx2),'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,'DisplayName',['Z - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK']);
                 xlim(h(2),[xiv_min 0.95]);
 %                 ylim(h(2),[-5 5]);
                 
@@ -2454,6 +2453,7 @@ classdef TES_Struct
                 WordText(ActXWord,TextString,Style,[0,1]);                                
                 
                 Style = 'normal';
+                WordText(ActXWord,'De forma automática se descartan como óptimas aquellas curvas IV cuya recta en estado superconductor no se pudo estimar.',Style,[0,1]);
                 WordText(ActXWord,['Método de corrección I-Vs: ' obj.IVsetP(1).CorrectionMethod],Style,[0,1]);%enter after text
                 
                 print(figIV.hObject,'-dmeta');
@@ -2466,6 +2466,16 @@ classdef TES_Struct
                 TextString = ['Fig. ' num2str(FigNum) '. IVs con Ibias positiva y negativa.'];
                 WordText(ActXWord,TextString,Style,[0,1]);
                 FigNum = FigNum+1;
+                
+                Style = 'normal';
+                TbathsPopt = num2str(PTbath([obj.IVsetP.good] == 1),'%.1f, ');                
+                TbathsNopt = num2str(NTbath([obj.IVsetN.good] == 1),'%.1f, ');
+                if ~isempty(TbathsP(1:end-1))
+                    WordText(ActXWord,['Curvas I-V Positivas óptimas: ' TbathsPopt(1:end-1) ' mK' ],Style,[0,1]);%enter after text
+                end
+                if ~isempty(TbathsN(1:end-1))                    
+                    WordText(ActXWord,['Curvas I-V Negativas óptimas: ' TbathsNopt(1:end-1) ' mK' ],Style,[0,1]);%enter after text
+                end
                 
                 Style = 'normal';
                 if ~isempty(TbathsP(1:end-1))
@@ -2541,6 +2551,7 @@ classdef TES_Struct
                     end
                 end
                 
+                
                 Style='Título 2';
                 TextString = 'Fit P vs T';
                 WordText(ActXWord,TextString,Style,[0,1]);
@@ -2555,6 +2566,18 @@ classdef TES_Struct
                 TextString = ['Fig. ' num2str(FigNum) '. Ajustes PTES-Tbath a lo largo de la transición para ambas polaridades.'];
                 WordText(ActXWord,TextString,Style,[0,1]);
                 FigNum = FigNum+1;
+                
+                Style = 'normal';
+                TextString = ['Método de ajuste para la potencia (rama positiva): ' obj.GsetP(1).opt];
+                WordText(ActXWord,TextString,Style,[0,1]);%enter after text                
+                TextString = ['Parametros termicos (rama positiva) obtenidos considerando %Rn: ' num2str(obj.GsetP(1).rp)...
+                    ':' num2str(obj.GsetP(2).rp-obj.GsetP(1).rp) ':' num2str(obj.GsetP(end).rp)];
+                WordText(ActXWord,TextString,Style,[0,1]);%enter after text
+                TextString = ['Método de ajuste para la potencia (rama negativa): ' obj.GsetN(1).opt];
+                WordText(ActXWord,TextString,Style,[0,1]);%enter after text
+                TextString = ['Parametros termicos (rama negativa) obtenidos considerando %Rn: ' num2str(obj.GsetN(1).rp)...
+                    ':' num2str(obj.GsetN(2).rp-obj.GsetN(1).rp) ':' num2str(obj.GsetN(end).rp)];
+                WordText(ActXWord,TextString,Style,[0,1]);%enter after text
             end
             
             %% Pintar NKGT set
@@ -2639,7 +2662,7 @@ classdef TES_Struct
                     pause(0.3)
                     clear fig;
                     Style='Cita';
-                    TextString = ['Fig. ' num2str(FigNum) '. Resultado de los ajustes PTES-Tbath a lo largo de la transición para ambas polaridades.'];
+                    TextString = ['Fig. ' num2str(FigNum) '. Resultado de los ajustes PTES-Tbath a lo largo de la transición para ambas polaridades (Azul-Rama positiva; Rojo-Rama negativa).'];
                     WordText(ActXWord,TextString,Style,[0,1]);
                     FigNum = FigNum+1;
                 end
@@ -2731,54 +2754,148 @@ classdef TES_Struct
                     FigSubNum = 1;    
                     Temps = num2str(Tbath'*1e3);
                     for i = 1:length(Tbath)
-                        Style = 'normal';
-                        StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
-                        StrIni(end) = [];
-                        WordText(ActXWord,StrIni,Style,[0,1]);
-                        Style='normal';
-                        WordText(ActXWord,'',Style,[0,1]);
-                        set(fig(i).Children,'FontUnits','Normalized');
-                        set(fig(i), 'Position', get(0, 'Screensize'));
-                        print(fig(i),'-dmeta')
-                        invoke(ActXWord.Selection,'Paste');
-                        close(fig(i));
-                        pause(0.3)
-                        ActXWord.Selection.TypeParagraph;
-                        Style='Cita';
-                        TextString = ['Fig. ' num2str(FigNum) '. Z(w) a ' Temps(i,:) ' mK.'];
-                        WordText(ActXWord,TextString,Style,[0,1]);                        
-                        FigSubNum = FigSubNum+1;                        
+                        for k = 1:size(fig,1)
+                            Style = 'normal';
+                            StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
+                            StrIni(end) = [];
+                            WordText(ActXWord,StrIni,Style,[0,1]);
+                            Style='normal';
+                            WordText(ActXWord,'',Style,[0,1]);
+                            set(fig(k,1).Children,'FontUnits','Normalized');
+                            set(fig(k,1), 'Position', get(0, 'Screensize'));
+                            print(fig(k,1),'-dmeta')
+                            invoke(ActXWord.Selection,'Paste');
+                            close(fig(k,1));
+                            pause(0.3)
+                            ActXWord.Selection.TypeParagraph;
+                            Style='Cita';
+                            TextString = ['Fig. ' num2str(FigNum) '. Z(w) a ' Temps(i,:) ' mK.'];
+                            WordText(ActXWord,TextString,Style,[0,1]);
+                            FigSubNum = FigSubNum+1;
+                        end
                     end
                     FigNum = FigNum+1;
 %                     set(fig, 'Position', get(0, 'Screensize'));
-                    close(fig)
+                    
                 catch
                 end
                 try
                     FigSubNum = 1;    
                     Temps = num2str(Tbath'*1e3);
                     for j = 1:length(Tbath)
-                        i = i+1;
-                        Style = 'normal';
-                        StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
-                        StrIni(end) = [];
-                        WordText(ActXWord,StrIni,Style,[0,1]);
-                        Style='normal';
-                        WordText(ActXWord,'',Style,[0,1]);
-                        set(fig(i).Children,'FontUnits','Normalized');
-                        set(fig(i), 'Position', get(0, 'Screensize'));
-                        print(fig(i),'-dmeta')
-                        invoke(ActXWord.Selection,'Paste');
-                        close(fig(i));
-                        pause(0.3)
-                        ActXWord.Selection.TypeParagraph;
-                        Style='Cita';
-                        TextString = ['Fig. ' num2str(FigNum) '.' num2str(FigSubNum) '. Z(w) a ' Temps(j,:) ' mK.'];
-                        WordText(ActXWord,TextString,Style,[0,1]);
-%                         ActXWord.Selection.TypeParagraph;
-                        FigSubNum = FigSubNum+1;
+                        for k = 1:size(fig,1)
+                            i = i+1;
+                            Style = 'normal';
+                            StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
+                            StrIni(end) = [];
+                            WordText(ActXWord,StrIni,Style,[0,1]);
+                            Style='normal';
+                            WordText(ActXWord,'',Style,[0,1]);
+                            set(fig(k,2).Children,'FontUnits','Normalized');
+                            set(fig(k,2), 'Position', get(0, 'Screensize'));
+                            print(fig(k,2),'-dmeta')
+                            invoke(ActXWord.Selection,'Paste');
+                            close(fig(k,2));
+                            pause(0.3)
+                            ActXWord.Selection.TypeParagraph;
+                            Style='Cita';
+                            TextString = ['Fig. ' num2str(FigNum) '.' num2str(FigSubNum) '. Z(w) a ' Temps(j,:) ' mK.'];
+                            WordText(ActXWord,TextString,Style,[0,1]);
+                            %                         ActXWord.Selection.TypeParagraph;
+                            FigSubNum = FigSubNum+1;
+                        end
                     end
                     FigNum = FigNum+1;
+                catch
+                end
+                clear fig;
+            end
+            
+            
+            
+            if obj.Report.NoiseSet
+                
+                Style='Título 2';
+                TextString = 'Noise Analysis';
+                WordText(ActXWord,TextString,Style,[0,1]);
+                Style='normal';
+                TextString = ['Parámetros dinámicos calculados usando el modelo de ' obj.PP(1).ElecThermModel{1}];
+                WordText(ActXWord,TextString,Style,[0,1]);
+                
+                str = cellstr(num2str(unique([[obj.PP.Tbath] ...
+                    [obj.PN.Tbath]])'));
+                [s,~] = listdlg('PromptString','Select Tbath value/s:',...
+                    'SelectionMode','multiple',...
+                    'ListString',str);
+                if isempty(s)
+                    return;
+                end
+                Tbath = str2double(str(s))';
+                prompt = {'Enter the %Rn range:'};
+                name = '%Rn range (0 < %Rn < 1)';
+                numlines = [1 70];
+                defaultanswer = {'0.5:0.05:0.8'};
+                answer = inputdlg(prompt,name,numlines,defaultanswer);
+                Rn = eval(['[' answer{1} ']']);
+%                 handles.Session{handles.TES_ID}.TES.PlotNoiseTbathRp(Tbath,Rn);
+                
+                fig = obj.PlotNoiseTbathRp(Tbath,Rn);
+                try
+                    FigSubNum = 1;                    
+                    Temps = num2str(Tbath'*1e3);
+                    for i = 1:length(Tbath)
+                        for k = 1:size(fig,1)
+                            Style = 'normal';
+                            StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
+                            StrIni(end) = [];
+                            WordText(ActXWord,StrIni,Style,[0,1]);
+                            Style='normal';
+                            WordText(ActXWord,'',Style,[0,1]);
+                            set(fig(k,1).Children,'FontUnits','Normalized');
+                            set(fig(k,1), 'Position', get(0, 'Screensize'));
+                            print(fig(k,1),'-dmeta')
+                            invoke(ActXWord.Selection,'Paste');
+                            close(fig(k,1));
+                            pause(0.3)
+                            ActXWord.Selection.TypeParagraph;
+                            Style='Cita';
+                            TextString = ['Fig. ' num2str(FigNum) '.' num2str(FigSubNum) '. Ruido a ' Temps(i,:) ' mK.'];
+                            WordText(ActXWord,TextString,Style,[0,1]);
+                            %                         ActXWord.Selection.TypeParagraph;
+                            FigSubNum = FigSubNum+1;
+                        end
+                    end
+                    FigNum = FigNum+1;
+                catch
+                end
+                try
+                    FigSubNum = 1;
+                    Temps = num2str(Tbath'*1e3);
+                    for j = 1:length(Tbath)
+                        for k = 1:size(fig,1)
+                            i = i+1;
+                            Style = 'normal';
+                            StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
+                            StrIni(end) = [];
+                            WordText(ActXWord,StrIni,Style,[0,1]);
+                            Style='normal';
+                            WordText(ActXWord,'',Style,[0,1]);
+                            set(fig(k,2).Children,'FontUnits','Normalized');
+                            set(fig(k,2), 'Position', get(0, 'Screensize'));
+                            print(fig(k,2),'-dmeta')
+                            invoke(ActXWord.Selection,'Paste');
+                            close(fig(k,2));
+                            pause(0.3)
+                            ActXWord.Selection.TypeParagraph;
+                            Style='Cita';
+                            TextString = ['Fig. ' num2str(FigNum) '.' num2str(FigSubNum) '. Ruido a ' Temps(j,:) ' mK.'];
+                            WordText(ActXWord,TextString,Style,[0,1]);
+                            %                         ActXWord.Selection.TypeParagraph;
+                            FigSubNum = FigSubNum+1;
+                        end
+                    end
+                    FigNum = FigNum+1;
+                    
                 catch
                 end
                 clear fig;
@@ -2805,6 +2922,7 @@ classdef TES_Struct
                 catch
                     close(fig);
                 end
+                clear fig;
             end
             if obj.Report.Noise_Super
                 try
@@ -2827,89 +2945,6 @@ classdef TES_Struct
                 catch
                     close(fig);
                 end
-            end
-            
-            if obj.Report.NoiseSet
-                
-                Style='Título 2';
-                TextString = 'Noise Analysis';
-                WordText(ActXWord,TextString,Style,[0,1]);
-                Style='normal';
-                TextString = ['Fig. ' num2str(FigNum) '. Parámetros dinámicos calculados usando el modelo de ' obj.PP(1).ElecThermModel{1}];
-                WordText(ActXWord,TextString,Style,[0,1]);
-                
-                str = cellstr(num2str(unique([[obj.PP.Tbath] ...
-                    [obj.PN.Tbath]])'));
-                [s,~] = listdlg('PromptString','Select Tbath value/s:',...
-                    'SelectionMode','multiple',...
-                    'ListString',str);
-                if isempty(s)
-                    return;
-                end
-                Tbath = str2double(str(s))';
-                prompt = {'Enter the %Rn range:'};
-                name = '%Rn range (0 < %Rn < 1)';
-                numlines = [1 70];
-                defaultanswer = {'0.5:0.05:0.8'};
-                answer = inputdlg(prompt,name,numlines,defaultanswer);
-                Rn = eval(['[' answer{1} ']']);
-%                 handles.Session{handles.TES_ID}.TES.PlotNoiseTbathRp(Tbath,Rn);
-                
-                fig = obj.PlotNoiseTbathRp(Tbath,Rn);
-                try
-                    FigSubNum = 1;                    
-                    Temps = num2str(Tbath'*1e3);
-                    for i = 1:length(Tbath)
-                        Style = 'normal';
-                        StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
-                        StrIni(end) = [];
-                        WordText(ActXWord,StrIni,Style,[0,1]);
-                        Style='normal';
-                        WordText(ActXWord,'',Style,[0,1]);
-                        set(fig(i).Children,'FontUnits','Normalized');
-                        set(fig(i), 'Position', get(0, 'Screensize'));
-                        print(fig(i),'-dmeta')
-                        invoke(ActXWord.Selection,'Paste');
-                        close(fig(i));
-                        pause(0.3)
-                        ActXWord.Selection.TypeParagraph;
-                        Style='Cita';
-                        TextString = ['Fig. ' num2str(FigNum) '.' num2str(FigSubNum) '. Ruido a ' Temps(i,:) ' mK.'];
-                        WordText(ActXWord,TextString,Style,[0,1]);
-%                         ActXWord.Selection.TypeParagraph;
-                        FigSubNum = FigSubNum+1;
-                    end
-                    FigNum = FigNum+1;
-                catch
-                end
-                try
-                    FigSubNum = 1;
-                    Temps = num2str(Tbath'*1e3);
-                    for j = 1:length(Tbath)
-                        i = i+1;
-                        Style = 'normal';
-                        StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
-                        StrIni(end) = [];
-                        WordText(ActXWord,StrIni,Style,[0,1]);
-                        Style='normal';
-                        WordText(ActXWord,'',Style,[0,1]);
-                        set(fig(i).Children,'FontUnits','Normalized');
-                        set(fig(i), 'Position', get(0, 'Screensize'));
-                        print(fig(i),'-dmeta')
-                        invoke(ActXWord.Selection,'Paste');
-                        close(fig(i));
-                        pause(0.3)
-                        ActXWord.Selection.TypeParagraph;
-                        Style='Cita';
-                        TextString = ['Fig. ' num2str(FigNum) '.' num2str(FigSubNum) '. Ruido a ' Temps(j,:) ' mK.'];
-                        WordText(ActXWord,TextString,Style,[0,1]);
-%                         ActXWord.Selection.TypeParagraph;
-                        FigSubNum = FigSubNum+1;
-                    end
-                    FigNum = FigNum+1;
-                    
-                catch
-                end
                 clear fig;
             end
             
@@ -2917,7 +2952,7 @@ classdef TES_Struct
                 fig.hObject = figure;
                 obj.plotABCT(fig,'on');
                 set(fig.hObject.Children,'FontUnits','Normalized');
-                legend(fig.hObject.Children(1),'show','Location','Northeast');
+%                 legend(fig.hObject.Children(1),'show','Location','Northeast');
                 Style='Título 2';
                 TextString = 'ABCT Figure';
                 WordText(ActXWord,TextString,Style,[0,1]);
@@ -2926,15 +2961,27 @@ classdef TES_Struct
                 set(fig.hObject, 'Position', get(0, 'Screensize'));                
                 print(fig.hObject,'-dmeta');
                 invoke(ActXWord.Selection,'Paste');
+                h = findobj(fig.hObject,'type','axes'); % Find the axes object in the GUI
+                f1 = figure; % Open a new figure with handle f1
+                s = copyobj(h(end),f1);
+                alc = get(s,'Children');
+                set([s; alc],'Visible','off')
+                set(f1, 'Position', get(0, 'Screensize'));  
+                legend(s,'show','Location','bestoutside');%
+                print(f1,'-dmeta');
+                invoke(ActXWord.Selection,'Paste');
                 close(fig.hObject);
+                close(f1);
                 pause(0.3)
                 ActXWord.Selection.TypeParagraph;
                 clear fig;
                 Style='Cita';
                 TextString = ['Fig. ' num2str(FigNum) '. Parámetros dinámicos calculados usando el modelo de ' obj.PP(1).ElecThermModel{1}];
                 WordText(ActXWord,TextString,Style,[0,1]);
-%                 ActXWord.Selection.TypeParagraph;
+
+
                 FigNum = FigNum+1;
+                
                 
                 
 %                 try                    
