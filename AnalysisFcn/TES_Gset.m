@@ -16,9 +16,10 @@ classdef TES_Gset
         model;
         ERP;    % Normalized units
         R2;     % Determination coefficient
-        Tbath
-        Paux
-        Paux_fit
+        Tbath;
+        Paux;
+        Paux_fit;
+        opt;
     end
     
     methods
