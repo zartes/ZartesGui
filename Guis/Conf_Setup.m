@@ -825,17 +825,21 @@ switch handles.varargin{1}.Tag
                 
             end
         end
+        
     otherwise
         if ischar(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)})
             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = str2double(eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)});         
         else
             eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)} = eventdata.Source.Data{eventdata.Indices(1),eventdata.Indices(2)};         
         end
-        if ~isempty(strfind(handles.varargin{1}.Tag,'_Rn_'))
-            if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
-                msgbox('Rn(%) Values must be between 0 and 1',handles.versionStr);
-            end
-        end    
+        if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
+            msgbox('Rn(%) Values must be between 0 and 1',handles.versionStr);
+        end
+%         if ~isempty(strfind(handles.varargin{1}.Tag,'_Rn_'))
+%             if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
+%                 msgbox('Rn(%) Values must be between 0 and 1',handles.versionStr);
+%             end
+%         end    
         
 %     case 'AQ_TF_Rn_P_Set'
 %         if (str2double(eventdata.NewData) > 1)||(str2double(eventdata.NewData) < 0)
@@ -850,13 +854,12 @@ end
 
 
 function Value = ExtractFromTable(handles)
-
 if size(handles.Table.Data,2) > 1
     for i = 1:size(handles.Table.Data,1)
         if isnumeric(handles.Table.Data{i,1})
-            try
+            if ~isempty(handles.Table.Data{i,2})                
                 Value{i} = handles.Table.Data{i,1}:handles.Table.Data{i,2}:handles.Table.Data{i,3};
-            catch
+            else
                 Value{i} = handles.Table.Data{i,1};
             end
         elseif ischar(handles.Table.Data{i,1})

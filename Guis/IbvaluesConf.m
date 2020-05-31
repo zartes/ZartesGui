@@ -174,25 +174,25 @@ Conf.TF.Zw.DSA.On = 1;
 Conf.TF.Zw.DSA.Method.Value = 1;
 Conf.TF.Zw.DSA.Method.String = 'Sweep Sine';
 Conf.TF.Zw.DSA.Exc.Units.String = 'mV';
-Conf.TF.Zw.DSA.Exc.Units.Value = 1;
-Conf.TF.Zw.DSA.Exc.Value = 20;
+Conf.TF.Zw.DSA.Exc.Units.Value = 4;
+Conf.TF.Zw.DSA.Exc.Value = 5;
 
 Conf.TF.Zw.PXI.On = 1;
 Conf.TF.Zw.PXI.Method.Value = 1;
 Conf.TF.Zw.PXI.Method.String = 'White Noise';
 Conf.TF.Zw.PXI.Exc.Units.String = 'mV';
-Conf.TF.Zw.PXI.Exc.Units.Value = 1;
-Conf.TF.Zw.PXI.Exc.Value = 20;
+Conf.TF.Zw.PXI.Exc.Units.Value = 4;
+Conf.TF.Zw.PXI.Exc.Value = 5;
 
 Conf.TF.Noise.DSA.On = 1;
 Conf.TF.Noise.PXI.On = 1;
 Conf.TF.rpp = [0.9:-0.05:0.2 0.19:-0.01:0.1];
-Conf.TF.rpn = (0.90:-0.1:0.1);
+Conf.TF.rpn = [0.9:-0.05:0.2 0.19:-0.01:0.1];
 
 Conf.Pulse.PXI.On = 1;
 Conf.Pulse.PXI.NCounts = 10;
 Conf.Pulse.PXI.rpp = [0.9:-0.05:0.2 0.19:-0.01:0.1];
-Conf.Pulse.PXI.rpn = (0.90:-0.1:0.1);
+Conf.Pulse.PXI.rpn = [0.9:-0.05:0.2 0.19:-0.01:0.1];
 
 Conf.Spectrum.PXI.On = 1;
 Conf.Spectrum.PXI.Rn = 0.7;

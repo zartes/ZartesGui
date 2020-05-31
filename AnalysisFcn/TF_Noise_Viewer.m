@@ -61,7 +61,7 @@ set(handles.figure1,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
-handles.VersionStr = 'ZarTES v2.2';
+handles.VersionStr = 'ZarTES v3.0';
 set(handles.figure1,'Name',handles.VersionStr);
 % Updating the popup menu
 
