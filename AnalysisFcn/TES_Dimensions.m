@@ -33,7 +33,7 @@ classdef TES_Dimensions
         
     end
     properties (Access = private)
-        version = 'ZarTES v2.2';
+        version = 'ZarTES v3.0';
     end
     
     methods

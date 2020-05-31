@@ -1327,9 +1327,11 @@ SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidat
 function Medir_Zw_Noise(Temp,Opt,IZvalues,Path,Conf,SetupTES,handles)
 
 figure(SetupTES.SetupTES)
-if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
+if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
+%     Conf.TF.Noise.DSA.On
     % Calibracion del HP
     SetupTES.DSA.Calibration;
+    pause(4);
     
     for i = 1:length(IZvalues)
         % Ponemos el TES en estado normal
@@ -1431,96 +1433,6 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Noise.DSA.On
                 file = strcat('TF_',Itxt,'uA','.txt');
                 uisave([Path filesep file],'datos','-ascii');%salva los datos a fichero.
             end
-        end
-        
-        if Opt == 2 || Opt == 3 % Se mide el Ruido
-            if Conf.TF.Noise.DSA.On
-                
-                SetupTES.DSA = SetupTES.DSA.NoiseMode;
-                clear datos;
-                [SetupTES.DSA, datos] = SetupTES.DSA.Read;
-                
-                set([findobj(SetupTES.Result_Axes); findobj(SetupTES.Result_Axes3)],'Visible','off');
-                set(SetupTES.Result_Axes1,'Position',[0.65 0.58 0.30 0.35]);
-                set(SetupTES.Result_Axes2,'Position',[0.65 0.09 0.30 0.35]);
-                set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2)],'Visible','on');
-                cla(SetupTES.Result_Axes1);
-                cla(SetupTES.Result_Axes2);
-                loglog(SetupTES.Result_Axes1,datos(:,1),datos(:,2));
-                xlabel(SetupTES.Result_Axes1,'\nu(Hz)','FontSize',12,'FontWeight','bold');
-                ylabel(SetupTES.Result_Axes1,'V_{out}','FontSize',12,'FontWeight','bold');
-                set(SetupTES.Result_Axes1,'XScale','log','YScale','log','LineWidth',2,'FontSize',11,...
-                    'FontWeight','bold','XTickLabelMode','auto','XTickMode','auto');
-                
-                loglog(SetupTES.Result_Axes2,datos(:,1),V2I(datos(:,2)*1e12,SetupTES.Circuit),'.-r',...
-                    datos(:,1),medfilt1(V2I(datos(:,2)*1e12,SetupTES.Circuit),20),'.-k');
-                ylabel(SetupTES.Result_Axes2,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold');
-                xlabel(SetupTES.Result_Axes2,'\nu(Hz)','FontSize',12,'fontweight','bold');
-                set(SetupTES.Result_Axes2,'XScale','log','YScale','log','LineWidth',2,'FontSize',11,'FontWeight',...
-                    'bold','XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'});
-                axis(SetupTES.Result_Axes2,'tight');
-                
-                
-                drawnow;
-                pause(0.2);
-                % Guardamos los datos en un fichero
-                file = strcat('HP_noise_',Itxt,'uA','.txt');
-                save([Path file],'datos','-ascii');%salva los datos a fichero.
-            end
-        end
-        
-    end
-end
-
-if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
-    
-    
-    
-    for i = 1:length(IZvalues)
-        
-        % Ponemos el TES en estado normal
-        SetupTES.SQ_TES2NormalState.Value = 1;
-        SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,sign(IZvalues(i)),guidata(SetupTES.SQ_TES2NormalState));
-        
-        % For para cada IZvalue (Ibias)
-        try
-        % Reseteamos el lazo
-        % Reset Closed Loop
-        SetupTES.SQ_Reset_Closed_Loop.Value = 1;
-        SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
-        drawnow;
-        % Ponemos la corriente para fijar el punto de operacion del Squid
-        % Ponemos el valor de Ibias en el Squid
-        
-        SetupTES.SQ_Ibias_Units.Value = 3;
-        SetupTES.SQ_Ibias.String = num2str(IZvalues(i));
-        SetupTES.SQ_Set_I.Value = 1;
-        SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
-        
-        % Leemos la corriente real del Squid
-        % Read I real value
-        SetupTES.SQ_Read_I.Value = 1;
-        SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
-        
-        if sign(IZvalues(i))
-            SetupTES.SQ_Rn.String = num2str(handles.rpp(i));
-        else
-            SetupTES.SQ_Rn.String = num2str(handles.rpn(i));
-        end
-        SetupTES.SQ_Rn_Ibias.String = SetupTES.SQ_Ibias.String;
-        
-        pause(0.2);
-        Itxt = SetupTES.SQ_realIbias.String;
-        catch
-            continue;
-        end
-        
-        % Reseteamos el lazo
-        % Reset Closed Loop
-        SetupTES.SQ_Reset_Closed_Loop.Value = 1;
-        SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
-        
-        if Opt == 1 || Opt == 3 % Se mide el Zw
             if Conf.TF.Zw.PXI.On
                 
                 SetupTES.PXI.AbortAcquisition;
@@ -1615,8 +1527,98 @@ if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
                 file = strcat('PXI_TF_',Itxt,'uA','.txt');
                 save([Path file],'datos','-ascii');%salva los datos a fichero.
             end
+        end                       
+    end
+end
+
+if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
+    
+    % Calibracion del HP
+    SetupTES.DSA.Calibration;
+    pause(4);
+    
+    for i = 1:length(IZvalues)
+        
+        % Ponemos el TES en estado normal
+        SetupTES.SQ_TES2NormalState.Value = 1;
+        SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,sign(IZvalues(i)),guidata(SetupTES.SQ_TES2NormalState));
+        
+        % For para cada IZvalue (Ibias)
+        try
+        % Reseteamos el lazo
+        % Reset Closed Loop
+        SetupTES.SQ_Reset_Closed_Loop.Value = 1;
+        SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
+        drawnow;
+        % Ponemos la corriente para fijar el punto de operacion del Squid
+        % Ponemos el valor de Ibias en el Squid
+        
+        SetupTES.SQ_Ibias_Units.Value = 3;
+        SetupTES.SQ_Ibias.String = num2str(IZvalues(i));
+        SetupTES.SQ_Set_I.Value = 1;
+        SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
+        
+        % Leemos la corriente real del Squid
+        % Read I real value
+        SetupTES.SQ_Read_I.Value = 1;
+        SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
+        
+        if sign(IZvalues(i))
+            SetupTES.SQ_Rn.String = num2str(handles.rpp(i));
+        else
+            SetupTES.SQ_Rn.String = num2str(handles.rpn(i));
         end
-        if Opt == 2 || Opt == 3
+        SetupTES.SQ_Rn_Ibias.String = SetupTES.SQ_Ibias.String;
+        
+        pause(0.2);
+        Itxt = SetupTES.SQ_realIbias.String;
+        catch
+            continue;
+        end
+        
+        % Reseteamos el lazo
+        % Reset Closed Loop
+        SetupTES.SQ_Reset_Closed_Loop.Value = 1;
+        SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
+        
+%         if Opt == 1 || Opt == 3 % Se mide el Zw
+%             
+%         end
+        if Opt == 2 || Opt == 3 % Se mide el Ruido
+            
+            if Conf.TF.Noise.DSA.On
+                
+                SetupTES.DSA = SetupTES.DSA.NoiseMode;
+                clear datos;
+                [SetupTES.DSA, datos] = SetupTES.DSA.Read;
+                
+                set([findobj(SetupTES.Result_Axes); findobj(SetupTES.Result_Axes3)],'Visible','off');
+                set(SetupTES.Result_Axes1,'Position',[0.65 0.58 0.30 0.35]);
+                set(SetupTES.Result_Axes2,'Position',[0.65 0.09 0.30 0.35]);
+                set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2)],'Visible','on');
+                cla(SetupTES.Result_Axes1);
+                cla(SetupTES.Result_Axes2);
+                loglog(SetupTES.Result_Axes1,datos(:,1),datos(:,2));
+                xlabel(SetupTES.Result_Axes1,'\nu(Hz)','FontSize',12,'FontWeight','bold');
+                ylabel(SetupTES.Result_Axes1,'V_{out}','FontSize',12,'FontWeight','bold');
+                set(SetupTES.Result_Axes1,'XScale','log','YScale','log','LineWidth',2,'FontSize',11,...
+                    'FontWeight','bold','XTickLabelMode','auto','XTickMode','auto');
+                
+                loglog(SetupTES.Result_Axes2,datos(:,1),V2I(datos(:,2)*1e12,SetupTES.Circuit),'.-r',...
+                    datos(:,1),medfilt1(V2I(datos(:,2)*1e12,SetupTES.Circuit),20),'.-k');
+                ylabel(SetupTES.Result_Axes2,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold');
+                xlabel(SetupTES.Result_Axes2,'\nu(Hz)','FontSize',12,'fontweight','bold');
+                set(SetupTES.Result_Axes2,'XScale','log','YScale','log','LineWidth',2,'FontSize',11,'FontWeight',...
+                    'bold','XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'});
+                axis(SetupTES.Result_Axes2,'tight');
+                
+                
+                drawnow;
+                pause(0.2);
+                % Guardamos los datos en un fichero
+                file = strcat('HP_noise_',Itxt,'uA','.txt');
+                save([Path file],'datos','-ascii');%salva los datos a fichero.
+            end
             if Conf.TF.Noise.PXI.On
                 
                 SetupTES.PXI.AbortAcquisition;

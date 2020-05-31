@@ -60,7 +60,7 @@ set(handles.figure1,'Color',[0 0.2 0.5],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','ButtonDownFcn',{@ExportData});
 
-handles.versionStr = 'ZarTES v2.2';
+handles.versionStr = 'ZarTES v3.0';
 
 switch varargin{1}.Tag
     case 'Squid_Pulse_Input_Conf'
