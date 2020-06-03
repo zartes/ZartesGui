@@ -18,6 +18,7 @@ for i = 1:length(IVset)
     [iaux,ii] = unique(IVset.ibias,'stable');
     vaux = IVset.vout(ii);
     raux = IVset.rtes(ii);
+    raux(isinf(raux)) = NaN;
     [~,i3] = min(diff(vaux)./diff(iaux));
     Ibs = spline(raux(1:i3),iaux(1:i3),rp)*1e6;
 %     Ibs = spline(raux(1:i3),iaux(1:i3),rp)*1e6;

@@ -83,7 +83,8 @@ classdef TES_ZTDataBase
         
         function [obj, Session] = Update(obj,Session)
             % Function to update the class values
-            if obj.DBconn.MaxDatabaseConnections ~= -1
+            try
+                %if obj.DBconn.MaxDatabaseConnections ~= -1
                 sqlquery = ['SELECT * FROM TES_RT WHERE ID_TES = ''' obj.TES_Idn ''''];
                 curs1 = exec(obj.DBconn,sqlquery);
                 curs1 = fetch(curs1);

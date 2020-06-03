@@ -90,7 +90,7 @@ classdef TES_FieldScan
                 catch
                     BV = importdata([path filesep d(i).name]);
                     obj.B{i} = BV(:,2);
-                    obj.Vout{i} = BV(:,4);
+                    obj.Vout{i} = BV(:,5);
                 end
                 try
                     obj.Tbath{i} = sscanf(char(regexp(d(i).name,'\d+.?\d+mK*','match')),'%fmK')*1e-3;
