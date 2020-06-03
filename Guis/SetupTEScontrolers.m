@@ -22,7 +22,7 @@ function varargout = SetupTEScontrolers(varargin)
 
 % Edit the above text to modify the response to help SetupTEScontrolers
 
-% Last Modified by GUIDE v2.5 11-Jun-2019 13:27:12
+% Last Modified by GUIDE v2.5 01-Jun-2020 19:07:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -990,67 +990,67 @@ if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColo
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
-function SQ_PhiBStr_Callback(hObject, eventdata, handles)
-% hObject    handle to SQ_PhiBStr (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of SQ_PhiBStr as text
-%        str2double(get(hObject,'String')) returns contents of SQ_PhiBStr as a double
-
-if isempty(handles.Squid.ObjHandle)
-    handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
-    Actions_Str_Callback(handles.Actions_Str,[],handles);
-%     hObject.Value = 0;
-else
-    
-    %         hObject.BackgroundColor = handles.Active_Color;  % Green Color
-    hObject.Enable = 'off';
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Action of the device (including line)    
-    phib = str2double(hObject.String);
-    
-    if phib < -124 || phib > 125
-        warndlg('Value out of range (PhiB [-124 125])',handles.VersionStr);        
-        hObject.String = '0';
-        handles.Actions_Str.String = 'Electronic Magnicon: PhiB does not change';
-        hObject.Enable = 'on';
-    else
-        
-        handles.SQ_PhiB.Value = phib;        
-        try
-            handles.Squid.Set_Phib(phib);
-            Ireal = handles.Squid.Read_PhiB;
-            handles.SQ_PhiBStr.String = num2str(Ireal.Value);
-            handles.SQ_PhiB.Value = Ireal.Value;
-        catch me
-            disp(me);
-        end
-        handles.Actions_Str.String = ['Electronic Magnicon: PhiB changed to ' num2str(phib) ' uA'];
-        Actions_Str_Callback(handles.Actions_Str,[],handles);
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        %         hObject.BackgroundColor = handles.Disable_Color;
-        %         hObject.Value = 0;
-        hObject.Enable = 'on';
-    end
-    
-end
-guidata(hObject,handles);
-
-% --- Executes during object creation, after setting all properties.
-function SQ_PhiBStr_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to SQ_PhiBStr (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% function SQ_PhiBStr_Callback(hObject, eventdata, handles)
+% % hObject    handle to SQ_PhiBStr (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% % Hints: get(hObject,'String') returns contents of SQ_PhiBStr as text
+% %        str2double(get(hObject,'String')) returns contents of SQ_PhiBStr as a double
+% 
+% if isempty(handles.Squid.ObjHandle)
+%     handles.Actions_Str.String = 'Electronic Magnicon Connection is missed. Check connection and initialize it from the MENU.';
+%     Actions_Str_Callback(handles.Actions_Str,[],handles);
+% %     hObject.Value = 0;
+% else
+%     
+%     %         hObject.BackgroundColor = handles.Active_Color;  % Green Color
+%     hObject.Enable = 'off';
+%     
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     % Action of the device (including line)    
+%     phib = str2double(hObject.String);
+%     
+%     if phib < -124 || phib > 125
+%         warndlg('Value out of range (PhiB [-124 125])',handles.VersionStr);        
+%         hObject.String = '0';
+%         handles.Actions_Str.String = 'Electronic Magnicon: PhiB does not change';
+%         hObject.Enable = 'on';
+%     else
+%         
+%         handles.SQ_PhiB.Value = phib;        
+%         try
+%             handles.Squid.Set_Phib(phib);
+%             Ireal = handles.Squid.Read_PhiB;
+%             handles.SQ_PhiBStr.String = num2str(Ireal.Value);
+%             handles.SQ_PhiB.Value = Ireal.Value;
+%         catch me
+%             disp(me);
+%         end
+%         handles.Actions_Str.String = ['Electronic Magnicon: PhiB changed to ' num2str(phib) ' uA'];
+%         Actions_Str_Callback(handles.Actions_Str,[],handles);
+%         
+%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%         
+%         %         hObject.BackgroundColor = handles.Disable_Color;
+%         %         hObject.Value = 0;
+%         hObject.Enable = 'on';
+%     end
+%     
+% end
+% guidata(hObject,handles);
+% 
+% % --- Executes during object creation, after setting all properties.
+% function SQ_PhiBStr_CreateFcn(hObject, eventdata, handles)
+% % hObject    handle to SQ_PhiBStr (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    empty - handles not created until after all CreateFcns called
+% 
+% % Hint: edit controls usually have a white background on Windows.
+% %       See ISPC and COMPUTER.
+% if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+%     set(hObject,'BackgroundColor','white');
+% end
 
 function SQ_Rf_Callback(hObject, eventdata, handles)
 % hObject    handle to SQ_Rf (see GCBO)
@@ -1329,10 +1329,11 @@ else
                     TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
                     IVCurveSet = TES_IVCurveSet;
                     IVCurveSet = IVCurveSet.Update(IVmeasure);
-                    TESDATA.TES.n = [];
-                    TESDATA.TES.Rn = Rn;
-                    TESDATA.TES.Rpar = Rpar;
-                    handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TES);
+                    TESDATA.TESThermal.n.Value = [];
+                    TESDATA.TESParam.Rn.Value = Rn;
+                    TESDATA.TESParam.Rpar.Value = Rpar;
+                    
+                    handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
                     handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
                     
                     set([handles.SQ_SetRnBias handles.SQ_Rn],'Enable','on')
@@ -4120,7 +4121,23 @@ end
 
 
 
+function SQ_PhiBStr_Callback(hObject, eventdata, handles)
+% hObject    handle to SQ_PhiBStr (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of SQ_PhiBStr as text
+%        str2double(get(hObject,'String')) returns contents of SQ_PhiBStr as a double
 
 
+% --- Executes during object creation, after setting all properties.
+function SQ_PhiBStr_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to SQ_PhiBStr (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
 
-
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

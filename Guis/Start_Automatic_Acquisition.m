@@ -261,6 +261,19 @@ for NSummary = 1:size(Conf.Summary,1)
             rpp(IZvalues.P < 0) = [];
             IZvalues.P(IZvalues.P < 0) = [];
             handles.rpp = rpp;
+            
+            
+            % Por ahora el campo óptimo es simétrico siempre y a una corriente fija
+            % para todas las temperaturas.
+            
+            SetupTES.CurSource_I_Units.Value = 1;
+            SetupTES.CurSource_I.String = num2str(Conf.BField.P*1e-6);  % Se pasan las corrientes en amperios
+            SetupTES.CurSource_Set_I.Value = 1;
+            SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
+            SetupTES.CurSource_OnOff.Value = 1;
+            SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
+
+            
             Medir_Zw_Noise(Temp,Opt,IZvalues.P,handles.Positive_Path,Conf,SetupTES,handles);
         end
         
@@ -272,6 +285,18 @@ for NSummary = 1:size(Conf.Summary,1)
             rpn(IZvalues.N > 0) = [];
             IZvalues.N(IZvalues.N > 0) = [];
             handles.rpn = rpn;
+            
+            % Por ahora el campo óptimo es simétrico siempre y a una corriente fija
+            % para todas las temperaturas.
+            
+            SetupTES.CurSource_I_Units.Value = 1;
+            SetupTES.CurSource_I.String = num2str(Conf.BField.N*1e-6);  % Se pasan las corrientes en amperios
+            SetupTES.CurSource_Set_I.Value = 1;
+            SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
+            SetupTES.CurSource_OnOff.Value = 1;
+            SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
+            
+            
             Medir_Zw_Noise(Temp,Opt,IZvalues.N,handles.Negative_Path,Conf,SetupTES,handles);
         end
         
@@ -398,8 +423,8 @@ while tfin-t > 0
     pause(0.5);
     t  = toc;
 end
-
-Error = nan(19,1);
+Np = 39;
+Error = nan(Np,1);
 c = true;
 j = 1;
 while c
@@ -415,7 +440,7 @@ while c
     catch
         SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
     end
-    if (mean(Error)) < 0.00015 && j > 19  % Error es 0.0001 K
+    if (mean(Error)) < 0.00015 && j > Np  % Error es 0.0001 K
         c = false;
     else
         if mean(Error) < 0.00015 % Cuando la temperatura alcanza un valor con un error relativo menor al 0.2%
@@ -490,8 +515,25 @@ end
 ThresIbias = 0.1; % la curva de IV llegará en caso positivo a -0.1 uA
 
 for IB = 1:2 % Positive 1, Negative 2
+    
+    % Por ahora el campo óptimo es simétrico siempre y a una corriente fija
+    % para todas las temperaturas.
+    
+    SetupTES.CurSource_I_Units.Value = 1;
+    if IB == 1
+        SetupTES.CurSource_I.String = num2str(Conf.BField.P*1e-6);  % Se pasan las corrientes en amperios
+    else
+        SetupTES.CurSource_I.String = num2str(Conf.BField.N*1e-6);  % Se pasan las corrientes en amperios
+    end
+    SetupTES.CurSource_Set_I.Value = 1;
+    SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
+    SetupTES.CurSource_OnOff.Value = 1;
+    SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
+
+    
+    
     slope_curr = 0;
-    Res_Orig = 5;
+    Res_Orig = SetupTES.IVDelay.OriginalRes;
     Res = Res_Orig;
     if IB == 1
         %             Field = Bfield.p;
@@ -667,18 +709,22 @@ for IB = 1:2 % Positive 1, Negative 2
     %     IVmeasure.vout = IVmeasure.vout-IVmeasure.vout(end);
     
     IVCurveSet = IVCurveSet.Update(IVmeasure);
-%     TESDATA.circuit.mN = nanmedian(diff(IVmeasure.vout(1:3))./diff(IVmeasure.ibias(1:3)));
-%     TESDATA.circuit.mS = nanmedian(diff(IVmeasure.vout(end-3:end))./diff(IVmeasure.ibias(end-3:end)));
-%     TESDATA.circuit = TESDATA.circuit.RnRparCalc;
-    TESDATA.TES.n = [];
-    TESDATA.TES.Rn = TESDATA.circuit.Rn;
-    TESDATA.TES.Rpar = TESDATA.circuit.Rpar;
+    %     TESDATA.circuit.mN = nanmedian(diff(IVmeasure.vout(1:3))./diff(IVmeasure.ibias(1:3)));
+    %     TESDATA.circuit.mS = nanmedian(diff(IVmeasure.vout(end-3:end))./diff(IVmeasure.ibias(end-3:end)));
+    %     TESDATA.circuit = TESDATA.circuit.RnRparCalc;
+    TESDATA.TESThermal.n.Value = [];
+    TESDATA.TESParam.Rn.Value = SetupTES.Circuit.Rn.Value;
+    TESDATA.TESParam.Rpar.Value = SetupTES.Circuit.Rpar.Value;
+    
+%     TESDATA.TES.n = [];
+%     TESDATA.TES.Rn = TESDATA.circuit.Rn;
+%     TESDATA.TES.Rpar = TESDATA.circuit.Rpar;
     if IB == 1
-        IVsetP = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TES);
+        IVsetP = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
         IVsetP.IVsetPath = handles.IVs_Dir;
         IVsetP.range = [Ibvalues.p 0];
     else
-        IVsetN = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TES);
+        IVsetN = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
         IVsetN.IVsetPath = handles.IVs_Dir;
         IVsetP.range = [Ibvalues.n 0];
     end
@@ -778,11 +824,12 @@ if ~isfield(SetupTES,'IVset')
     TESDATA.circuit = TESDATA.circuit.Update(SetupTES.Circuit);
     IVCurveSet = TES_IVCurveSet;
     IVCurveSet = IVCurveSet.Update(IVmeasure);
-    TESDATA.TES.n = [];
-    TESDATA.TES.Rn = SetupTES.Circuit.Rn.Value;
-    TESDATA.TES.Rpar = SetupTES.Circuit.Rpar.Value;
     
-    IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TES);
+    TESDATA.TESThermal.n.Value = [];
+    TESDATA.TESParam.Rn.Value = SetupTES.Circuit.Rn.Value;
+    TESDATA.TESParam.Rpar.Value = SetupTES.Circuit.Rpar.Value;
+      
+    IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
 else
     figure(SetupTES.SetupTES)
     IVset = handles.SetupTES.IVset;
@@ -1360,7 +1407,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
         SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
         
         
-        if sign(IZvalues(i))
+        if sign(IZvalues(i))==1
             SetupTES.SQ_Rn.String = num2str(handles.rpp(i));
         else
             SetupTES.SQ_Rn.String = num2str(handles.rpn(i));
@@ -1431,7 +1478,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
                 pause(0.2);
                 % Guardamos los datos en un fichero
                 file = strcat('TF_',Itxt,'uA','.txt');
-                uisave([Path filesep file],'datos','-ascii');%salva los datos a fichero.
+                save([Path filesep file],'datos','-ascii');%salva los datos a fichero.
             end
             if Conf.TF.Zw.PXI.On
                 
@@ -1531,7 +1578,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
     end
 end
 
-if Conf.TF.Zw.PXI.On || Conf.TF.Noise.PXI.On
+if Conf.TF.Noise.DSA.On || Conf.TF.Noise.PXI.On
     
     % Calibracion del HP
     SetupTES.DSA.Calibration;
