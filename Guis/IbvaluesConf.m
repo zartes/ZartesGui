@@ -154,7 +154,7 @@ Conf.FieldScan.On = 1;
 Conf.FieldScan.Rn = 0.7;
 Conf.FieldScan.BVvalues = -1000:100:1000;
 
-Conf.BFieldIC.On = 1;
+Conf.BFieldIC.On = 0;
 Conf.BFieldIC.BVvalue = -1000:100:1000;
 Conf.BFieldIC.IbiasValues.p = 0:5:500;
 Conf.BFieldIC.IbiasValues.n = 0:-5:-500;
@@ -189,12 +189,12 @@ Conf.TF.Noise.PXI.On = 1;
 Conf.TF.rpp = [0.9:-0.05:0.2 0.19:-0.01:0.1];
 Conf.TF.rpn = [0.9:-0.05:0.2 0.19:-0.01:0.1];
 
-Conf.Pulse.PXI.On = 1;
+Conf.Pulse.PXI.On = 0;
 Conf.Pulse.PXI.NCounts = 10;
 Conf.Pulse.PXI.rpp = [0.9:-0.05:0.2 0.19:-0.01:0.1];
 Conf.Pulse.PXI.rpn = [0.9:-0.05:0.2 0.19:-0.01:0.1];
 
-Conf.Spectrum.PXI.On = 1;
+Conf.Spectrum.PXI.On = 0;
 Conf.Spectrum.PXI.Rn = 0.7;
 Conf.Spectrum.PXI.NCounts = 20000;
 
@@ -1412,7 +1412,7 @@ if ~isempty(Temps)
         Spectrum_Ticks(1:length(Temps),1) = {'No'};
     end
     
-    handles.Summary_Table.Data = [num2cell(Temps) IV_Ticks BScan ICField TF_Zw_Ticks TF_Noise_Ticks Pulse_Ticks Spectrum_Ticks];
+    handles.Summary_Table.Data = [num2cell(Temps) BScan IV_Ticks ICField TF_Zw_Ticks TF_Noise_Ticks Pulse_Ticks Spectrum_Ticks];
 else
     warndlg('No Temperature values selected!','ZarTES v1.0');
 end
