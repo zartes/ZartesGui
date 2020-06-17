@@ -2292,6 +2292,8 @@ classdef TES_Struct
             Style='Título 1';
             WordText(ActXWord,['Informe análisis TES: ' Session.ZTDB.TES_Idn],Style,[0,1]);%no enter
             Style='Normal';
+            WordText(ActXWord,['Version Analyzer:  ' obj.version],Style,[0,1]);%no enter
+                        
             try
                 d = dir(obj.IVsetP(1).IVsetPath(1:end-4));
                 WordText(ActXWord,['Fecha medidas: ' datestr(d(1).date,1)],Style,[0,1]);%no enter            
@@ -2808,6 +2810,10 @@ classdef TES_Struct
                     FigNum = FigNum+1;
                 catch
                 end
+                try
+                    close(fig);
+                catch
+                end
                 clear fig;
             end
             
@@ -2898,6 +2904,11 @@ classdef TES_Struct
                     
                 catch
                 end
+                try
+                    close(fig);
+                catch
+                end
+                
                 clear fig;
             end
             

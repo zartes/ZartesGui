@@ -146,16 +146,6 @@ for i = 1:length(PathStr)
     end
 end
 
-% Por ahora el campo óptimo es simétrico siempre y a una corriente fija
-% para todas las temperaturas.
-
-SetupTES.CurSource_I_Units.Value = 1;
-SetupTES.CurSource_I.String = num2str(Conf.BField.P*1e-6);  % Se pasan las corrientes en amperios
-SetupTES.CurSource_Set_I.Value = 1;
-SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
-SetupTES.CurSource_OnOff.Value = 1;
-SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
-
 
 for NSummary = 1:size(Conf.Summary,1)          
     clear IVsetP IVsetN;
@@ -179,39 +169,51 @@ for NSummary = 1:size(Conf.Summary,1)
     Temp = Conf.Summary{NSummary,1};    
     AjustarTemperatura(Temp,Conf,SetupTES,handles)
     
+    %%
     if strcmp(Conf.Summary{NSummary,2},'Yes')    % Si se mide o on 
         handles.Summary_Table.Data{NSummary,2} = 'Running';               
-        [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles);  
+         
         handles.Summary_Table.Data{NSummary,2} = 'Done'; 
         Conf.Summary{NSummary,2} = 'Done';
     end
+    %%
     
-    if strcmp(Conf.Summary{NSummary,3},'Yes')    % Si se mide o on
-        handles.Summary_Table.Data{NSummary,3} = 'Running'; 
-        if exist('IVsetP','var')
+    
+    if strcmp(Conf.Summary{NSummary,2},'Yes')    % Si se mide o on
+        handles.Summary_Table.Data{NSummary,2} = 'Running'; 
+        [IVsetP, IVsetN] = Medir_preIV(Temp,Conf,SetupTES,handles); 
+%         if exist('IVsetP','var')
             handles.IVsetP = IVsetP;
-        end
-        if exist('IVsetN','var')
+%         end
+%         if exist('IVsetN','var')
             handles.IVsetN = IVsetN;
-        end
+%         end
         Bfield_acq = FieldScan(Temp,Conf,SetupTES,handles);  % Se obtiene Bfield.p y Bfield.n
-        handles.Summary_Table.Data{NSummary,3} = 'Done'; 
-        Conf.Summary{NSummary,3} = 'Done';
-        Bfield.p = Bfield_acq.p;
-        Bfield.n = Bfield_acq.n;
-    elseif ~Conf.BField.FromScan
-        Bfield.p = Conf.BField.P;
-        Bfield.n = Conf.BField.N;
+        handles.Summary_Table.Data{NSummary,2} = 'Done'; 
+        Conf.Summary{NSummary,2} = 'Done';
+        Conf.BField.P = Bfield_acq.p;
+        Conf.BField.N = Bfield_acq.n;
+%     elseif ~Conf.BField.FromScan
+%         Bfield.p = Conf.BField.P;
+%         Bfield.n = Conf.BField.N;
     end
     
-    if Conf.BField.Symmetric
-        try
-            Bfield.n = Bfield.p;
-        catch
-            Bfield.p = Conf.BField.P;
-            Bfield.n = Bfield.p;
-        end
-    end        
+%     if Conf.BField.Symmetric
+%         try
+%             Bfield.n = Bfield.p;
+%         catch
+%             Bfield.p = Conf.BField.P;
+%             Bfield.n = Bfield.p;
+%         end
+%     end        
+    
+    
+    if strcmp(Conf.Summary{NSummary,3},'Yes')    % Si se mide o on 
+        handles.Summary_Table.Data{NSummary,3} = 'Running';               
+        [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles);  
+        handles.Summary_Table.Data{NSummary,3} = 'Done'; 
+        Conf.Summary{NSummary,3} = 'Done';
+    end
     
     if strcmp(Conf.Summary{NSummary,4},'Yes')    % Si se mide o on
         handles.Summary_Table.Data{NSummary,4} = 'Running'; 
@@ -497,6 +499,209 @@ if ishandle(h)
     close(h);
 end
 
+function [IVsetP, IVsetN] = Medir_preIV(Temp,Conf,SetupTES,handles)
+
+figure(SetupTES.SetupTES);
+set([findobj(SetupTES.Result_Axes1); findobj(SetupTES.Result_Axes2); findobj(SetupTES.Result_Axes3)],'Visible','off');
+set(findobj(SetupTES.Result_Axes),'Visible','on');
+SetupTEScontrolers('Grid_Plot_Callback',SetupTES.Grid_Plot,[],guidata(SetupTES.Grid_Plot));
+% Seleccion de Ibvalues
+if Conf.IVcurves.Manual.On
+    Ibvalues = Conf.IVcurves.Manual.Values;  % Ibvalues.p y Ibvalues.n
+elseif Conf.IVcurves.SmartRange.On
+    Ibvalues.p = 500;
+    Ibvalues.n = -500;    
+end
+
+ThresIbias = 0.1; % la curva de IV llegará en caso positivo a -0.1 uA
+
+for IB = 1:2 % Positive 1, Negative 2
+    
+    % Por ahora el campo óptimo es simétrico siempre y a una corriente fija
+    % para todas las temperaturas.
+  
+      
+    slope_curr = 0;
+    Res_Orig = 10;
+    Res = Res_Orig;
+    if IB == 1
+        IBvals = Ibvalues.p;
+    else
+        IBvals = Ibvalues.n;
+    end
+    ThresIbias = -ThresIbias;  % Cambiará de signo en función de que sea positivo o negativo el rango de ibias
+    
+    % Ponemos el Squid en Estado Normal
+    SetupTES.SQ_TES2NormalState.Value = 1;
+    SetupTEScontrolers('SQ_TES2NormalState_Callback',SetupTES.SQ_TES2NormalState,sign(IBvals),guidata(SetupTES.SQ_TES2NormalState));
+    pause(0.2);
+    SetupTES.SQ_Ibias.String = num2str(IBvals);
+    SetupTES.SQ_Ibias_Units.Value = 3;
+    SetupTES.SQ_Set_I.Value = 1;
+    SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
+    % Reset Closed Loop
+    SetupTES.SQ_Reset_Closed_Loop.Value = 1;
+    SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
+    % Reset Closed Loop
+    pause(0.2);
+    SetupTES.SQ_Reset_Closed_Loop.Value = 1;
+    SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
+    
+    % Adquirimos una Curva I-V
+    i = 1;
+    while abs(IBvals(i)) >= -abs(ThresIbias)
+        if IB == 1
+            if IBvals(i) < 0 && IBvals(i) < ThresIbias
+                break;
+            end
+        else
+            if IBvals(i) > 0 && IBvals(i) > ThresIbias
+                break;
+            end
+        end
+        SetupTES.SQ_Ibias.String = num2str(IBvals(i));
+        SetupTES.SQ_Ibias_Units.Value = 3;
+        SetupTES.SQ_Set_I.Value = 1;
+        SetupTEScontrolers('SQ_Set_I_Callback',SetupTES.SQ_Set_I,[],guidata(SetupTES.SQ_Set_I));
+        if i == 1
+            pause(SetupTES.IVDelay.FirstDelay)
+        else
+            pause(SetupTES.IVDelay.StepDelay);
+        end
+        averages = 1;
+        for i_av = 1:averages
+            SetupTES.Multi_Read.Value = 1;
+            SetupTEScontrolers('Multi_Read_Callback',SetupTES.Multi_Read,[],guidata(SetupTES.Multi_Read));
+            aux1{i_av} = str2double(SetupTES.Multi_Value.String);
+            if i_av == averages
+                IVmeasure.vout(i) = mean(cell2mat(aux1));
+            end
+        end
+        % Read I real value
+        SetupTES.SQ_Read_I.Value = 1;
+        SetupTEScontrolers('SQ_Read_I_Callback',SetupTES.SQ_Read_I,[],guidata(SetupTES.SQ_Read_I));
+        IVmeasure.ibias(i) = str2double(SetupTES.SQ_realIbias.String);
+        
+        % Actualizamos el gráfico
+        Ch = findobj(SetupTES.Result_Axes,'Type','Line');
+        delete(Ch);
+        plot(SetupTES.Result_Axes,IVmeasure.ibias(1:i),IVmeasure.vout(1:i),'Marker','o','Color',[0 0.447 0.741]);
+        hold(SetupTES.Result_Axes,'on');
+        xlabel(SetupTES.Result_Axes,'Ibias (\muA)')
+        ylabel(SetupTES.Result_Axes,'Vout (V)');
+        set(SetupTES.Result_Axes,'fontsize',12);
+        refreshdata(SetupTES.Result_Axes);
+        axis(SetupTES.Result_Axes,'tight');
+        
+        
+        if Conf.IVcurves.SmartRange.On
+            % Funcion para determinar el siguiente valor de Ibias en
+            % función de la derivada de la señal
+            if i < 12 && i > 1 % Por lo menos tendremos 5 valores para poder promediar
+                slope(i-1) = (IVmeasure.ibias(i)-IVmeasure.ibias(i-1))/((IVmeasure.vout(i)-IVmeasure.vout(i-1)));
+                Res = Res_Orig;
+            elseif i >= 12
+                slope_curr = (IVmeasure.ibias(i)-IVmeasure.ibias(i-1))/((IVmeasure.vout(i)-IVmeasure.vout(i-1)));
+                
+                if abs(slope_curr - nanmean(slope)) > 20*abs(nanstd(slope))
+                    if slope_curr < 0
+                        Res = 1;
+                    else
+                        Res = max(Res_Orig*0.5,1);
+                    end
+                else
+                    Res = Res_Orig;
+                end
+            end
+            % Aseguramos que se tome el valor de Ibias == 0
+            if IB == 1                
+                if IBvals(i) <= ThresIbias
+                    IBvals(i+1) = -1.5;
+                elseif IBvals(i)-Res < 0 
+                    Res = 0.1;
+                    if i > 1 && IBvals(i-1) > 0
+                        if IBvals(i) ~= 0
+                            IBvals(i+1) = 0;
+                        else
+                            IBvals(i+1) = IBvals(i)-Res;
+                        end
+                    else
+                        IBvals(i+1) = IBvals(i)-Res;
+                    end                
+                else
+                    IBvals(i+1) = IBvals(i)-Res;
+                end
+            else
+                if IBvals(i) >= ThresIbias
+                    IBvals(i+1) = +1.5;
+                elseif IBvals(i)+Res > 0 
+                    Res = 0.1;
+                    if i > 1 && IBvals(i-1) < 0
+                        if IBvals(i) ~= 0
+                            IBvals(i+1) = 0;
+                        else
+                            IBvals(i+1) = IBvals(i)+Res;
+                        end
+                    else
+                        IBvals(i+1) = IBvals(i)+Res;
+                    end
+                else
+                    IBvals(i+1) = IBvals(i)+Res;
+                end
+            end
+        end
+        i = i+1;
+    end
+    
+    IVmeasure.Tbath = SetupTES.SetPt.String;
+    clear data;
+    data(:,2) = IVmeasure.ibias;
+    data(:,4) = IVmeasure.vout;
+        
+    if IBvals(1) > 0
+        pol = 'p';
+        dire = 'down';
+    elseif IBvals(1) < 0
+        pol = 'n';
+        dire = 'down';
+    else
+        dire = 'up';
+        if IBvals(end) > 0
+            pol = 'p';
+        else
+            pol = 'n';
+        end
+    end
+    
+%     file = strcat(num2str(Temp*1e3,'%1.1f'),'mK','_Rf',num2str(SetupTES.Circuit.Rf.Value*1e-3),'K_',dire,'_',pol,'_matlab.txt');
+%     save([handles.IVs_Dir file],'data','-ascii');
+    
+    data(:,4) = IVmeasure.vout-IVmeasure.vout(end);  % Centramos la IV en 0,0.
+    IVmeasure.vout = data(:,4)';
+    
+    TESDATA.circuit = TES_Circuit;
+    TESDATA.circuit = TESDATA.circuit.Update(SetupTES.Circuit);
+    
+    IVCurveSet = TES_IVCurveSet;
+    IVmeasure.ibias = IVmeasure.ibias*1e-6;
+    
+    IVCurveSet = IVCurveSet.Update(IVmeasure);
+    TESDATA.TESThermal.n.Value = [];
+    TESDATA.TESParam.Rn.Value = SetupTES.Circuit.Rn.Value;
+    TESDATA.TESParam.Rpar.Value = SetupTES.Circuit.Rpar.Value;
+    
+    if IB == 1
+        IVsetP = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
+        IVsetP.IVsetPath = handles.IVs_Dir;
+        IVsetP.range = [Ibvalues.p 0];
+    else
+        IVsetN = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
+        IVsetN.IVsetPath = handles.IVs_Dir;
+        IVsetP.range = [Ibvalues.n 0];
+    end
+    clear IVmeasure;
+end
+
 function [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles)
 
 figure(SetupTES.SetupTES);
@@ -529,9 +734,7 @@ for IB = 1:2 % Positive 1, Negative 2
     SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
     SetupTES.CurSource_OnOff.Value = 1;
     SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
-
-    
-    
+       
     slope_curr = 0;
     Res_Orig = SetupTES.IVDelay.OriginalRes;
     Res = Res_Orig;
@@ -1580,10 +1783,11 @@ end
 
 if Conf.TF.Noise.DSA.On || Conf.TF.Noise.PXI.On
     
+    
+    SetupTES.DSA = SetupTES.DSA.NoiseMode;
     % Calibracion del HP
     SetupTES.DSA.Calibration;
     pause(4);
-    
     for i = 1:length(IZvalues)
         
         % Ponemos el TES en estado normal
@@ -1635,7 +1839,10 @@ if Conf.TF.Noise.DSA.On || Conf.TF.Noise.PXI.On
             
             if Conf.TF.Noise.DSA.On
                 
-                SetupTES.DSA = SetupTES.DSA.NoiseMode;
+                
+                % Calibracion del HP
+                SetupTES.DSA.Calibration;
+                pause(4);
                 clear datos;
                 [SetupTES.DSA, datos] = SetupTES.DSA.Read;
                 

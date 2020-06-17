@@ -73,9 +73,13 @@ classdef TES_Circuit
                             eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
                         else
                             try
-                                eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
+                                eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);                                
                             catch
-                                eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} ';']);
+                                if strcmp(fieldNames{i},'squid')
+                                    eval(['obj.Nsquid.Value = data.' fieldNames{i} ';']);
+                                else
+                                    eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} ';']);
+                                end
                             end
                         end
                     end
