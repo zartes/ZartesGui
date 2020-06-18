@@ -76,12 +76,19 @@ if isempty(answer)
 else
     
     handles.conn = database(handles.DataBaseName,answer{1},answer{2});
-    if ~strcmp(handles.conn.UserName,'jbolea')
-        handles.conn.ReadOnly = 'on';
-    end
+%     if ~strcmp(handles.conn.UserName,'jbolea')
+%         handles.conn.ReadOnly = 'on';
+%     end
 end
 t = tables(handles.conn,[handles.DataBasePath handles.DataBaseName '.mdb']);
 % t = tables(handles.conn,[handles.DataBasePath 'ZarTESDB.mdb']);
+
+handles.usuarios = {'jbolea';'acamon';'cpobes';'stricho'};
+handles.jbolea_tablas = t;
+handles.acamon_tablas = {'BULK_RT';'Data_Acquisition';'SQUID';'TES_RT'};
+handles.cpobes_tablas = {'TES_Analysis'};
+handles.stricho_tablas = {'Absorbent';'Masks';'Sputtering_params';'Sputtering_Tech';'Wafers'};
+
 
 set(handles.figure1,'Name',handles.VersionStr);
 
@@ -127,7 +134,7 @@ for i = 1:length(atr)
     switch atr(i).typeName
         case 'VARCHAR'
             handles.Table1.ColumnFormat{i} = 'char';
-        case 'INT'
+        case 'INTEGER'
             handles.Table1.ColumnFormat{i} = 'numeric';
         case 'DOUBLE'
             handles.Table1.ColumnFormat{i} = 'numeric';
@@ -173,10 +180,16 @@ function InsertData_Callback(hObject, eventdata, handles)
 % hObject    handle to InsertData (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+tablename = handles.TableListStr{handles.TableList.Value};
+if eval(['~isempty(find(ismember(handles.' handles.conn.UserName '_tablas, tablename), 1))'])
+    handles.conn.ReadOnly = 'off';
+else
+    handles.conn.ReadOnly = 'on';
+end
 
 switch handles.conn.ReadOnly
     case 'off'
-        tablename = handles.TableListStr{handles.TableList.Value};
+%         tablename = handles.TableListStr{handles.TableList.Value};
         PrimaryKeyStr = {'Id'};
         sqlquery = ['SELECT ' PrimaryKeyStr{1} ' FROM ' tablename];
         curs = exec(handles.conn,sqlquery);
@@ -266,6 +279,12 @@ switch handles.conn.ReadOnly
                                 else
                                     data{i} = str2double(curs1.Data{s});
                                 end
+                            case 'INTEGER'
+                                if isnumeric(curs1.Data{s})
+                                    data{i} = curs1.Data{s};
+                                else
+                                    data{i} = str2double(curs1.Data{s});
+                                end
                         end
                         continue;
                     elseif ~isequal(tablename,ID_Table{ind})
@@ -286,6 +305,8 @@ switch handles.conn.ReadOnly
                     case 'VARCHAR'
                         data{i} = answer{1};
                     case 'DOUBLE'
+                        data{i} = str2double(answer{1});
+                    case 'INTEGER'
                         data{i} = str2double(answer{1});
                 end
             else
@@ -308,8 +329,14 @@ function UpdateTable_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-
 tablename = handles.TableListStr{handles.TableList.Value};
+if eval(['~isempty(find(ismember(handles.' handles.conn.UserName '_tablas, tablename), 1))'])
+    handles.conn.ReadOnly = 'off';
+else
+    handles.conn.ReadOnly = 'on';
+end
+
+% tablename = handles.TableListStr{handles.TableList.Value};
 ColumnName = handles.Table1.ColumnName{eventdata.Indices(2)};
 
 if ischar(eventdata.PreviousData)
@@ -344,6 +371,13 @@ function Table1_CellEditCallback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 tablename = handles.TableListStr{handles.TableList.Value};
+if eval(['~isempty(find(ismember(handles.' handles.conn.UserName '_tablas, tablename), 1))'])
+    handles.conn.ReadOnly = 'off';
+else
+    handles.conn.ReadOnly = 'on';
+end
+
+% tablename = handles.TableListStr{handles.TableList.Value};
 ColumnName = handles.Table1.ColumnName{eventdata.Indices(2)};
 
 if ischar(eventdata.PreviousData)
@@ -357,7 +391,7 @@ elseif isnumeric(eventdata.PreviousData)
         query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' IS NULL AND ' handles.Table1.ColumnName{1} ' = ' num2str(eventdata.Source.Data{eventdata.Indices(1),1}) ''];
     else
         if isnan(eventdata.NewData)
-            query = ['update ' tablename ' SET ' ColumnName ' = NULL WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData) ''];
+            query = ['update ' tablename ' SET ' ColumnName ' = NULL WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData) ' AND ' handles.Table1.ColumnName{1} ' = ' num2str(eventdata.Source.Data{eventdata.Indices(1),1}) ''];
         else
             %         query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData) ''];
             query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData) ' AND ' handles.Table1.ColumnName{1} ' = ' num2str(eventdata.Source.Data{eventdata.Indices(1),1}) ''];
@@ -366,9 +400,12 @@ elseif isnumeric(eventdata.PreviousData)
 end
 curs = exec(handles.conn,query);
 curs = fetch(curs);
-
+pause(1);
 guidata(hObject,handles);
+pause(1);
 refreshTable(hObject);
+
+
 
 
 
