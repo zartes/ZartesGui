@@ -146,6 +146,35 @@ for i = 1:length(PathStr)
     end
 end
 
+% Estimacion de las medidas de adquisicion
+TimeAtStart = now;
+% 5 mins de media en cada Estabilización de temperatura
+NTemps = size(Conf.Summary,1);
+TimeToFinish = 5*60*NTemps;
+% 3 min cada pre-IV para la busqueda del campo optimo
+% 5 s cada punto del campo optimo
+NFieldSearch = sum(strcmp(Conf.Summary(:,2),'Yes'));
+NFieldValues = length(Conf.FieldScan.BVvalues);
+TimeToFinish = TimeToFinish + (3*60+5*NFieldValues)*NFieldSearch;
+% 10 mins cada par de curvas IV
+NIVs = sum(strcmp(Conf.Summary(:,3),'Yes'));
+TimeToFinish = TimeToFinish + (10*60)*NIVs;
+% 10 s cada punto par de curvas de IC
+NICs = sum(strcmp(Conf.Summary(:,4),'Yes'));
+NICValues = length(Conf.BFieldIC.BVvalues);
+TimeToFinish = TimeToFinish + ((10)*NICValues)*NICs;
+% 2 min cada Z(w) tomada con el HP y 15 segundos con la PXI
+NZWs = sum(strcmp(Conf.Summary(:,5),'Yes'));
+NZwHP = Conf.TF.Zw.DSA.On*(length(Conf.TF.Zw.rpp)+length(Conf.TF.Zw.rpn));
+NZwPXI = Conf.TF.Zw.PXI.On*(length(Conf.TF.Zw.rpp)+length(Conf.TF.Zw.rpn));
+TimeToFinish = TimeToFinish + ((2*60)*(NZwHP)+15*NZwPXI)*NZWs;
+% 1,5 min cada par de Noise tomado con el HP y 15 segundos con la PXI
+NNoises = sum(strcmp(Conf.Summary(:,6),'Yes'));
+NNoiseHP = Conf.TF.Noise.DSA.On*(length(Conf.TF.Zw.rpp)+length(Conf.TF.Zw.rpn));
+NNoisePXI = Conf.TF.Noise.PXI.On*(length(Conf.TF.Zw.rpp)+length(Conf.TF.Zw.rpn));
+TimeToFinish = TimeToFinish + ((1.5*60)*(NNoiseHP)+15*NNoisePXI)*NNoises;
+
+msgbox(['Expected time to finish: ' datestr(datenum(datestr(TimeAtStart))+seconds(TimeToFinish))],SetupTES.VersionStr);
 
 for NSummary = 1:size(Conf.Summary,1)          
     clear IVsetP IVsetN;
@@ -1055,6 +1084,8 @@ for k = 1:2
         % Calibramos la fuente de corriente
         SetupTES.CurSource_Cal.Value = 1;
         SetupTEScontrolers('CurSource_Cal_Callback',SetupTES.CurSource_Cal,[],guidata(SetupTES.CurSource_Cal))
+        
+        %% Hay que cambiar la corriente si estamos en bias negativos
         
         % Ponemos el Squid en Estado Normal
         SetupTES.SQ_TES2NormalState.Value = 1;
