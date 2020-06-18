@@ -370,21 +370,13 @@ classdef TES_ElectrThermModel
             RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./medfilt1(real(NEP),obj.DataMedFilt).^2))/2/1.609e-19;
             
             if isreal(NEP)
-                obj.Noise_LowFreq = [2e2 1e3]; % [2e2,1e3]
-                obj.Noise_HighFreq = [5e3 1e5]; %10e
-%                 obj.Noise_LowFreq = [1e0 10e4]; % [2e2,1e3]
-%                 obj.Noise_HighFreq = [1e0 10e4]; %10e
                 ydata = medfilt1(NEP*1e18,obj.DataMedFilt);
 %                 findx = find(fNoise > max(obj.Noise_LowFreq,1) & fNoise < obj.Noise_HighFreq);
                 findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
                 xdata = fNoise(findx);   
                 ydata = ydata(findx);
                                 
-                
-%                 findx = find(xdata > obj.Noise_LowFreq & xdata < obj.Noise_HighFreq);
-%                 xdata = xdata(findx);
-%                 ydata = ydata(findx);
-                
+                                
                 if isempty(findx)||sum(ydata == inf)
                     M = NaN;
                     Mph = NaN;
