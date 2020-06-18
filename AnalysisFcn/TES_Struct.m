@@ -741,39 +741,59 @@ classdef TES_Struct
             if nargin < 2             
 %                 TFBaseName = {'\TF*';'\PXI_TF*'};
 %                 NoiseBaseName = {'\HP_noise*';'\PXI_noise*'};
-                ButtonName = questdlg('Select Files Acquisition device', ...
+                ButtonName = questdlg('Select Files Acquisition device for Z(w) analysis', ...
                     obj.version, ...
                     'PXI', 'HP', 'Previously Selected','HP');
                 switch ButtonName
                     case 'PXI'
                         obj.ElectrThermalModel.Selected_TF_BaseName = 2;
-                        obj.ElectrThermalModel.Selected_NoiseBaseName = 2;
                         obj.TFOpt.TFBaseName = '\PXI_TF*';   
-                        obj.NoiseOpt.NoiseBaseName ='\PXI_noise*';
                         if (isempty(strfind(obj.TFS.file,'PXI')))&&(isempty(strfind(obj.TFS.file,'PXI')))
                             [Path, Name] = fileparts(obj.TFS.file);
                             warndlg('TFS must be a file named *PXI* (PXI card)',obj.version);
-                            obj.TFS = obj.TFS.importTF([Path filesep]);
-                            
+                            obj.TFS = obj.TFS.importTF([Path filesep]);                            
                         end
                     case 'HP'
                         obj.ElectrThermalModel.Selected_TF_BaseName = 1;
-                        obj.ElectrThermalModel.Selected_NoiseBaseName = 1;
-                        obj.TFOpt.TFBaseName = '\TF*';
-                        obj.NoiseOpt.NoiseBaseName ='\HP_noise*';
+                        obj.TFOpt.TFBaseName = '\TF*';                        
                         if (isempty(strfind(obj.TFS.file,'\TF_')))&&(isempty(strfind(obj.TFS.file,'\TFS')))
                             [Path, Name] = fileparts(obj.TFS.file);
                             warndlg('TFS must be a file named TF_* (HP)',obj.version);
-                            obj.TFS = obj.TFS.importTF([Path filesep]);
-                            
+                            obj.TFS = obj.TFS.importTF([Path filesep]);                            
                         end
                     case 'Previously Selected'
                         
                     otherwise
                         disp('PXI acquisition files were selected by default.')
                         obj.ElectrThermalModel.Selected_TF_BaseName = 2;
-                        obj.ElectrThermalModel.Selected_NoiseBaseName = 2;
                 end
+                
+                ButtonName = questdlg('Select Files Acquisition device for Noise analysis', ...
+                    obj.version, ...
+                    'PXI', 'HP', 'Previously Selected','HP');
+                switch ButtonName
+                    case 'PXI'
+                        obj.ElectrThermalModel.Selected_NoiseBaseName = 2;                           
+                        obj.NoiseOpt.NoiseBaseName ='\PXI_noise*';
+%                         if (isempty(strfind(obj.TFS.file,'PXI')))&&(isempty(strfind(obj.TFS.file,'PXI')))
+%                             [Path, Name] = fileparts(obj.TFS.file);
+%                             warndlg('TFS must be a file named *PXI* (PXI card)',obj.version);
+%                             obj.TFS = obj.TFS.importTF([Path filesep]);                            
+%                         end
+                    case 'HP'                        
+                        obj.ElectrThermalModel.Selected_NoiseBaseName = 1;                        
+                        obj.NoiseOpt.NoiseBaseName ='\HP_noise*';
+%                         if (isempty(strfind(obj.TFS.file,'\TF_')))&&(isempty(strfind(obj.TFS.file,'\TFS')))
+%                             [Path, Name] = fileparts(obj.TFS.file);
+%                             warndlg('TFS must be a file named TF_* (HP)',obj.version);
+%                             obj.TFS = obj.TFS.importTF([Path filesep]);                            
+%                         end
+                    case 'Previously Selected'
+                        
+                    otherwise
+                        disp('PXI acquisition files were selected by default.')                        
+                        obj.ElectrThermalModel.Selected_NoiseBaseName = 2;
+                end                
                 
                 prompt = {'Mimimum frequency value:','Maximum frequency value:'};
                 dlg_title = 'Frequency limitation for Z(w)-Noise analysis';
@@ -1025,8 +1045,7 @@ classdef TES_Struct
                             
                         end
                         h_i = h_i+1;
-                        jj = jj+1;                        
-                        
+                        jj = jj+1;
                     end
                     
                      
