@@ -27,8 +27,8 @@ classdef TES_ElectrThermModel
         Selected_NoiseBaseName = 1;
         Noise_Models = {'irwin';'2TB (Hanging)';'2TB (Intermediate)';'wouter'};           % irwin, wouter
         Selected_Noise_Models = 1;
-        Noise_LowFreq = 1e2;
-        Noise_HighFreq = 10e4;
+        Noise_LowFreq = [2e2 1e3]; % [2e2,1e3]
+        Noise_HighFreq = [5e3,1e5]; %10e4; %[5e3,1e5]
         DataMedFilt = 40;
         Kb = 1.38e-23;
     end
@@ -216,8 +216,10 @@ classdef TES_ElectrThermModel
             % cada caso. 
             n = eval(['TES.TESThermal' CondStr '.n.Value']);
             K = eval(['TES.TESThermal' CondStr '.K.Value']);
-            T0 = ((param.P0/K)+((IVaux.Tbath)^n)/K)^(1/n);
-            G0 = n*K*(IVaux.Tbath^(n-1));
+%             eval(['T0 = ((P0./TES.TESThermal' CondStr '.K.Value+Ts.^TES.TESThermal' CondStr '.n.Value)).^(1./(TES.TESThermal' CondStr '.n.Value));']);
+            T0 = ((param.P0./K+IVaux.Tbath^n).^(1./n));
+%             T0 = ((param.P0/K)+((IVaux.Tbath)^n)/K)^(1/n);
+            G0 = n*K*(T0^(n-1));
             
             % Antiguas formas de propagar los valores de T0 y G0.
 %             if size(eval(['[TES.Gset' CondStr '.n]']),2) > 1
@@ -362,25 +364,35 @@ classdef TES_ElectrThermModel
             SimulatedNoise = obj.noisesim(TES,OP,M,f,CondStr);
             SimRes = SimulatedNoise.Res;            
             sIaux = ppval(spline(f,SimulatedNoise.sI),noisedata{1}(:,1));
-            NEP = sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2)./sIaux;
+            NEP = real(sqrt(((SigNoise*1e-12).^2-SimulatedNoise.squid.^2))./sIaux);            
+%             NEP = sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2)./sIaux;
             NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
             RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./medfilt1(real(NEP),obj.DataMedFilt).^2))/2/1.609e-19;
             
             if isreal(NEP)
-                findx = find(fNoise > max(obj.Noise_LowFreq-20,1) & fNoise < obj.Noise_HighFreq);
-                xdata = fNoise(findx);                
-                ydata = medfilt1(NEP(findx)*1e18,obj.DataMedFilt);                
-                
-                findx = find(xdata > obj.Noise_LowFreq & xdata < obj.Noise_HighFreq);
-                xdata = xdata(findx);
+                obj.Noise_LowFreq = [2e2 1e3]; % [2e2,1e3]
+                obj.Noise_HighFreq = [5e3 1e5]; %10e
+%                 obj.Noise_LowFreq = [1e0 10e4]; % [2e2,1e3]
+%                 obj.Noise_HighFreq = [1e0 10e4]; %10e
+                ydata = medfilt1(NEP*1e18,obj.DataMedFilt);
+%                 findx = find(fNoise > max(obj.Noise_LowFreq,1) & fNoise < obj.Noise_HighFreq);
+                findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+                xdata = fNoise(findx);   
                 ydata = ydata(findx);
+                                
+                
+%                 findx = find(xdata > obj.Noise_LowFreq & xdata < obj.Noise_HighFreq);
+%                 xdata = xdata(findx);
+%                 ydata = ydata(findx);
                 
                 if isempty(findx)||sum(ydata == inf)
                     M = NaN;
                     Mph = NaN;
-                else
+                else %TES,M,f,OP,CondStr)
                     opts = optimset('Display','off');
-                    maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata,ydata,[],[],opts);                    
+                    maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata,ydata,[],[],opts);   
+                    ans = obj.fitjohnson(TES,[0 0],xdata,OP,CondStr);
+%                     figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
                     M = maux(2);
                     Mph = maux(1);
                     if M <= 0
@@ -431,11 +443,16 @@ classdef TES_ElectrThermModel
             I0 = OP.I0;
             V0 = OP.V0;
             if size(eval(['[TES.Gset' CondStr '.n]']),2) > 1
-                rp = R0/Rn;
-                [val, ind] = min(abs(eval(['[TES.Gset' CondStr '.rp]'])-rp));
-                eval(['T0 = TES.Gset' CondStr '(ind).T_fit;'])   
-                % Si fijo n, cojo T0 y G0 se toman segun su rp (variables)
-                G = eval(['TES.TESThermal' CondStr '.G.Value']);  %(W/K)
+                
+                
+%                 rp = R0/Rn;
+%                 [val, ind] = min(abs(eval(['[TES.Gset' CondStr '.rp]'])-rp));
+%                 eval(['T0 = TES.Gset' CondStr '(ind).T_fit;'])   
+%                 % Si fijo n, cojo T0 y G0 se toman segun su rp (variables)
+%                 G = eval(['TES.TESThermal' CondStr '.G.Value']);  %(W/K)
+                
+                eval(['T0 = ((P0./TES.TESThermal' CondStr '.K.Value+Ts.^TES.TESThermal' CondStr '.n.Value)).^(1./(TES.TESThermal' CondStr '.n.Value));']);
+                eval(['G = TES.TESThermal' CondStr '.n.Value*TES.TESThermal' CondStr '.K.Value*T0.^(TES.TESThermal' CondStr '.n.Value-1);']);
 %                 eval(['G = TES.Gset' CondStr '(ind).G;'])   
 %                 param.G0 = TES.TESP.n*TES.TESP.K*T0^(TES.TESP.n-1);
             else
@@ -553,12 +570,16 @@ classdef TES_ElectrThermModel
         function NEP = fitjohnson(obj,TES,M,f,OP,CondStr)
             
             R0=OP.R0;
+            Ts = OP.Tbath;
             if size(eval(['[TES.Gset' CondStr '.n]']),2) > 1
-                rp = R0/eval(['TES.TESParam' CondStr '.Rn.Value']);
-                [val, ind] = min(abs(eval(['[TES.Gset' CondStr '.rp]'])-rp));
-                eval(['T0 = TES.Gset' CondStr '(ind).T_fit;'])   
-                % Si fijo n, cojo T0 y G0 se toman segun su rp (variables)
-                G = eval(['TES.TESThermal' CondStr '.G.Value']);  %(W/K)
+%                 rp = R0/eval(['TES.TESParam' CondStr '.Rn.Value']);
+%                 [val, ind] = min(abs(eval(['[TES.Gset' CondStr '.rp]'])-rp));
+%                 eval(['T0 = TES.Gset' CondStr '(ind).T_fit;'])   
+%                 % Si fijo n, cojo T0 y G0 se toman segun su rp (variables)
+%                 G = eval(['TES.TESThermal' CondStr '.G.Value']);  %(W/K)
+                
+                eval(['T0 = ((OP.P0./TES.TESThermal' CondStr '.K.Value+Ts.^TES.TESThermal' CondStr '.n.Value)).^(1./(TES.TESThermal' CondStr '.n.Value));']);
+                eval(['G = TES.TESThermal' CondStr '.n.Value*TES.TESThermal' CondStr '.K.Value*T0.^(TES.TESThermal' CondStr '.n.Value-1);']);
 %                 eval(['G = TES.Gset' CondStr '(ind).G;'])   
 %                 param.G0 = TES.TESP.n*TES.TESP.K*T0^(TES.TESP.n-1);
             else
@@ -580,7 +601,8 @@ classdef TES_ElectrThermModel
             n = TESThemal.n.Value;            
             
             Rs=Circuit.Rsh.Value;            
-            L=Circuit.L.Value;
+            L = 7.7e-8;
+%             L=Circuit.L.Value;
             
             alfa=OP.ai;
             bI=OP.bi;

@@ -748,19 +748,24 @@ classdef TES_Struct
                     case 'PXI'
                         obj.ElectrThermalModel.Selected_TF_BaseName = 2;
                         obj.ElectrThermalModel.Selected_NoiseBaseName = 2;
-                                                
-                        if (isempty(strfind(obj.TFS.file,'PXI_TF_')))&&(isempty(strfind(obj.TFS.file,'PXI_TFS')))
+                        obj.TFOpt.TFBaseName = '\PXI_TF*';   
+                        obj.NoiseOpt.NoiseBaseName ='\PXI_noise*';
+                        if (isempty(strfind(obj.TFS.file,'PXI')))&&(isempty(strfind(obj.TFS.file,'PXI')))
                             [Path, Name] = fileparts(obj.TFS.file);
-                            warndlg('TFS must be a file named PXI_TF_* (PXI card)',obj.version);
+                            warndlg('TFS must be a file named *PXI* (PXI card)',obj.version);
                             obj.TFS = obj.TFS.importTF([Path filesep]);
+                            
                         end
                     case 'HP'
                         obj.ElectrThermalModel.Selected_TF_BaseName = 1;
                         obj.ElectrThermalModel.Selected_NoiseBaseName = 1;
+                        obj.TFOpt.TFBaseName = '\TF*';
+                        obj.NoiseOpt.NoiseBaseName ='\HP_noise*';
                         if (isempty(strfind(obj.TFS.file,'\TF_')))&&(isempty(strfind(obj.TFS.file,'\TFS')))
                             [Path, Name] = fileparts(obj.TFS.file);
                             warndlg('TFS must be a file named TF_* (HP)',obj.version);
                             obj.TFS = obj.TFS.importTF([Path filesep]);
+                            
                         end
                     case 'Previously Selected'
                         
@@ -916,7 +921,7 @@ classdef TES_Struct
                             multiwaitbar(2,[i/length(dirs) j1/length(filesZ)],{Path,NameStr},H);
                         else
                             H = multiwaitbar(2,[i/length(dirs) j1/length(filesZ)],{Path,NameStr});
-                            H.figure.Name = 'ZarTES v2.2';
+                            H.figure.Name = obj.version;
                         end
                         thefile = strcat(dirs{i},'\',filesZ{j1});
                         try
@@ -1433,15 +1438,20 @@ classdef TES_Struct
                         eval(['files' StrCond{iP} ' = files' StrCond{iP} '(ind);']);
                     end
                     
-                    N_figs = floor(N/4);
-                    N_figs = N_figs + rem(N,4);
+                    N_figs = floor(N/4);  
+                    if rem(N,4) ~= 0
+                        N_figs = N_figs+1;
+                    end                    
                     j = 1;
                     for k = 1:N_figs
-                        fig(k,iP) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
-                        clear hs;
+                        fig{ind_Tbath}(k,iP) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);
+                        try
+                            clear hs;
+                        end
                         
                         for i = 1:4
                             if j <= N
+                                figure(fig{ind_Tbath}(k,iP));
                                 hs(i) = subplot(2,2,i);
                                 hold(hs(i),'on');
                                 grid(hs(i),'on');
@@ -1453,12 +1463,12 @@ classdef TES_Struct
                                     case 2 % nep
                                         ylabel(hs(i),'aW/Hz^{0.5}');
                                 end
-                                eval(['FileName = files' StrCond{iP} '{i};']);
+                                eval(['FileName = files' StrCond{iP} '{j};']);
                                 FileName = FileName(find(FileName == filesep,1,'last')+1:end);
-                                if ~isempty(strfind(upper(FileName),'PXI_noise_'))
-                                    Ib = sscanf(FileName,'PXI_noise_%fuA.txt')*1e-6;
+                                if ~isempty(strfind(upper(FileName),'PXI_NOISE_'))
+                                    Ib = sscanf(upper(FileName),'PXI_NOISE_%fuA.txt')*1e-6;
                                 else
-                                    Ib = sscanf(FileName,'HP_noise_%fuA.txt')*1e-6;
+                                    Ib = sscanf(upper(FileName),'HP_NOISE_%fuA.txt')*1e-6;
                                 end
                                 %                         Ib = sscanf(FileName,strcat(NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
                                 eval(['OP = obj.setTESOPfromIb(Ib,IV,obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
@@ -1624,16 +1634,19 @@ classdef TES_Struct
 %                         Tind = ind_Tbath;
 %                     end
 %                     eval(['IV = obj.IVset' StrCond{iP} '(Tind);'])                    
-                    N_figs = floor(N/4);
-                    N_figs = N_figs + rem(N,4);
+                    N_figs = floor(N/4);  
+                    if rem(N,4) ~= 0
+                        N_figs = N_figs+1;
+                    end 
                     j = 1;
                     for k = 1:N_figs
-                        fig(k,iP) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);                       
+                        fig{ind_Tbath}(k,iP) = figure('Name',[StrCond_Label{iP} ' ' num2str(eval(['[obj.P' StrCond{iP} '(ind_Tbath).Tbath]'])*1e3) ' mK']);                       
                         clear hs;
 %                         hs = nan(4,1);                        
                         
                         for i = 1:4
                             if j <= N
+                                figure(fig{ind_Tbath}(k,iP));
                                 hs(i) = subplot(2,2,i);
                                 hold(hs(i),'on');
                                 grid(hs(i),'on');
@@ -1643,9 +1656,9 @@ classdef TES_Struct
                                 eval(['FileName = files' StrCond{iP} '{j};']);
                                 FileName = FileName(find(FileName == filesep,1,'last')+1:end);
                                 if ~isempty(strfind(upper(FileName),'PXI_TF'))
-                                    Ib = sscanf(FileName,'PXI_TF_%fuA.txt')*1e-6;
+                                    Ib = sscanf(upper(FileName),'PXI_TF_%fuA.txt')*1e-6;
                                 else
-                                    Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
+                                    Ib = sscanf(upper(FileName),'TF_%fuA.txt')*1e-6;
                                 end
                                 eval(['OP = obj.setTESOPfromIb(Ib,IV,obj.P' StrCond{iP} '(ind_Tbath).p,''' StrCond{iP} ''');']);
                                 
@@ -2756,22 +2769,22 @@ classdef TES_Struct
                     FigSubNum = 1;    
                     Temps = num2str(Tbath'*1e3);
                     for i = 1:length(Tbath)
-                        for k = 1:size(fig,1)
-                            Style = 'normal';
-                            StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
-                            StrIni(end) = [];
-                            WordText(ActXWord,StrIni,Style,[0,1]);
+                        Style = 'normal';
+                        StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
+                        StrIni(end) = [];
+                        WordText(ActXWord,StrIni,Style,[0,1]);
+                        for k = 1:size(fig{i},1)                            
                             Style='normal';
                             WordText(ActXWord,'',Style,[0,1]);
-                            set(fig(k,1).Children,'FontUnits','Normalized');
-                            set(fig(k,1), 'Position', get(0, 'Screensize'));
-                            print(fig(k,1),'-dmeta')
+                            set(fig{i}(k,1).Children,'FontUnits','Normalized');
+                            set(fig{i}(k,1), 'Position', get(0, 'Screensize'));
+                            print(fig{i}(k,1),'-dmeta')
                             invoke(ActXWord.Selection,'Paste');
-                            close(fig(k,1));
+                            close(fig{i}(k,1));
                             pause(0.3)
                             ActXWord.Selection.TypeParagraph;
                             Style='Cita';
-                            TextString = ['Fig. ' num2str(FigNum) '. Z(w) a ' Temps(i,:) ' mK.'];
+                            TextString = ['Fig. ' num2str(FigNum) '.' num2str(FigSubNum) '. Z(w) a ' Temps(j,:) ' mK.'];
                             WordText(ActXWord,TextString,Style,[0,1]);
                             FigSubNum = FigSubNum+1;
                         end
@@ -2785,19 +2798,19 @@ classdef TES_Struct
                     FigSubNum = 1;    
                     Temps = num2str(Tbath'*1e3);
                     for j = 1:length(Tbath)
-                        for k = 1:size(fig,1)
-                            i = i+1;
-                            Style = 'normal';
-                            StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
-                            StrIni(end) = [];
+                        Style = 'normal';
+                        StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
+                        StrIni(end) = [];
+                        for k = 1:size(fig{j},1)
+                            i = i+1;                            
                             WordText(ActXWord,StrIni,Style,[0,1]);
                             Style='normal';
                             WordText(ActXWord,'',Style,[0,1]);
-                            set(fig(k,2).Children,'FontUnits','Normalized');
-                            set(fig(k,2), 'Position', get(0, 'Screensize'));
-                            print(fig(k,2),'-dmeta')
+                            set(fig{j}(k,2).Children,'FontUnits','Normalized');
+                            set(fig{j}(k,2), 'Position', get(0, 'Screensize'));
+                            print(fig{j}(k,2),'-dmeta')
                             invoke(ActXWord.Selection,'Paste');
-                            close(fig(k,2));
+                            close(fig{j}(k,2));
                             pause(0.3)
                             ActXWord.Selection.TypeParagraph;
                             Style='Cita';
@@ -2850,18 +2863,18 @@ classdef TES_Struct
                     FigSubNum = 1;                    
                     Temps = num2str(Tbath'*1e3);
                     for i = 1:length(Tbath)
-                        for k = 1:size(fig,1)
-                            Style = 'normal';
-                            StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
-                            StrIni(end) = [];
-                            WordText(ActXWord,StrIni,Style,[0,1]);
+                        Style = 'normal';
+                        StrIni = ['Positive Ibias at ' Temps(i,:) ' mK ',];
+                        StrIni(end) = [];
+                        WordText(ActXWord,StrIni,Style,[0,1]);
+                        for k = 1:size(fig{i},1)                            
                             Style='normal';
                             WordText(ActXWord,'',Style,[0,1]);
-                            set(fig(k,1).Children,'FontUnits','Normalized');
-                            set(fig(k,1), 'Position', get(0, 'Screensize'));
-                            print(fig(k,1),'-dmeta')
+                            set(fig{i}(k,1).Children,'FontUnits','Normalized');
+                            set(fig{i}(k,1), 'Position', get(0, 'Screensize'));
+                            print(fig{i}(k,1),'-dmeta')
                             invoke(ActXWord.Selection,'Paste');
-                            close(fig(k,1));
+                            close(fig{i}(k,1));
                             pause(0.3)
                             ActXWord.Selection.TypeParagraph;
                             Style='Cita';
@@ -2878,19 +2891,19 @@ classdef TES_Struct
                     FigSubNum = 1;
                     Temps = num2str(Tbath'*1e3);
                     for j = 1:length(Tbath)
-                        for k = 1:size(fig,1)
-                            i = i+1;
-                            Style = 'normal';
-                            StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
-                            StrIni(end) = [];
-                            WordText(ActXWord,StrIni,Style,[0,1]);
+                        Style = 'normal';
+                        StrIni = ['Negative Ibias at ' Temps(j,:) ' mK ',];
+                        StrIni(end) = [];
+                        WordText(ActXWord,StrIni,Style,[0,1]);
+                        for k = 1:size(fig{j},1)
+                            i = i+1;                            
                             Style='normal';
                             WordText(ActXWord,'',Style,[0,1]);
-                            set(fig(k,2).Children,'FontUnits','Normalized');
-                            set(fig(k,2), 'Position', get(0, 'Screensize'));
-                            print(fig(k,2),'-dmeta')
+                            set(fig{j}(k,2).Children,'FontUnits','Normalized');
+                            set(fig{j}(k,2), 'Position', get(0, 'Screensize'));
+                            print(fig{j}(k,2),'-dmeta')
                             invoke(ActXWord.Selection,'Paste');
-                            close(fig(k,2));
+                            close(fig{j}(k,2));
                             pause(0.3)
                             ActXWord.Selection.TypeParagraph;
                             Style='Cita';
