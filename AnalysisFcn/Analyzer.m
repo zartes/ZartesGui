@@ -1275,6 +1275,68 @@ switch src.Label
         else
             return;
         end
+    case 'Plot IV-Zs'
+        str = cellstr(handles.Loaded_TES.String);
+        [s1,~] = listdlg('PromptString','Select Loaded TES:',...
+            'SelectionMode','multiple',...
+            'ListString',str);
+        if isempty(s1)
+            return;
+        end
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
+        delete(indAxes);
+        Lines_old = [];
+        
+        TbathNums = [];
+        for i = s1
+            TbathNums = [TbathNums [handles.Session{i}.TES.PP.Tbath] ...
+                [handles.Session{i}.TES.PN.Tbath]];
+        end
+        
+        str = cellstr(num2str(unique(TbathNums)'));
+        [s,~] = listdlg('PromptString','Select Tbath value/s:',...
+            'SelectionMode','multiple',...
+            'ListString',str);
+        if isempty(s)
+            return;
+        end
+        Tbath_ref = str2double(str(s))';
+        
+        j = 1;
+        for i = s1
+            TbathNums = unique([[handles.Session{i}.TES.PP.Tbath] ...
+                [handles.Session{i}.TES.PN.Tbath]]);
+            Tbath = intersect(TbathNums,Tbath_ref);
+            
+            SessionName = handles.Session{i}.Tag;
+            SessionName(SessionName == '_') = ' ';
+            fig = handles.Session{i}.TES.CompareIV_Z(handles.Session{i}.TES.IVsetP,handles.Session{i}.TES.PP,Tbath,fig);
+            handles.Session{i}.TES.CompareIV_Z(handles.Session{handles.TES_ID}.TES.IVsetN,handles.Session{handles.TES_ID}.TES.PN,Tbath,fig);
+            
+            Lines = findobj(fig.hObject,'Type','Line');
+            Lines = setdiff(Lines,Lines_old);
+            for Ln = 1:length(Lines)
+                if i == s1(1)
+                    Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
+                    Lines(Ln).UserData = i;
+                    %                                 Lines(Ln).Color = colors(j,:);
+                    Lines(Ln).Marker = Markers{j};
+                    Lines(Ln).MarkerSize = 6;
+                else
+                    if ~isequal(Lines(Ln).UserData,i-1)
+                        Lines(Ln).DisplayName = [Lines(Ln).DisplayName ' - ' SessionName];
+                        Lines(Ln).UserData = i;
+                        %                                     Lines(Ln).Color = colors(j,:);
+                        Lines(Ln).Marker = Markers{j};
+                        Lines(Ln).MarkerSize = 6;
+                    end
+                end
+            end
+            Lines_old = [Lines_old;Lines];
+            j = j+1;
+        end
+        
     case 'Plots Critical Currents'
         str = cellstr(handles.Loaded_TES.String);
         [s1,~] = listdlg('PromptString','Select Loaded TES:',...

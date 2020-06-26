@@ -494,13 +494,13 @@ classdef TES_Struct
             
             if isempty(fig)
                 fig = figure;
-                ax = axes;
+                ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
                 hold(ax,'on');
                 grid(ax,'on');
             else
                 ax = findobj(fig,'Type','Axes');
                 if isempty(ax)
-                    ax = axes;
+                    ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
                 end
                 hold(ax,'on');
                 grid(ax,'on');
@@ -525,7 +525,7 @@ classdef TES_Struct
             end
             xlabel(ax,'T_{TES} (K)','FontSize',12,'FontWeight','bold');
             ylabel(ax,'R_{TES} (mOhm)','FontSize',12,'FontWeight','bold');
-            set(ax,'FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
+            
         end
         
         function [obj, fig] = plotRTs4points(obj,fig,ZTDB)
@@ -597,7 +597,7 @@ classdef TES_Struct
                     end
                     for j = 1:length(StrField)
                         if ~isfield(fig,'subplots')
-                            h(j) = subplot(2,2,j,'ButtonDownFcn',{@GraphicErrors_NKGT});
+                            h(j) = subplot(2,2,j,'ButtonDownFcn',{@GraphicErrors_NKGT},'LineWidth',2,'FontSize',12,'FontWeight','bold','box','on');
                             hold(h(j),'on');
                             grid(h(j),'on');
                         end
@@ -617,7 +617,7 @@ classdef TES_Struct
                         xlim(h(j),[0.15 0.9]);
                         xlabel(h(j),'%R_n','FontSize',12,'FontWeight','bold');
                         ylabel(h(j),StrLabel{j},'FontSize',12,'FontWeight','bold');
-                        set(h(j),'LineWidth',2,'FontSize',12,'FontWeight','bold','box','on')
+                        
                         
                         try
                             eval(['plot(h(j),Gset(TES_OP_y).rp,Gset(TES_OP_y).' StrField{j} '*' StrMultiplier{j} ',''.-'','...
@@ -628,7 +628,7 @@ classdef TES_Struct
                     fig.subplots = h;
                     try
                         data.er = er;
-                        set(h,'ButtonDownFcn',{@GraphicErrors_NKGT},'UserData',data,'FontSize',12,'LineWidth',2,'FontWeight','bold')
+                        set(h,'ButtonDownFcn',{@GraphicErrors_NKGT},'UserData',data)
                     catch
                     end
                     set(h,'Visible','on');
@@ -1311,7 +1311,9 @@ classdef TES_Struct
                 if ~isfield(fig,'subplots')
                     h = nan(4,1);
                     for i = 1:4
-                        h(i) = subplot(2,2,i,'Visible','off','ButtonDownFcn',{@Identify_Origin});
+                        h(i) = subplot(2,2,i,'Visible','off','ButtonDownFcn',...
+                            {@Identify_Origin},'FontSize',12,'LineWidth',2,...
+                            'FontWeight','bold','FontUnits','Normalized');
                     end
                 else
                     h = fig.subplots;
@@ -1343,6 +1345,10 @@ classdef TES_Struct
                         
                         eval(['grid(h(' num2str(j) '),''on'');']);
                         eval(['hold(h(' num2str(j) '),''on'');']);
+                        
+                            
+                        eval(['xlabel(h(' num2str(j) '),''%R_n'',''FontSize'',12,''FontWeight'',''bold'');']);
+                        eval(['ylabel(h(' num2str(j) '),''' YLabels{j} ''',''FontSize'',12,''FontWeight'',''bold'');']);
                         try
                             eval(['er(ind) = errorbar(h(' num2str(j) '),'...
                                 DataStr{j} ',' DataStr_CI{j} ',''Color'',[colors(ind_color,:)],''Visible'',''' errorOpt ''',''DisplayName'','''...
@@ -1355,7 +1361,6 @@ classdef TES_Struct
                             eval(['h_ax(' num2str(i) ',' num2str(j) ') = ' PlotStr{j} '(h(' num2str(j) '),' DataStr{j} ...
                                 ',''' MarkerStr{i} ''',''Color'',[colors(ind_color,:)],''LineWidth'',LW1,''MarkerSize'',MS,''DisplayName'',''' NameStr ''''...
                                 ',''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit}]);']);
-                            eval(['set(h(' num2str(j) '),''FontSize'',12,''FontWeight'',''bold'',''Box'',''on'');']);
                             eval(['axis(h(' num2str(j) '),''tight'');']);
                         catch
                             eval('h_ax = [];');
@@ -1374,8 +1379,7 @@ classdef TES_Struct
                             h_bad = [];
                         end                        
                         
-                        eval(['xlabel(h(' num2str(j) '),''%R_n'',''FontSize'',12,''FontWeight'',''bold'');']);
-                        eval(['ylabel(h(' num2str(j) '),''' YLabels{j} ''',''FontSize'',12,''FontWeight'',''bold'');']);
+                        
                         ind = ind+1;
                     end
                     ind_color = ind_color+1;
@@ -1396,15 +1400,19 @@ classdef TES_Struct
                 fig.subplots = h;
                 xlim([0.15 0.9])
             end
+%             for j = 1:4
+%                 eval(['xlabel(h(' num2str(j) '),''%R_n'',''FontSize'',12,''FontWeight'',''bold'',''Visible'',''on'');']);
+%                         eval(['ylabel(h(' num2str(j) '),''' YLabels{j} ''',''FontSize'',12,''FontWeight'',''bold'',''Visible'',''on'');']);
+%             end
             fig.hObject.Visible = 'on';
             
             try
                 data.er = er;
                 data.h_bad = h_bad;
                 data.erbad = erbad;
-                set(h,'ButtonDownFcn',{@GraphicErrors},'UserData',data,...
-                    'FontSize',12,'LineWidth',2,'FontWeight','bold','Box','on','FontUnits','Normalized');
+                set(h,'ButtonDownFcn',{@GraphicErrors},'UserData',data);
                 set(h,'Visible','on')
+                
             catch
             end
             
@@ -1865,7 +1873,7 @@ classdef TES_Struct
                     ax = findobj(fig,'Type','Axes');
                     if isempty(ax)
                         figure(fig);
-                        ax = axes;
+                        ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
                         hold(ax,'on');
                         grid(ax,'on');
                     end
@@ -1918,8 +1926,7 @@ classdef TES_Struct
                         end
                     end
                     xlabel(ax,'T_{bath}(K)');
-                    ylabel(ax,Ylabel);
-                    set(ax,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized');
+                    ylabel(ax,Ylabel);                    
                     grid(ax,'on');
                     set(ax,'ButtonDownFcn',{@GraphicErrors_NKGT});
                     
@@ -1950,7 +1957,7 @@ classdef TES_Struct
                     ax = findobj(fig,'Type','Axes');
                     if isempty(ax)
                         figure(fig);
-                        ax = axes;
+                        ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');;
                         hold(ax,'on');
                         grid(ax,'on');
                     end
@@ -2011,7 +2018,7 @@ classdef TES_Struct
                     end
                     xlabel(ax,'%Rn');
                     ylabel(ax,Ylabel);
-                    set(ax,'FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
+                    
                     set(ax,'ButtonDownFcn',{@GraphicErrors_NKGT})
                 end
                 
@@ -2041,7 +2048,7 @@ classdef TES_Struct
                 else
                     ax = findobj('Type','Axes');
                     if length(ax) > 1
-                        ax = axes;
+                        ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');;
                         hold(ax,'on');
                         grid(ax,'on');
                     end
@@ -2106,7 +2113,7 @@ classdef TES_Struct
                 end
                 xlabel(ax,Xlabel);
                 ylabel(ax,Ylabel);
-                set(ax,'FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
+%                 set(ax,'FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
                 set(ax,'ButtonDownFcn',{@GraphicErrors_NKGT})
             end
         end
@@ -2123,9 +2130,11 @@ classdef TES_Struct
             if ~isfield(fig,'subplot')
                 h(1) = subplot(2,1,1);
 %                 set(h(1),'FontUnits','Normalized');
+                set(h(1),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on');
                 grid(h(1),'on');
                 hold(h(1),'on');
                 h(2) = subplot(2,1,2);
+                set(h(2),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on');
 %                 set(h(2),'FontUnits','Normalized');
                 grid(h(2),'on');
                 hold(h(2),'on');
@@ -2205,11 +2214,11 @@ classdef TES_Struct
             end
             ylabel(h(1),'\alpha_{eff}','FontSize',12,'FontWeight','bold');
             xlabel(h(1),'R_{TES}/R_n','FontSize',12,'FontWeight','bold');
-            set(h(1),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on');
+            
             ylabel(h(2),'\beta_{eff}','FontSize',12,'FontWeight','bold');
             xlabel(h(2),'R_{TES}/R_n','FontSize',12,'FontWeight','bold');
-            set(h(2),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on');
-            pause(0.1)
+%             set(h(2),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on');
+%             pause(0.1)
 %             set(h,'Box','on','FontUnits','Normalized');
             
         end
@@ -2223,7 +2232,7 @@ classdef TES_Struct
                 end
                 ax = findobj(fig,'Type','Axes');
                 if isempty(ax)
-                    ax = axes;
+                    ax = axes('LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized');
                 end
                 try
                     d.Label = 'Field(uA) \t';
@@ -2253,7 +2262,7 @@ classdef TES_Struct
                     end
                     xlabel(ax,'Field (\muA)','FontSize',12,'FontWeight','bold');
                     ylabel(ax,'Critical current (\muA)','FontSize',12,'FontWeight','bold');
-                    set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized','ButtonDownFcn',{@ExportData},'UserData',d);
+                    set(ax,'ButtonDownFcn',{@ExportData},'UserData',d);
                 catch
                     
                 end
@@ -2270,7 +2279,7 @@ classdef TES_Struct
                 end
                 ax = findobj(fig,'Type','Axes');
                 if isempty(ax)
-                    ax = axes;
+                    ax = axes('LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized');
                 end
                 try
                     d.Label = 'Field(uA) \t';
@@ -2293,7 +2302,7 @@ classdef TES_Struct
                     end
                     xlabel(ax,'I_{Field} (\muA)','FontSize',12,'FontWeight','bold');
                     ylabel(ax,'Vdc(V)','FontSize',12,'FontWeight','bold');
-                    set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized','ButtonDownFcn',{@ExportData},'UserData',d);
+                    set(ax,'ButtonDownFcn',{@ExportData},'UserData',d);
                 catch
                 end
             else

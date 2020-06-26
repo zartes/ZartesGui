@@ -24,7 +24,7 @@ classdef TES_Analyzer_Session
                 obj.File = filename;
                 obj.Path = pathname;
                 answer = inputdlg({'Insert a Nick name for the TES'},hd.VersionStr,[1 50],{' '});               
-                if ~isempty(char(answer))
+                if ~isempty(answer)
                     answer{1} = filename;
                 else
                     answer{1} = 'Default';
@@ -49,7 +49,7 @@ classdef TES_Analyzer_Session
                     for i = 1:length(FN)
                         try
                             eval(['obj.TES.' FN{i} ' = obj.TES.' FN{i} '.Update(tes.obj.' FN{i} ');']);
-                        catch
+                        catch 
                         end
                     end
                     

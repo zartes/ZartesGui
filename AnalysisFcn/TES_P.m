@@ -73,7 +73,9 @@ classdef TES_P
                 fieldNames = fieldnames(data);
                 for i = 1:length(fieldNames)
                     if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
-                        eval(['obj.' fieldNames{i} ' = data.' fieldNames{i} ';']);
+                        for j = 1:size(data,2)
+                            eval(['obj(j).' fieldNames{i} ' = data(j).' fieldNames{i} ';']);
+                        end
                     end
                 end
                 

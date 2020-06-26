@@ -11,7 +11,7 @@ classdef TES_TFS
     end
     
     properties (Access = private)
-        version = 'ZarTES v2.2';
+        version = 'ZarTES v3.0';
     end
     
     methods
@@ -40,7 +40,7 @@ classdef TES_TFS
             ok = 1; % All fields are filled
         end
         
-        function obj = UpdateTFS(obj,data)
+        function obj = Update(obj,data)
             % Function to update the class values
             
             FN = properties(obj);
@@ -64,7 +64,7 @@ classdef TES_TFS
                 obj1 = obj.importTF;
             end
             if Filled(obj1)
-                obj = obj.UpdateTFS(obj1);
+                obj = obj.Update(obj1);
             else
                 errordlg('No TF was selected!',obj.version)
                 return;
