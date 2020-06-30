@@ -110,6 +110,8 @@ classdef TES_P
                 warndlg('param must be string',obj.version);
                 return;
             else
+                val = {[]};
+                rp = {[]};
                 ValidParams = fieldnames(obj(1).p);
                 ok_ind = 0;
                 for i = 1:length(ValidParams)
@@ -156,6 +158,7 @@ classdef TES_P
                 warndlg('param must be string',obj.version);
                 return;
             else
+                val = [];
                 ValidParams = fieldnames(obj(1).p);
                 ok_ind = 0;
                 for i = 1:length(ValidParams)
@@ -205,6 +208,8 @@ classdef TES_P
                 warndlg('param1 and param2 must be strings',obj.version);
                 return;
             else
+                val1 = [];
+                val2 = [];
                 ValidParams = fieldnames(obj(1).p);
                 ok1_ind = 0;
                 ok2_ind = 0;

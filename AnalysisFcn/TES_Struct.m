@@ -660,12 +660,12 @@ classdef TES_Struct
                     defaultanswer = {'0.8'};
                     answer = inputdlg(prompt,name,numlines,defaultanswer);
                     if isempty(answer)
-                        warndlg('No %Rn value selected',handles.version);
+                        warndlg('No %Rn value selected',obj.version);
                         return;
                     else
                         X = str2double(answer{1});
                         if isnan(X)
-                            warndlg('Invalid %Rn value',handles.version);
+                            warndlg('Invalid %Rn value',obj.version);
                             return;
                         end
                     end
@@ -1946,8 +1946,8 @@ classdef TES_Struct
                     
                     if isempty(strfind(param,'_CI'))
                         try
-                            [valP_CI,rpP,TbathP] = obj.PP.GetParamVsRn([param '_CI'],Tbath); % Tbath = '50.0mK' o Tbath = 0.05;
-                            [valN_CI,rpN,TbathN] = obj.PN.GetParamVsRn([param '_CI'],Tbath);
+                            [valP_CI,~,TbathP] = obj.PP.GetParamVsRn([param '_CI'],Tbath); % Tbath = '50.0mK' o Tbath = 0.05;
+                            [valN_CI,~,TbathN] = obj.PN.GetParamVsRn([param '_CI'],Tbath);
                         catch
                         end
                     end
@@ -1957,7 +1957,7 @@ classdef TES_Struct
                     ax = findobj(fig,'Type','Axes');
                     if isempty(ax)
                         figure(fig);
-                        ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');;
+                        ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
                         hold(ax,'on');
                         grid(ax,'on');
                     end
