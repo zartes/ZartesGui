@@ -318,10 +318,11 @@ switch handles.conn.ReadOnly
         
         
         datainsert(handles.conn,tablename,colnames,data)
-        refreshTable(hObject)
+%         refreshTable(hObject)
     case 'on'
         waitfor(warndlg('Only permission to read',handles.VersionStr));
 end
+refreshTable(hObject);
 
 % --- Executes on button press in UpdateTable.
 function UpdateTable_Callback(hObject, eventdata, handles)
@@ -335,30 +336,33 @@ if eval(['~isempty(find(ismember(handles.' handles.conn.UserName '_tablas, table
 else
     handles.conn.ReadOnly = 'on';
 end
-
-% tablename = handles.TableListStr{handles.TableList.Value};
-ColumnName = handles.Table1.ColumnName{eventdata.Indices(2)};
-
-if ischar(eventdata.PreviousData)
-    if isequal(eventdata.PreviousData,'null')
-        query = ['update ' tablename ' SET ' ColumnName ' = ''' eventdata.NewData ''' WHERE ' ColumnName ' IS NULL'];
-    else
-        query = ['update ' tablename ' SET ' ColumnName ' = ''' eventdata.NewData ''' WHERE ' ColumnName ' = ''' eventdata.PreviousData '''' ''];
-    end
-elseif isnumeric(eventdata.PreviousData)
-    if isnan(eventdata.PreviousData)
-        query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' IS NULL'];
-    else
-        query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData)];
-    end
+switch handles.conn.ReadOnly
+    case 'off'
+        % tablename = handles.TableListStr{handles.TableList.Value};
+        ColumnName = handles.Table1.ColumnName{eventdata.Indices(2)};
+        
+        if ischar(eventdata.PreviousData)
+            if isequal(eventdata.PreviousData,'null')
+                query = ['update ' tablename ' SET ' ColumnName ' = ''' eventdata.NewData ''' WHERE ' ColumnName ' IS NULL'];
+            else
+                query = ['update ' tablename ' SET ' ColumnName ' = ''' eventdata.NewData ''' WHERE ' ColumnName ' = ''' eventdata.PreviousData '''' ''];
+            end
+        elseif isnumeric(eventdata.PreviousData)
+            if isnan(eventdata.PreviousData)
+                query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' IS NULL'];
+            else
+                query = ['update ' tablename ' SET ' ColumnName ' = ' num2str(eventdata.NewData) ' WHERE ' ColumnName ' = ' num2str(eventdata.PreviousData)];
+            end
+        end
+        curs = exec(handles.conn,query);
+        curs = fetch(curs);
+        
+        guidata(hObject,handles);
+%         refreshTable(hObject);
+    case 'on'
+        waitfor(warndlg('Only permission to read',handles.VersionStr));
 end
-curs = exec(handles.conn,query);
-curs = fetch(curs);
-
-guidata(hObject,handles);
 refreshTable(hObject);
-
-
 % --- Executes when entered data in editable cell(s) in Table1.
 function Table1_CellEditCallback(hObject, eventdata, handles)
 % hObject    handle to Table1 (see GCBO)
@@ -376,7 +380,8 @@ if eval(['~isempty(find(ismember(handles.' handles.conn.UserName '_tablas, table
 else
     handles.conn.ReadOnly = 'on';
 end
-
+switch handles.conn.ReadOnly
+    case 'off'
 % tablename = handles.TableListStr{handles.TableList.Value};
 ColumnName = handles.Table1.ColumnName{eventdata.Indices(2)};
 
@@ -403,10 +408,12 @@ curs = fetch(curs);
 pause(1);
 guidata(hObject,handles);
 pause(1);
+
+case 'on'
+        waitfor(warndlg('Only permission to read',handles.VersionStr));
+end
+
 refreshTable(hObject);
-
-
-
 
 
 
