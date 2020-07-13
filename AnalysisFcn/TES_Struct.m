@@ -997,19 +997,19 @@ classdef TES_Struct
                             end
                             ind = 1:3:length(ztes);
                             try
-                            h(h_i) = plot(ax,1e3*ztes(ind),'.','Color',[0 0.447 0.741],...
-                                'markerfacecolor',[0 0.447 0.741],'MarkerSize',15,'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj}]);
-                            %%% Paso marker de 'o' a '.'
-                            set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold');
-                            xlabel(ax,'Re(mZ)','FontSize',12,'FontWeight','bold');
-                            ylabel(ax,'Im(mZ)','FontSize',12,'FontWeight','bold');%title('Ztes with fits (red)');
-                            ImZmin(jj) = min(imag(1e3*ztes));
-                            ylim(ax,[min(-15,min(ImZmin)-1) 1])
-                            g(h_i) = plot(ax,1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,...
-                                'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj} ':fit']);
-                            hold(ax,'on');
-                            grid(ax,'on');
-                            set([h(h_i) g(h_i)],'UserData',[h(h_i) g(h_i)]);
+                                h(h_i) = plot(ax,1e3*ztes(ind),'.','Color',[0 0.447 0.741],...
+                                    'markerfacecolor',[0 0.447 0.741],'MarkerSize',15,'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj}]);
+                                %%% Paso marker de 'o' a '.'
+                                set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold');
+                                xlabel(ax,'Re(mZ)','FontSize',12,'FontWeight','bold');
+                                ylabel(ax,'Im(mZ)','FontSize',12,'FontWeight','bold');%title('Ztes with fits (red)');
+                                ImZmin(jj) = min(imag(1e3*ztes));
+                                ylim(ax,[min(-15,min(ImZmin)-1) 1])
+                                g(h_i) = plot(ax,1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,...
+                                    'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[dirs{i} filesep filesZ{jj} ':fit']);
+                                hold(ax,'on');
+                                grid(ax,'on');
+                                set([h(h_i) g(h_i)],'UserData',[h(h_i) g(h_i)]);
                             catch
                             end
                         end
@@ -1252,7 +1252,7 @@ classdef TES_Struct
             L = lsqcurvefit(@(x,y)fitLfcn(x,y,obj),100e-9,obj.TFS.f,imag(obj.TFS.tf./obj.TFN.tf),[],[],opts);                        
         end
         
-        function plotABCT(obj,fig,errorOpt)
+        function fig = plotABCT(obj,fig,errorOpt)
             % Function to visualize the model parameters, alpha, beta, C
             % and Tbath.
             if nargin < 3
@@ -1298,26 +1298,40 @@ classdef TES_Struct
             StrRange = {'P';'N'};
             ind = 1;
             
+            if nargin < 2
+                fig.hObject = figure('Visible','off');
+            end
+            if ~isfield(fig,'subplots')
+                h = nan(4,1);
+                for i = 1:4
+                    
+                    h(i) = subplot(2,2,i,'Visible','off','ButtonDownFcn',...
+                        {@Identify_Origin},'FontSize',12,'LineWidth',2,...
+                        'FontWeight','bold','FontUnits','Normalized');
+                    eval(['grid(h(' num2str(i) '),''on'');']);
+                    eval(['hold(h(' num2str(i) '),''on'');']);
+                    
+                    eval(['xlabel(h(' num2str(i) '),''%R_n'',''FontSize'',12,''FontWeight'',''bold'',''FontUnits'',''Normalized'');']);
+                    eval(['ylabel(h(' num2str(i) '),''' YLabels{i} ''',''FontSize'',12,''FontWeight'',''bold'',''FontUnits'',''Normalized'');']);
+                end
+            else
+                h = fig.subplots;
+                lb = get(h,'xlabel');
+                if strcmp(lb{1}.FontUnits,'normalized')
+                    
+                end
+            end
+            
+            
             colors = distinguishable_colors((length(obj.PP)+length(obj.PN)));
             ind_color = 1;
+            
             for k = 1:2
                 if isempty(all(eval(['obj.P' StrRange{k} '.Tbath'])))
                     continue;
                 end
                 P = eval(['obj.P' StrRange{k} ';']);
-                if nargin < 2
-                    fig.hObject = figure('Visible','off');
-                end
-                if ~isfield(fig,'subplots')
-                    h = nan(4,1);
-                    for i = 1:4
-                        h(i) = subplot(2,2,i,'Visible','off','ButtonDownFcn',...
-                            {@Identify_Origin},'FontSize',12,'LineWidth',2,...
-                            'FontWeight','bold','FontUnits','Normalized');
-                    end
-                else
-                    h = fig.subplots;
-                end
+                
                 for i = 1:length(P)                                        
                     if mod(i,2)
                         MarkerStr(i) = {'.-'};
@@ -1343,12 +1357,7 @@ classdef TES_Struct
                     
                     for j = 1:4
                         
-                        eval(['grid(h(' num2str(j) '),''on'');']);
-                        eval(['hold(h(' num2str(j) '),''on'');']);
                         
-                            
-                        eval(['xlabel(h(' num2str(j) '),''%R_n'',''FontSize'',12,''FontWeight'',''bold'');']);
-                        eval(['ylabel(h(' num2str(j) '),''' YLabels{j} ''',''FontSize'',12,''FontWeight'',''bold'');']);
                         try
                             eval(['er(ind) = errorbar(h(' num2str(j) '),'...
                                 DataStr{j} ',' DataStr_CI{j} ',''Color'',[colors(ind_color,:)],''Visible'',''' errorOpt ''',''DisplayName'','''...
@@ -1524,15 +1533,15 @@ classdef TES_Struct
                                             totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
                                         end
                                         if ~obj.ElectrThermalModel.bool_components
-                                            loglog(hs(i),f,totnoise*1e12,'b','DisplayName','Total Simulation Noise');
+                                            loglog(hs(i),f,totnoise*1e12,'b','LineWidth',3,'DisplayName','Total Simulation Noise');
                                             h = findobj(hs(i),'Color','b');
                                         else
                                             %                                     loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
-                                            loglog(hs(i),f,auxnoise.jo*1e12,'DisplayName','Johnson');
-                                            loglog(hs(i),f,auxnoise.ph*1e12,'DisplayName','Phonon');
-                                            loglog(hs(i),f,auxnoise.sh*1e12,'DisplayName','Shunt');
-                                            loglog(hs(i),f,auxnoise.squidarray*1e12,'DisplayName','Squid');
-                                            loglog(hs(i),f,totnoise*1e12,'DisplayName','Total');
+                                            loglog(hs(i),f,auxnoise.jo*1e12,'DisplayName','Johnson','LineWidth',3);
+                                            loglog(hs(i),f,auxnoise.ph*1e12,'DisplayName','Phonon','LineWidth',3);
+                                            loglog(hs(i),f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',3);
+                                            loglog(hs(i),f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',3);
+                                            loglog(hs(i),f,totnoise*1e12,'b','DisplayName','Total','LineWidth',3);
                                             %                                     legend(hs(i),'Experimental','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
                                             %                                     legend(hs(i),'off');
                                             %                                     h = findobj(hs,'displayname','total');
@@ -1549,15 +1558,15 @@ classdef TES_Struct
                                             totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
                                         end
                                         if ~obj.ElectrThermalModel.bool_components
-                                            loglog(hs(i),f,totNEP*1e18,'b','DisplayName','Total Simulation Noise');hold(hs(i),'on');grid(hs(i),'on');
+                                            loglog(hs(i),f,totNEP*1e18,'b','DisplayName','Total Simulation Noise','LineWidth',3);hold(hs(i),'on');grid(hs(i),'on');
                                             h = findobj(hs(i),'Color','b');
                                         else
                                             %                                     loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
-                                            loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson');
-                                            loglog(hs(i),f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon');
-                                            loglog(hs(i),f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt');
-                                            loglog(hs(i),f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid');
-                                            loglog(hs(i),f,totNEP*1e18,'DisplayName','Total');
+                                            loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson','LineWidth',3);
+                                            loglog(hs(i),f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon','LineWidth',3);
+                                            loglog(hs(i),f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',3);
+                                            loglog(hs(i),f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',3);
+                                            loglog(hs(i),f,totNEP*1e18,'b','DisplayName','Total','LineWidth',3);
                                             %                                     legend(hs(i),'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
                                             %                                     legend(hs(i),'off');
                                             %                                     h = findobj(hs(i),'displayname','total');

@@ -290,7 +290,11 @@ switch varargin{1}.Tag
                 handles.Table.ColumnEditable(j) = true;
                 handles.Table.ColumnFormat{j} = 'numeric';
                 handles.Table.ColumnName{j} = TESProp{i};
-                handles.Table.Data{1,j} = eval(['handles.varargin{3}.' TESProp{i}]);    
+                if size(eval(['handles.varargin{3}.' TESProp{i}]),2) == 1
+                    handles.Table.Data{1,j} = eval(['handles.varargin{3}.' TESProp{i}]);    
+                else
+                    handles.Table.Data{1,j} = num2str(eval(['handles.varargin{3}.' TESProp{i}]));
+                end
                 j = j+1;
             end
            
@@ -566,9 +570,13 @@ switch handles.varargin{1}.Tag
         handles.varargin{1}.UserData = handles.Table.Data;
             
     case 'Param_Delay'
+        NewOpt = IV_Delay;
         ParamDelay = properties(handles.varargin{3});
         for i = 1:length(ParamDelay)
-            eval(['NewOPT.' ParamDelay{i} ' = handles.Table.Data{i,2};']);%
+            try
+                eval(['NewOPT.' ParamDelay{i} ' = handles.Table.Data{i,2};']);%
+            catch
+            end                
         end
         handles.varargin{1}.UserData = NewOPT;
         guidata(handles.varargin{1},NewOPT);
@@ -636,9 +644,13 @@ switch handles.varargin{1}.Tag
                 end
             elseif ischar(handles.Table.Data{1,i}) 
                 List = eval(['handles.varargin{3}.' handles.Table.ColumnName{i}]);
-                ind = strfind(List,handles.Table.Data{1,i});
-                Index = find(not(cellfun('isempty',ind)));                
-                eval(['NewOPT.Selected_' handles.Table.ColumnName{i} ' = Index;']);
+                try
+                    ind = strfind(List,handles.Table.Data{1,i});
+                    Index = find(not(cellfun('isempty',ind)));
+                    eval(['NewOPT.Selected_' handles.Table.ColumnName{i} ' = Index;']);
+                catch
+                    eval(['NewOPT.' handles.Table.ColumnName{i} ' = List;']);
+                end
             else
                 eval(['NewOPT.' handles.Table.ColumnName{i} ' = handles.Table.Data{1,i};']);
             end
