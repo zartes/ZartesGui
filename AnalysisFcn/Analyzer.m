@@ -1008,7 +1008,7 @@ switch src.Label
         for i = s
             SessionName = handles.Session{i}.Tag;
             SessionName(SessionName == '_') = ' ';
-            handles.Session{i}.TES.plotABCT(fig);
+            fig = handles.Session{i}.TES.plotABCT(fig);
             Lines = findobj(fig.hObject,'Type','Line');
             Lines = setdiff(Lines,Lines_old);
             for Ln = 1:length(Lines)

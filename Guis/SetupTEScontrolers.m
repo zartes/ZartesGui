@@ -269,6 +269,8 @@ handles.menu(1) = uimenu('Parent',handles.SetupTES,'Label',...
     'Circuit');
 handles.Menu_Circuit = uimenu('Parent',handles.menu(1),'Label',...
     'Circuit Properties','Callback',{@Obj_Properties},'UserData',handles.Circuit);
+handles.Menu_Import = uimenu('Parent',handles.menu(1),'Label',...
+    'Update Rn from file','Callback',{@Rn_from_file},'UserData',handles.Circuit);
 
 handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
 handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
@@ -361,6 +363,62 @@ image(data)
 ax.Visible = 'off';
 fig.Position = [0.35 0.35 0.3 0.22];
 fig.Visible = 'on';
+
+function Rn_from_file(src,evnt)
+handles = guidata(src);
+[filename, pathname] = uigetfile( ...
+    {'*.txt', 'txt file '; ...
+    '*.*',                   'All Files (*.*)'}, ...
+    'Pick a I-V Curve file with Tbath above Tc ');
+if isequal(filename,0) || isequal(pathname,0)
+    disp('User pressed cancel')
+else
+    disp(['User selected ', fullfile(pathname, filename)])
+end
+IV = TES_IVCurveSet;
+ind_i = strfind(filename,'mK_Rf');
+ind_f = strfind(filename,'K_down_');
+if isempty(ind_f)
+    ind_f = strfind(filename,'K_up_');
+end
+pre_Rf = str2double(filename(ind_i+5:ind_f-1))*1000;
+data = importdata([pathname filesep filename]);
+if isstruct(data)
+    data = data.data;
+end
+j = size(data,2);
+switch j
+    case 2
+        Dibias = (data(:,1)-data(end,1))*1e-6;
+        Dvout = data(:,4);
+    case 4
+        Dibias = data(:,2)*1e-6;
+        Dvout = data(:,4)-data(end,4);
+end
+IV.ibias = Dibias;
+IV.vout = Dvout;
+IV.file = filename;
+IV.Tbath = sscanf(char(regexp(filename,'\d+.?\d+mK*','match')),'%fmK')*1e-3;
+IV.IVsetPath = pathname;
+IV.CorrectionMethod = 'Respect to Normal Curve';
+IV.good = 1;
+
+% [DataFit,Xcros,Ycros,SlopeN,SlopeS] = IV.IV_estimation_mN_mS(IV.ibias,IV.vout);
+% mN = SlopeN;
+% Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/...
+%     (mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-handles.Circuit.Rpar.Value);
+mN = 8;
+Rn = 6;
+ButtonName = questdlg(['Rn value is: ' num2str(Rn) ', Do you want to update it?'], ...
+    'Circuit Update', ...
+    'Yes', 'No', 'Yes');
+switch ButtonName
+    case 'Yes'
+        handles.Circuit.Rn.Value = Rn;
+        handles.Circuit.mN.Value = mN;
+        handles.Menu_Circuit.UserData = handles.Circuit;
+end % switch
+guidata(src.Parent.Parent,handles);
 
 function ACQ_Ibias(src,evnt)
 
@@ -1312,32 +1370,66 @@ else
             
             Rpar = (handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mS*handles.Circuit.invMin.Value)-1)*handles.Circuit.Rsh.Value;
             Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-Rpar);
+            waitfor(msgbox(['IV curve estimated parameters: mN = '...
+                num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)'],hangles.VersionStr));
             
-            ButtonName = questdlg(['Do you want to update Circuit values from the ones extracted from IV curve: mN = '...
-                num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)], ...
+            ButtonName = questdlg(['Do you want to update Rn value extracted from IV curve: Rn = ' num2str(Rn)], ...
                 handles.VersionStr, ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
                 case 'Yes'
                     handles.Circuit.mN.Value = mN;
+                    handles.Circuit.Rn.Value = Rn;
+            end
+            ButtonName = questdlg(['Do you want to update Rpar value extracted from IV curve: Rpar = ' num2str(Rpar)], ...
+                handles.VersionStr, ...
+                'Yes', 'No', 'Yes');
+            switch ButtonName
+                case 'Yes'
                     handles.Circuit.mS.Value = mS;
                     handles.Circuit.Rpar.Value = Rpar;
-                    handles.Circuit.Rn.Value = Rn;
-                    handles.Menu_Circuit.UserData = handles.Circuit;
-                    Obj_Properties(handles.Menu_Circuit);
-                    TESDATA.circuit = TES_Circuit;
-                    TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
-                    IVCurveSet = TES_IVCurveSet;
-                    IVCurveSet = IVCurveSet.Update(IVmeasure);
-                    TESDATA.TESThermal.n.Value = [];
-                    TESDATA.TESParam.Rn.Value = Rn;
-                    TESDATA.TESParam.Rpar.Value = Rpar;
-                    
-                    handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
-                    handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
-                    
-                    set([handles.SQ_SetRnBias handles.SQ_Rn],'Enable','on')
-            end % switch                        
+            end
+            
+            handles.Menu_Circuit.UserData = handles.Circuit;
+            Obj_Properties(handles.Menu_Circuit);
+            TESDATA.circuit = TES_Circuit;
+            TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
+            IVCurveSet = TES_IVCurveSet;
+            IVCurveSet = IVCurveSet.Update(IVmeasure);
+            TESDATA.TESThermal.n.Value = [];
+            TESDATA.TESParam.Rn.Value = Rn;
+            TESDATA.TESParam.Rpar.Value = Rpar;
+            
+            handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
+            handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+            
+            set([handles.SQ_SetRnBias handles.SQ_Rn],'Enable','on')
+            
+%             ButtonName = questdlg(['Do you want to update Circuit values from the ones extracted from IV curve: mN = '...
+%                 num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)], ...
+%                 handles.VersionStr, ...
+%                 'Yes', 'No', 'Yes');
+%             switch ButtonName
+%                 case 'Yes'
+%                     handles.Circuit.mN.Value = mN;
+%                     handles.Circuit.mS.Value = mS;
+%                     handles.Circuit.Rpar.Value = Rpar;
+%                     handles.Circuit.Rn.Value = Rn;
+%                     handles.Menu_Circuit.UserData = handles.Circuit;
+%                     Obj_Properties(handles.Menu_Circuit);
+%                     TESDATA.circuit = TES_Circuit;
+%                     TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
+%                     IVCurveSet = TES_IVCurveSet;
+%                     IVCurveSet = IVCurveSet.Update(IVmeasure);
+%                     TESDATA.TESThermal.n.Value = [];
+%                     TESDATA.TESParam.Rn.Value = Rn;
+%                     TESDATA.TESParam.Rpar.Value = Rpar;
+%                     
+%                     handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
+%                     handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+%                     
+%                     
+%             end % switch                        
             
                         
             ButtonName = questdlg('Do you want to store the IV-Curve for further analysis?',handles.VersionStr,...
