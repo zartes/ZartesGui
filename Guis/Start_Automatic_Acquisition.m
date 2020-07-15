@@ -286,7 +286,8 @@ for NSummary = 1:size(Conf.Summary,1)
         % otra negativa
         if ~isempty(Conf.TF.Zw.rpp)
             [~,IZvalues.P] = BuildIbiasFromRp(IVsetP,Conf.TF.Zw.rpp);                        
-            IZvalues.P(IZvalues.P > 500) = 500;
+%             IZvalues.P(IZvalues.P > 500) = 500;
+            IZvalues.P = IZvalues.P - SetupTES.OffsetX*1e6;
             clear rpp;
             rpp = Conf.TF.Zw.rpp;
             rpp(IZvalues.P < 0) = [];
@@ -310,7 +311,8 @@ for NSummary = 1:size(Conf.Summary,1)
         
         if ~isempty(Conf.TF.Zw.rpn)
             [~,IZvalues.N] = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
-            IZvalues.N(IZvalues.N < -500) = -500;
+            IZvalues.N = IZvalues.N - SetupTES.OffsetX*1e6;
+%             IZvalues.N(IZvalues.N < -500) = -500;
             clear rpn;
             rpn = Conf.TF.Zw.rpn;
             rpn(IZvalues.N > 0) = [];
@@ -741,14 +743,17 @@ SetupTEScontrolers('Grid_Plot_Callback',SetupTES.Grid_Plot,[],guidata(SetupTES.G
 if Conf.IVcurves.Manual.On
     Ibvalues = Conf.IVcurves.Manual.Values;  % Ibvalues.p y Ibvalues.n
 elseif Conf.IVcurves.SmartRange.On
-    Ibvalues.p = 500;
-    Ibvalues.n = -500;
+    Ibvalues.p = 800;
+    Ibvalues.n = -800;
     
 end
 
 ThresIbias = 0.1; % la curva de IV llegará en caso positivo a -0.1 uA
 
-for IB = 1:2 % Positive 1, Negative 2
+IB = 1;
+RepMax = 3;
+RepIt = 1;
+while IB < 3 % Positive 1, Negative 2
     
     % Por ahora el campo óptimo es simétrico siempre y a una corriente fija
     % para todas las temperaturas.
@@ -924,12 +929,37 @@ for IB = 1:2 % Positive 1, Negative 2
             pol = 'n';
         end
     end
-    
+    % Pasamos a amperios
+    IVmeasure.ibias = IVmeasure.ibias*1e-6;
+    % Se protege para que solo haya un valor de corriente en cada punto
+    [C,IA,~] = unique(IVmeasure.ibias,'stable');
+    IVmeasure.ibias = C;
+    IVmeasure.vout = IVmeasure.vout(IA);
+    % Busqueda de saltos de Squid para repetir la curva I-V
+    pk = findpeaks(abs(IVmeasure.vout./IVmeasure.ibias),'Threshold',0.2);
+    if length(pk) > 1
+        RepIt = RepIt+1;
+        % Se repite como máximo 3 veces
+        if RepIt < RepMax
+            continue;
+        end
+    else
+        IB = IB+1;
+        RepIt = 1;
+    end
     file = strcat(num2str(Temp*1e3,'%1.1f'),'mK','_Rf',num2str(SetupTES.Circuit.Rf.Value*1e-3),'K_',dire,'_',pol,'_matlab.txt');
     save([handles.IVs_Dir file],'data','-ascii');
     
-    data(:,4) = IVmeasure.vout-IVmeasure.vout(end);  % Centramos la IV en 0,0.
-    IVmeasure.vout = data(:,4)';
+%     data(:,4) = IVmeasure.vout-IVmeasure.vout(end);  % Centramos la IV en 0,0.
+%     IVmeasure.vout = data(:,4)';
+
+    % Se corrige la I-V primero en el eje X (offset corriente)
+    IVmeasure.ibias = IVmeasure.ibias-SetupTES.OffsetX;
+    % Después se busca la recta de la parte normal y se corrige el valor de
+    % la ordenada en el origen
+    p = polyfit(IVmeasure.ibias(1:5),IVmeasure.vout,1);
+    IVmeasure.vout = IVmeasure.vout-p(2); 
+    
     % Importante que el TES_Circuit se haya actualizado con los valores de
     % Rf, mN, mS, Rpar, Rn
     
@@ -937,7 +967,7 @@ for IB = 1:2 % Positive 1, Negative 2
     TESDATA.circuit = TESDATA.circuit.Update(SetupTES.Circuit);
     
     IVCurveSet = TES_IVCurveSet;
-    IVmeasure.ibias = IVmeasure.ibias*1e-6;
+    
     %     IVmeasure.vout = IVmeasure.vout-IVmeasure.vout(end);
     
     IVCurveSet = IVCurveSet.Update(IVmeasure);

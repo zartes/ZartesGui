@@ -121,6 +121,12 @@ handles.FieldFileName = [];
 handles.FileName = [];
 handles.FileDir = [];
 
+% Estimation of Current Generator Source Offset (I-V curves)
+handles.DataFitN = [];
+handles.DataFitS = [];
+handles.OffsetX = Xcros;
+handles.OffsetY = Ycros;
+
 handles.Datos = [];
 handles.DSA_TF_Data = [];
 handles.DSA_Noise_Data = [];
@@ -269,8 +275,16 @@ handles.menu(1) = uimenu('Parent',handles.SetupTES,'Label',...
     'Circuit');
 handles.Menu_Circuit = uimenu('Parent',handles.menu(1),'Label',...
     'Circuit Properties','Callback',{@Obj_Properties},'UserData',handles.Circuit);
-handles.Menu_Import = uimenu('Parent',handles.menu(1),'Label',...
-    'Update Rn from file','Callback',{@Rn_from_file},'UserData',handles.Circuit);
+handles.Menu_Import_mN = uimenu('Parent',handles.menu(1),'Label',...
+    'Update mN from file','Callback',{@mN_from_file},'UserData',handles.Circuit);
+handles.Menu_Import_mS = uimenu('Parent',handles.menu(1),'Label',...
+    'Update mS from file','Callback',{@mS_from_file},'UserData',handles.Circuit);
+handles.Menu_RnRpar = uimenu('Parent',handles.menu(1),'Label',...
+    'Update Rn and Rpar from (mN, mS)','Callback',{@RnRpar_from_mNmS},'UserData',handles.Circuit);
+handles.Menu_Offset = uimenu('Parent',handles.menu(1),'Label',...
+    'Estimate Current Offset','Callback',{@OffsetCurrent},'UserData',handles.Circuit);
+
+
 
 handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
 handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
@@ -364,12 +378,12 @@ ax.Visible = 'off';
 fig.Position = [0.35 0.35 0.3 0.22];
 fig.Visible = 'on';
 
-function Rn_from_file(src,evnt)
+function mN_from_file(src,evnt)
 handles = guidata(src);
 [filename, pathname] = uigetfile( ...
     {'*.txt', 'txt file '; ...
     '*.*',                   'All Files (*.*)'}, ...
-    'Pick a I-V Curve file with Tbath above Tc ');
+    'Pick a I-V Curve file only Normal values ');
 if isequal(filename,0) || isequal(pathname,0)
     disp('User pressed cancel')
 else
@@ -393,7 +407,7 @@ switch j
         Dvout = data(:,4);
     case 4
         Dibias = data(:,2)*1e-6;
-        Dvout = data(:,4)-data(end,4);
+        Dvout = data(:,4);
 end
 IV.ibias = Dibias;
 IV.vout = Dvout;
@@ -403,22 +417,115 @@ IV.IVsetPath = pathname;
 IV.CorrectionMethod = 'Respect to Normal Curve';
 IV.good = 1;
 
-% [DataFit,Xcros,Ycros,SlopeN,SlopeS] = IV.IV_estimation_mN_mS(IV.ibias,IV.vout);
-% mN = SlopeN;
+[DataFit,Xcros,Ycros,SlopeN,SlopeS] = IV.IV_estimation_mN_mS(IV.ibias,IV.vout);
+mN = 1/SlopeN;
 % Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/...
 %     (mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-handles.Circuit.Rpar.Value);
-mN = 8;
-Rn = 6;
-ButtonName = questdlg(['Rn value is: ' num2str(Rn) ', Do you want to update it?'], ...
+% mN = 8;
+% Rn = 6;
+ButtonName = questdlg(['mN value is: ' num2str(mN) ', Do you want to update it?'], ...
     'Circuit Update', ...
     'Yes', 'No', 'Yes');
 switch ButtonName
-    case 'Yes'
-        handles.Circuit.Rn.Value = Rn;
+    case 'Yes'        
         handles.Circuit.mN.Value = mN;
         handles.Menu_Circuit.UserData = handles.Circuit;
+        handles.DataFitN = DataFit;
 end % switch
 guidata(src.Parent.Parent,handles);
+
+function mS_from_file(src,evnt)
+handles = guidata(src);
+[filename, pathname] = uigetfile( ...
+    {'*.txt', 'txt file '; ...
+    '*.*',                   'All Files (*.*)'}, ...
+    'Pick a I-V Curve only Superconductor values ');
+if isequal(filename,0) || isequal(pathname,0)
+    disp('User pressed cancel')
+else
+    disp(['User selected ', fullfile(pathname, filename)])
+end
+IV = TES_IVCurveSet;
+ind_i = strfind(filename,'mK_Rf');
+ind_f = strfind(filename,'K_down_');
+if isempty(ind_f)
+    ind_f = strfind(filename,'K_up_');
+end
+pre_Rf = str2double(filename(ind_i+5:ind_f-1))*1000;
+data = importdata([pathname filesep filename]);
+if isstruct(data)
+    data = data.data;
+end
+j = size(data,2);
+switch j
+    case 2
+        Dibias = (data(:,1)-data(end,1))*1e-6;
+        Dvout = data(:,4);
+    case 4
+        Dibias = data(:,2)*1e-6;
+        Dvout = data(:,4);
+end
+IV.ibias = Dibias;
+IV.vout = Dvout;
+IV.file = filename;
+IV.Tbath = sscanf(char(regexp(filename,'\d+.?\d+mK*','match')),'%fmK')*1e-3;
+IV.IVsetPath = pathname;
+IV.CorrectionMethod = 'Respect to Normal Curve';
+IV.good = 1;
+
+[DataFit,Xcros,Ycros,SlopeN,SlopeS] = IV.IV_estimation_mN_mS(IV.ibias,IV.vout);
+mS = 1/SlopeS;
+% Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/...
+%     (mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-handles.Circuit.Rpar.Value);
+% mN = 8;
+% Rn = 6;
+ButtonName = questdlg(['mS value is: ' num2str(mS) ', Do you want to update it?'], ...
+    'Circuit Update', ...
+    'Yes', 'No', 'Yes');
+switch ButtonName
+    case 'Yes'        
+        handles.Circuit.mS.Value = mS;
+        handles.Menu_Circuit.UserData = handles.Circuit;
+        handles.DataFitS = DataFit;
+end % switch
+guidata(src.Parent.Parent,handles);
+
+function RnRpar_from_mNmS(src,evnt)
+handles = guidata(src);
+Rpar = (handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(handles.Circuit.mS.Value*handles.Circuit.invMin.Value)-1)*handles.Circuit.Rsh.Value;
+Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(handles.Circuit.mN.Value*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-Rpar);
+waitfor(msgbox(['IV curve estimated parameters: mN = '...
+    num2str(handles.Circuit.mN.Value) '; mS = ' num2str(handles.Circuit.mS.Value)...
+    '; Rn = ' num2str(Rn) ' Ohm; Rpar = ' num2str(Rpar) ' Ohm'],handles.VersionStr));
+
+ButtonName = questdlg('Do you want to update Rn and Rpar values?',...
+    handles.VersionStr, ...
+    'Yes', 'No', 'Yes');
+switch ButtonName
+    case 'Yes'
+        handles.Circuit.Rpar.Value = Rpar;
+        handles.Circuit.Rn.Value = Rn;
+        handles.Menu_Circuit.UserData = handles.Circuit;
+end
+
+guidata(src.Parent.Parent,handles);
+
+function OffsetCurrent(src,evnt)
+handles = guidata(src);
+if isempty(handles.DataFitN)||isempty(handles.DataFitS)
+    waitfor(warndlg('No data of normal or superconductor I-V curves were imported!',handles.VersionStr));
+    return;
+end
+Xcros = (handles.DataFitN.PN(2)-handles.DataFitS.PS(2))/...
+    (handles.DataFitS.PS(1)-handles.DataFitN.PN(1));
+Ycros = handles.DataFitN.PN(1)*Xcros+handles.DataFitN.PN(2);
+handles.OffsetX = Xcros;
+handles.OffsetY = Ycros;
+waitfor(msgbox(['Current Offset Point, Ibias = ' num2str(Xcros) ' uA, Vout = ' num2str(Ycros) ' V'],handles.VersionStr));
+
+handles.Menu_Circuit.UserData = handles.Circuit;
+guidata(src.Parent.Parent,handles);
+
 
 function ACQ_Ibias(src,evnt)
 
@@ -1368,28 +1475,37 @@ else
             val = polyfit(IVmeasure.ibias(end-2:end),IVmeasure.vout(end-2:end),1);
             mS = val(1);
             
-            Rpar = (handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mS*handles.Circuit.invMin.Value)-1)*handles.Circuit.Rsh.Value;
-            Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-Rpar);
             waitfor(msgbox(['IV curve estimated parameters: mN = '...
                 num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)'],hangles.VersionStr));
             
-            ButtonName = questdlg(['Do you want to update Rn value extracted from IV curve: Rn = ' num2str(Rn)], ...
+            ButtonName = questdlg(['Do you want to update mN value extracted from IV curve: mN = ' num2str(mN)], ...
                 handles.VersionStr, ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
                 case 'Yes'
                     handles.Circuit.mN.Value = mN;
-                    handles.Circuit.Rn.Value = Rn;
+%                     handles.Circuit.Rn.Value = Rn;
             end
-            ButtonName = questdlg(['Do you want to update Rpar value extracted from IV curve: Rpar = ' num2str(Rpar)], ...
+            ButtonName = questdlg(['Do you want to update mS value extracted from IV curve: mS = ' num2str(mS)], ...
                 handles.VersionStr, ...
                 'Yes', 'No', 'Yes');
             switch ButtonName
                 case 'Yes'
                     handles.Circuit.mS.Value = mS;
-                    handles.Circuit.Rpar.Value = Rpar;
+%                     handles.Circuit.Rpar.Value = Rpar;
             end
             
+            ButtonName = questdlg('Do you want to update Rn and Rpar value extracted from IV curve?', ...
+                handles.VersionStr, ...
+                'Yes', 'No', 'Yes');
+            switch ButtonName
+                case 'Yes'
+                    Rpar = (handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mS*handles.Circuit.invMin.Value)-1)*handles.Circuit.Rsh.Value;
+                    Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-Rpar);
+                    handles.Circuit.Rpar.Value = Rpar;
+                    handles.Circuit.Rn.Value = Rn;
+%                     handles.Circuit.Rpar.Value = Rpar;
+            end                                              
             handles.Menu_Circuit.UserData = handles.Circuit;
             Obj_Properties(handles.Menu_Circuit);
             TESDATA.circuit = TES_Circuit;
