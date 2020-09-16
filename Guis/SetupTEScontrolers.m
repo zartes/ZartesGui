@@ -124,8 +124,8 @@ handles.FileDir = [];
 % Estimation of Current Generator Source Offset (I-V curves)
 handles.DataFitN = [];
 handles.DataFitS = [];
-handles.OffsetX = Xcros;
-handles.OffsetY = Ycros;
+handles.OffsetX = [];
+handles.OffsetY = [];
 
 handles.Datos = [];
 handles.DSA_TF_Data = [];
