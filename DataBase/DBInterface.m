@@ -72,7 +72,7 @@ defaultanswer = {'',''};
 
 answer = inputdlg(prompt,name,numlines,defaultanswer);
 if isempty(answer)
-%     return;
+    return;
 else
     
     handles.conn = database(handles.DataBaseName,answer{1},answer{2});

@@ -19,6 +19,7 @@ classdef TES_IVCurveSet
         good;
         Tbath;
         IVsetPath;
+        Offset = [0 0];
         CorrectionMethod;
         PN_lowerTol = 0.8;
         PN_upperTol = 1.2;
@@ -109,55 +110,29 @@ classdef TES_IVCurveSet
             end
             h = waitbar(0,'Please wait...','Name',[obj.version ' - Loading IV curves']);
             pause(0.05);
-            iOK = 1;            
             
-                
-            if isempty(obj(1).CorrectionMethod)
-            ButtonName = questdlg('IV-alignment method', ...
-                'Choose method for the alignment of IV-Curves', ...
-                'Forced zero-zero','Respect to Normal Curve', 'Respect to Normal Curve');
+            
+            hfig = findobj('Tag','Raw IV Curves');
+            hax = findobj('Tag','Raw IV axes');
+            if isempty(hfig)
+                fig = figure('Tag','Raw IV Curves','Name','Raw IV Curves');
+                ax1 = axes('Tag','Raw IV axes');
+                xlabel('Ibias (uA)');
+                ylabel('Voltaje (V)');
+                hold(ax1,'on');
+                grid(ax1,'on');
             else
-                ButtonName = obj(1).CorrectionMethod;
-            end
-            
-            switch ButtonName
-                case 'Forced zero-zero'
-                    obj(1).CorrectionMethod = 'Forced zero-zero';
-                case 'Respect to Normal Curve'
-                    obj(1).CorrectionMethod = 'Respect to Normal Curve';
-                    hfig = findobj('Tag','IV correction');
-                    hax = findobj('Tag','IV axes');
-                    if isempty(hfig)
-                        fig = figure('Tag','IV correction');
-                        ax1 = axes('Tag','IV axes');
-                        hold(ax1,'on');
-                        grid(ax1,'on');
-                    else
-                        fig = hfig;
-                        ax1 = hax;
-                        grid(ax1,'on');
-                    end
-                case 'Zero-crossing point'
-                    obj(1).CorrectionMethod = 'Respect to Normal Curve';
-                    hfig = findobj('Tag','IV correction');
-                    hax = findobj('Tag','IV axes');
-                    if isempty(hfig)
-                        fig = figure('Tag','IV correction');
-                        ax1 = axes('Tag','IV axes');
-                        hold(ax1,'on');
-                        grid(ax1,'on');
-                    else
-                        fig = hfig;
-                        ax1 = hax;
-                        grid(ax1,'on');
-                    end
-                otherwise
-                    obj(1).CorrectionMethod = 'Forced zero-zero';
-            end
+                fig = hfig;
+                ax1 = hax;
+                grid(ax1,'on');
+                xlabel('Ibias (uA)');
+                ylabel('Voltaje (V)');
+            end      
             
             
+            iOK = 1;
             for i = 1:length(T)
-                obj(i).CorrectionMethod = ButtonName;
+%                 obj(i).CorrectionMethod = ButtonName;
                 file_upd = fileN{iOK};
                 file_upd(file_upd == '_') = ' ';
                 waitbar(iOK/length(T),h,file_upd)
@@ -179,17 +154,16 @@ classdef TES_IVCurveSet
                 
                 if isstruct(data)
                     data = data.data;
-                end
+                end          
                 j = size(data,2);
                 switch j
                     case 2
-                        Dibias = (data(:,1)-data(end,1))*1e-6;
+                        Dibias = (data(:,1))*1e-6;
                         Dvout = data(:,4);
                     case 4
                         Dibias = data(:,2)*1e-6;
-                        Dvout = data(:,4)-data(end,4);                        
-                end                                
-                
+                        Dvout = data(:,4);                        
+                end             
                 
                 if strfind(fileN{iOK},'_down_p_')
                     obj(iOK).range = 'PosIbias';
@@ -201,54 +175,21 @@ classdef TES_IVCurveSet
                 obj(iOK).file = fileN{iOK};
                 obj(iOK).Tbath = sscanf(char(regexp(fileN{iOK},'\d+.?\d+mK*','match')),'%fmK')*1e-3;
                 obj(iOK).IVsetPath = path;
-                switch obj(iOK).CorrectionMethod
-                    case 'Forced zero-zero'
-                        if strcmp(obj(iOK).range,'PosIbias')
-                            ind = find(obj(iOK).ibias >= 0,1,'last');
-                        else
-                            ind = find(obj(iOK).ibias >= 0,1,'first');
-                        end
-                        obj(iOK).vout = obj(iOK).vout-obj(iOK).vout(ind);
-                        obj(iOK).good = 1;
-                    case 'Respect to Normal Curve'                                                
-                        try
-                            [datafit,xcros,ycros,slopeN,slopeS] = obj.IV_estimation_mN_mS(Dibias,Dvout,ax1);
-                            if isnan(slopeS)
-                                obj(iOK).good = 0;
-                            else
-                                obj(iOK).good = 1;
-                            end
-                            SlopeN(iOK) = slopeN;
-                            SlopeS(iOK) = slopeS;
-                            Xcros(iOK) = xcros;
-                            Ycros(iOK) = ycros;
-                            DataFit(iOK) = datafit;
-                            clear data;
-                        catch
-                            obj(iOK).good = 0;
-                            DataFit(iOK) = datafit;
-                        end        
-                    case 'Zero-crossing point'
-                        obj(iOK).good = 1;
-                        try
-                        [datafit,xcros,ycros,slopeN,slopeS] = obj.IV_estimation_mN_mS(Dibias,Dvout,ax1);
-                            
-                            SlopeN(iOK) = slopeN;
-                            SlopeS(iOK) = slopeS;
-                            Xcros(iOK) = xcros;
-                            Ycros(iOK) = ycros;
-                            DataFit(iOK) = datafit;
-                            clear data;
-                        catch                            
-                            DataFit(iOK) = datafit;
-                        end        
-                end                                                
+% %                 plot(Dibias,Dvout)
+%                 pend = diff(Dvout)./diff(Dibias);
+%                 pend(pend <= 0) = NaN;
+%                 plot(Dibias(2:end),pend)
+                                    
+                plot(ax1,obj(iOK).ibias*1e6,obj(iOK).vout,'DisplayName',[num2str(obj(iOK).Tbath*1e3) ' ' obj(iOK).range])
                 iOK = iOK+1;                                
             end
             pre_Rf = unique(pre_Rf);
             if length(pre_Rf) > 1
                 warndlg('Unconsistency on Rf values, please check it out',obj.version);
             end
+            
+            
+            
             if exist('DataFit','var')
                 [obj,mN,mS] = obj.IV_correction_methods(DataFit,ax1);                        
             else
@@ -260,64 +201,268 @@ classdef TES_IVCurveSet
             end
         end
         
-        function [obj,mN,mS] = IV_correction_methods(obj,DataFit,ax1)
+        function [obj,mN,mS] = IV_correction_methods(obj)
+                                   
+            AlgMethdsAvailable = {'Forced zero-zero';'Respect to Normal Curve';'Norm-Sup crossing point'};
+                        
+            [SELECTION,OK] = listdlg('ListString',AlgMethdsAvailable,...
+                'SelectionMode','single','Name','IV-alignment method',...
+                'PromptString','Choose method for the alignment of IV-Curves','ListSize',[300 100]);
+            if OK == 0 %             
+                msgbox('Cancelled by user',obj(1).version);
+                return;
+            else
+                obj(1).CorrectionMethod = AlgMethdsAvailable{SELECTION};
+            end
             
+            hfig = findobj('Tag','IV correction');
+            hax = findobj('Tag','IV axes');
+            if isempty(hfig)
+                fig = figure('Tag','IV correction','Name','IV Curves Alignment');
+                ax1 = axes('Tag','IV axes');
+                hold(ax1,'on');
+                grid(ax1,'on');
+                xlabel('Ibias (uA)');
+                ylabel('Voltaje (V)');
+            else
+                fig = hfig;
+                ax1 = hax;
+                grid(ax1,'on');
+                xlabel('Ibias (uA)');
+                ylabel('Voltaje (V)');
+            end                                   
+%             
+%             switch obj(iOK).CorrectionMethod
+%                 case 'Forced zero-zero'
+%                     if strcmp(obj(iOK).range,'PosIbias')
+%                         ind = find(obj(iOK).ibias >= 0,1,'last');
+%                     else
+%                         ind = find(obj(iOK).ibias >= 0,1,'first');
+%                     end
+%                     obj(iOK).vout = obj(iOK).vout-obj(iOK).vout(ind);
+%                     obj(iOK).good = 1;
+%                 case 'Respect to Normal Curve'
+%                     try
+%                         [datafit,xcros,ycros,slopeN,slopeS] = obj.IV_estimation_mN_mS(Dibias,Dvout,ax1);
+%                         if isnan(slopeS)
+%                             obj(iOK).good = 0;
+%                         else
+%                             obj(iOK).good = 1;
+%                         end
+%                         SlopeN(iOK) = slopeN;
+%                         SlopeS(iOK) = slopeS;
+%                         Xcros(iOK) = xcros;
+%                         Ycros(iOK) = ycros;
+%                         DataFit(iOK) = datafit;
+%                         clear data;
+%                     catch
+%                         obj(iOK).good = 0;
+%                         DataFit(iOK) = datafit;
+%                     end
+%                 case 'Zero-crossing point'
+%                     obj(iOK).good = 1;
+%                     try
+%                         [datafit,xcros,ycros,slopeN,slopeS] = obj.IV_estimation_mN_mS(Dibias,Dvout,ax1);
+%                         
+%                         SlopeN(iOK) = slopeN;
+%                         SlopeS(iOK) = slopeS;
+%                         Xcros(iOK) = xcros;
+%                         Ycros(iOK) = ycros;
+%                         DataFit(iOK) = datafit;
+%                         clear data;
+%                     catch
+%                         DataFit(iOK) = datafit;
+%                     end
+%             end
             
             switch obj(1).CorrectionMethod
-                case 'Forced zero-zero'
+                case AlgMethdsAvailable{1} % 'Forced zero-zero'
+                    
                     for i = 1:length(obj)
+                        % Se busca el dato de menor valor de corriente en
+                        % valor absoluto, que este en cero
+                        if strcmp(obj(i).range,'PosIbias')
+                            ind = find(obj(i).ibias >= 0,1,'last');
+                        else
+                            ind = find(obj(i).ibias >= 0,1,'first');
+                        end
+                        % Se resta el valor de voltaje a cero corriente
+                        obj(i).vout = obj(i).vout-obj(i).vout(ind);
+                        % Todas las curvas IV se suponen BUENAS
+                        obj(i).good = 1;
+                        
+                        % Se estiman las pendiente en función de los
+                        % últimos y primero 5 puntos.
                         mN(i) = mean(obj(i).vout(1:5)./obj(i).ibias(1:5));
                         mS(i) = nanmean(obj(i).vout(end-5:end-1)./obj(i).ibias(end-5:end-1));
                     end
                     mN = prctile(mN,75);
                     mS = prctile(mS,75);
                     
-                case 'Zero-crossing point'
+                case AlgMethdsAvailable{3} % 'Norm-Sup crossing point'
                     
-                    PN = [DataFit.PN];
-                    PN = PN(1:2:end);
-                    PS = [DataFit.PS];
-                    PS = PS(1:2:end);
-                    Tbath = [obj.Tbath];
+%                     PN = [DataFit.PN];
+%                     PN = PN(1:2:end);
+%                     PS = [DataFit.PS];
+%                     PS = PS(1:2:end);
+                    
+                    
+%                     Tbath = ;
                     
                     % Definimos la curva normal como la tomada a mayor
                     % temperatura
-                    [val,indN] = max(Tbath);
+                    [~,indN] = max([obj.Tbath]);
+                    
+                    % Se eliminan valores duplicados de corriente
+                    % debido a la resolución del generador (caso
+                    % LNCS)
+                    [obj(indN).ibias, Id] = unique(obj(indN).ibias,'stable');
+                    obj(indN).vout = obj(indN).vout(Id);
+                    
+                    % Se reordenan los valores de corriente de
+                    % menor a mayor
+                    IndMas = find(sign(obj(indN).ibias) ~= -1);
+                    IndMenos = find(sign(obj(indN).ibias) == -1);
+                    if strcmp(obj(indN).range,'PosIbias')
+                        [~, Imas] = sort(obj(indN).ibias(IndMas),'descend');
+                        try
+                            [~, Imenos] = sort(obj(indN).ibias(IndMenos),'descend');
+                        end
+                        obj(indN).ibias = [obj(indN).ibias(IndMas(Imas)); obj(indN).ibias(IndMenos(Imenos))];
+                        obj(indN).vout = [obj(indN).vout(IndMas(Imas)); obj(indN).vout(IndMenos(Imenos))];
+                    else
+                        [~, Imas] = sort(obj(indN).ibias(IndMas),'ascend');
+                        try
+                            [~, Imenos] = sort(obj(indN).ibias(IndMenos),'ascend');
+                        end
+                        obj(indN).ibias = [obj(indN).ibias(IndMenos(Imenos)); obj(indN).ibias(IndMas(Imas))];
+                        obj(indN).vout = [obj(indN).vout(IndMenos(Imenos)); obj(indN).vout(IndMas(Imas))];
+                    end
+                    
+                    
                     [datafitN,xcrosN,ycrosN,slopeNN,slopeNS] = obj.IV_estimation_mN_mS(obj(indN).ibias,obj(indN).vout,ax1);
                     mN = 1/slopeNN;
                     % Definimos la curva superconductora como la tomada
                     % a menor temperatura
-                    [val,indS] = min(Tbath);
+                    [~,indS] = min([obj.Tbath]);
+                    
+                    
+                    % Se eliminan valores duplicados de corriente
+                    % debido a la resolución del generador (caso
+                    % LNCS)
+                    [obj(indS).ibias, Id] = unique(obj(indS).ibias,'stable');
+                    obj(indS).vout = obj(indS).vout(Id);
+                    
+                    % Se reordenan los valores de corriente de
+                    % menor a mayor
+                    IndMas = find(sign(obj(indS).ibias) ~= -1);
+                    IndMenos = find(sign(obj(indS).ibias) == -1);
+                    if strcmp(obj(indS).range,'PosIbias')
+                        [~, Imas] = sort(obj(indS).ibias(IndMas),'descend');
+                        try
+                            [~, Imenos] = sort(obj(indS).ibias(IndMenos),'descend');
+                        end
+                        obj(indS).ibias = [obj(indS).ibias(IndMas(Imas)); obj(indS).ibias(IndMenos(Imenos))];
+                        obj(indS).vout = [obj(indS).vout(IndMas(Imas)); obj(indS).vout(IndMenos(Imenos))];
+                    else
+                        [~, Imas] = sort(obj(indS).ibias(IndMas),'ascend');
+                        try
+                            [~, Imenos] = sort(obj(indS).ibias(IndMenos),'ascend');
+                        end
+                        obj(indS).ibias = [obj(indS).ibias(IndMenos(Imenos)); obj(indS).ibias(IndMas(Imas))];
+                        obj(indS).vout = [obj(indS).vout(IndMenos(Imenos)); obj(indS).vout(IndMas(Imas))];
+                    end
                     [datafitS,xcrosS,ycrosS,slopeSN,slopeSS] = obj.IV_estimation_mN_mS(obj(indS).ibias,obj(indS).vout,ax1);
                     mS = 1/slopeSS;
                     
+                    % Se hace una estimación del offset entre ambas curvas
                     [val, indmin] = min(abs(datafitS.SLine-datafitN.NLine));
                     Xcros = datafitN.Xdata(indmin);
                     Ycros = datafitN.NLine(indmin);
+                    obj(1).Offset(2) = Ycros;
+                    
+                    % Buscamos el número de pasos de resolucion que
+                    % contabilizan el offset
+                    stepI = 0.06125e-6;
+                    N_steps = round(Xcros/stepI);
+                    
+                    obj(1).Offset(1) = N_steps*stepI;
+                    
+                    obj(1).Offset(1) = Xcros;
+                    % Restamos el offset horizontal en la recta normal
+%                     datafitN.Xdata = datafitN.Xdata - XOffset;
+                    
+                    
+                    % Buscamos el punto X en la recta Normal que pase por
+                    % el cero.
+%                     [val, ind] = min(datafitN.Xdata.^2);
+%                     YOffset = datafitN.NLine(ind);
+                    
+                    Dibias = obj(indN).ibias;
+                    Dvout = obj(indN).vout;
+                    Dibias = Dibias - obj(1).Offset(1);                    
+                    
+                    % hay que hacer un ajuste por minimos cuadrados
+                    % teniendo en cuenta toda la recta normal y coger el
+                    % punto de cruce con el eje vertical.
+                    % Ahora consideramos una parabola suave
+%                     PN = polyfit(Dibias,Dvout,2);
+%                     obj(1).Offset(2) = PN(3);
+                    
+                    plot(ax1,(datafitN.Xdata-obj(1).Offset(1))*1e6,datafitN.NLine-obj(1).Offset(2),'.g')
+%                     plot(ax1,datafitN.Xdata*1e6,datafitN.NLine-YOffset,'.-g')
+                    
+                    
                     for i = 1:length(obj)
+                        % Se reordenan los valores de corriente de
+                        % menor a mayor
+                        IndMas = find(sign(obj(i).ibias) ~= -1);
+                        IndMenos = find(sign(obj(i).ibias) == -1);
                         if strcmp(obj(i).range,'PosIbias')
-                            [~, I] = sort(abs(obj(i).ibias),'descend');
+                            [~, Imas] = sort(obj(i).ibias(IndMas),'descend');
+                            try
+                                [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');
+                            end
+                            obj(i).ibias = [obj(i).ibias(IndMas(Imas)); obj(i).ibias(IndMenos(Imenos))];
+                            obj(i).vout = [obj(i).vout(IndMas(Imas)); obj(i).vout(IndMenos(Imenos))];
                         else
-                            [~, I] = sort(obj(i).ibias,'ascend');
+                            [~, Imas] = sort(obj(i).ibias(IndMas),'ascend');
+                            try
+                                [~, Imenos] = sort(obj(i).ibias(IndMenos),'ascend');
+                            end
+                            obj(i).ibias = [obj(i).ibias(IndMenos(Imenos)); obj(i).ibias(IndMas(Imas))];
+                            obj(i).vout = [obj(i).vout(IndMenos(Imenos)); obj(i).vout(IndMas(Imas))];
                         end
-                        obj(i).ibias = obj(i).ibias(I);
-                        obj(i).vout = obj(i).vout(I);
+%                         if strcmp(obj(i).range,'PosIbias')
+%                             [~, I] = sort(abs(obj(i).ibias),'descend');
+%                         else
+%                             [~, I] = sort(obj(i).ibias,'ascend');
+%                         end
+%                         obj(i).ibias = obj(i).ibias(I);
+%                         obj(i).vout = obj(i).vout(I);
+                        obj(i).Offset(1) = obj(1).Offset(1);
+                        obj(i).Offset(2) = obj(1).Offset(2);
+                        % Se corrige el offset de cada curva IV                        
+                        obj(i).ibias = obj(i).ibias-obj(1).Offset(1);
+                        obj(i).vout = obj(i).vout-obj(1).Offset(2);
                         
-                        obj(i).ibias = obj(i).ibias-Xcros;
-                        obj(i).vout = obj(i).vout-Ycros;
                         plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
                         if strcmp(obj(i).range,'NegIbias')
-                            plot(ax1,-obj(i).ibias*1e6,-obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
                         end
+                        obj(i).good = 1;
                     end                                                                                          
+                    %pause;
                     
-                    
-                case 'Respect to Normal Curve'
+                case AlgMethdsAvailable{2} %'Respect to Normal Curve'
                     
                     % Condición basada en la recta normal                    
                     
                     mStr = {'N';'S'}; % primero recta normal y después superconductora
                     
+                    %% En esta parte se identifican como NaN aquellas pendientes de curvas que
+                    % presentan unas pendientes que difieren respecto de una tolerancia de las
+                    % medianas de PN y PS 
                     for k = 1:length(mStr)
                         eval(['P' mStr{k} ' = [DataFit.P' mStr{k} '];'])
                         eval(['P' mStr{k} ' = P' mStr{k} '(1:2:end);'])
@@ -346,6 +491,8 @@ classdef TES_IVCurveSet
                             end
                         end
                     end
+                    
+                    %% Se identifica la curva IV de mayor temperatura
                     jP = 1;
                     for i = 1:length(obj)
                         TbathP(jP) = obj(i).Tbath;
@@ -359,22 +506,38 @@ classdef TES_IVCurveSet
                     if ~exist('indPEnd','var')
                         indPEnd = ind(end);
                     end
+                    %% Se estiman las pendientes de la curva de mayor temperatura
 %                     obj(indPEnd).vout = obj(indPEnd).vout - obj(indPEnd).vout(end);
                     [datafit,xcros,ycros,slopeN,slopeS] = obj.IV_estimation_mN_mS(obj(indPEnd).ibias,obj(indPEnd).vout,ax1);
                     DataFit(indPEnd) = datafit;
+                    
                     for i = 1:length(obj)
+                        % Se consideran las curvas marcadas como BUENAS
                         if obj(i).good
-                            % Primer paso normalizar a Vout(1) iguales misma Rn
+                            % Se identifica el punto de mayor corriente
+                            % (útil en el caso de tener curvas con
+                            % diferente rango de corriente)
                             if strcmp(obj(i).range,'PosIbias')
                                 [valibias,indmax] = max(obj(i).ibias);
                             else
                                 [valibias,indmax] = min(obj(i).ibias);
                             end
-                            
+                            % Se compara ese punto de mayor corriente con
+                            % la curva de mayor temperatura, que se considera como Normal
                             [val,indmax1] = min(abs(obj(indPEnd).ibias - valibias));
+                            
+                            % Se proyecta la curva IV sobre la normal en el
+                            % último punto de máxima corriente
                             obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indPEnd).vout(indmax1));
+                            
+                            % Se eliminan valores duplicados de corriente
+                            % debido a la resolución del generador (caso
+                            % LNCS)
                             [obj(i).ibias, Id] = unique(obj(i).ibias);
                             obj(i).vout = obj(i).vout(Id);
+                            
+                            % Se reordenan los valores de corriente de
+                            % menor a mayor 
                             IndMas = find(sign(obj(i).ibias) ~= -1);
                             IndMenos = find(sign(obj(i).ibias) == -1);
                             if strcmp(obj(i).range,'PosIbias')                                
@@ -393,30 +556,32 @@ classdef TES_IVCurveSet
                                     obj(i).vout = [obj(i).vout(IndMenos(Imenos)); obj(i).vout(IndMas(Imas))];
                             end
                                 
-%                             if any(signo == 1)||any(signo == 0)
-%                                 [~, Imas] = sort(obj(i).ibias(signo ~= -1),'descend');
-%                             end
-%                             if any(signo == -1)
-%                                 [~, Imenos] = sort(obj(i).ibias(signo == -1),'descend');
-%                             end
-%                             if strcmp(obj(i).range,'PosIbias')
-%                                 [~, I] = sort(abs(obj(i).ibias),'descend');
-%                             else
-%                                 [~, I] = sort(obj(i).ibias,'ascend');
-%                             end
-%                             obj(i).ibias = obj(i).ibias(I);
-%                             obj(i).vout = obj(i).vout(I);
-                            
+                            % Se estiman las pendientes normal y
+                            % superconducta de la curva IV
                             [Datafit(i),~,~,~,~] = obj.IV_estimation_mN_mS(obj(i).ibias,obj(i).vout,ax1);
                             
+                            % Se evalúan las curvas en función de sus
+                            % pendientes.
+                            
+                            % Caso 1. Curva cuyas pendiente superconductoras están dentro de
+                            % los rangos de tolerancia en función de la
+                            % mediana de las distribuciones
                             if (Datafit(i).PS(1) > nanmedian(PS)*obj(1).PS_lowerTol)||(Datafit(i).PS(1) < nanmedian(PS)*obj(1).PS_upperTol)
+                                % Se estima el punto de corte de la
+                                % pendiente superconductora y la normal de
+                                % la IV normal
                                 ind = i;
                                 [val, indmin] = min(abs(Datafit(ind).SLine-DataFit(indPEnd).NLine));
                                 Xcros(i) = Datafit(ind).Xdata(indmin);
                                 Ycros(i) = Datafit(ind).SLine(indmin);
+                                
+                                % Se corrige el offset tanto en corriente
+                                % como en voltaje
                                 obj(i).ibias = obj(i).ibias-Xcros(i);
                                 obj(i).vout = obj(i).vout-Ycros(i);
                                 
+                                % Se reordenan los valores de corriente de
+                                % menor a mayor
                                 [obj(i).ibias, Id] = unique(obj(i).ibias);
                                 obj(i).vout = obj(i).vout(Id);
                                 IndMas = find(sign(obj(i).ibias) ~= -1);
@@ -436,22 +601,27 @@ classdef TES_IVCurveSet
                                     obj(i).ibias = [obj(i).ibias(IndMenos(Imenos)); obj(i).ibias(IndMas(Imas))];
                                     obj(i).vout = [obj(i).vout(IndMenos(Imenos)); obj(i).vout(IndMas(Imas))];
                                 end
-%                                 if strcmp(obj(i).range,'PosIbias')
-%                                     [~, I] = sort(abs(obj(i).ibias),'descend');
-%                                 else
-%                                     [~, I] = sort(obj(i).ibias,'ascend');
-%                                 end
-%                                 obj(i).ibias = obj(i).ibias(I);
-%                                 obj(i).vout = obj(i).vout(I);
                                 
+                            % Caso 2. Curva cuyas pendiente superconductoras están fuera de
+                            % los rangos de tolerancia en función de la
+                            % mediana de las distribuciones se marcan como
+                            % NO BUENAS y no se corrigen
                             elseif (Datafit(i).PS(1) < nanmedian(PS)*obj(1).PS_lowerTol)||(Datafit(i).PS(1) > nanmedian(PS)*obj(1).PS_upperTol)
                                 obj(i).good = 0;
                                 continue;
+                                
+                            % Caso 3. Curvas cuyas pendientes
+                            % superconductoras no se han podido estimar. Se
+                            % corrigen con el método de forzado a cero.
                             elseif isnan(Datafit(i).PS(1))
                                 
+                                % Se corrigen las curvas suponiendo que el
+                                % último punto de corriente es el offset tanto en corriente como en voltaje.
                                 obj(i).ibias = obj(i).ibias-obj(i).ibias(end);
                                 obj(i).vout = obj(i).vout-obj(i).vout(end);
                                 
+                                % Se reordenan los valores de corriente de
+                                % menor a mayor
                                 [obj(i).ibias, Id] = unique(obj(i).ibias);
                                 obj(i).vout = obj(i).vout(Id);
                                 IndMas = find(sign(obj(i).ibias) ~= -1);
@@ -471,37 +641,39 @@ classdef TES_IVCurveSet
                                     obj(i).ibias = [obj(i).ibias(IndMenos(Imenos)); obj(i).ibias(IndMas(Imas))];
                                     obj(i).vout = [obj(i).vout(IndMenos(Imenos)); obj(i).vout(IndMas(Imas))];
                                 end
-%                                 if strcmp(obj(i).range,'PosIbias')
-%                                     [~, I] = sort(abs(obj(i).ibias),'descend');
-%                                 else
-%                                     [~, I] = sort(obj(i).ibias,'ascend');
-%                                 end
-%                                 obj(i).ibias = obj(i).ibias(I);
-%                                 obj(i).vout = obj(i).vout(I);
                             end
+                            % Estas curvas IV se pintan porque se
+                            % consideran BUENAS 
                             plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
                             if strcmp(obj(i).range,'NegIbias')
                                 plot(ax1,-obj(i).ibias*1e6,-obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
                             end
+                        % Se consideran las curvas marcadas como NO BUENAS
                         else
+                            % Se identifica el punto de mayor corriente
+                            % (útil en el caso de tener curvas con
+                            % diferente rango de corriente)
                             if strcmp(obj(i).range,'PosIbias')
                                 [valibias,indmax] = max(obj(i).ibias);
                             else
                                 [valibias,indmax] = min(obj(i).ibias);
                             end
-                            
+                            % Se compara ese punto de mayor corriente con
+                            % la curva de mayor temperatura, que se considera como Normal
                             [val,indmax1] = min(abs(obj(indPEnd).ibias - valibias));
+                            
+                            % Se proyecta la curva IV sobre la normal en el
+                            % último punto de máxima corriente
                             obj(i).vout = obj(i).vout - (obj(i).vout(indmax)-obj(indPEnd).vout(indmax1));
+                            
+                            % Se eliminan valores duplicados de corriente
+                            % debido a la resolución del generador (caso
+                            % LNCS)
                             [obj(i).ibias, Id] = unique(obj(i).ibias);
                             obj(i).vout = obj(i).vout(Id);
                             
-%                             obj(i).ibias = obj(i).ibias-Xcros(1);
-%                             obj(i).vout = obj(i).vout-Ycros(1);
-%                             obj(i).ibias = obj(i).ibias-obj(i).ibias(end);
-%                             obj(i).vout = obj(i).vout-obj(i).vout(end);
-                            
-                            [obj(i).ibias, Id] = unique(obj(i).ibias);
-                            obj(i).vout = obj(i).vout(Id);
+                            % Se reordenan los valores de corriente de
+                            % menor a mayor 
                             IndMas = find(sign(obj(i).ibias) ~= -1);
                             IndMenos = find(sign(obj(i).ibias) == -1);
                             if strcmp(obj(i).range,'PosIbias')                                
@@ -519,13 +691,7 @@ classdef TES_IVCurveSet
                                     obj(i).ibias = [obj(i).ibias(IndMenos(Imenos)); obj(i).ibias(IndMas(Imas))];
                                     obj(i).vout = [obj(i).vout(IndMenos(Imenos)); obj(i).vout(IndMas(Imas))];
                             end
-%                             if strcmp(obj(i).range,'PosIbias')
-%                                 [~, I] = sort(abs(obj(i).ibias),'descend');
-%                             else
-%                                 [~, I] = sort(obj(i).ibias,'ascend');
-%                             end
-%                             obj(i).ibias = obj(i).ibias(I);
-%                             obj(i).vout = obj(i).vout(I);
+                            % Estas curvas se identificas como NO BUENAS
                             obj(i).good = 0;
                             plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
                             if strcmp(obj(i).range,'NegIbias')
@@ -535,7 +701,11 @@ classdef TES_IVCurveSet
                     end
                     
 %                     mN = prctile(PN,50);
+                    % Se toma como pendiente normal aquella perteneciente a
+                    % la curva IV de mayor temperatura.
                     mN = PN(indPEnd);
+                    % Se toma como pendiente superconductora aquella cuya
+                    % estimación es la primera distinta de NaN.
                     mS = PS(find(isnan(PS) ~= 1,1)); % El primer valor de PS que sea distinto de NaN.
 %                     mS = prctile(PS,50);
                     
@@ -553,7 +723,7 @@ classdef TES_IVCurveSet
             ibias = ibias(I);
             vout = vout(I);
             
-            Xdata = ((500:-0.001:-10)*1e-6)*median(sign(ibias(1:10)));
+            Xdata = ((10:-0.00001:-15)*1e-6)*median(sign(ibias(1:10)));
             DataFit.Xdata = Xdata;
             
             ind = find(sign(ibias) == median(sign(ibias(1:10))));
@@ -561,6 +731,7 @@ classdef TES_IVCurveSet
             ibias = ibias(ind);
             
             pend = diff(vout)./diff(ibias);
+%             pend = diff(vout./ibias);
             pend(pend <= 0) = NaN;
             
             MaxP = max(pend);
@@ -579,8 +750,8 @@ classdef TES_IVCurveSet
             
             if isempty(XN)||isempty(XS)
                 
-                dataPN = vout(end-5:end);
-                dataXPN = ibias(end-5:end);
+                dataPN = vout(1:10);
+                dataXPN = ibias(1:10);
                 PN = polyfit(dataXPN,dataPN,1);
                 NLine = polyval(PN,Xdata);
                 DataFit.NLine = NLine;                
@@ -599,14 +770,25 @@ classdef TES_IVCurveSet
             end
             if ~isempty(XN)
                 try
-                    indPN = find(abs((pend-XN)*100/XN) < 5); % 5 porciento de error relativo
-                    dataPN = vout([indPN; indPN(end)+1]);
-                    dataXPN = ibias([indPN; indPN(end)+1]);
-                    PN = polyfit(dataXPN,dataPN,1);
-                    NLine = polyval(PN,Xdata);
+%                     indPN = find(abs((pend-XN)*100/XN) < 5); % 5 porciento de error relativo
+%                     dataPN = vout([indPN; indPN(end)+1]);
+%                     dataXPN = ibias([indPN; indPN(end)+1]);
+                    
+                    dataPN = vout;
+                    dataXPN = ibias;
+                    % Considerando una recta
+%                     PN = polyfit(dataXPN,dataPN,1);
+%                     SlopeN = 1/PN(1);
+                    % Considerando una parábola muy suave
+                    PN = polyfit(dataXPN,dataPN,2);
+                    SlopeN = 1/PN(2);
+                    
+                    % Considero una recta
+                    NLine = spline(dataXPN,dataPN,Xdata);
+%                     NLine = polyval(PN,Xdata);
                     DataFit.NLine = NLine;
                     DataFit.PN = PN;
-                    SlopeN = 1/PN(1);
+                    
                 catch
                     PN = [NaN NaN];
                     DataFit.NLine = NaN;
@@ -772,6 +954,8 @@ classdef TES_IVCurveSet
                     return;
                 end
                 TESDATA.circuit.Rf.Value = Rf;
+%                 mN = 1938;
+%                 mS = 25280;
                 eval(['TESDATA.TESParam' upper(StrRange{j}) '.mN.Value = mN;']);
                 eval(['TESDATA.TESParam' upper(StrRange{j}) '.mS.Value = mS;']);
                 eval(['TESDATA.TESParam' upper(StrRange{j}) ' = RnRparCalc(TESDATA.TESParam' upper(StrRange{j}) ',TESDATA.circuit);']);
@@ -910,7 +1094,9 @@ classdef TES_IVCurveSet
                     grid(h(1),'on'),hold(h(1),'on');
                     xlim(h(1),[min(0,sign(Ibias(1))*500) 500]) %%%Podemos controlar apariencia con esto. 300->500
                     xlabel(h(1),'Ibias(\muA)','FontWeight','bold');ylabel(h(1),'Vout(V)','FontWeight','bold');
-                    set(h(1),'FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on')
+                    if strcmp(h(1).Box,'off')
+                        set(h(1),'FontSize',12,'FontWeight','bold','Box','on','LineWidth',2)
+                    end
                     %Curva Ites-Vtes
                     if ~isfield(fig,'subplots')
                         h(3) = subplot(2,2,3);
@@ -920,7 +1106,9 @@ classdef TES_IVCurveSet
                     grid(h(3),'on'),hold(h(3),'on');
                     xlim(h(3),[min(0,sign(Ibias(1))*.5) .5])
                     xlabel(h(3),'V_{TES}(\muV)','FontWeight','bold');ylabel(h(3),'Ites(\muA)','FontWeight','bold');
-                    set(h(3),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
+                    if strcmp(h(3).Box,'off')
+                        set(h(3),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
+                    end
                     %Curva Ptes-Vtes
                     if ~isfield(fig,'subplots')
                         h(2) = subplot(2,2,2);
@@ -930,7 +1118,9 @@ classdef TES_IVCurveSet
                     grid(h(2),'on'),hold(h(2),'on');
                     xlim(h(2),[min(0,sign(Ibias(1))*1.0) 1.0])%%%Podemos controlar apariencia con esto. 0.5->1.0
                     xlabel(h(2),'V_{TES}(\muV)','FontWeight','bold');ylabel(h(2),'Ptes(pW)','FontWeight','bold');
-                    set(h(2),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
+                    if strcmp(h(2).Box,'off')
+                        set(h(2),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
+                    end
                     %Curva Ptes-rtes
                     if ~isfield(fig,'subplots')
                         h(4) = subplot(2,2,4);
@@ -940,12 +1130,17 @@ classdef TES_IVCurveSet
                     grid(h(4),'on'),hold(h(4),'on');
                     xlim(h(4),[0 1]), ylim(h(4),[0 20]);
                     xlabel(h(4),'R_{TES}/R_n','FontWeight','bold');ylabel(h(4),'Ptes(pW)','FontWeight','bold');
-                    set(h(4),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
+                    if strcmp(h(4).Box,'off')
+                        set(h(4),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
+                    end
                     
                     
                     j = j+1;
 %                 end
                     set(h,'FontUnits','Normalized');
+                    if ~isfield(fig,'subplots')
+                        fig.subplots = h;
+                    end
             end
             try
                 axis(h,'tight');

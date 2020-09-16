@@ -392,8 +392,15 @@ classdef TES_Struct
                                 if isempty(ind)
                                     continue;
                                 end
-                                Paux(kj) = ppval(spline(IVTESset(i).rtes(ind),IVTESset(i).ptes(ind)),eval(['perc' StrRange{k} '(jj)'])); %#ok<AGROW>
-                                Iaux(kj) = ppval(spline(IVTESset(i).rtes(ind),IVTESset(i).ites(ind)),eval(['perc' StrRange{k} '(jj)']));%#ok<AGROW> %%%
+                                clear rtes ptes ites
+                                rtes = IVTESset(i).rtes(ind);
+                                ptes = IVTESset(i).ptes(ind);
+                                ites = IVTESset(i).ites(ind);
+                                [rtes,IA,IC] = unique(rtes,'stable');
+                                ptes = ptes(IA);
+                                ites = ites(IA);
+                                Paux(kj) = ppval(spline(rtes,ptes),eval(['perc' StrRange{k} '(jj)'])); %#ok<AGROW>
+                                Iaux(kj) = ppval(spline(rtes,ites),eval(['perc' StrRange{k} '(jj)']));%#ok<AGROW> %%%
                                 Tbath(kj) = IVTESset(i).Tbath; %#ok<AGROW>
                                 kj = kj+1;
                                 SetIbias = [SetIbias; {IVTESset(i).file}];
@@ -1307,13 +1314,18 @@ classdef TES_Struct
                     
                     h(i) = subplot(2,2,i,'Visible','off','ButtonDownFcn',...
                         {@Identify_Origin},'FontSize',12,'LineWidth',2,...
-                        'FontWeight','bold','FontUnits','Normalized');
+                        'FontWeight','bold');
                     eval(['grid(h(' num2str(i) '),''on'');']);
                     eval(['hold(h(' num2str(i) '),''on'');']);
                     
                     eval(['xlabel(h(' num2str(i) '),''%R_n'',''FontSize'',12,''FontWeight'',''bold'',''FontUnits'',''Normalized'');']);
                     eval(['ylabel(h(' num2str(i) '),''' YLabels{i} ''',''FontSize'',12,''FontWeight'',''bold'',''FontUnits'',''Normalized'');']);
+                    if strcmp(get(h(i),'Box'),'off')
+                        set(h(i),'FontSize',12,'LineWidth',2,'Box','on','FontWeight','bold')
+                    end
+                    
                 end
+                set(h,'FontUnits','Normalized');
             else
                 h = fig.subplots;
                 lb = get(h,'xlabel');
