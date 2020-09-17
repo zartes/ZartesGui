@@ -339,6 +339,7 @@ if ~isempty(strfind(FileName,'PXI_TF'))
 else
     Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
 end
+Ib = Ib - handles.varargin{1}.circuit.CurrOffset.Value;
 eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,IV,handles.varargin{1}.P' StrCond '(ind_Tbath).p,''' StrCond ''');']);
 
 data{1} = eval(['handles.varargin{1}.P' StrCond '(ind_Tbath)']);
@@ -395,6 +396,7 @@ eval(['FileName = filesNoise' StrCond '{handles.Files_Ind};']);
 FileName = FileName(find(FileName == filesep,1,'last')+1:end);
 
 Ib = sscanf(FileName,strcat(handles.varargin{1}.NoiseOpt.NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
+Ib = Ib - handles.varargin{1}.circuit.CurrOffset.Value;
 eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,IV,handles.varargin{1}.P' StrCond '(ind_Tbath).p,''' StrCond ''');']);
 if handles.varargin{1}.ElectrThermalModel.bool_Mjo == 1
 %     M = OP.M;
