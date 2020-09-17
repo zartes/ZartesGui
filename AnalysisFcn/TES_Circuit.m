@@ -16,6 +16,7 @@ classdef TES_Circuit
         Rn = PhysicalMeasurement;  % (%)
         mS = PhysicalMeasurement;  % Ohm
         mN = PhysicalMeasurement;  % Ohm
+        CurrOffset = PhysicalMeasurement;
     end
     
     
@@ -45,6 +46,8 @@ classdef TES_Circuit
             obj.mS.Units = 'V/uA';
             obj.mN.Value = 650.7;
             obj.mN.Units = 'V/uA';
+            obj.CurrOffset.Value = 0;
+            obj.CurrOffset.Units = 'A';
         end
         
         function ok = Filled(obj)

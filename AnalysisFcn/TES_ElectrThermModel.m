@@ -87,14 +87,14 @@ classdef TES_ElectrThermModel
                 [~,Tind] = min(abs([TES.IVsetN.Tbath]*1e3-Tbath));
                 IV = TES.IVsetN(Tind);
                 CondStr = 'N';
-                OffsetY = TES.IVsetN(1).Offset(1);
-                Ib = Ib - OffsetY;
+%                 OffsetY = TES.IVsetN(1).Offset(1);
+                Ib = Ib - TES.circuit.CurrOffset.Value;
             else
                 [~,Tind] = min(abs([TES.IVsetP.Tbath]*1e3-Tbath));
                 IV = TES.IVsetP(Tind);
                 CondStr = 'P';
-                OffsetY = TES.IVsetP(1).Offset(1);
-                Ib = Ib - OffsetY;
+%                 OffsetY = TES.IVsetP(1).Offset(1);
+                Ib = Ib - TES.circuit.CurrOffset.Value;
             end
             % Primero valoramos que este en la lista
             filesZ = ListInBiasOrder([Path TES.TFOpt.TFBaseName])';
@@ -351,14 +351,14 @@ classdef TES_ElectrThermModel
                 [~,Tind] = min(abs([TES.IVsetN.Tbath]*1e3-Tbath));
                 IV = TES.IVsetN(Tind);
                 CondStr = 'N';
-                OffsetY = TES.IVsetN(1).Offset(1);
-                Ib = Ib - OffsetY;
+%                 OffsetY = TES.IVsetN(1).Offset(1);
+                Ib = Ib - TES.circuit.CurrOffset.Value;
             else
                 [~,Tind] = min(abs([TES.IVsetP.Tbath]*1e3-Tbath));
                 IV = TES.IVsetP(Tind);
                 CondStr = 'P';
-                OffsetY = TES.IVsetP(1).Offset(1);
-                Ib = Ib - OffsetY;
+%                 OffsetY = TES.IVsetP(1).Offset(1);
+                Ib = Ib - TES.circuit.CurrOffset.Value;
             end            
                                     
             noisedata{1} = importdata(FileName);            
