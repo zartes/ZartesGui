@@ -82,17 +82,18 @@ classdef TES_IVCurveSet
             % fields must be filled to be considered as filled, except for ttes, rp2, aIV, and bIV)
             
             FN = properties(obj);
-            StrNo = {'ttes';'rp2';'aIV';'bIV'};
-            for i = 1:length(FN)
-                if isempty(cell2mat(strfind(StrNo,FN{i})))
-                    if isempty(eval(['obj.' FN{i}]))
-%                         ok = 0;  % Empty field
-%                         return;
+            StrNo = {'ibias'};
+%             for i = 1:length(FN)
+                if ~isempty(cell2mat(strfind(StrNo,FN{1})))
+                    if isempty(eval(['obj.' FN{1}]))
+                        ok = 0;  % Empty field
+                        return;
                     end
                 end
-            end
+            
             ok = 1; % All fields are filled
         end
+        
         
         function [obj, pre_Rf] = ImportFullIV(obj,path,fileN)
             % Function to import I-V curves from files
@@ -104,8 +105,6 @@ classdef TES_IVCurveSet
             end
             if isempty(path)
                 waitfor(msgbox('Cancelled by user',obj.version));
-%                 mN = [];
-%                 mS = [];
                 pre_Rf = [];
                 return;
             end
@@ -150,7 +149,6 @@ classdef TES_IVCurveSet
             
             iOK = 1;
             for i = 1:length(T)
-%                 obj(i).CorrectionMethod = ButtonName;
                 file_upd = fileN{iOK};
                 file_upd(file_upd == '_') = ' ';
                 waitbar(iOK/length(T),h,file_upd)
@@ -194,10 +192,6 @@ classdef TES_IVCurveSet
                 obj(iOK).Tbath = sscanf(char(regexp(fileN{iOK},'\d+.?\d+mK*','match')),'%fmK')*1e-3;
                 obj(iOK).IVsetPath = path;
                 obj(iOK).good = 1;
-% %                 plot(Dibias,Dvout)
-%                 pend = diff(Dvout)./diff(Dibias);
-%                 pend(pend <= 0) = NaN;
-%                 plot(Dibias(2:end),pend)
                                     
                 plot(ax1,obj(iOK).ibias*1e6,obj(iOK).vout,'DisplayName',[num2str(obj(iOK).Tbath*1e3) ' ' obj(iOK).range])
                 iOK = iOK+1;                                
@@ -240,10 +234,20 @@ classdef TES_IVCurveSet
             end
         end
         
-        function [obj,TES] = IV_correction_methods(obj,TES)
+        function [obj,TES,UserCancel] = IV_correction_methods(obj,TES)
             % Esta función debe corregir o centrar las curvas IV y proporcionar valores de mN y mS              
             
-            AlgMethdsAvailable = {'Forced zero-zero';'Norm-Sup crossing point'};
+            UserCancel = 0;
+            % Avisa al usuario para que sepa que las curvas ya están
+            % corregidas y el método empleado
+            if ~isempty(obj(1).CorrectionMethod)
+                waitfor(warndlg(['IV-Curves have been already centered by: ' obj(1).CorrectionMethod...
+                    ', to use another method please import IV curves.'],obj(1).version));
+                UserCancel = 1;
+                return;
+            end
+            
+            AlgMethdsAvailable = {'Forced zero-zero';'Norm-Sup crossing point';'Set Offset Manually'};
                         
             [SELECTION,OK] = listdlg('ListString',AlgMethdsAvailable,...
                 'SelectionMode','single','Name','IV-alignment method',...
@@ -272,9 +276,25 @@ classdef TES_IVCurveSet
                 ylabel('Voltaje (V)');
             end         
             
+            %% Estimación de las pendientes normal y superconductora
+            % Definimos la curva normal como la tomada a mayor
+            % temperatura
+            [~,indN] = max([obj.Tbath]);
+            
+            [datafitN,xcrosN,ycrosN,slopeNN,slopeNS] = obj.IV_estimation_mN_mS(obj(indN).ibias,obj(indN).vout,ax1);
+            mN = 1/slopeNN;
+            
+            % Definimos la curva superconductora como la tomada
+            % a menor temperatura
+            [~,indS] = min([obj.Tbath]);
+            
+            [datafitS,xcrosS,ycrosS,slopeSN,slopeSS] = obj.IV_estimation_mN_mS(obj(indS).ibias,obj(indS).vout,ax1);
+            mS = 1/slopeSS;
+            
             switch obj(1).CorrectionMethod
                 case AlgMethdsAvailable{1} % 'Forced zero-zero'
-                    
+                    % En este método, al valor de ibias más cercano al 0 se le fuerza a tener voltaje 0. 
+                                                            
                     for i = 1:length(obj)
                         % Se busca el dato de menor valor de corriente en
                         % valor absoluto, que este en cero
@@ -288,30 +308,17 @@ classdef TES_IVCurveSet
                         % Todas las curvas IV se suponen BUENAS
                         obj(i).good = 1;
                         
-                        % Se estiman las pendiente en función de los
-                        % últimos y primero 5 puntos.
-                        mN(i) = mean(obj(i).vout(1:5)./obj(i).ibias(1:5));
-                        mS(i) = nanmean(obj(i).vout(end-5:end-1)./obj(i).ibias(end-5:end-1));
+%                         % Se estiman las pendientes en función de los
+%                         % últimos y primeros 5 puntos.
+%                         mN(i) = mean(obj(i).vout(1:5)./obj(i).ibias(1:5));
+%                         mS(i) = nanmean(obj(i).vout(end-5:end-1)./obj(i).ibias(end-5:end-1));
                     end
-                    mN = prctile(mN,75);
-                    mS = prctile(mS,75);
+%                     mN = prctile(mN,75);
+%                     mS = prctile(mS,75);
                     
                 case AlgMethdsAvailable{2} % 'Norm-Sup crossing point'
                     %                                       
-                    % Definimos la curva normal como la tomada a mayor
-                    % temperatura
-                    [~,indN] = max([obj.Tbath]);                                     
-                                        
-                    [datafitN,xcrosN,ycrosN,slopeNN,slopeNS] = obj.IV_estimation_mN_mS(obj(indN).ibias,obj(indN).vout,ax1);
-                    mN = 1/slopeNN;
-                    
-                    % Definimos la curva superconductora como la tomada
-                    % a menor temperatura
-                    [~,indS] = min([obj.Tbath]);                                        
-                    
-                    [datafitS,xcrosS,ycrosS,slopeSN,slopeSS] = obj.IV_estimation_mN_mS(obj(indS).ibias,obj(indS).vout,ax1);
-                    mS = 1/slopeSS;
-                    
+                                       
                     % Se hace una estimación del offset entre ambas curvas
                     [~, indmin] = min(abs(datafitS.SLine-datafitN.NLine));
                     TES.circuit.CurrOffset.Value = datafitN.Xdata(indmin);
@@ -334,9 +341,32 @@ classdef TES_IVCurveSet
                         obj(i).good = 1;
                     end                                                                                          
                     %pause;
-                    
+                case AlgMethdsAvailable{3} % 'Set Offset Manually'
                 
+                    for i = 1:length(obj)                                                                        
+                        plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                        if strcmp(obj(i).range,'NegIbias')
+                            plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                        end                        
+                    end    
                     
+                    waitfor(msgbox('Zoom in around crossing IV-curves to improve accuracy before close this window.',obj(1).version));
+                    [XOffset, YOffset] = ginput(1);
+                    TES.circuit.CurrOffset.Value = XOffset*1e-6;
+                    cla(ax1)
+                    for i = 1:length(obj)                        
+                        % Se corrige el offset de cada curva IV                        
+                        obj(i).ibias = obj(i).ibias-XOffset*1e-6;
+                        obj(i).vout = obj(i).vout-YOffset;
+                        obj(i).YOffset = YOffset;
+                        
+                        plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                        if strcmp(obj(i).range,'NegIbias')
+                            plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                        end
+                        obj(i).good = 1;
+                    end     
+%                     pause;
                 otherwise                    
             end
             

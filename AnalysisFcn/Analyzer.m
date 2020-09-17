@@ -535,7 +535,10 @@ switch src.Label
         
     case 'Center IV-Curves'
         
-        [handles.Session{handles.TES_ID}.TES.IVsetP,TESP] = handles.Session{handles.TES_ID}.TES.IVsetP.IV_correction_methods(handles.Session{handles.TES_ID}.TES);
+        [handles.Session{handles.TES_ID}.TES.IVsetP,TESP, UserCancel] = handles.Session{handles.TES_ID}.TES.IVsetP.IV_correction_methods(handles.Session{handles.TES_ID}.TES);
+        if UserCancel
+            return;
+        end
         handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.Update(TESP.TESParamP);
         handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESP.circuit);
         
