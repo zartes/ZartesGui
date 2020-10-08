@@ -61,7 +61,7 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','Toolbar','figure');
 
-handles.VersionStr = 'ZarTES v3.0';
+handles.VersionStr = 'ZarTES v4.0';
 set(handles.Analyzer,'Name',handles.VersionStr);
 
 handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
@@ -1484,7 +1484,7 @@ switch src.Label
 %         figure(fig);
         
         axtext = subplot(2,3,1,'Visible','off');
-        text(0,0.6,'Software developed by Juan Bolea for QMAD ICMA-CSIC.');
+        text(0,0.6,'Software developed by Juan Bolea for QMAD INMA-CSIC-UNIZAR.');
         text(0,0.3,['Last update: ' d.date]);
         text(0,0,['Current version: ' handles.VersionStr]);
         
@@ -1506,8 +1506,12 @@ switch src.Label
             ax2.Visible = 'off';
         end
         axes(ax3);
-        data = imread('ICMA-CSIC.jpg');
+        data = imread('INMALogo.jpg');
+%         data(data == 0) = 255;
         image(data)
+        
+%         data = imread('ICMA-CSIC.jpg');
+%         image(data)
         ax3.Visible = 'off';
         fig.Position = [0.35 0.35 0.3 0.22];
         fig.Visible = 'on';

@@ -222,7 +222,8 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [false false false];
         TESProp = properties(handles.varargin{3});
 %         TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K'};
-        handles.Table.Data(1:length(TESProp),1) = TESProp;
+        handles.Table.Data(1:length(TESProp)-1,1) = TESProp(1:end-1);
+        handles.Table.Data(length(TESProp),1) = {['%' TESProp{end}]};
         for i = 1:length(TESProp)
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i} '.Value']);
             handles.Table.Data{i,3} = eval(['handles.varargin{3}.' TESProp{i} '.Units']);
