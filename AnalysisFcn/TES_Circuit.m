@@ -37,6 +37,8 @@ classdef TES_Circuit
             obj.L.Units = 'H';
             obj.Nsquid.Value = 3e-12;
             obj.Nsquid.Units = 'A/Hz^{0.5}';
+            obj.CurrOffset.Value = 0;
+            obj.CurrOffset.Units = 'A';
             
             obj.Rpar.Value = 2.035e-05;
             obj.Rpar.Units = 'Ohm';
@@ -46,8 +48,7 @@ classdef TES_Circuit
             obj.mS.Units = 'V/uA';
             obj.mN.Value = 650.7;
             obj.mN.Units = 'V/uA';
-            obj.CurrOffset.Value = 0;
-            obj.CurrOffset.Units = 'A';
+            
         end
         
         function ok = Filled(obj)
