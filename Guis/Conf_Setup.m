@@ -207,11 +207,13 @@ switch varargin{1}.Tag
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false true false];
         CircProp = properties(handles.varargin{3}.circuit);
+        ind = find(cellfun(@(s) ~isempty(strfind('CurrOffset', s)), CircProp)==1);
+        inds = [1:6 ind];
 %         TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
-        handles.Table.Data(1:6,1) = CircProp(1:6);
-        for i = 1:6
-            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i} '.Value']);
-            handles.Table.Data{i,3} = eval(['handles.varargin{3}.circuit.' CircProp{i} '.Units']);
+        handles.Table.Data(1:7,1) = CircProp(inds);
+        for i = 1:7
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{inds(i)} '.Value']);
+            handles.Table.Data{i,3} = eval(['handles.varargin{3}.circuit.' CircProp{inds(i)} '.Units']);
         end
     case 'TES_ThermalParam'
         set(handles.figure1,'Name',['TES Operating Point - ' handles.varargin{1}.Name]);

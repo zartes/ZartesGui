@@ -2216,7 +2216,7 @@ classdef TES_Struct
                 end
                 %plot(xiv(indx1),a_eff(indx1),'.-',xz(indx2),Za_eff(indx2),'.-',xz(indx2),Za_effAprox(indx2),'.-','linewidth',2,'markersize',15);
                 plot(h(1),xiv(indx11),medfilt1(real(a_eff(indx11)),15),'LineWidth',2,'Marker','.','MarkerSize',15,'LineStyle','-.','DisplayName',['IV - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK - ' RngLabel]);
-                plot(h(1),xz(indx22),Za_eff(indx22)*1e-2,'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,...
+                plot(h(1),xz(indx22),Za_eff(indx22),'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,...
                     'DisplayName',['Z - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK']);
                 
                 xlim(h(1),[xiv_min 0.95]);
@@ -2227,8 +2227,9 @@ classdef TES_Struct
                 
                 
                 plot(h(2),xiv(indx1),b_eff(indx1),'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,'DisplayName',['IV - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK - ' RngLabel]);
-                    plot(h(2),xz(indx2),Zb_eff(indx2),'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,'DisplayName',['Z - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK']);
+                plot(h(2),xz(indx2),Zb_eff(indx2),'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,'DisplayName',['Z - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK']);
                 xlim(h(2),[xiv_min 0.95]);
+%                 set(h(2),'YScale','log')
 %                 ylim(h(2),[-5 5]);
                 
 %                 legend(h(2),'IV','Z');
@@ -2409,10 +2410,12 @@ classdef TES_Struct
             
             CircProp = properties(obj.circuit);
             clear DataCell;
+            ind = find(cellfun(@(s) ~isempty(strfind('CurrOffset', s)), CircProp)==1);
+            inds = [1:6 ind];
             DataCell(1,1:3) = {'Parametros','Valores','Unidades'};
-            for i = 1:6 
-                DataCell(i,1:3) = {CircProp{i}, num2str(eval(['obj.circuit.' CircProp{i} '.Value'])),...
-                    eval(['obj.circuit.' CircProp{i} '.Units'])};
+            for i = 1:1:length(inds) 
+                DataCell(i,1:3) = {CircProp{inds(i)}, num2str(eval(['obj.circuit.' CircProp{inds(i)} '.Value'])),...
+                    eval(['obj.circuit.' CircProp{inds(i)} '.Units'])};
             end
             [NoRows,NoCols]=size(DataCell);
             %create table with data from DataCell
@@ -2833,7 +2836,7 @@ classdef TES_Struct
                             pause(0.3)
                             ActXWord.Selection.TypeParagraph;
                             Style='Cita';
-                            TextString = ['Fig. ' num2str(FigNum) '.' num2str(FigSubNum) '. Z(w) a ' Temps(j,:) ' mK.'];
+                            TextString = ['Fig. ' num2str(FigNum) '.' num2str(FigSubNum) '. Z(w) a ' Temps(i,:) ' mK.'];
                             WordText(ActXWord,TextString,Style,[0,1]);
                             FigSubNum = FigSubNum+1;
                         end
@@ -3149,7 +3152,7 @@ classdef TES_Struct
                 FigSubNum = FigSubNum+1;
                                 
                 fig = obj.CompareIV_Z(obj.IVsetN,obj.PN,Tbath);
-                legend(fig.hObject.Children(1),'show','Location','best')
+                legend(fig.hObject.Children(1),'show','Location','Northwest')
                 pause(0.1)
                 Style='Normal';
                 TextString = 'Negative Ibias';
