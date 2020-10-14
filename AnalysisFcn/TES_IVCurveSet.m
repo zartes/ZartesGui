@@ -393,7 +393,7 @@ classdef TES_IVCurveSet
             ibias = ibias(I);
             vout = vout(I);
             
-            Xdata = ((10:-0.00001:-15)*1e-6)*median(sign(ibias(1:10)));
+            Xdata = ((5:-0.00001:-5)*1e-6)*median(sign(ibias(1:10)));
             DataFit.Xdata = Xdata;
             
             ind = find(sign(ibias) == median(sign(ibias(1:10))));
