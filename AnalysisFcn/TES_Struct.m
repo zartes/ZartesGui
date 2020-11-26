@@ -1029,8 +1029,13 @@ classdef TES_Struct
                         
                         %%%Analizamos el ruido
                         if ~isempty(filesNoise)
-                            
+                            try
                             NameStr = filesNoise{j1};
+                            catch
+                                % Error debido a que existe el fichero de
+                                % las TF pero no del ruido
+                               continue; 
+                            end
                             NameStr(NameStr == '_') = ' ';
                             if ishandle(H1.figure)
                                 multiwaitbar(2,[i/length(dirs) j1/length(filesNoise)],{Path,NameStr},H1);
