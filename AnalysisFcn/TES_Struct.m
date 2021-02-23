@@ -1904,7 +1904,8 @@ classdef TES_Struct
                         grid(ax,'on');
                     end
                     for k = 1:2
-                        
+                       
+                       
                         for i = 1:eval(['size(Tbath' StrRange{k} ',1)'])
                             if strcmp(param,'ai')||strcmp(param,'ai_CI')||strcmp(param,'C')||strcmp(param,'C_CI')
                                 eval(['val' StrRange{k} '(i,:) = abs(val' StrRange{k} '(i,:));']);
@@ -1992,6 +1993,8 @@ classdef TES_Struct
                     colors = distinguishable_colors(length(TbathP)+length(TbathN));
                     ind_color = 1;
                     for k = 1:2
+                        [~,IA,~] = intersect(eval(['[obj.P' StrRange{k} '.Tbath]']),eval(['Tbath' StrRange{k}]));
+                        
                         for i = 1:eval(['length(Tbath' StrRange{k} ')'])
                             try
                                 if strcmp(param,'ai')||strcmp(param,'ai_CI')||strcmp(param,'C')||strcmp(param,'C_CI')
@@ -2027,15 +2030,15 @@ classdef TES_Struct
                                         e.Color = colors(ind_color,:);
                                     end
                                     eval(['h = plot(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},''LineStyle'',''-.'',''Marker'',''o'',''Color'',e.Color',...
-                                        ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit;param;ActionStr}]);']);
+                                        ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;IA(i);k;obj.circuit;param;ActionStr}]);']);
                                     
                                     
                                 else
                                     
                                     eval(['h = plot(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},''LineStyle'',''-.'',''Marker'',''o'''...
-                                        ',''DisplayName'',[''ExRes T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit;param;ActionStr}]);']);
+                                        ',''DisplayName'',[''ExRes T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;IA(i);k;obj.circuit;param;ActionStr}]);']);
                                     eval(['h = plot(ax,rp' StrRange{k} 'Th{i},val' StrRange{k} 'Th{i},''LineStyle'',''-'',''Color'',h.Color'...
-                                        ',''DisplayName'',[''ThRes T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;i;k;obj.circuit;param;ActionStr}]);']);
+                                        ',''DisplayName'',[''ThRes T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''ButtonDownFcn'',{@Identify_Origin},''UserData'',[{P;IA(i);k;obj.circuit;param;ActionStr}]);']);
                                 end
                             catch
                             end
@@ -2074,7 +2077,7 @@ classdef TES_Struct
                 else
                     ax = findobj('Type','Axes');
                     if length(ax) > 1
-                        ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');;
+                        ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
                         hold(ax,'on');
                         grid(ax,'on');
                     end

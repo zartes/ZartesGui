@@ -338,7 +338,7 @@ classdef TES_ElectrThermModel
             end
         end    
                 
-        function [RES, SimRes, M, Mph, fNoise, SigNoise] = fitNoise(obj,TES,FileName, param)
+        function [RES, SimRes, M, Mph, fNoise, SigNoise] = fitNoise(obj,TES,FileName, param, chk)
             % Function for Noise analysis.
             
             indSep = find(FileName == filesep);
@@ -359,9 +359,10 @@ classdef TES_ElectrThermModel
                 CondStr = 'P';
 %                 OffsetY = TES.IVsetP(1).Offset(1);
                 Ib = Ib - TES.circuit.CurrOffset.Value;
-            end            
-                                    
-            noisedata{1} = importdata(FileName);            
+            end
+            
+            
+            noisedata{1} = importdata(FileName);
             fNoise = noisedata{1}(:,1);
             
             SigNoise = TES.V2I(noisedata{1}(:,2)*1e12);
@@ -380,7 +381,33 @@ classdef TES_ElectrThermModel
             if isreal(NEP)
                 ydata = medfilt1(NEP*1e18,obj.DataMedFilt);
 %                 findx = find(fNoise > max(obj.Noise_LowFreq,1) & fNoise < obj.Noise_HighFreq);
-                findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+                if nargin ~= 5 
+                    findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+                else
+                    fig = figure;
+                    ax  = axes('Parent',fig');
+                    lg = loglog(ax,fNoise,SigNoise);
+                    hold on;
+                    ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
+%                     delete(ax);
+                    axes(ax);
+                    rc = rectangle('Position', [obj.Noise_LowFreq(1) ax_frame(3) diff(obj.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255,'ButtonDownFcn',@rctgle);                                        
+                    rc2 = rectangle('Position', [obj.Noise_HighFreq(1) ax_frame(3) diff(obj.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255,'ButtonDownFcn',@rctgle);                                        
+                    pb = uicontrol('style','toggle',...
+                        'position',[10 10 180 40],...
+                        'fontsize',14,...
+                        'string','Done');
+                    %                     ax = loglog(fNoise,SigNoise);
+                    waitfor(pb,'Value',1);
+                    rc_pos = get(rc,'Position');
+                    rc2_pos = get(rc2,'Position');
+                    close(fig);
+                    obj.Noise_LowFreq(1) = rc_pos(1);
+                    obj.Noise_LowFreq(2) = rc_pos(1)+rc_pos(3);
+                    obj.Noise_HighFreq(1) = rc2_pos(1);
+                    obj.Noise_HighFreq(2) = rc2_pos(1)+rc2_pos(3);
+                    findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+                end
                 xdata = fNoise(findx);   
                 ydata = ydata(findx);
                                 
@@ -391,7 +418,7 @@ classdef TES_ElectrThermModel
                 else %TES,M,f,OP,CondStr)
                     opts = optimset('Display','off');
                     maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata,ydata,[],[],opts);   
-                    ans = obj.fitjohnson(TES,[0 0],xdata,OP,CondStr);
+%                     ans = obj.fitjohnson(TES,[0 0],xdata,OP,CondStr);
 %                     figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
                     M = maux(2);
                     Mph = maux(1);
@@ -635,5 +662,10 @@ classdef TES_ElectrThermModel
             NEP=1e18*sqrt(stes+stfn+ssh)./abs(sI);
         end
         
+        
+        
     end
+    
+    
 end
+

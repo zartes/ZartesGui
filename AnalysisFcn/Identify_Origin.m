@@ -118,7 +118,10 @@ if evnt.Button == 3
         end
     end
     
-    c2(5) = uimenu(c1,'Label','Change color','Callback',...
+    c2(5) = uimenu(c1,'Label','Re-Analyze','Callback',...
+                {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango});
+    
+    c2(6) = uimenu(c1,'Label','Change color','Callback',...
         {@ActionFcn},'UserData',{Data; jj(ind_orig); P_Rango;evnt.Source.DisplayName});
     
     
@@ -208,6 +211,31 @@ switch str
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.plotABCT(fig);
+        
+        
+    case 'Re-Analyze'
+        handles = guidata(src.Parent.Parent.Parent);
+        P = Data{1}{1};
+        N_meas = Data{1}{2};
+        ind_orig = Data{2};
+        P_Rango = Data{3};
+        StrRange = {'P';'N'};
+        % handles.Session{1,handles.TES_ID}.TES
+        %= handles.Session{1,handles.TES_ID}.TES.ElectrThermalModel = 
+        param = cellstr(fieldnames(handles.Session{1,handles.TES_ID}.TES.PP(1,1).p));
+        warning off;
+        [RES, SimRes, M, Mph, fNoise, SigNoise] = handles.Session{1,...
+            handles.TES_ID}.TES.ElectrThermalModel.fitNoise(handles.Session{1,...
+            handles.TES_ID}.TES,P(N_meas).fileNoise{ind_orig}, handles.Session{1,...
+            handles.TES_ID}.TES.PP(1,1).p,1);
+        
+        eval(['handles.Session{1,handles.TES_ID}.TES.P' StrRange{P_Rango} '(N_meas).p(ind_orig).ExRes = RES;']);
+        eval(['handles.Session{1,handles.TES_ID}.TES.P' StrRange{P_Rango} '(N_meas).p(ind_orig).ThRes = SimRes;']);
+        eval(['handles.Session{1,handles.TES_ID}.TES.P' StrRange{P_Rango} '(N_meas).p(ind_orig).M = M;']);
+        eval(['handles.Session{1,handles.TES_ID}.TES.P' StrRange{P_Rango} '(N_meas).p(ind_orig).Mph = Mph;']);
+        
+        guidata(src.Parent.Parent.Parent,handles)
+%          pause();
         
     case 'Change color'
         c = uisetcolor;
