@@ -123,52 +123,57 @@ classdef TES_BasalNoises
         function [obj, fig] = Plot(obj,fig,TES,Type)
             % Function that visualizes TFS
             
-            if nargin < 2
-                fig = figure;
-            end
-            figure(fig)
-            ax = axes;
-            hold on;
-            grid on;
-            loglog(ax,obj.fNoise(:,1),obj.SigNoise,'.-r','DisplayName','Experimental Noise','LineWidth',1.5); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-            loglog(ax,obj.fNoise(:,1),medfilt1(obj.SigNoise,40),'.-k','DisplayName','Exp Filtered Noise','LineWidth',1.5); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-            set(ax,'XScale','log','YScale','log','FontSize',12,'LineWidth',2,'FontWeight','bold','Box','on');
-            ylabel(ax,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold');
-            xlabel(ax,'\nu (Hz)','FontSize',12,'FontWeight','bold');
-            [path,file] = fileparts(obj.fileNoise);
-            try
-                offsetstr = strfind(file,'mK')-1;
-                onsetstr = strfind(file,'_');
-                onsetstr = onsetstr(find(offsetstr-onsetstr > 0,1,'last'))+1;
-                Tbath = str2double(file(onsetstr:offsetstr))*1e-3;
-            catch
+            if obj.Filled
+                
+                if nargin < 2
+                    fig = figure;
+                end
+                figure(fig)
+                ax = axes;
+                hold on;
+                grid on;
+                loglog(ax,obj.fNoise(:,1),obj.SigNoise,'.-r','DisplayName','Experimental Noise','LineWidth',1.5); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                loglog(ax,obj.fNoise(:,1),medfilt1(obj.SigNoise,40),'.-k','DisplayName','Exp Filtered Noise','LineWidth',1.5); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                set(ax,'XScale','log','YScale','log','FontSize',12,'LineWidth',2,'FontWeight','bold','Box','on');
+                ylabel(ax,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold');
+                xlabel(ax,'\nu (Hz)','FontSize',12,'FontWeight','bold');
+                [path,file] = fileparts(obj.fileNoise);
+                try
+                    offsetstr = strfind(file,'mK')-1;
+                    onsetstr = strfind(file,'_');
+                    onsetstr = onsetstr(find(offsetstr-onsetstr > 0,1,'last'))+1;
+                    Tbath = str2double(file(onsetstr:offsetstr))*1e-3;
+                catch
+                    file(file == '_') = ' ';
+                    title(ax,file);
+                    waitfor(msgbox('Tbath was not identified from noise file in terms of ''_XXmK'' value, please provide a Tbath(mK) to continue',obj.version));
+                    prompt = {'Enter the Tbath value in mK:'};
+                    name = 'Theorical Noise estimation';
+                    numlines = 1;
+                    defaultanswer = {'50'};
+                    answer = inputdlg(prompt,name,numlines,defaultanswer);
+                    Tbath = str2double(char(answer))*1e-3;
+                    if isnan(Tbath)
+                        warndlg('Invalid Tbath value',obj.version);
+                        return;
+                    end
+                end
                 file(file == '_') = ' ';
                 title(ax,file);
-                waitfor(msgbox('Tbath was not identified from noise file in terms of ''_XXmK'' value, please provide a Tbath(mK) to continue',obj.version));
-                prompt = {'Enter the Tbath value in mK:'};
-                name = 'Theorical Noise estimation';
-                numlines = 1;
-                defaultanswer = {'50'};
-                answer = inputdlg(prompt,name,numlines,defaultanswer);
-                Tbath = str2double(char(answer))*1e-3;
-                if isnan(Tbath)
-                    warndlg('Invalid Tbath value',obj.version);                    
-                    return;
+                
+                % Autodetecta la temperatura del baño con _XXmK_
+                switch Type
+                    case 'Normal'
+                        [f,N, obj] = obj.NnoiseModel(TES,Tbath);
+                        loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Normal Noise','LineWidth',2);
+                    case 'Superconductor'
+                        [f,N, obj] = obj.SnoiseModel(TES,Tbath);
+                        loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Superconductor Noise','LineWidth',2);
                 end
+                %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+            else
+                waitfor(msgbox('No Noise file yet selected',obj.version));
             end
-            file(file == '_') = ' ';
-            title(ax,file);
-            
-            % Autodetecta la temperatura del baño con _XXmK_
-            switch Type
-                case 'Normal'
-                    [f,N, obj] = obj.NnoiseModel(TES,Tbath);
-                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Normal Noise','LineWidth',2);
-                case 'Superconductor'
-                    [f,N, obj] = obj.SnoiseModel(TES,Tbath);
-                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Superconductor Noise','LineWidth',2);                    
-            end
-             %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
             
         end
         

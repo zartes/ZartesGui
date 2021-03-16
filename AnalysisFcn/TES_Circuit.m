@@ -92,6 +92,17 @@ classdef TES_Circuit
             end
         end
         
+        function obj = CheckCircuit(obj)
+            % Function to check visually the class values
+            
+            h = figure('Visible','off','Tag','TES_Struct');
+            waitfor(Conf_Setup(h,[],obj));
+            NewCircuit = guidata(h);
+            if ~isempty(NewCircuit)
+                obj = obj.Update(NewCircuit);
+            end
+        end
+        
     end
 end
 

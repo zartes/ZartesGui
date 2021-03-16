@@ -49,7 +49,11 @@ end
 Data = src.UserData;
 
 % Positive Ibias
-h = findobj(handles.Analyzer,'Type','Line');
+% if ~isempty(handles)
+%     h = findobj(handles.Analyzer,'Type','Line');
+% else
+    h = findobj(src.Parent.Parent.Parent,'Type','Line');
+% end
 jp = [];
 jn = [];
 for i = 1:length(h)
@@ -66,7 +70,7 @@ hp = h(jp);
 hn = h(jn);
 
 % Positive Ibias Error bars
-he = findobj(handles.Analyzer,'Type','ErrorBar');
+he = findobj(src.Parent.Parent,'Type','ErrorBar');
 jpe = [];
 jne = [];
 for i = 1:length(he)
@@ -89,17 +93,23 @@ switch str
         
     case 'Show error bars'
         try
-            if strcmp(hn(1).Visible,'on')
-                for i = 1:length(hne)
-                    set(hne(i),'Visible','on');
+            try
+                if strcmp(hn(1).Visible,'on')
+                    for i = 1:length(hne)
+                        set(hne(i),'Visible','on');
+                    end
                 end
+            catch
             end
-            if strcmp(hp(1).Visible,'on')
-                for i = 1:length(hpe)
-                    set(hpe(i),'Visible','on');
+            try
+                if strcmp(hp(1).Visible,'on')
+                    for i = 1:length(hpe)
+                        set(hpe(i),'Visible','on');
+                    end
                 end
+            catch
             end
-        catch            
+        catch
             warndlg('No Confidence interval was computed','ZarTES v1.0');
         end
 

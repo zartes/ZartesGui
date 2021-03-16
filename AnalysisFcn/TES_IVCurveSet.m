@@ -821,6 +821,113 @@ classdef TES_IVCurveSet
             end
         end              
         
+        function obj = CheckIVCurvesVisually(obj, figIV)
+            % Function to check visually the I-V curves
+            
+            if obj.Filled
+                if ~exist('figIV','var')
+                    figIV = [];
+                end
+                
+                figIV = obj.plotIVs(figIV);
+                waitfor(helpdlg('Before closing this message, please check the IV curves',obj(1).version));
+                obj = get(figIV.hObject,'UserData');
+                ax = findobj(figIV.hObject,'Type','Axes');
+                set(ax,'ButtonDownFcn',{@GraphicErrors})
+                
+                waitfor(msgbox('IV Curves Visually Checked!',obj(1).version));
+                
+            end
+            
+%             StrRange = {'P';'N'};
+%             for j = 1:length(StrRange)
+%                 eval(['figIV = obj.IVset' StrRange{j} '.plotIVs(figIV);']);
+%                 
+%                 % Revisar las curvas IV y seleccionar aquellas para eliminar del
+%                 % analisis
+%                 waitfor(helpdlg('Before closing this message, please check the IV curves',obj.version));
+%                 eval(['obj.IVset' StrRange{j} ' = get(figIV.hObject,''UserData'');']);                
+%             end
+%             ax = findobj(figIV.hObject,'Type','Axes');
+%             set(ax,'ButtonDownFcn',{@GraphicErrors})
+%             
+%             waitfor(msgbox('IV Curves Visually Checked!',obj.version));
+        end        
+        
+        function out = GetFromTbath(obj,Tbath)
+            % Function to obtain a selected I-V curves by bath temperature
+            % in Kelvin
+            if obj.Filled
+                [~, b] = intersect([obj.Tbath]',Tbath);
+                
+                out = obj(b);
+            else
+                out = [];
+            end
+        end
+        
+        function obj = Set_ttesIV(obj,TESThermal)
+            % Function to estimate ttes updating IVset
+            for i = 1:length(obj)
+                obj(i).ttes = (obj(i).ptes./[TESThermal.K.Value]+obj(i).Tbath.^([TESThermal.n.Value])).^(1./[TESThermal.n.Value]);
+            end
+            
+        end
+        
+        function plotRTs(obj,TESParam,fig)
+            
+            if ~exist('fig','var')
+                fig = figure;
+                ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
+                hold(ax,'on');
+                grid(ax,'on');
+            else
+                ax = findobj(fig,'Type','Axes');
+                if isempty(ax)
+                    ax = axes('FontSize',12,'FontWeight','bold','LineWidth',2,'Box','on','FontUnits','Normalized');
+                end
+                hold(ax,'on');
+                grid(ax,'on');
+            end
+            
+            %             StrRange = {'P';'N'};
+            %             StrCond = {'Positive';'Negative'};
+            %             for k = 1:2
+            if strcmp(obj(1).range,'PosIbias')
+                color = [0 0 1];
+            else
+                color = [1 0 0];
+            end
+            
+            indIV = TESParam.IV_Tc.Value;
+            for i = 1:length(obj)
+                if obj(i).good
+%                     TbathStr = num2str(obj(i).Tbath*1e3);
+                    plot(ax,obj(i).ttes,obj(i).Rtes*1e3)
+                    %,'DisplayName',['Tbath: ' TbathStr ' mK - ' obj(1).range ]);
+                    k = 1;
+                    if i == indIV
+                        ind = find(obj(i).ttes == TESParam.Tc_RT.Value);
+                        TcStr = num2str(TESParam.Tc_RT.Value*1e3);
+                        h(k) = plot(ax,obj(indIV).ttes(ind),obj(indIV).Rtes(ind)*1e3,...
+                            'Marker','hexagram','MarkerEdgeColor',color,'MarkerFaceColor',color,...
+                            'DisplayName',['Tc: ' TcStr ' mK - ' obj(1).range ]);
+                        k = k + 1;
+                    end
+                end
+            end
+            dsplay = findall(fig,'Type','Line');
+            ids = find(ismember(get(dsplay,'Marker'),'hexagram'));
+            h_str = get(dsplay(ids),'DisplayName');
+            legend(dsplay(ids),h_str);
+            xlabel(ax,'T_{TES} (K)','FontSize',12,'FontWeight','bold');
+            ylabel(ax,'R_{TES} (mOhm)','FontSize',12,'FontWeight','bold');
+            
+        end
+%         
+
     end
+    
 end
+
 

@@ -495,15 +495,17 @@ switch src.Label
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
     case 'Circuit Values'
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
+        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.CheckCircuit;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'Update Circuit Parameters (Slope IV-Curves)'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes','Tag','Analyzer');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.IVcurveSlopesFromData(handles.Session{handles.TES_ID}.Path,fig);
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
+        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.CheckCircuit;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'Import IV-Curves'
         handles.Session{handles.TES_ID}.TES.IVsetP = TES_IVCurveSet;
         handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.Constructor;
@@ -557,39 +559,71 @@ switch src.Label
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckIVCurvesVisually(fig);
+        
+        handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.CheckIVCurvesVisually(fig);
+        handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.CheckIVCurvesVisually(fig);
+        
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
+        
+        
     case 'Fit P vs. T'
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);        
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],fig.hObject);
         
-        waitfor(msgbox('Continue to Thermal parameters vs %Rn',handles.VersionStr)); %handles.VersionStr
-%         fig = handles.Analyzer;
-        indAxes = findobj(fig.hObject,'Type','Axes');
-        delete(indAxes);        
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
+        
+        [handles.Session{handles.TES_ID}.TES.PvTModel, GsetP] = handles.Session{handles.TES_ID}.TES.PvTModel.FittingOption(handles.Session{handles.TES_ID}.TES.IVsetP,fig.hObject);
+        handles.Session{handles.TES_ID}.TES.GsetP = handles.Session{handles.TES_ID}.TES.GsetP.Update(GsetP);
+        
+        [handles.Session{handles.TES_ID}.TES.PvTModel, GsetN] = handles.Session{handles.TES_ID}.TES.PvTModel.FittingOption(handles.Session{handles.TES_ID}.TES.IVsetN,fig.hObject);
+        handles.Session{handles.TES_ID}.TES.GsetN = handles.Session{handles.TES_ID}.TES.GsetN.Update(GsetN);
+        
+%         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.fitPvsTset([],fig.hObject);
+        
+%         waitfor(msgbox('Continue to Thermal parameters vs %Rn',handles.VersionStr)); %handles.VersionStr
+% %         fig = handles.Analyzer;
+%         indAxes = findobj(fig.hObject,'Type','Axes');
+%         delete(indAxes);        
+%         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
     case 'TES Thermal Parameters vs. %Rn'
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
+        
+        handles.Session{handles.TES_ID}.TES.GsetP.plotNKGT(fig,1);        
+        handles.Session{handles.TES_ID}.TES.TESThermalP = handles.Session{handles.TES_ID}.TES.TESThermalP.SetOperationPoint(handles.Session{handles.TES_ID}.TES.GsetP,fig,1);
+        
+        handles.Session{handles.TES_ID}.TES.GsetN.plotNKGT(fig,2);        
+        handles.Session{handles.TES_ID}.TES.TESThermalN = handles.Session{handles.TES_ID}.TES.TESThermalN.SetOperationPoint(handles.Session{handles.TES_ID}.TES.GsetN,fig,2);
+        
+        
+        handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.Set_ttesIV(handles.Session{handles.TES_ID}.TES.TESThermalP);
+        handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Set_ttesIV(handles.Session{handles.TES_ID}.TES.TESThermalN);
+        
+        handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.Tc_EstimationFromRTs(handles.Session{handles.TES_ID}.TES.IVsetP);
+        handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.Tc_EstimationFromRTs(handles.Session{handles.TES_ID}.TES.IVsetN);
+        
+%         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'TES Thermal Parameter Values'
         handles.Session{handles.TES_ID}.TES.TESThermalP.CheckValues('PosIbias');
         handles.Session{handles.TES_ID}.TES.TESThermalN.CheckValues('NegIbias');        
+        
     case 'Get G(T)'
         handles.Session{handles.TES_ID}.TES.TESThermalP.G_calc;
         handles.Session{handles.TES_ID}.TES.TESThermalN.G_calc;
+        
     case 'Load TF in Superconductor State (TFS)'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES.TFS = handles.Session{handles.TES_ID}.TES.TFS.TFfromFile(handles.Session{handles.TES_ID}.Path,handles.Analyzer);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'Check TFS'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');
@@ -616,6 +650,7 @@ switch src.Label
 %         handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig);
         
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'Check Superconductor State Noise'
         if handles.Session{handles.TES_ID}.TES.NoiseS.Filled
             fig = handles.Analyzer;
@@ -636,6 +671,7 @@ switch src.Label
         end
         handles.Session{handles.TES_ID}.TES.TFN = handles.Session{handles.TES_ID}.TES.TFN.TFfromFile(handles.Session{handles.TES_ID}.Path,handles.Analyzer);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'Check TFN'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');
@@ -751,14 +787,19 @@ switch src.Label
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
-        rp = [handles.Session{handles.TES_ID}.TES.TESThermalP.Rn.Value handles.Session{handles.TES_ID}.TES.TESThermalN.Rn.Value];
-        handles.Session{handles.TES_ID}.TES.plotNKGTset(fig,rp);
+%         rp = [handles.Session{handles.TES_ID}.TES.TESThermalP.Rn.Value handles.Session{handles.TES_ID}.TES.TESThermalN.Rn.Value];
+        handles.Session{handles.TES_ID}.TES.plotNKGTset(fig);
         
     case 'Plot RTs Set'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');
         delete(indAxes);
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotRTs(fig);
+        
+        handles.Session{handles.TES_ID}.TES.IVsetN.plotRTs(handles.Session{handles.TES_ID}.TES.TESParamN,fig)
+        handles.Session{handles.TES_ID}.TES.IVsetP.plotRTs(handles.Session{handles.TES_ID}.TES.TESParamP,fig)
+        
+        
+%         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.plotRTs(fig);
     case 'Plot RT 4 points'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes');

@@ -100,6 +100,85 @@ classdef TES_ThermalParam
             end
         end
         
+        function obj = SetOperationPoint(obj,Gset,fig,k)
+            % Function to set Operation Point on thermal parameters 
+            
+            if isempty([Gset.n])
+                warndlg('TESDATA.fitPvsTset must be firstly applied.',obj.version)
+                fig = [];
+            end
+            MS = 5; %#ok<NASGU>
+            LS = 1; %#ok<NASGU>            
+            StrField = {'n';'T_fit';'K';'G'};
+            TESmult =  {'1';'1';'1e9';'1e12';};
+            StrIbias = {'Positive';'Negative'};
+            
+            IndxOP = findobj('DisplayName',['Operation Point ' StrIbias{k} ' Ibias']);
+            delete(IndxOP);
+            
+            if isfield(fig,'subplots')
+                h = fig.subplots;
+            end
+            
+            pause(0.2)
+            waitfor(helpdlg('After closing this message, select a point for TES characterization',obj.version));
+            figure(fig.hObject);
+            
+            % Seleccion mediante teclado de la Rn
+            prompt = {'Enter the %Rn (0 < %Rn < 1) for TES thermal parameters'};
+            name = ['TES Thermal Parameters for ' StrIbias{k} ' Ibias'];
+            numlines = 1;
+            defaultanswer = {'0.8'};
+            answer = inputdlg(prompt,name,numlines,defaultanswer);
+            if isempty(answer)
+                warndlg('No %Rn value selected',obj.version);
+                return;
+            else
+                X = str2double(answer{1});
+                if isnan(X)
+                    warndlg('Invalid %Rn value',obj.version);
+                    return;
+                end
+            end
+            rp = [Gset.rp];
+            if X > max(rp)
+                X = max(rp);
+            end
+            
+            ind_rp = find(rp >= X ,1); %#ok<NASGU>
+            
+            
+            for i = 1:length(StrField)
+                if ~isfield(fig,'subplots')
+                    h(i) = subplot(2,2,i,'ButtonDownFcn',{@GraphicErrors_NKGT},'LineWidth',2,'FontSize',12,'FontWeight','bold','box','on');
+                    hold(h(i),'on');
+                    grid(h(i),'on');
+                end
+                eval(['val = [Gset.' StrField{i} ']*' TESmult{i} ';']);
+                eval(['obj.' StrField{i} '.Value = val(ind_rp);']);
+                eval(['val_CI = [Gset.' StrField{i} '_CI]*' TESmult{i} ';']);
+                eval(['obj.' StrField{i} '_CI.Value = val_CI(ind_rp);']);
+                
+                eval(['plot(h(i),Gset(ind_rp).rp,val(ind_rp),''.-'','...
+                    '''Color'',''none'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'','...
+                    '''LineWidth'',LS,''Marker'',''hexagram'',''MarkerSize'',2*MS,''DisplayName'',[''Operation Point ' StrIbias{k} ' Ibias'']);']);
+                axis(h(i),'tight')
+                set(h(i),'FontUnits','Normalized');
+            end
+            obj.K.Value = obj.K.Value*1e-9;
+            obj.K_CI.Value = obj.K_CI.Value*1e-9;
+            obj.G.Value = obj.G.Value*1e-12;
+            obj.G_CI.Value = obj.G_CI.Value*1e-12;
+            obj.G100.Value = obj.G_calc(0.1);
+            obj.Rn.Value = X;
+            
+            uiwait(msgbox({['n: ' num2str(obj.n.Value)]; ['K: ' num2str(obj.K.Value*1e9') ' nW/K^n'];...
+                ['T_{fit}: ' num2str(obj.T_fit.Value*1e3) ' mK'];['G: ' num2str(obj.G.Value*1e12) ' pW/K']},'TES Operating Point','modal'));
+            
+        end
+                            
+        
+        
     end
 end
 

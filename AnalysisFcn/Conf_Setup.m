@@ -206,14 +206,15 @@ switch varargin{1}.Tag
         set([handles.Add handles.Remove handles.Options],'Visible','off');
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false true false];
-        CircProp = properties(handles.varargin{3}.circuit);  
+%         CircProp = properties(handles.varargin{3}.circuit);  
+        CircProp = properties(handles.varargin{3});  
         ind = find(cellfun(@(s) ~isempty(strfind('CurrOffset', s)), CircProp)==1);
         inds = [1:6 ind];
 %         TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
         handles.Table.Data(1:7,1) = CircProp(inds);
         for i = 1:7
-            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{inds(i)} '.Value']);
-            handles.Table.Data{i,3} = eval(['handles.varargin{3}.circuit.' CircProp{inds(i)} '.Units']);
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.' CircProp{inds(i)} '.Value']);
+            handles.Table.Data{i,3} = eval(['handles.varargin{3}.' CircProp{inds(i)} '.Units']);
         end
     case 'TES_ThermalParam'
         set(handles.figure1,'Name',['TES Operating Point - ' handles.varargin{1}.Name]);
@@ -589,7 +590,7 @@ switch handles.varargin{1}.Tag
             'Save', 'Cancel', 'Save');
         switch ButtonName
             case 'Save'
-                CircProp = properties(handles.varargin{3}.circuit);
+                CircProp = properties(handles.varargin{3});
                 for i = 1:length(CircProp)
                     try
                         if ~ischar(handles.Table.Data{i,2})
