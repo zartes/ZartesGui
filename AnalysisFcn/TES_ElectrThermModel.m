@@ -77,9 +77,7 @@ classdef TES_ElectrThermModel
         end
         
         function P = FitZ(obj,circuit,IVset,TESParam,TESThermal,TESDim,TFOpt,TFS,Path,File,FreqRange)
-            
-            
-            
+                                    
             % Opcion Path
             if ~isempty(Path)
                 % Primero valoramos que este en la lista
@@ -93,9 +91,27 @@ classdef TES_ElectrThermModel
                 filesZ{1} = File(indSep(end)+1:end);
                 Tbath = sscanf(Path(indSep(end-1)+1:indSep(end)-1),'%dmK');
             end
-           
+            
+            h_i = 1;
+            h = nan(1,50);
+            g = nan(1,50);
+            H = multiwaitbar(1,0,{'Folder(s)','File(s)'});
+            H.figure.Name = 'Z(w) Analysis';
+                
+                
             for i = 1:length(filesZ)
+                
+                
                 Name = filesZ{i};                
+                
+                NameStr = filesZ{i};
+                NameStr(NameStr == '_') = ' ';
+                if ishandle(H.figure)
+                    multiwaitbar(1,i/length(filesZ),{[num2str(Tbath) ' mK - ' NameStr]},H);
+                else
+                    H = multiwaitbar(1,i/length(filesZ),{[num2str(Tbath) ' mK - ' NameStr]});
+                    H.figure.Name = obj.version;
+                end
                 
                 Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
                 [~,Tind] = min(abs([IVset.Tbath]*1e3-Tbath));
@@ -148,135 +164,70 @@ classdef TES_ElectrThermModel
                 
                 paramList = fieldnames(param);
                 for pm = 1:length(paramList)
-                    eval(['P(i).p.' paramList{pm} ' = param.' paramList{pm} ';']);
+                    eval(['P.p.' paramList{pm} '(i) = param.' paramList{pm} ';']);
                 end
-                P(i).CI = CI;
-                P(i).residuo = aux1;
-                P(i).fileZ = {[Path filesZ{i}]};
-                P(i).ElecThermModel = obj.Zw_Models(obj.Selected_Zw_Models);
-                P(i).ztes = ztes;
-                P(i).fZ = fZ;
-                P(i).fS = fS;
-                P(i).ERP = ERP;
-                P(i).R2 = R2;
+                P.CI{i} = CI;
+                P.residuo(i) = aux1;
+                P.fileZ(i) = {[Path filesZ{i}]};
+                P.ElecThermModel(i) = obj.Zw_Models(obj.Selected_Zw_Models);
+                P.ztes{i} = ztes;
+                P.fZ{i} = fZ;
+                P.fS{i} = fS;
+                P.ERP{i} = ERP;
+                P.R2{i} = R2;
+                
+                
                 
                 % Datos filtrados por valores negativos de C o
                 % alpha
                 if param.C < 0 || param.ai < 0 || R2 < obj.Zw_R2Thrs
-                    P(i).Filtered = 1;
+                    P.Filtered{i} = 1;
                 else
-                    P(i).Filtered = 0;
+                    P.Filtered{i} = 0;
                 end
                 
+                
+                if obj.bool_Show
+                    
+                    if i == 1
+                        fig = figure('Name',[Path 'Positive Ibias Range']);
+                        figure(fig);
+                        indAxes = findobj(fig,'Type','Axes');
+                        delete(indAxes);                        
+                        ax = axes;
+                        grid(ax,'on');
+                        hold(ax,'on');
+                    end
+                    
+                    ind = 1:3:length(ztes);
+                    try
+                        h(h_i) = plot(ax,1e3*ztes(ind),'.','Color',[0 0.447 0.741],...
+                            'markerfacecolor',[0 0.447 0.741],'MarkerSize',15,'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[num2str(Tbath) ' mK - ' NameStr]);
+                        %%% Paso marker de 'o' a '.'
+                        set(ax,'LineWidth',2,'FontSize',12,'FontWeight','bold');
+                        xlabel(ax,'Re(mZ)','FontSize',12,'FontWeight','bold');
+                        ylabel(ax,'Im(mZ)','FontSize',12,'FontWeight','bold');%title('Ztes with fits (red)');
+                        ImZmin(i) = min(imag(1e3*ztes));
+                        ylim(ax,[min(-15,min(ImZmin)-1) 1])
+                        g(h_i) = plot(ax,1e3*fZ(:,1),1e3*fZ(:,2),'r','LineWidth',2,...
+                            'ButtonDownFcn',{@ChangeGoodOptP},'Tag',[num2str(Tbath) ' mK - ' NameStr ':fit']);
+                        hold(ax,'on');
+                        grid(ax,'on');
+                        set([h(h_i) g(h_i)],'UserData',[h(h_i) g(h_i)]);
+                    catch
+                    end
+                    h_i = h_i+1;
+                end                                                                
+            end
+            P.Tbath = Tbath*1e-3;
+            try
+                if ishandle(H.figure)
+                    delete(H.figure)
+                    clear('H')
+                end                
+            catch
             end
             
-%             Name = FileName(find(FileName == filesep, 1, 'last' )+1:length(FileName));
-%             Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
-%             Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
-%             % Buscamos si es Ibias positivos o negativos
-%             if ~isempty(strfind(Path,'Negative')) %#ok<STREMP>
-%                 [~,Tind] = min(abs([TES.IVsetN.Tbath]*1e3-Tbath));
-%                 IV = TES.IVsetN(Tind);
-%                 CondStr = 'N';
-% %                 OffsetY = TES.IVsetN(1).Offset(1);
-%                 Ib = Ib - TES.circuit.CurrOffset.Value;
-%             else
-%                 [~,Tind] = min(abs([TES.IVsetP.Tbath]*1e3-Tbath));
-%                 IV = TES.IVsetP(Tind);
-%                 CondStr = 'P';
-% %                 OffsetY = TES.IVsetP(1).Offset(1);
-%                 Ib = Ib - TES.circuit.CurrOffset.Value;
-%             end
-%             
-%             IndFile = find(ismember(filesZ,Name));
-%             
-% %             SearchFiles = strfind(filesZ,Name);
-% %             for i = 1:length(filesZ)
-% %                 if ~isempty(SearchFiles{i})
-% %                     IndFile = i;
-% %                     break;
-% %                 end
-% %             end
-% 
-%             try
-%                 eval(['[~,Tind] = find(abs([TES.P' CondStr '.Tbath]*1e3-Tbath)==0);']);
-%                 eval(['ztes = TES.P' CondStr '(Tind).ztes{IndFile};'])
-%                 eval(['fS = TES.P' CondStr '(Tind).fS{IndFile};'])
-%                 if isempty(ztes)
-%                     error;
-%                 end
-%             catch
-%                 data = importdata(FileName);
-%                 IndDist = find(data(:,2) ~= 0);
-%                 data = data(IndDist,:);                
-%                 tf = data(:,2)+1i*data(:,3);
-%                 Rth = TES.circuit.Rsh.Value+eval(['TES.TESParam' CondStr '.Rpar.Value'])+2*pi*TES.circuit.L.Value*data(:,1)*1i;                
-%                 fS = TES.TFS.f(IndDist);                                
-%                 ztes = (TES.TFS.tf(IndDist)./tf-1).*Rth;                
-%                 ztes = ztes(fS >= FreqRange(1) & fS <= FreqRange(2));
-%                 fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));                
-%             end
-%             Zinf = real(ztes(end));
-%             Z0 = real(ztes(1));
-%             [~,indfS] = min(imag(ztes));
-%             tau0 = 1/(2*pi*fS(indfS));
-%             opts = optimset('Display','off','Algorithm','levenberg-marquardt');
-%             switch obj.Zw_Models{obj.Selected_Zw_Models}
-%                 case obj.Zw_Models{1}
-%                     p0 = [Zinf Z0 tau0];          % 3 parameters
-%                 case obj.Zw_Models{2}
-%                     ca0 = 1e-1;
-%                     tauA = 1e-6;
-%                     p0 = [Zinf Z0 tau0 ca0 tauA];%%%p0 for 2 block model.  % 5 parameters
-%                 case obj.Zw_Models{3}
-%                     ca0 = 1e-1;
-%                     tauA = 1e-6;
-%                     p0 = [Zinf Z0 tau0 ca0 tauA];%%%p0 for 2 block model.  % 5 parameters
-%                 case obj.Zw_Models{4}
-%                     tau1 = 1e-5;
-%                     tau2 = 1e-5;
-%                     d1 = 0.8;
-%                     d2 = 0.1;
-%                     p0 = [Zinf Z0 tau0 tau1 tau2 d1 d2];%%%p0 for 3 block model.   % 7 parameters                                        
-%             end
-%             [p,aux1,aux2,aux3,out,lambda,jacob] = lsqcurvefit(@obj.fitZ,p0,fS,...
-%                 [real(ztes) imag(ztes)],[],[],opts);%#ok<ASGLU> %%%uncomment for real parameters.
-%             MSE = (aux2'*aux2)/(length(fS)-length(p)); %#ok<NASGU>
-%             ci = nlparci(p,aux2,'jacobian',jacob);
-%             CI = (ci(:,2)-ci(:,1))';  
-%             p_CI = [p; CI];
-%             param = obj.GetModelParameters(TES,p_CI,IV,Ib,CondStr);
-%             fZ = obj.fitZ(p,fS);
-%             ERP = sum(abs(abs(ztes-fZ(:,1)+1i*fZ(:,2))./abs(ztes)))/length(ztes);
-%             R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),ztes,'NRMSE');
-            
-            
-%             eval(['obj.P' StrRange{k1} '(iOK).Tbath = Tbath*1e-3;;']);
-%             if param.rp > obj.ElectrThermalModel.Zw_rpUB || param.rp < obj.ElectrThermalModel.Zw_rpLB
-%                 continue;
-%             end
-%             
-%             paramList = fieldnames(param);
-%             for pm = 1:length(paramList)
-%                 eval(['obj.P' StrRange{k1} '(iOK).p(jj).' paramList{pm} ' = param.' paramList{pm} ';']);
-%             end
-%             eval(['obj.P' StrRange{k1} '(iOK).CI{jj} = CI;']);
-%             eval(['obj.P' StrRange{k1} '(iOK).residuo(jj) = aux1;']);
-%             eval(['obj.P' StrRange{k1} '(iOK).fileZ(jj) = {[dirs{i} filesep filesZ{j1}]};']);
-%             eval(['obj.P' StrRange{k1} '(iOK).ElecThermModel(jj) = obj.ElectrThermalModel.Zw_Models(obj.ElectrThermalModel.Selected_Zw_Models);']);
-%             eval(['obj.P' StrRange{k1} '(iOK).ztes{jj} = ztes;']);
-%             eval(['obj.P' StrRange{k1} '(iOK).fZ{jj} = fZ;']);
-%             eval(['obj.P' StrRange{k1} '(iOK).fS{jj} = fS;']);
-%             eval(['obj.P' StrRange{k1} '(iOK).ERP{jj} = ERP;']);
-%             eval(['obj.P' StrRange{k1} '(iOK).R2{jj} = R2;']);
-%             
-%             % Datos filtrados por valores negativos de C o
-%             % alpha
-%             if param.C < 0 || param.ai < 0 || R2 < obj.ElectrThermalModel.Zw_R2Thrs
-%                 eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 1;']);
-%             else
-%                 eval(['obj.P' StrRange{k1} '(iOK).Filtered{jj} = 0;']);
-%             end
         end
         
         function fz = fitZ(obj,p,f)
@@ -439,101 +390,153 @@ classdef TES_ElectrThermModel
             end
         end    
                 
-        function [RES, SimRes, M, Mph, fNoise, SigNoise] = fitNoise(obj,TES,FileName, param, chk)
+        function P = fitNoise(obj,circuit,IVset,TESP,TES,Path,File) %(obj,circuit,IVset,TESParam,TESThermal,TESDim,TFOpt,TFS,Path,File,FreqRange)
             % Function for Noise analysis.
-            
-            indSep = find(FileName == filesep);
-            Path = FileName(1:indSep(end));
-            Name = FileName(find(FileName == filesep, 1, 'last' )+1:end);
-            Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
-            Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
-            % Buscamos si es Ibias positivos o negativos
-            if ~isempty(strfind(Path,'Negative'))
-                [~,Tind] = min(abs([TES.IVsetN.Tbath]*1e3-Tbath));
-                IV = TES.IVsetN(Tind);
-                CondStr = 'N';
-%                 OffsetY = TES.IVsetN(1).Offset(1);
-                Ib = Ib - TES.circuit.CurrOffset.Value;
-            else
-                [~,Tind] = min(abs([TES.IVsetP.Tbath]*1e3-Tbath));
-                IV = TES.IVsetP(Tind);
-                CondStr = 'P';
-%                 OffsetY = TES.IVsetP(1).Offset(1);
-                Ib = Ib - TES.circuit.CurrOffset.Value;
+                                
+                    
+            % Opcion Path
+            if ~isempty(Path)
+                Z = [Path TES.TFOpt.TFBaseName];
+                filesZ = ListInBiasOrder(Z)';
+                % Primero valoramos que este en la lista
+                D = [Path TES.NoiseOpt.NoiseBaseName];
+                filesNoise = ListInBiasOrder(D)';
+                
+                indSep = find(Path == filesep);
+                Tbath = sscanf(Path(indSep(end)+1:end),'%dmK');
+            end
+            if ~isempty(File)
+                indSep = find(File == filesep);
+                Path = File(1:indSep(end));
+                filesNoise{1} = File(indSep(end)+1:end);
+                Tbath = sscanf(Path(indSep(end-1)+1:indSep(end)-1),'%dmK');
             end
             
+            H = multiwaitbar(1,0,{'Folder(s)','File(s)'});
+            H.figure.Name = 'Noise Analysis';
             
-            noisedata{1} = importdata(FileName);
-            fNoise = noisedata{1}(:,1);
-            
-            SigNoise = TES.V2I(noisedata{1}(:,2)*1e12);
-            OP = TES.setTESOPfromIb(Ib,IV,param,CondStr);
-            f = logspace(0,5,1000);
-            M = 0;
-            
-            SimulatedNoise = obj.noisesim(TES,OP,M,f,CondStr);
-            SimRes = SimulatedNoise.Res;            
-            sIaux = ppval(spline(f,SimulatedNoise.sI),noisedata{1}(:,1));
-            NEP = real(sqrt(((SigNoise*1e-12).^2-SimulatedNoise.squid.^2))./sIaux);            
-%             NEP = sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2)./sIaux;
-            NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
-            RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./medfilt1(real(NEP),obj.DataMedFilt).^2))/2/1.609e-19;
-            
-            if isreal(NEP)
-                ydata = medfilt1(NEP*1e18,obj.DataMedFilt);
-%                 findx = find(fNoise > max(obj.Noise_LowFreq,1) & fNoise < obj.Noise_HighFreq);
-                if nargin ~= 5 
-                    findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+            for i = 1:length(filesNoise)
+                
+                
+                
+                Name = filesNoise{i};
+                
+                jj = find(not(cellfun('isempty',strfind(filesZ,Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1)))));
+                
+                NameStr = filesNoise{i};
+                NameStr(NameStr == '_') = ' ';
+                if ishandle(H.figure)
+                    multiwaitbar(1,i/length(filesNoise),{[num2str(Tbath) ' mK - ' NameStr]},H);
                 else
-                    fig = figure;
-                    ax  = axes('Parent',fig');
-                    lg = loglog(ax,fNoise,SigNoise);
-                    hold on;
-                    ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
-%                     delete(ax);
-                    axes(ax);
-                    rc = rectangle('Position', [obj.Noise_LowFreq(1) ax_frame(3) diff(obj.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255,'ButtonDownFcn',@rctgle);                                        
-                    rc2 = rectangle('Position', [obj.Noise_HighFreq(1) ax_frame(3) diff(obj.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255,'ButtonDownFcn',@rctgle);                                        
-                    pb = uicontrol('style','toggle',...
-                        'position',[10 10 180 40],...
-                        'fontsize',14,...
-                        'string','Done');
-                    %                     ax = loglog(fNoise,SigNoise);
-                    waitfor(pb,'Value',1);
-                    rc_pos = get(rc,'Position');
-                    rc2_pos = get(rc2,'Position');
-                    close(fig);
-                    obj.Noise_LowFreq(1) = rc_pos(1);
-                    obj.Noise_LowFreq(2) = rc_pos(1)+rc_pos(3);
-                    obj.Noise_HighFreq(1) = rc2_pos(1);
-                    obj.Noise_HighFreq(2) = rc2_pos(1)+rc2_pos(3);
-                    findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+                    H = multiwaitbar(1,i/length(filesNoise),{[num2str(Tbath) ' mK - ' NameStr]});
+                    H.figure.Name = obj.version;
                 end
-                xdata = fNoise(findx);   
-                ydata = ydata(findx);
-                                
-                                
-                if isempty(findx)||sum(ydata == inf)
+                
+                
+%                 Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1);
+                Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
+                [~,Tind] = min(abs([IVset.Tbath]*1e3-Tbath));
+                IV = IVset(Tind);
+                Ib = Ib - circuit.CurrOffset.Value;
+                                               
+                noisedata{i} = importdata([Path filesep filesNoise{i}]);
+                fNoise = noisedata{i}(:,1);
+                
+                SigNoise = TES.V2I(noisedata{i}(:,2)*1e12);
+                if strcmp(IVset(1).range,'PosIbias')
+                    CondStr = 'P';
+                else
+                  CondStr = 'N';
+                end
+                clear p;
+                param = fieldnames(TESP.p);
+                for i1 = 1:length(param)
+                    eval(['p.' param{i1} ' = TESP.p.' param{i1} '(jj);']);
+                end
+                    OP = TES.setTESOPfromIb(Ib,IV,p,CondStr);
+                    
+                
+%                 OP = TES.setTESOPfromIb(Ib,IV,param,CondStr);
+                f = logspace(0,5,1000);
+                M = 0;
+                
+                SimulatedNoise = obj.noisesim(TES,OP,M,f,CondStr);
+                SimRes = SimulatedNoise.Res;
+                sIaux = ppval(spline(f,SimulatedNoise.sI),noisedata{1}(:,1));
+                NEP = real(sqrt(((SigNoise*1e-12).^2-SimulatedNoise.squid.^2))./sIaux);
+                %             NEP = sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2)./sIaux;
+                NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
+                RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./medfilt1(real(NEP),obj.DataMedFilt).^2))/2/1.609e-19;
+                
+                P.p(jj).ExRes = RES;
+                P.p(jj).ThRes = SimRes;
+                P.fileNoise(jj) = {filesNoise{i}};
+                P.NoiseModel(jj) = {TES.NoiseOpt.NoiseModel};
+                P.fNoise{jj} = fNoise;
+                P.SigNoise{jj} = SigNoise;
+                
+                if isreal(NEP)
+                    ydata = medfilt1(NEP*1e18,obj.DataMedFilt);
+                    %                 findx = find(fNoise > max(obj.Noise_LowFreq,1) & fNoise < obj.Noise_HighFreq);
+                    if nargin ~= 5
+                        findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+                    else
+                        fig = figure;
+                        ax  = axes('Parent',fig');
+                        lg = loglog(ax,fNoise,SigNoise);
+                        hold on;
+                        ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
+                        axes(ax);
+                        rc = rectangle('Position', [obj.Noise_LowFreq(1) ax_frame(3) diff(obj.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255,'ButtonDownFcn',@rctgle);
+                        rc2 = rectangle('Position', [obj.Noise_HighFreq(1) ax_frame(3) diff(obj.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255,'ButtonDownFcn',@rctgle);
+                        pb = uicontrol('style','toggle',...
+                            'position',[10 10 180 40],...
+                            'fontsize',14,...
+                            'string','Done');
+                        %                     ax = loglog(fNoise,SigNoise);
+                        waitfor(pb,'Value',1);
+                        rc_pos = get(rc,'Position');
+                        rc2_pos = get(rc2,'Position');
+                        close(fig);
+                        obj.Noise_LowFreq(1) = rc_pos(1);
+                        obj.Noise_LowFreq(2) = rc_pos(1)+rc_pos(3);
+                        obj.Noise_HighFreq(1) = rc2_pos(1);
+                        obj.Noise_HighFreq(2) = rc2_pos(1)+rc2_pos(3);
+                        findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+                    end
+                    xdata = fNoise(findx);
+                    ydata = ydata(findx);
+                    
+                    
+                    if isempty(findx)||sum(ydata == inf)
+                        M = NaN;
+                        Mph = NaN;
+                    else %TES,M,f,OP,CondStr)
+                        opts = optimset('Display','off');
+                        maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata,ydata,[],[],opts);
+                        %                     ans = obj.fitjohnson(TES,[0 0],xdata,OP,CondStr);
+                        %                     figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
+                        M = maux(2);
+                        Mph = maux(1);
+                        if M <= 0
+                            M = NaN;
+                        end
+                        if Mph <= 0
+                            Mph = NaN;
+                        end
+                    end
+                else
                     M = NaN;
                     Mph = NaN;
-                else %TES,M,f,OP,CondStr)
-                    opts = optimset('Display','off');
-                    maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata,ydata,[],[],opts);   
-%                     ans = obj.fitjohnson(TES,[0 0],xdata,OP,CondStr);
-%                     figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
-                    M = maux(2);
-                    Mph = maux(1);
-                    if M <= 0
-                        M = NaN;
-                    end
-                    if Mph <= 0
-                        Mph = NaN;
-                    end
                 end
-            else
-                M = NaN;
-                Mph = NaN;
-            end                        
+                
+                P.p(jj).M = M;
+                P.p(jj).Mph = Mph;
+            end
+            
+            %             [RES, SimRes, M, Mph, fNoise, SigNoise] = obj.ElectrThermalModel.fitNoise(obj,FileName, param);
+            %
+            
         end
         
         function noise = noisesim(obj,TES,OP,M,f,CondStr)
