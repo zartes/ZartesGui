@@ -65,31 +65,71 @@ classdef TES_BasalNoises
             
         end
         
-        function  [f,N, obj] = NnoiseModel(obj,TES,Tbath,Ttes)
+        function  [f,N,obj] = NnoiseModel(obj,TES,Tbath,Ttes)
             %%%Función para devolver el modelo de ruido total en estado normal o
-            %%%superconductor
-            
-            RL = TES.circuit.Rsh.Value+TES.circuit.Rpar.Value;
-            RTES = TES.circuit.Rn.Value+RL;
-            
-            tau = TES.circuit.L.Value/RTES;
-            f = logspace(0,6);
-            w = 2*pi*f;
-            
-            if nargin ~= 4 
+            if nargin ~= 4
                 Ttes=Tbath;
-            end 
+            end
+            % Modelo de ruido en estado normal teórico
+            RL = TES.circuit.Rsh.Value+TES.circuit.Rpar.Value;
+            RTES = TES.circuit.Rn.Value;
+            if size(TES.circuit.Nsquid.Value,1) == 1                
+                f = logspace(0,6);
+            else
+                f = obj.fNoise;
+            end
             
+            w = 2*pi*f;
             Zcirc = RL+RTES+1i*w*TES.circuit.L.Value;% impedancia del circuito.
             v2_sh = 4*TES.ElectrThermalModel.Kb*Tbath*RL; % ruido voltaje Rsh (mas parasita).
             v2_tes = 4*TES.ElectrThermalModel.Kb*Ttes*RTES;%ruido voltaje en el TES en estado normal.
-            i_jo = sqrt(v2_sh+v2_tes)./abs(Zcirc);
-            %%i_jo=sqrt(4*Kb*Tbath/(RTES))./sqrt(1+(tau*w).^2);%%%06-04-20.no elevaba al cuadrado tau*w!!!
-            %i_jo=sqrt(4*Kb*Tbath/(RTES))./(1+tau*w);
-            %[sqrt(4*Kb*Tbath/RL) sqrt(4*Kb*Tbath/RN) sqrt(4*Kb*Tbath/RTES)]
-            %N=sqrt(i_sh.^2+i_jo.^2+i_squid^2);
-            N = sqrt(i_jo.^2+TES.circuit.Nsquid.Value^2);
+            i_jo = sqrt((v2_sh+v2_tes)./abs(Zcirc));
+            i_jo = sqrt((v2_sh+v2_tes))./abs(Zcirc);
             
+            i_jo=sqrt(4*Kb*Tbath/(RTES))./(1+tau*w);
+            
+            if size(TES.circuit.Nsquid.Value,1) == 1
+                %%%superconductor
+                N = sqrt(i_jo.^2+3e-12^2);
+            else                
+%                 N = TES.circuit.Nsquid.Value;
+                N = sqrt(obj.SigNoise.*1e-12.^2-i_jo);
+            end
+                
+            % Partiendo del ruido en estado Normal adquirido
+            % experimentalmente
+            
+%             f = obj.fNoise;
+%             w = 2*pi*f;
+%             N = (obj.SigNoise*1e-12);
+%             TES.circuit.Nsquid.Value = N;
+%             
+% %             tau = TES.circuit.L.Value/RTES;
+%             f = obj.fNoise;
+% %             f = logspace(0,6);
+%             w = 2*pi*f;
+%             
+%             if nargin ~= 4 
+%                 Ttes=Tbath;
+%             end 
+%             
+%             Zcirc = RL+RTES+1i*w*TES.circuit.L.Value;% impedancia del circuito.
+% %             v2_sh = 4*TES.ElectrThermalModel.Kb*Tbath*RL; % ruido voltaje Rsh (mas parasita).
+%             
+%             v2_tes = 4*TES.ElectrThermalModel.Kb*Ttes*RTES;%ruido voltaje en el TES en estado normal.
+%             i_Squid = (obj.SigNoise*1e-12).^2;
+%             
+% %             i_jo = sqrt(v2_sh+v2_tes)./abs(Zcirc);
+%             i_jo = sqrt(v2_tes)./abs(Zcirc);
+%             
+%             %%i_jo=sqrt(4*Kb*Tbath/(RTES))./sqrt(1+(tau*w).^2);%%%06-04-20.no elevaba al cuadrado tau*w!!!
+%             %i_jo=sqrt(4*Kb*Tbath/(RTES))./(1+tau*w);
+%             %[sqrt(4*Kb*Tbath/RL) sqrt(4*Kb*Tbath/RN) sqrt(4*Kb*Tbath/RTES)]
+%             %N=sqrt(i_sh.^2+i_jo.^2+i_squid^2);
+%             
+% %             N = sqrt(i_jo.^2+TES.circuit.Nsquid.Value^2);            
+%             N = sqrt(i_jo.^2);
+%             TES.circuit.Nsquid.Value = N;
 %             i_jo = sqrt(4*TES.ElectrThermalModel.Kb*Tbath/(RTES))./(1+tau*w);
 %             %[sqrt(4*Kb*Tbath/RL) sqrt(4*Kb*Tbath/RN) sqrt(4*Kb*Tbath/RTES)]
 %             %N=sqrt(i_sh.^2+i_jo.^2+i_squid^2);
@@ -101,7 +141,7 @@ classdef TES_BasalNoises
                         
             RL = TES.circuit.Rsh.Value+TES.circuit.Rpar.Value;
                         
-            tau = TES.circuit.L.Value/RL;
+%             tau = TES.circuit.L.Value/RL;
             f = logspace(0,6);
             w = 2*pi*f;
             
@@ -116,7 +156,7 @@ classdef TES_BasalNoises
             
             %(Rf*invMf/invMin) factor para convertir en Voltaje.
 %             i_sh = sqrt(4*TES.ElectrThermalModel.Kb*Tbath/RL)./(1+tau*w);
-            N = sqrt(i_jo.^2+TES.circuit.Nsquid.Value^2);
+            N = sqrt(i_jo.^2+TES.circuit.Nsquid.Value.^2);
             
         end
         

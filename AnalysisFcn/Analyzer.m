@@ -659,6 +659,7 @@ switch src.Label
             handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.Constructor;
         end
         handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.NoisefromFile(FileName,fig,handles.Session{handles.TES_ID}.TES);
+        handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.NoiseN.SigNoise*1e-12;
         handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.Plot(fig,handles.Session{handles.TES_ID}.TES,'Normal');
         
         

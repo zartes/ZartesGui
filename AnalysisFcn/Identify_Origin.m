@@ -64,6 +64,8 @@ if evnt.Button == 3
     data{4} = P(N_meas).fNoise{jj(ind_orig)};
     data{5} = P(N_meas).SigNoise{jj(ind_orig)};
     data{6} = Circuit;
+    data{7} = guidata(src.Parent.Parent);
+    data{8} = P(N_meas).p(jj(ind_orig));
         
     catch
         FileStrLabel = [];
@@ -160,14 +162,89 @@ switch str
         file{1} = filesNoise;
         ax(2) = subplot(1,2,2);
         
-        loglog(ax(2),Data{4}(:,1),Data{5}(:,1),'.-r'),%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+        
+        TES = Data{7}.Session{Data{7}.TES_ID}.TES;
+        fNoise = Data{4};
+        SigNoise = Data{5};
+%         DataMedFilt = TES.ElectrThermalModel.DataMedFilt;
+%         FileName = Data{3};
+%         loglog(ax(2),Data{4}(:,1),Data{5}(:,1),'.-r'),%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         hold(ax(2),'on'),grid(ax(2),'on')
-        loglog(ax(2),Data{4}(:,1),medfilt1(Data{5}(:,1),20),'.-k'),hold(ax(2),'on'),grid(ax(2),'on')
-        set(ax(2),'linewidth',2,'fontsize',12,'fontweight','bold');
-        ylabel(ax(2),'pA/Hz^{0.5}','fontsize',12,'fontweight','bold')
+%         loglog(ax(2),Data{4}(:,1),medfilt1(Data{5}(:,1),DataMedFilt),'.-k'),hold(ax(2),'on'),grid(ax(2),'on')
+%         set(ax(2),'linewidth',2,'fontsize',12,'fontweight','bold');
+%         ylabel(ax(2),'pA/Hz^{0.5}','fontsize',12,'fontweight','bold')
         xlabel(ax(2),'\nu (Hz)','fontsize',12,'fontweight','bold')
-        file{1}(file{1} == '_') = ' ';
-        title(ax(2),file{1});
+%         file{1}(file{1} == '_') = ' ';
+%         title(ax(2),file{1});
+        
+        
+%         [RES, SimRes, M, Mph, fNoise, SigNoise] = TES.ElectrThermalModel.fitNoise(TES,FileName, Data{8});
+        f = logspace(0,5,1000);
+        M = 0;
+        if isempty(strfind(Data{3},'Negative Bias'))
+            auxnoise = TES.ElectrThermalModel.noisesim(TES,Data{8},M,f,'P');
+        else
+            auxnoise = TES.ElectrThermalModel.noisesim(TES,Data{8},M,f,'N');
+        end               
+        
+        switch TES.NoiseOpt.tipo
+            case 'current'     
+                loglog(ax(2),fNoise(:,1),SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                loglog(ax(2),fNoise(:,1),medfilt1(SigNoise,TES.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                
+                if TES.ElectrThermalModel.bool_Mph == 0
+                    totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
+                else
+                    Mexph = Data{8}.Mph;
+                    if isnan(Mexph)
+                        Mexph = 0;
+                    end
+                    totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+                end
+                if ~TES.ElectrThermalModel.bool_components
+                    loglog(ax(2),auxnoise.f,totnoise*1e12,'b','LineWidth',1,'DisplayName','Total Simulation Noise');
+                    h = findobj(ax(2),'Color','b');
+                else
+                    %                                     loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
+                    loglog(ax(2),auxnoise.f,auxnoise.jo*1e12,'DisplayName','Johnson','LineWidth',0.5);
+                    loglog(ax(2),auxnoise.f,auxnoise.ph*1e12,'DisplayName','Phonon','LineWidth',0.5);
+                    loglog(ax(2),auxnoise.f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',0.5);
+                    loglog(ax(2),auxnoise.f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',0.5);
+                    loglog(ax(2),auxnoise.f,totnoise*1e12,'b','DisplayName','Total','LineWidth',1);
+                end
+                ylabel(ax(2),'pA/Hz^{0.5}');
+            case 'nep'
+                sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise(:,1));
+                
+                NEP = real(sqrt((SigNoise*1e-12).^2-auxnoise.squid.^2)./sIaux);
+                loglog(ax(2),fNoise(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(ax(2),'on'),grid(ax(2),'on'),
+                loglog(ax(2),fNoise(:,1),medfilt1(NEP*1e18,TES.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise');hold(ax(2),'on'),grid(ax(2),'on'),
+                if TES.ElectrThermalModel.bool_Mph == 0
+                    totNEP = auxnoise.NEP;
+                else
+                    totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
+                end
+                if ~TES.ElectrThermalModel.bool_components
+                    loglog(ax(2),auxnoise.f,totNEP*1e18,'b','DisplayName','Total Simulation Noise','LineWidth',1);hold(ax(2),'on');grid(ax(2),'on');
+                    h = findobj(ax(2),'Color','b');
+                else
+                    loglog(ax(2),auxnoise.f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson','LineWidth',0.5);
+                    loglog(ax(2),auxnoise.f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon','LineWidth',0.5);
+                    loglog(ax(2),auxnoise.f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',0.5);
+                    loglog(ax(2),auxnoise.f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',0.5);
+                    loglog(ax(2),auxnoise.f,totNEP*1e18,'b','DisplayName','Total','LineWidth',1);
+                end
+                ylabel(ax(2),'aW/Hz^{0.5}');
+        end
+%         axis(ax(2),[1e1 1e5 2 1e3])
+        title(ax(2),strcat(num2str(nearest(Data{8}.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
+        if abs(Data{8}.Z0-Data{8}.Zinf) < TES.ElectrThermalModel.Z0_Zinf_Thrs
+            set(get(findobj(ax(2),'type','axes'),'title'),'Color','r');
+        end
+        set(ax(2),'LineWidth',2,'FontSize',12,'FontWeight','bold','Box','on','FontUnits','Normalized',...
+            'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-',...
+            'xtick',[10 100 1000 1e4 1e5],'xticklabel',{'10' '10^2' '10^3' '10^4' '10^5'},...
+            'XScale','log','YScale','log');
         fig.Visible = 'on';
         
     case 'Filter out'
