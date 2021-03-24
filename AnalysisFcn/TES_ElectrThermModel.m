@@ -214,6 +214,13 @@ classdef TES_ElectrThermModel
             
             param.R0 = R0;
             param.P0 = P0;
+            param.Tbath = IVaux.Tbath;
+            
+            
+            param.r0 = R0/Rn;
+            param.I0 = I0;
+            param.V0 = V0;
+%             OP.G0 = OP.C/OP.tau0; 
             % La forma correcta consiste en considerar n y K constantes
             % físicas que se obtienen en el ajuste de P vs T. La
             % propagación para las z(w) dependerá del punto de operación en
@@ -224,7 +231,7 @@ classdef TES_ElectrThermModel
             T0 = ((param.P0./K+IVaux.Tbath^n).^(1./n));
 %             T0 = ((param.P0/K)+((IVaux.Tbath)^n)/K)^(1/n);
             G0 = n*K*(T0^(n-1));
-            
+            param.G0 = G0;
             % Antiguas formas de propagar los valores de T0 y G0.
 %             if size(eval(['[TES.Gset' CondStr '.n]']),2) > 1
 %                 rp = R0/Rn;
@@ -372,7 +379,7 @@ classdef TES_ElectrThermModel
             
             SimulatedNoise = obj.noisesim(TES,OP,M,f,CondStr);
             SimRes = SimulatedNoise.Res;            
-            sIaux = ppval(spline(f,SimulatedNoise.sI),noisedata{1}(:,1));
+            sIaux = ppval(spline(SimulatedNoise.f,SimulatedNoise.sI),noisedata{1}(:,1));
             NEP = real(sqrt(((SigNoise*1e-12).^2-SimulatedNoise.squid.^2))./sIaux);            
 %             NEP = sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2)./sIaux;
             NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
@@ -489,13 +496,21 @@ classdef TES_ElectrThermModel
             end           
             
             L0 = P0*alfa/(G*T0);
-%             n = obj.TES.n;
+            %             n = obj.TES.n;
             n = eval(['TES.TESThermal' CondStr '.n.Value;']);
             
-            if isfield(TES.circuit,'Nsquid')
-                Nsquid = TES.circuit.Nsquid.Value;
+            %             if isfield(TES.circuit,'Nsquid')
+            %                 Nsquid = TES.circuit.Nsquid.Value;
+            %             else
+            %                 Nsquid = 3e-12;
+            %             end
+            
+            Nsquid = TES.circuit.Nsquid.Value;
+            if size(Nsquid,1) ~= 1
+                f = TES.NoiseN.fNoise;
+%                 f = logspace(0,5,1000);
             else
-                Nsquid = 3e-12;
+                f = logspace(1,6);
             end
             if abs(OP.Z0-OP.Zinf) < obj.Z0_Zinf_Thrs
                 I0 = (Rs/RL)*OP.ibias;
@@ -507,7 +522,7 @@ classdef TES_ElectrThermModel
             
             if nargin < 3
                 M = 0;
-                f = logspace(0,5,1000);
+                
             end
             
             switch obj.Noise_Models{obj.Selected_Noise_Models}
@@ -539,7 +554,7 @@ classdef TES_ElectrThermModel
                     %M = 1.8;
                     stes = 4*obj.Kb*T0*I0^2*R0*(1+2*bI)*(1+4*pi^2*f.^2*tau^2).*abs(sI).^2/L0^2*(1+M^2);%%%Johnson noise at TES.
                     if ~isreal(sqrt(stes))
-                        stes = zeros(1,length(f));
+                        stes = zeros(length(f),1);
                     end
                     smax = 4*obj.Kb*T0^2*G.*abs(sI).^2;
                     
@@ -587,7 +602,7 @@ classdef TES_ElectrThermModel
                     noise.Res_tfn_ssh = Res_tfn_ssh;
                     noise.Res_ssh_tes = Res_ssh_tes;
                     noise.squid = Nsquid;
-                    noise.squidarray = Nsquid*ones(1,length(f));
+                    noise.squidarray = Nsquid.*ones(length(f),1);
                 otherwise
                     warndlg('no valid model',obj.version);
                     noise = [];
@@ -628,8 +643,8 @@ classdef TES_ElectrThermModel
             n = TESThemal.n.Value;            
             
             Rs=Circuit.Rsh.Value;            
-            L = 7.7e-8;
-%             L=Circuit.L.Value;
+%             L = 7.7e-8;
+            L=Circuit.L.Value;
             
             alfa=OP.ai;
             bI=OP.bi;

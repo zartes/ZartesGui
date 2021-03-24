@@ -208,10 +208,10 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [false true false];
         CircProp = properties(handles.varargin{3}.circuit);  
         ind = find(cellfun(@(s) ~isempty(strfind('CurrOffset', s)), CircProp)==1);
-        inds = [1:6 ind];
+        inds = [1:5 ind];
 %         TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
-        handles.Table.Data(1:7,1) = CircProp(inds);
-        for i = 1:7
+        handles.Table.Data(1:6,1) = CircProp(inds);
+        for i = 1:6
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{inds(i)} '.Value']);
             handles.Table.Data{i,3} = eval(['handles.varargin{3}.circuit.' CircProp{inds(i)} '.Units']);
         end
@@ -590,12 +590,14 @@ switch handles.varargin{1}.Tag
         switch ButtonName
             case 'Save'
                 CircProp = properties(handles.varargin{3}.circuit);
-                for i = 1:length(CircProp)
+                ind = find(cellfun(@(s) ~isempty(strfind('CurrOffset', s)), CircProp)==1);
+                inds = [1:5 ind];
+                for i = 1:length(inds)
                     try
                         if ~ischar(handles.Table.Data{i,2})
-                            eval(['NewCircuit.' CircProp{i} ' = handles.Table.Data{i,2};']);
+                            eval(['NewCircuit.' CircProp{inds(i)} ' = handles.Table.Data{i,2};']);
                         else
-                            eval(['NewCircuit.' CircProp{i} ' = str2double(handles.Table.Data{i,2});']);
+                            eval(['NewCircuit.' CircProp{inds(i)} ' = str2double(handles.Table.Data{i,2});']);
                         end
                     catch
                     end
