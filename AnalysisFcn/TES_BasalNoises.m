@@ -83,17 +83,17 @@ classdef TES_BasalNoises
             Zcirc = RL+RTES+1i*w*TES.circuit.L.Value;% impedancia del circuito.
             v2_sh = 4*TES.ElectrThermalModel.Kb*Tbath*RL; % ruido voltaje Rsh (mas parasita).
             v2_tes = 4*TES.ElectrThermalModel.Kb*Ttes*RTES;%ruido voltaje en el TES en estado normal.
-            i_jo = sqrt((v2_sh+v2_tes)./abs(Zcirc));
+%             i_jo = sqrt((v2_sh+v2_tes)./abs(Zcirc));
             i_jo = sqrt((v2_sh+v2_tes))./abs(Zcirc);
             
-            i_jo=sqrt(4*Kb*Tbath/(RTES))./(1+tau*w);
+%             i_jo=sqrt(4*Kb*Tbath/(RTES))./(1+tau*w);
             
             if size(TES.circuit.Nsquid.Value,1) == 1
                 %%%superconductor
                 N = sqrt(i_jo.^2+3e-12^2);
             else                
 %                 N = TES.circuit.Nsquid.Value;
-                N = sqrt(obj.SigNoise.*1e-12.^2-i_jo);
+                N = sqrt((obj.SigNoise*1e-12).^2-i_jo.^2);
             end
                 
             % Partiendo del ruido en estado Normal adquirido
@@ -170,7 +170,8 @@ classdef TES_BasalNoises
             ax = axes;
             hold on;
             grid on;
-            loglog(ax,obj.fNoise(:,1),obj.SigNoise,'.-r','DisplayName','Experimental Noise','LineWidth',1.5); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+            loglog(ax,obj.fNoise(:,1),obj.SigNoise,'color',[0 0.447 0.741],...
+            'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise','LineWidth',1.5); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
             loglog(ax,obj.fNoise(:,1),medfilt1(obj.SigNoise,40),'.-k','DisplayName','Exp Filtered Noise','LineWidth',1.5); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
             set(ax,'XScale','log','YScale','log','FontSize',12,'LineWidth',2,'FontWeight','bold','Box','on');
             ylabel(ax,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold');
@@ -203,10 +204,10 @@ classdef TES_BasalNoises
             switch Type
                 case 'Normal'
                     [f,N, obj] = obj.NnoiseModel(TES,Tbath);
-                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Normal Noise','LineWidth',2);
+                    loglog(ax,f,N*1e12,'.-r','DisplayName','Theorical Normal Noise','LineWidth',2);
                 case 'Superconductor'
                     [f,N, obj] = obj.SnoiseModel(TES,Tbath);
-                    loglog(ax,f,N*1e12,'.-g','DisplayName','Theorical Superconductor Noise','LineWidth',2);                    
+                    loglog(ax,f,N*1e12,'.-r','DisplayName','Theorical Superconductor Noise','LineWidth',2);                    
             end
              %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
             

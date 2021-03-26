@@ -411,7 +411,8 @@ auxnoise = handles.varargin{1}.ElectrThermalModel.noisesim(handles.varargin{1},O
 switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThermalModel.Selected_tipo}
     case 'current'
         
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r','DisplayName','Experimental Noise'); 
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'color',[0 0.447 0.741],...
+            'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise'); 
         hold(hs1,'on');
         grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},handles.varargin{1}.ElectrThermalModel.DataMedFilt),...
@@ -425,14 +426,14 @@ switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThe
         end
         
         if ~handles.varargin{1}.ElectrThermalModel.bool_components
-            loglog(hs1,auxnoise.f,totnoise*1e12,'b','DisplayName','Total Simulation Noise','LineWidth',2);
-            h = findobj(hs1,'Color','b');
+            loglog(hs1,auxnoise.f,totnoise*1e12,'-r','DisplayName','Total Simulation Noise','LineWidth',2);
+            h = findobj(hs1,'Color','r');
         else
             loglog(hs1,auxnoise.f,auxnoise.jo*1e12,'DisplayName','Johnson','LineWidth',0.5);
             loglog(hs1,auxnoise.f,auxnoise.ph*1e12,'DisplayName','Phonon','LineWidth',0.5);
             loglog(hs1,auxnoise.f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',0.5);
             loglog(hs1,auxnoise.f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',0.5);
-            loglog(hs1,auxnoise.f,totnoise*1e12,'b','DisplayName','Total','LineWidth',2);
+            loglog(hs1,auxnoise.f,totnoise*1e12,'-r','DisplayName','Total','LineWidth',2);
 %             
 %             legend(hs1,'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Squid','Total');            
 %             h = findobj(hs1,'DisplayName','Total');
@@ -444,7 +445,8 @@ switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThe
         sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise{handles.Files_Ind}(:,1));
         NEP = real(sqrt(((SigNoise{handles.Files_Ind}*1e-12).^2-auxnoise.squidarray.^2))./sIaux);
         
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise'),hold(hs1,'on'),grid(hs1,'on'),
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'color',[0 0.447 0.741],...
+            'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise'),hold(hs1,'on'),grid(hs1,'on'),
         loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,handles.varargin{1}.ElectrThermalModel.DataMedFilt),'.-k',...
             'DisplayName','Exp Filtered Noise');
         hold(hs1,'on');
@@ -455,14 +457,14 @@ switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThe
             totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
         end
         if ~handles.varargin{1}.ElectrThermalModel.bool_components
-            loglog(hs1,auxnoise.f,totNEP*1e18,'b','DisplayName','Total Simulation Noise','LineWidth',2);hold(hs1,'on');grid(hs1,'on');
-            h = findobj(hs1,'Color','b');
+            loglog(hs1,auxnoise.f,totNEP*1e18,'-r','DisplayName','Total Simulation Noise','LineWidth',2);hold(hs1,'on');grid(hs1,'on');
+            h = findobj(hs1,'Color','r');
         else
             loglog(hs1,auxnoise.f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson','LineWidth',0.5);
             loglog(hs1,auxnoise.f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon','LineWidth',0.5);
             loglog(hs1,auxnoise.f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',0.5);
             loglog(hs1,auxnoise.f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',0.5);
-            loglog(hs1,auxnoise.f,totNEP*1e18,'b','DisplayName','Total','LineWidth',2);
+            loglog(hs1,auxnoise.f,totNEP*1e18,'-r','DisplayName','Total','LineWidth',2);
 %             legend(hs1,'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Squid','Total');
 %             legend(hs1,'off');
 %             h = findobj(hs1,'DisplayName','Total');
