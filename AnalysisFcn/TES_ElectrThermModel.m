@@ -353,12 +353,16 @@ classdef TES_ElectrThermModel
             Name = FileName(find(FileName == filesep, 1, 'last' )+1:end);
             Tbath = sscanf(FileName(indSep(end-1)+1:indSep(end)),'%dmK');
             Ib = str2double(Name(find(Name == '_', 1, 'last')+1:strfind(Name,'uA.txt')-1))*1e-6;
+            if isempty(TES.circuit.CurrOffset.Value)
+                TES.circuit.CurrOffset.Value = 0;
+            end
             % Buscamos si es Ibias positivos o negativos
             if ~isempty(strfind(Path,'Negative'))
                 [~,Tind] = min(abs([TES.IVsetN.Tbath]*1e3-Tbath));
                 IV = TES.IVsetN(Tind);
                 CondStr = 'N';
 %                 OffsetY = TES.IVsetN(1).Offset(1);
+        
                 Ib = Ib - TES.circuit.CurrOffset.Value;
             else
                 [~,Tind] = min(abs([TES.IVsetP.Tbath]*1e3-Tbath));
