@@ -189,7 +189,8 @@ switch str
         
         switch TES.NoiseOpt.tipo
             case 'current'     
-                loglog(ax(2),fNoise(:,1),SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                loglog(ax(2),fNoise(:,1),SigNoise,'color',[0 0.447 0.741],...
+            'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
                 loglog(ax(2),fNoise(:,1),medfilt1(SigNoise,TES.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
                 
                 if TES.ElectrThermalModel.bool_Mph == 0
@@ -202,22 +203,23 @@ switch str
                     totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
                 end
                 if ~TES.ElectrThermalModel.bool_components
-                    loglog(ax(2),auxnoise.f,totnoise*1e12,'b','LineWidth',1,'DisplayName','Total Simulation Noise');
-                    h = findobj(ax(2),'Color','b');
+                    loglog(ax(2),auxnoise.f,totnoise*1e12,'-r','LineWidth',1,'DisplayName','Total Simulation Noise');
+                    h = findobj(ax(2),'Color','r');
                 else
                     %                                     loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
                     loglog(ax(2),auxnoise.f,auxnoise.jo*1e12,'DisplayName','Johnson','LineWidth',0.5);
                     loglog(ax(2),auxnoise.f,auxnoise.ph*1e12,'DisplayName','Phonon','LineWidth',0.5);
                     loglog(ax(2),auxnoise.f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',0.5);
                     loglog(ax(2),auxnoise.f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',0.5);
-                    loglog(ax(2),auxnoise.f,totnoise*1e12,'b','DisplayName','Total','LineWidth',1);
+                    loglog(ax(2),auxnoise.f,totnoise*1e12,'-r','DisplayName','Total','LineWidth',1);
                 end
                 ylabel(ax(2),'pA/Hz^{0.5}');
             case 'nep'
                 sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise(:,1));
                 
                 NEP = real(sqrt((SigNoise*1e-12).^2-auxnoise.squid.^2)./sIaux);
-                loglog(ax(2),fNoise(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(ax(2),'on'),grid(ax(2),'on'),
+                loglog(ax(2),fNoise(:,1),(NEP*1e18),'color',[0 0.447 0.741],...
+                    'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise');hold(ax(2),'on'),grid(ax(2),'on'),
                 loglog(ax(2),fNoise(:,1),medfilt1(NEP*1e18,TES.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise');hold(ax(2),'on'),grid(ax(2),'on'),
                 if TES.ElectrThermalModel.bool_Mph == 0
                     totNEP = auxnoise.NEP;
@@ -225,14 +227,14 @@ switch str
                     totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
                 end
                 if ~TES.ElectrThermalModel.bool_components
-                    loglog(ax(2),auxnoise.f,totNEP*1e18,'b','DisplayName','Total Simulation Noise','LineWidth',1);hold(ax(2),'on');grid(ax(2),'on');
-                    h = findobj(ax(2),'Color','b');
+                    loglog(ax(2),auxnoise.f,totNEP*1e18,'-r','DisplayName','Total Simulation Noise','LineWidth',1);hold(ax(2),'on');grid(ax(2),'on');
+                    h = findobj(ax(2),'Color','r');
                 else
                     loglog(ax(2),auxnoise.f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson','LineWidth',0.5);
                     loglog(ax(2),auxnoise.f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon','LineWidth',0.5);
                     loglog(ax(2),auxnoise.f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',0.5);
                     loglog(ax(2),auxnoise.f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',0.5);
-                    loglog(ax(2),auxnoise.f,totNEP*1e18,'b','DisplayName','Total','LineWidth',1);
+                    loglog(ax(2),auxnoise.f,totNEP*1e18,'-r','DisplayName','Total','LineWidth',1);
                 end
                 ylabel(ax(2),'aW/Hz^{0.5}');
         end
