@@ -35,7 +35,7 @@ classdef TES_Struct
         
         Kb = 1.38e-23;
         Report;
-        version = 'ZarTES v4.0';
+        version = 'ZarTES v4.1';
     end
 %     
 %     properties (Access = private)
@@ -1044,7 +1044,11 @@ classdef TES_Struct
                                 H1.figure.Name = 'Noise Analysis';
                             end
                             FileName = [dirs{i} filesep filesNoise{j1}];
+%                             try
                             [RES, SimRes, M, Mph, fNoise, SigNoise] = obj.ElectrThermalModel.fitNoise(obj,FileName, param);
+%                             catch
+%                                 continue;
+%                             end
                             
                             eval(['obj.P' StrRange{k1} '(iOK).p(jj).ExRes = RES;']);
                             eval(['obj.P' StrRange{k1} '(iOK).p(jj).ThRes = SimRes;']);

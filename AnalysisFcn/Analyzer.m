@@ -61,7 +61,7 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','Toolbar','figure');
 
-handles.VersionStr = 'ZarTES v4.0';
+handles.VersionStr = 'ZarTES v4.1';
 set(handles.Analyzer,'Name',handles.VersionStr);
 
 handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
@@ -659,9 +659,19 @@ switch src.Label
             handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.Constructor;
         end
         handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.NoisefromFile(FileName,fig,handles.Session{handles.TES_ID}.TES);
-        handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.NoiseN.SigNoise*1e-12;
-        handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.Plot(fig,handles.Session{handles.TES_ID}.TES,'Normal');
         
+        
+        handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.Plot(fig,handles.Session{handles.TES_ID}.TES,'Normal');
+        ButtonName = questdlg('Do you want to assign loaded normal noise to electrical noise?', ...
+            'Analyzer', ...
+            'No', 'Yes', 'No');
+        switch ButtonName
+            case 'Yes'
+                handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.NoiseN.SigNoise*1e-12;
+            case 'No'
+                handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = 3e-12;
+            otherwise
+        end % switch
         
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
