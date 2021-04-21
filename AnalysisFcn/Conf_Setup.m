@@ -649,12 +649,17 @@ switch handles.varargin{1}.Tag
                 end
             elseif ischar(handles.Table.Data{1,i}) 
                 List = eval(['handles.varargin{3}.' handles.Table.ColumnName{i}]);
-                try
-                    ind = strfind(List,handles.Table.Data{1,i});
-                    Index = find(not(cellfun('isempty',ind)));
-                    eval(['NewOPT.Selected_' handles.Table.ColumnName{i} ' = Index;']);
-                catch
-                    eval(['NewOPT.' handles.Table.ColumnName{i} ' = List;']);
+                [s, s1] = strtok(handles.Table.Data{1,i});
+                if ~isnan(str2double(s))&&~isnan(str2double(s1))
+                    eval(['NewOPT.' handles.Table.ColumnName{i} ' = [str2double(s) str2double(s1)];']);
+                else
+                    try
+                        ind = strfind(List,handles.Table.Data{1,i});
+                        Index = find(not(cellfun('isempty',ind)));
+                        eval(['NewOPT.Selected_' handles.Table.ColumnName{i} ' = Index;']);
+                    catch
+                        eval(['NewOPT.' handles.Table.ColumnName{i} ' = List;']);
+                    end
                 end
             else
                 eval(['NewOPT.' handles.Table.ColumnName{i} ' = handles.Table.Data{1,i};']);

@@ -33,7 +33,7 @@ classdef TES_ElectrThermModel
         Kb = 1.38e-23;
     end
     properties (Access = private)
-        version = 'ZarTES v4.0';
+        version = 'ZarTES v4.1';
     end
     
     methods
@@ -510,7 +510,8 @@ classdef TES_ElectrThermModel
                 f = TES.NoiseN.fNoise;
 %                 f = logspace(0,5,1000);
             else
-                f = logspace(1,6);
+                f = logspace(0,5,1000);
+%                 f = logspace(1,6);
             end
             if abs(OP.Z0-OP.Zinf) < obj.Z0_Zinf_Thrs
                 I0 = (Rs/RL)*OP.ibias;
@@ -554,7 +555,7 @@ classdef TES_ElectrThermModel
                     %M = 1.8;
                     stes = 4*obj.Kb*T0*I0^2*R0*(1+2*bI)*(1+4*pi^2*f.^2*tau^2).*abs(sI).^2/L0^2*(1+M^2);%%%Johnson noise at TES.
                     if ~isreal(sqrt(stes))
-                        stes = zeros(length(f),1);
+                        stes = zeros(1,length(f));
                     end
                     smax = 4*obj.Kb*T0^2*G.*abs(sI).^2;
                     
@@ -602,7 +603,7 @@ classdef TES_ElectrThermModel
                     noise.Res_tfn_ssh = Res_tfn_ssh;
                     noise.Res_ssh_tes = Res_ssh_tes;
                     noise.squid = Nsquid;
-                    noise.squidarray = Nsquid.*ones(length(f),1);
+                    noise.squidarray = Nsquid.*ones(1,length(f));
                 otherwise
                     warndlg('no valid model',obj.version);
                     noise = [];
