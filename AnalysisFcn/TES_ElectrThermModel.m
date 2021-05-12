@@ -29,8 +29,14 @@ classdef TES_ElectrThermModel
         Selected_Noise_Models = 1;
         Noise_LowFreq = [2e2 1e3]; % [2e2,1e3]
         Noise_HighFreq = [5e3,1e5]; %10e4; %[5e3,1e5]
-        DataMedFilt = 40;
         Kb = 1.38e-23;
+        
+        FilterMethods = {'nofilt';'medfilt';'minfilt';'minfilt+medfilt';'movingMean';'quantile'};
+        Selected_FilterMethods = 5;
+        MedFilt = 40;
+        MinWindow = 6;
+        Perc = 25;
+        
     end
     properties (Access = private)
         version = 'ZarTES v4.1';
@@ -387,14 +393,20 @@ classdef TES_ElectrThermModel
             NEP = real(sqrt(((SigNoise*1e-12).^2-SimulatedNoise.squid.^2))./sIaux);            
 %             NEP = sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2)./sIaux;
             NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
-            RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./medfilt1(real(NEP),obj.DataMedFilt).^2))/2/1.609e-19;
+           
+            RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./NoiseFiltering(obj,NEP).^2))/2/1.609e-19;
+            
+            
+            findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+            xdata = fNoise(findx); 
+            
+            
             
             if isreal(NEP)
-                ydata = medfilt1(NEP*1e18,obj.DataMedFilt);
+                ydata = NoiseFiltering(obj,NEP*1e18);
+%                 ydata = medfilt1(NEP*1e18,obj.DataMedFilt);
 %                 findx = find(fNoise > max(obj.Noise_LowFreq,1) & fNoise < obj.Noise_HighFreq);
-                if nargin ~= 5 
-                    findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
-                else
+                if nargin == 5 
                     fig = figure;
                     ax  = axes('Parent',fig');
                     lg = loglog(ax,fNoise,SigNoise);
@@ -417,9 +429,9 @@ classdef TES_ElectrThermModel
                     obj.Noise_LowFreq(2) = rc_pos(1)+rc_pos(3);
                     obj.Noise_HighFreq(1) = rc2_pos(1);
                     obj.Noise_HighFreq(2) = rc2_pos(1)+rc2_pos(3);
-                    findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+%                     findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
                 end
-                xdata = fNoise(findx);   
+                  
                 ydata = ydata(findx);
                                 
                                 
@@ -681,8 +693,45 @@ classdef TES_ElectrThermModel
             ssh=4*obj.Kb*Ts*I0^2*RL*(L0-1)^2*(1+4*pi^2*f.^2*tau^2/(1-L0)^2).*abs(sI).^2/L0^2; %Load resistor Noise
             NEP=1e18*sqrt(stes+stfn+ssh)./abs(sI);
         end
-        
-        
+         
+        function filtNoise = NoiseFiltering(obj,noisedata)
+%             if nargin==1
+%                 obj.model='default';
+%                 obj.wmed=40;
+%             else
+%                 obj=varargin{1};
+%             end
+            
+            switch obj.FilterMethods{obj.Selected_FilterMethods}
+                case {'default','medfilt'}
+                    filtNoise = medfilt1(noisedata,obj.MedFilt);
+                case 'nofilt'
+                    filtNoise = noisedata;
+                case 'minfilt'
+                    filtNoise = colfilt(noisedata,[obj.MinWindow 1],'sliding',@min);
+                case 'minfilt+medfilt'
+                    ydata = colfilt(noisedata,[obj.MinWindow 1],'sliding',@min);
+                    filtNoise = medfilt1(ydata,obj.MedFilt);
+                case 'movingMean'
+                   
+                    %%%%Función para aplicar el filtrado de media móvil a unos datos pero
+                    %%%%sin afectar al inicio y final de los mismos, reduciendo el tamaño de la
+                    %%%%ventana en los extremos.
+                    
+                    D = ceil(obj.MinWindow-1/2);
+                    L = length(noisedata);
+                    filtNoise = zeros(L,1);
+                    for i = 1:L
+                        Mi = min([D,i-1,L-i]);
+                        filtNoise(i) = trimmean(noisedata(i-Mi:i+Mi),obj.Perc);%%%media descartando outliers.
+                    end
+%                     varargout{1}=st;
+%                     filtNoise=movingMean(noisedata,obj.wmed);
+                case 'quantile'
+                    fh = @(data)quantile(data,obj.Perc);
+                    filtNoise = colfilt(noisedata,[obj.MedFilt 1],'sliding',fh);                    
+            end            
+        end
         
     end
     

@@ -62,7 +62,7 @@ set(handles.figure1,'Color',[200 200 200]/255,'Position',...
     'Units','Normalized');
 
 handles.VersionStr = handles.varargin{1}.version; %'ZarTES v4.1';
-set(handles.figure1,'Name',handles.VersionStr);
+set(handles.figure1,'Name',['Z(w) and Noise Viewer    ---   ' handles.VersionStr]);
 % Updating the popup menu
 
 
@@ -127,7 +127,7 @@ function varargout = TF_Noise_Viewer_OutputFcn(hObject, eventdata, handles)
 try
     varargout{1} = handles.output;
     set(handles.figure1,'Visible','on');
-    a_str = {'New Figure';'Save Figure';'Open File';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
+    a_str = {'New Figure';'Open File';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
     for i = 1:length(a_str)
         eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
         a.Visible = 'off';
@@ -407,7 +407,7 @@ else
 end
 f = logspace(0,5,1000);
 % auxnoise = obj.noisesim(OP,M,f);
-auxnoise = handles.varargin{1}.ElectrThermalModel.noisesim(handles.varargin{1},OP,M,f,StrCond);
+auxnoise = handles.varargin{1}.ElectrThermalModel.noisesim(handles.varargin{1},OP,M,fNoise{handles.Files_Ind}(:,1),StrCond);
 
 switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThermalModel.Selected_tipo}
     case 'current'
@@ -416,7 +416,7 @@ switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThe
             'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise'); 
         hold(hs1,'on');
         grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},handles.varargin{1}.ElectrThermalModel.DataMedFilt),...
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),handles.varargin{1}.ElectrThermalModel.NoiseFiltering(SigNoise{handles.Files_Ind}),...
             '.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
         
         if handles.varargin{1}.ElectrThermalModel.bool_Mph == 0
@@ -444,11 +444,12 @@ switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThe
     case 'nep'
         
         sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise{handles.Files_Ind}(:,1));
-        NEP = real(sqrt(((SigNoise{handles.Files_Ind}*1e-12).^2-auxnoise.squidarray.^2))./sIaux);
+        squidarray = ppval(spline(auxnoise.f,auxnoise.squidarray),fNoise{handles.Files_Ind}(:,1));
+        NEP = real(sqrt(((SigNoise{handles.Files_Ind}*1e-12).^2-squidarray.^2))./sIaux);
         
         loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'color',[0 0.447 0.741],...
             'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise'),hold(hs1,'on'),grid(hs1,'on'),
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,handles.varargin{1}.ElectrThermalModel.DataMedFilt),'.-k',...
+        loglog(hs1,fNoise{handles.Files_Ind}(:,1),handles.varargin{1}.ElectrThermalModel.NoiseFiltering(NEP*1e18),'.-k',...
             'DisplayName','Exp Filtered Noise');
         hold(hs1,'on');
         grid(hs1,'on');

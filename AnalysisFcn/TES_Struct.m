@@ -1541,11 +1541,11 @@ classdef TES_Struct
                                 auxnoise = obj.ElectrThermalModel.noisesim(obj,OP,M,f,StrCond{iP});
                                 
                                 
-                                switch obj.NoiseOpt.tipo
+                                switch obj.ElectrThermalModel.tipo{obj.ElectrThermalModel.Selected_tipo}
                                     case 'current'
                                         
                                         loglog(hs(i),fNoise(:,1),SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                                        loglog(hs(i),fNoise(:,1),medfilt1(SigNoise,obj.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                                        loglog(hs(i),fNoise(:,1),obj.ElectrThermalModel.NoiseFiltering(SigNoise),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
                                         
                                         if obj.ElectrThermalModel.bool_Mph == 0
                                             totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
@@ -1569,10 +1569,11 @@ classdef TES_Struct
                                         end
                                     case 'nep'
                                         sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise(:,1));
+                                        squid = ppval(spline(auxnoise.f,auxnoise.squidarray),fNoise(:,1));
+                                        NEP = real(sqrt((SigNoise*1e-12).^2-squid.^2)./sIaux);
                                         
-                                        NEP = real(sqrt((SigNoise*1e-12).^2-auxnoise.squid.^2)./sIaux);
                                         loglog(hs(i),fNoise(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(hs(i),'on'),grid(hs(i),'on'),
-                                        loglog(hs(i),fNoise(:,1),medfilt1(NEP*1e18,obj.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise');hold(hs(i),'on'),grid(hs(i),'on'),
+                                        loglog(hs(i),fNoise(:,1),obj.ElectrThermalModel.NoiseFiltering(NEP*1e18),'.-k','DisplayName','Exp Filtered Noise');hold(hs(i),'on'),grid(hs(i),'on'),
                                         if obj.ElectrThermalModel.bool_Mph == 0
                                             totNEP = auxnoise.NEP;
                                         else
@@ -1611,8 +1612,8 @@ classdef TES_Struct
                                     semilogx(hs(i),f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19);
                                     hold(hs(i),'on');
                                     grid(hs(i),'on');
-                                    RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
-                                    disp(num2str(RESJ2));
+%                                     RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
+%                                     disp(num2str(RESJ2));
                                     semilogx(hs(i),fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise(:,1)))))/1.609e-19,'r')
                                 end
                             end

@@ -62,7 +62,7 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     'Units','Normalized','Toolbar','figure');
 
 handles.VersionStr = 'ZarTES v4.1';
-set(handles.Analyzer,'Name',handles.VersionStr);
+set(handles.Analyzer,'Name',['TES Characterization Data Analyzer   ---   '  handles.VersionStr]);
 
 handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
 handles.DataBaseName = 'ZarTESDB';

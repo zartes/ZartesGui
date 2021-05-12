@@ -187,11 +187,11 @@ switch str
             auxnoise = TES.ElectrThermalModel.noisesim(TES,Data{8},M,f,'N');
         end               
         
-        switch TES.NoiseOpt.tipo
+        switch TES.ElectrThermalModel.tipo{TES.ElectrThermalModel.Selected_tipo}
             case 'current'     
                 loglog(ax(2),fNoise(:,1),SigNoise,'color',[0 0.447 0.741],...
             'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                loglog(ax(2),fNoise(:,1),medfilt1(SigNoise,TES.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                loglog(ax(2),fNoise(:,1),TES.ElectrThermalModel.NoiseFiltering(SigNoise),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
                 
                 if TES.ElectrThermalModel.bool_Mph == 0
                     totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
@@ -216,11 +216,11 @@ switch str
                 ylabel(ax(2),'pA/Hz^{0.5}');
             case 'nep'
                 sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise(:,1));
-                
-                NEP = real(sqrt((SigNoise*1e-12).^2-auxnoise.squid.^2)./sIaux);
+                squid = ppval(spline(auxnoise.f,auxnoise.squidarray),fNoise(:,1));
+                NEP = real(sqrt((SigNoise*1e-12).^2-squid.^2)./sIaux);
                 loglog(ax(2),fNoise(:,1),(NEP*1e18),'color',[0 0.447 0.741],...
                     'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise');hold(ax(2),'on'),grid(ax(2),'on'),
-                loglog(ax(2),fNoise(:,1),medfilt1(NEP*1e18,TES.ElectrThermalModel.DataMedFilt),'.-k','DisplayName','Exp Filtered Noise');hold(ax(2),'on'),grid(ax(2),'on'),
+                loglog(ax(2),fNoise(:,1),TES.ElectrThermalModel.NoiseFiltering(NEP*1e18),'.-k','DisplayName','Exp Filtered Noise');hold(ax(2),'on'),grid(ax(2),'on'),
                 if TES.ElectrThermalModel.bool_Mph == 0
                     totNEP = auxnoise.NEP;
                 else
