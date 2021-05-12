@@ -127,7 +127,7 @@ function varargout = TF_Noise_Viewer_OutputFcn(hObject, eventdata, handles)
 try
     varargout{1} = handles.output;
     set(handles.figure1,'Visible','on');
-    a_str = {'New Figure';'Open File';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
+    a_str = {'New Figure';'Save Figure';'Open File';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
     for i = 1:length(a_str)
         eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
         a.Visible = 'off';
