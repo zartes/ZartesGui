@@ -239,6 +239,12 @@ switch str
                 ylabel(ax(2),'aW/Hz^{0.5}');
         end
 %         axis(ax(2),[1e1 1e5 2 1e3])
+        axes(ax(2));
+        ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
+        %                     delete(ax);
+        rc = rectangle('Position', [TES.ElectrThermalModel.Noise_LowFreq(1) ax_frame(3) diff(TES.ElectrThermalModel.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255);
+        rc2 = rectangle('Position', [TES.ElectrThermalModel.Noise_HighFreq(1) ax_frame(3) diff(TES.ElectrThermalModel.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255);
+        
         title(ax(2),strcat(num2str(nearest(Data{8}.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
         if abs(Data{8}.Z0-Data{8}.Zinf) < TES.ElectrThermalModel.Z0_Zinf_Thrs
             set(get(findobj(ax(2),'type','axes'),'title'),'Color','r');

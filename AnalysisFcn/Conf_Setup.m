@@ -656,6 +656,14 @@ switch handles.varargin{1}.Tag
                     try
                         ind = strfind(List,handles.Table.Data{1,i});
                         Index = find(not(cellfun('isempty',ind)));
+                        if length(Index) > 1
+                            for id = 1:length(Index)
+                                if isequal(List{Index(id)},handles.Table.Data{1,i})
+                                    Index = Index(id);
+                                    break;
+                                end
+                            end
+                        end
                         eval(['NewOPT.Selected_' handles.Table.ColumnName{i} ' = Index;']);
                     catch
                         eval(['NewOPT.' handles.Table.ColumnName{i} ' = List;']);

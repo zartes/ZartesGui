@@ -490,6 +490,9 @@ title(hs1,strcat(num2str(nearest(r0*100),'%3.0f'),'%Rn'),'FontSize',12);
 if abs(OP.Z0-OP.Zinf) < handles.varargin{1}.ElectrThermalModel.Z0_Zinf_Thrs
     set(get(findobj(hs1,'type','axes'),'title'),'Color','r');
 end
+
+
+
 hold(hs1,'off');
 if src == handles.figure1||src == handles.TBath_popup
     clear FilesStr;
@@ -501,6 +504,12 @@ if src == handles.figure1||src == handles.TBath_popup
 end
 set(handles.Noise_axes,'ButtonDownFcn',{@HandleBoolComp},'UserData',handles.varargin{1});
 axis(handles.Noise_axes,'tight');
+axes(hs1);
+ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
+%                     delete(ax);
+rc = rectangle('Position', [handles.varargin{1}.ElectrThermalModel.Noise_LowFreq(1) ax_frame(3) diff(handles.varargin{1}.ElectrThermalModel.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255);
+rc2 = rectangle('Position', [handles.varargin{1}.ElectrThermalModel.Noise_HighFreq(1) ax_frame(3) diff(handles.varargin{1}.ElectrThermalModel.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255);
+
 guidata(src,handles);
     
 

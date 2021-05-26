@@ -1546,7 +1546,9 @@ classdef TES_Struct
                                         
                                         loglog(hs(i),fNoise(:,1),SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
                                         loglog(hs(i),fNoise(:,1),obj.ElectrThermalModel.NoiseFiltering(SigNoise),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                                        
+                                        % Añadir color al tramo de señal
+                                        % utilizado para el ajuste
+                                                                                                                        
                                         if obj.ElectrThermalModel.bool_Mph == 0
                                             totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
                                         else
@@ -1596,6 +1598,13 @@ classdef TES_Struct
                                 end
                                 axis(hs(i),[1e1 1e5 2 1e3])
                                 title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
+                                
+                                axes(hs(i));
+                                ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
+                                %                     delete(ax);
+                                rc = rectangle('Position', [obj.ElectrThermalModel.Noise_LowFreq(1) ax_frame(3) diff(obj.ElectrThermalModel.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255);
+                                rc2 = rectangle('Position', [obj.ElectrThermalModel.Noise_HighFreq(1) ax_frame(3) diff(obj.ElectrThermalModel.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255);
+                                
                                 if abs(OP.Z0-OP.Zinf) < obj.ElectrThermalModel.Z0_Zinf_Thrs
                                     set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
                                 end

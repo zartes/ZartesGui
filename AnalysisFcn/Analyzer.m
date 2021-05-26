@@ -1133,6 +1133,9 @@ switch src.Label
                         TbathNums = unique([[handles.Session{i}.TES.PP.Tbath] ...
                             [handles.Session{i}.TES.PN.Tbath]]);
                         Tbath = intersect(TbathNums,Tbath_ref);
+                        if isempty(Tbath)
+                            continue;
+                        end
                         SessionName = handles.Session{i}.Tag;
                         SessionName(SessionName == '_') = ' ';
                         handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);
