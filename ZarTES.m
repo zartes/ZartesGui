@@ -22,7 +22,7 @@ function varargout = ZarTES(varargin)
 
 % Edit the above text to modify the response to help ZarTES
 
-% Last Modified by GUIDE v2.5 25-Mar-2020 09:40:10
+% Last Modified by GUIDE v2.5 27-May-2021 10:34:08
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -140,3 +140,15 @@ function Launch_DB_Callback(hObject, eventdata, handles)
 d = pwd;
 addpath([pwd filesep 'DataBase']);
 run([d filesep 'DataBase' filesep 'DBInterface.m']);
+
+
+% --- Executes on button press in RT.
+function RT_Callback(hObject, eventdata, handles)
+% hObject    handle to RT (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+d = pwd;
+addpath([pwd filesep 'RT']);
+run([d filesep 'RT' filesep 'RTSoft.m']);
