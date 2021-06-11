@@ -60,19 +60,37 @@ set(handles.SetupTES,'Position',...
     'Units','Normalized');  % ,'Color',[0 120 180]/255
 
 
-% Connection to Labview program for controlling mix chamber temperature
+
 try
-    e = actxserver('LabVIEW.Application');
-    vipath = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\IGHSUBS.LLB\IGHFrontPanel.vi';
-    handles.vi_IGHFrontPanel = invoke(e,'GetVIReference',vipath);
-    vipath3 = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\KELVPNLS.LLB\KelvPromptForT.vi';
-    handles.vi_PromptForT = invoke(e,'GetVIReference',vipath3);
-    vipath5 = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\IGHSUBS.LLB\IGHChangeSettings.vi';
-    handles.vi_IGHChangeSettings = invoke(e,'GetVIReference',vipath5);
+    % Connection to Labview program for controlling mix chamber temperature
     
-    %     handles.vi.Run(1);
-    T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+    %     e = actxserver('LabVIEW.Application');
+    %     vipath = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\IGHSUBS.LLB\IGHFrontPanel.vi';
+    %     handles.vi_IGHFrontPanel = invoke(e,'GetVIReference',vipath);
+    %     vipath3 = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\KELVPNLS.LLB\KelvPromptForT.vi';
+    %     handles.vi_PromptForT = invoke(e,'GetVIReference',vipath3);
+    %     vipath5 = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\IGHSUBS.LLB\IGHChangeSettings.vi';
+    %     handles.vi_IGHChangeSettings = invoke(e,'GetVIReference',vipath5);
+    %
+    %     %     handles.vi.Run(1);
+    %     T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+    
+    % Connection to BlueFors program for controlling mix chamber temperature
+    handles.BF = BlueFors;
+    handles.BF = handles.BF.Constructor;      
+    
+    % Pasar a modo manual del BlueFors
+    PID_mode = handles.BF.ReadPIDStatus;
+    if PID_mode
+        handles.BF.SetTempControl(0); %Manual
+    end
+    pause(1);
+    
+    T_MC = handles.BF.ReadTemp;
     handles.MCTemp.String = num2str(T_MC);
+    
+    
+    
     
     Period = 15;
     handles.timer = timer(...
@@ -85,9 +103,14 @@ try
         'Period', Period, ...                        % Initial period is 1 sec.
         'TimerFcn', {@update_Temp_Color},'UserData',handles,'Name','T_TEStimer');
     %     guidata(handles.timer,handles);
-    start(handles.timer);
+    start(handles.timer);    
     
-    
+    Period = 5;
+    handles.Control_timer = timer(...
+        'ExecutionMode', 'fixedRate', ...       % Run timer repeatedly
+        'Period', Period, ...                        % Initial period is 1 sec.
+        'TimerFcn', {@Control_Temp},'UserData',handles,'Name','ControlT');
+    start(handles.Control_timer);  
     
 catch
     
@@ -641,7 +664,7 @@ try
 catch
 end
 try
-    handles.vi.Abort;
+%     handles.vi.Abort;
     stop(handles.timer);
 catch
 end
@@ -1517,7 +1540,8 @@ else
             TESDATA.TESParam.Rpar.Value = Rpar;
             
             handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
-            handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+            handles.IVset.Tbath = handles.BF.ReadTemp('M/C');
+%             handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
             
             set([handles.SQ_SetRnBias handles.SQ_Rn],'Enable','on')
             
@@ -4209,14 +4233,16 @@ end
 function update_Temp_display(src,evnt)
 
 handles = src.UserData;
-T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+T_MC = handles.BF.ReadTemp;
+% T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
 handles.MCTemp.String = num2str(T_MC);
 
 
 function update_Temp_Color(src,evnt)
 
 handles = src.UserData;
-T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+T_MC = handles.BF.ReadTemp;
+% T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
 Set_Pt = str2double(handles.SetPt.String);
 
 Error = abs(T_MC-Set_Pt)/T_MC*100;
@@ -4228,6 +4254,34 @@ try
 catch
     handles.Temp_Color.BackgroundColor = RGB(1,:);
 end
+
+
+function Control_Temp(src,evnt)
+
+handles = src.UserData;
+
+T_MC = handles.BF.ReadTemp;
+SetTemp = handles.BF.ReadSetPoint;
+
+Error = zeros(2,1);
+% La potencia de inicio se actualiza con la que tiene el heater al
+% comienzo
+Power = handles.BF.ReadPower;
+sumError = Power*I/P;
+
+% calculo de la potencia a suministrar
+Error = [SetTemp-T_MC; Error(1:end-1)];
+sumError = sumError + Error(1);
+SetPower = max(P*(Error(1) + (1/I)*sumError + D*diff(Error([2 1]))),0);
+
+handles.BF.SetPower(SetPower);
+
+
+
+
+
+
+
 
 
 function SetPt_Callback(hObject, eventdata, handles)
@@ -4253,30 +4307,30 @@ else
         end
     end
 end
-
-handles.vi_IGHFrontPanel.FPState = 4;
-pause(0.1)
-handles.vi_IGHFrontPanel.FPState = 1;
-pause(0.1)
-handles.vi_IGHFrontPanel.SetControlValue('Settings',1);
-pause(1.5)
-handles.vi_IGHChangeSettings.SetControlValue('Set Point Dialog',1);
-pause(0.1)
-while strcmp(handles.vi_PromptForT.FPState,'eClosed')
-    pause(0.1);
-end
-handles.vi_PromptForT.SetControlValue('Set T',SetPt)%
-pause(0.4)
-handles.vi_PromptForT.SetControlValue('Set T',SetPt)%
-pause(0.1)
-handles.vi_PromptForT.SetControlValue('OK',1)
-pause(0.1)
-while strcmp(handles.vi_PromptForT.FPState,'eClosed')
-    pause(0.1);
-end
-stop(handles.timer_T);
-start(handles.timer_T);
-waitfor(msgbox('Temperature was sucessfully set',handles.VersionStr));
+handles.BF.SetTemp(SetPt);
+% handles.vi_IGHFrontPanel.FPState = 4;
+% pause(0.1)
+% handles.vi_IGHFrontPanel.FPState = 1;
+% pause(0.1)
+% handles.vi_IGHFrontPanel.SetControlValue('Settings',1);
+% pause(1.5)
+% handles.vi_IGHChangeSettings.SetControlValue('Set Point Dialog',1);
+% pause(0.1)
+% while strcmp(handles.vi_PromptForT.FPState,'eClosed')
+%     pause(0.1);
+% end
+% handles.vi_PromptForT.SetControlValue('Set T',SetPt)%
+% pause(0.4)
+% handles.vi_PromptForT.SetControlValue('Set T',SetPt)%
+% pause(0.1)
+% handles.vi_PromptForT.SetControlValue('OK',1)
+% pause(0.1)
+% while strcmp(handles.vi_PromptForT.FPState,'eClosed')
+%     pause(0.1);
+% end
+% stop(handles.timer_T);
+% start(handles.timer_T);
+% waitfor(msgbox('Temperature was sucessfully set',handles.VersionStr));
 
 guidata(hObject,handles);
 

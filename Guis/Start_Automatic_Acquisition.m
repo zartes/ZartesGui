@@ -385,56 +385,58 @@ end
 
 FinalT = str2double(handles.FinalMCT.String);
 
-SetupTES.vi_IGHFrontPanel.FPState = 4;
-pause(0.1)
-SetupTES.vi_IGHFrontPanel.FPState = 1;
-pause(0.1)
-SetupTES.vi_IGHFrontPanel.SetControlValue('Settings',1);
-pause(1.5)
-SetupTES.vi_IGHChangeSettings.SetControlValue('Set Point Dialog',1);
-pause(0.1)
-while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
-    pause(0.1);
-end
-SetupTES.vi_PromptForT.SetControlValue('Set T',FinalT)%
-pause(0.4)
-SetupTES.vi_PromptForT.SetControlValue('Set T',FinalT)%
-pause(0.1)
-SetupTES.vi_PromptForT.SetControlValue('OK',1)
-pause(0.1)
-while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
-    pause(0.1);
-end
-stop(SetupTES.timer_T);
-start(SetupTES.timer_T);
+SetupTES.BF.SetTemp(FinalT);
+
+% SetupTES.vi_IGHFrontPanel.FPState = 4;
+% pause(0.1)
+% SetupTES.vi_IGHFrontPanel.FPState = 1;
+% pause(0.1)
+% SetupTES.vi_IGHFrontPanel.SetControlValue('Settings',1);
+% pause(1.5)
+% SetupTES.vi_IGHChangeSettings.SetControlValue('Set Point Dialog',1);
+% pause(0.1)
+% while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
+%     pause(0.1);
+% end
+% SetupTES.vi_PromptForT.SetControlValue('Set T',FinalT)%
+% pause(0.4)
+% SetupTES.vi_PromptForT.SetControlValue('Set T',FinalT)%
+% pause(0.1)
+% SetupTES.vi_PromptForT.SetControlValue('OK',1)
+% pause(0.1)
+% while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
+%     pause(0.1);
+% end
+% stop(SetupTES.timer_T);
+% start(SetupTES.timer_T);
 msgbox('Acquisition complete!',SetupTES.VersionStr)
 
 
 function AjustarTemperatura(Temp,Conf,SetupTES,handles)
 
-
-SetupTES.vi_IGHFrontPanel.FPState = 4;
-pause(0.1)
-SetupTES.vi_IGHFrontPanel.FPState = 1;
-pause(0.1)
-SetupTES.vi_IGHFrontPanel.SetControlValue('Settings',1);
-pause(1.5)
-SetupTES.vi_IGHChangeSettings.SetControlValue('Set Point Dialog',1);
-pause(0.1)
-while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
-    pause(0.1);
-end
-SetupTES.vi_PromptForT.SetControlValue('Set T',Temp)%
-pause(0.4)
-SetupTES.vi_PromptForT.SetControlValue('Set T',Temp)%
-pause(0.1)
-SetupTES.vi_PromptForT.SetControlValue('OK',1)
-pause(0.1)
-while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
-    pause(0.1);
-end
-stop(SetupTES.timer_T);
-start(SetupTES.timer_T);
+SetupTES.BF.SetTemp(Temp);
+% SetupTES.vi_IGHFrontPanel.FPState = 4;
+% pause(0.1)
+% SetupTES.vi_IGHFrontPanel.FPState = 1;
+% pause(0.1)
+% SetupTES.vi_IGHFrontPanel.SetControlValue('Settings',1);
+% pause(1.5)
+% SetupTES.vi_IGHChangeSettings.SetControlValue('Set Point Dialog',1);
+% pause(0.1)
+% while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
+%     pause(0.1);
+% end
+% SetupTES.vi_PromptForT.SetControlValue('Set T',Temp)%
+% pause(0.4)
+% SetupTES.vi_PromptForT.SetControlValue('Set T',Temp)%
+% pause(0.1)
+% SetupTES.vi_PromptForT.SetControlValue('OK',1)
+% pause(0.1)
+% while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
+%     pause(0.1);
+% end
+% stop(SetupTES.timer_T);
+% start(SetupTES.timer_T);
 
 set(SetupTES.SetPt,'String',num2str(Temp));
 
@@ -461,7 +463,8 @@ Error = nan(Np,1);
 c = true;
 j = 1;
 while c
-    T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
+    T_MC = SetupTES.BF.ReadTemp;
+%     T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
     Set_Pt = str2double(SetupTES.SetPt.String);
     
     %% Gestion del error de temperatura
@@ -484,7 +487,8 @@ while c
             waitbar(0/tfin,h,'5 mins remaining for safety');
             t  = toc;
             while tfin-t > 0
-                T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
+                T_MC = SetupTES.BF.ReadTemp;
+%                 T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
                 Set_Pt = str2double(SetupTES.SetPt.String);
                 
                 %% Gestion del error de temperatura

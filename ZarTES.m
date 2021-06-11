@@ -59,7 +59,7 @@ position = get(handles.figure1,'Position');
 set(handles.figure1,'Color',[0 120 180]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
-handles.VersionStr = 'ZarTES v3';
+handles.VersionStr = 'ZarTES v4.0';
 set(handles.figure1,'Name',handles.VersionStr);
 % Update handles structure
 guidata(hObject, handles);
@@ -129,6 +129,11 @@ try
     rmpath([pwd filesep 'DataBase']);
 catch
 end
+try
+    rmpath([pwd filesep 'RT']);
+catch
+end
+
 delete(hObject);
 
 
@@ -151,4 +156,4 @@ function RT_Callback(hObject, eventdata, handles)
 
 d = pwd;
 addpath([pwd filesep 'RT']);
-run([d filesep 'RT' filesep 'RTSoft.m']);
+run([d filesep 'RT' filesep 'RT_Charaterization.m']);
