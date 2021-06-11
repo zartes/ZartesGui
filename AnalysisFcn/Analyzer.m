@@ -102,7 +102,7 @@ MenuTES.SubMenu_1{IndMenu,1} = {[]};
 MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'Superconductor State';'Normal State';'Z(w)-Noise Analysis';'Critical Currents';'Field Scan'};
 % MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,1} = {[]};
-MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'TES Parameters';'Circuit Values'};
+MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'TES Parameters';'Circuit Values';'Circuit Noise'};
 % MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
 MenuTES.SubMenu_2{IndMenu,3} = {'Import IV-Curves';'Center IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
 MenuTES.SubMenu_2{IndMenu,4} = {'Load TF in Superconductor State (TFS)';'Check TFS';'Load Noise in Superconductor State';'Check Superconductor State Noise'};
@@ -371,6 +371,10 @@ switch src.Label
             end
             handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
             handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
+            
+            handles.Session{handles.TES_ID}.TES.circuitNoise.View(handles.Session{handles.TES_ID}.TES);
+            handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
+            
         else
             warndlg('Caution! Circuit parameters were not loaded, check it manually',handles.VersionStr);
         end
@@ -497,6 +501,11 @@ switch src.Label
     case 'Circuit Values'
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+                
+    case 'Circuit Noise'
+        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
+        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        
     case 'Update Circuit Parameters (Slope IV-Curves)'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes','Tag','Analyzer');

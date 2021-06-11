@@ -384,12 +384,20 @@ classdef TES_ElectrThermModel
             
             SigNoise = TES.V2I(noisedata{1}(:,2)*1e12);
             OP = TES.setTESOPfromIb(Ib,IV,param,CondStr);
-            f = logspace(0,5,1000);
+%             f = logspace(0,5,1000);
+            f = logspace(1,5,321)';
             M = 0;
+            
+            if length(fNoise) ~= length(f)
+                SigNoise = spline(fNoise,SigNoise,f); % Todos los ruidos a 321 puntos                
+                fNoise = f;
+            end            
             
             SimulatedNoise = obj.noisesim(TES,OP,M,f,CondStr);
             SimRes = SimulatedNoise.Res;            
-            sIaux = ppval(spline(SimulatedNoise.f,SimulatedNoise.sI),noisedata{1}(:,1));
+            
+            sIaux = SimulatedNoise.sI;
+%             sIaux = ppval(spline(SimulatedNoise.f,SimulatedNoise.sI),fNoise);
             NEP = real(sqrt(((SigNoise*1e-12).^2-SimulatedNoise.squid.^2))./sIaux);            
 %             NEP = sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2)./sIaux;
             NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
@@ -522,13 +530,13 @@ classdef TES_ElectrThermModel
             %             end
             
             Nsquid = TES.circuit.Nsquid.Value;
-            if size(Nsquid,1) ~= 1
-                f = TES.NoiseN.fNoise;
+%             if size(Nsquid,1) ~= 1
+%                 f = TES.NoiseN.fNoise;
+% %                 f = logspace(0,5,1000);
+%             else
 %                 f = logspace(0,5,1000);
-            else
-                f = logspace(0,5,1000);
-%                 f = logspace(1,6);
-            end
+% %                 f = logspace(1,6);
+%             end
             if abs(OP.Z0-OP.Zinf) < obj.Z0_Zinf_Thrs
                 I0 = (Rs/RL)*OP.ibias;
             end
@@ -552,74 +560,84 @@ classdef TES_ElectrThermModel
                     noise.sh = i_sh;
                     noise.sum = sqrt(i_ph.^2+i_jo.^2+i_sh.^2);
                 case obj.Noise_Models{1} % 'irwin'
-                    sI = -(1/(I0*R0))*(L/(tau_el*R0*L0)+(1-RL/R0)-L*tau*(2*pi*f).^2/(L0*R0)+1i*(2*pi*f)*L*tau*(1/tauI+1/tau_el)/(R0*L0)).^-1;%funcion de transferencia.
-                    
-                    t = Ts/T0;
-                    %%%calculo factor F. See McCammon p11.
-                    %n = 3.1;
-                    %F = t^(n+1)*(t^(n+2)+1)/2;%F de boyle y rogers. n =  exponente de la ley de P(T). El primer factor viene de la pag22 del cap de Irwin.
-                    
-%                     F = (t^(n+2)+1)/2;%%%specular limit
-                    bb = n-1;
-                     F=(t^(bb+2)+1)/2;
-                    %F = t^(n+1)*(n+1)*(t^(2*n+3)-1)/((2*n+3)*(t^(n+1)-1));%F de Mather. La
-                    %diferencia entre las dos fÃ³rmulas es menor del 1%.
-                    %F = (n+1)*(t^(2*n+3)-1)/((2*n+3)*(t^(n+1)-1));%%%diffusive limit.
-                    
-                    stfn = 4*obj.Kb*T0^2*G*abs(sI).^2*F;%Thermal Fluctuation Noise
-                    ssh = 4*obj.Kb*Ts*I0^2*RL*(L0-1)^2*(1+4*pi^2*f.^2*tau^2/(1-L0)^2).*abs(sI).^2/L0^2; %Load resistor Noise
-                    %M = 1.8;
-                    stes = 4*obj.Kb*T0*I0^2*R0*(1+2*bI)*(1+4*pi^2*f.^2*tau^2).*abs(sI).^2/L0^2*(1+M^2);%%%Johnson noise at TES.
-                    if ~isreal(sqrt(stes))
-                        stes = zeros(1,length(f));
+                    try
+                        sI = -(1/(I0*R0))*(L/(tau_el*R0*L0)+(1-RL/R0)-L*tau*(2*pi*f).^2/(L0*R0)+1i*(2*pi*f)*L*tau*(1/tauI+1/tau_el)/(R0*L0)).^-1;%funcion de transferencia.
+                        
+                        t = Ts/T0;
+                        %%%calculo factor F. See McCammon p11.
+                        %n = 3.1;
+                        %F = t^(n+1)*(t^(n+2)+1)/2;%F de boyle y rogers. n =  exponente de la ley de P(T). El primer factor viene de la pag22 del cap de Irwin.
+                        
+                        %                     F = (t^(n+2)+1)/2;%%%specular limit
+                        bb = n-1;
+                        F=(t^(bb+2)+1)/2;
+                        %F = t^(n+1)*(n+1)*(t^(2*n+3)-1)/((2*n+3)*(t^(n+1)-1));%F de Mather. La
+                        %diferencia entre las dos fÃ³rmulas es menor del 1%.
+                        %F = (n+1)*(t^(2*n+3)-1)/((2*n+3)*(t^(n+1)-1));%%%diffusive limit.
+                        
+                        stfn = 4*obj.Kb*T0^2*G*abs(sI).^2*F;%Thermal Fluctuation Noise
+                        ssh = 4*obj.Kb*Ts*I0^2*RL*(L0-1)^2*(1+4*pi^2*f.^2*tau^2/(1-L0)^2).*abs(sI).^2/L0^2; %Load resistor Noise
+                        %M = 1.8;
+                        stes = 4*obj.Kb*T0*I0^2*R0*(1+2*bI)*(1+4*pi^2*f.^2*tau^2).*abs(sI).^2/L0^2*(1+M^2);%%%Johnson noise at TES.
+                        if ~isreal(sqrt(stes))
+                            stes = zeros(1,length(f));
+                        end
+                        smax = 4*obj.Kb*T0^2*G.*abs(sI).^2;
+                        
+                        sfaser = 0;%21/(2*pi^2)*((6.626e-34)^2/(1.602e-19)^2)*(10e-9)*P0/R0^2/(2.25e-8)/(1.38e-23*T0);%%%eq22 faser
+                        sext = (18.5e-12*abs(sI)).^2;
+                        
+                        NEP_tfn = sqrt(stfn)./abs(sI);
+                        NEP_ssh = sqrt(ssh)./abs(sI);
+                        NEP_tes = sqrt(stes)./abs(sI);
+                        Res_tfn = 2.35/sqrt(trapz(f,1./NEP_tfn.^2))/2/1.609e-19;
+                        Res_ssh = 2.35/sqrt(trapz(f,1./NEP_ssh.^2))/2/1.609e-19;
+                        Res_tes = 2.35/sqrt(trapz(f,1./NEP_tes.^2))/2/1.609e-19;
+                        Res_tfn_tes = 2.35/sqrt(trapz(f,1./(NEP_tes.*NEP_tfn)))/2/1.609e-19;
+                        Res_tfn_ssh = 2.35/sqrt(trapz(f,1./(NEP_ssh.*NEP_tfn)))/2/1.609e-19;
+                        Res_ssh_tes = 2.35/sqrt(trapz(f,1./(NEP_tes.*NEP_ssh)))/2/1.609e-19;
+                        
+                        NEP = sqrt(stfn+ssh+stes)./abs(sI);
+                        Res = 2.35/sqrt(trapz(f,1./NEP.^2))/2/1.609e-19;%resoluciÃ³n en eV. Tesis Wouter (2.37).
+                        
+                        %stes = stes*M^2;
+                        i_ph = sqrt(stfn);
+                        i_jo = sqrt(stes);
+                        if ~isreal(i_jo)
+                            i_jo = zeros(1,length(f));
+                        end
+                        i_sh = sqrt(ssh);
+                        %G*5e-8
+                        %(n*TES.K*Ts.^n)*5e-6
+                        %i_temp = (n*TES.K*Ts.^n)*0e-6*abs(sI);%%%ruido en Tbath.(5e-4 = 200uK, 5e-5 = 20uK, 5e-6 = 2uK)
+                        
+                        noise.f = f;
+                        noise.ph = i_ph;
+                        noise.jo = i_jo;
+                        noise.sh = i_sh;
+                        noise.sum = sqrt(stfn+stes+ssh);%noise.sum = i_ph+i_jo+i_sh;
+                        noise.sI = abs(sI);
+                        
+                        noise.NEP = NEP;
+                        noise.max = sqrt(smax);
+                        noise.Res = Res;%noise.tbath = i_temp;
+                        noise.Res_tfn = Res_tfn;
+                        noise.Res_ssh = Res_ssh;
+                        noise.Res_tes = Res_tes;
+                        noise.Res_tfn_tes = Res_tfn_tes;
+                        noise.Res_tfn_ssh = Res_tfn_ssh;
+                        noise.Res_ssh_tes = Res_ssh_tes;
+                        noise.squid = Nsquid;
+                        noise.squidarray = Nsquid.*ones(1,length(f));
+                    catch
+                        noise.f = f;
+                        noise.ph = nan(length(f),1);
+                        noise.jo = nan(length(f),1);
+                        noise.sh = nan(length(f),1);
+                        noise.sum = nan(length(f),1);%noise.sum = i_ph+i_jo+i_sh;
+                        noise.sI = nan(length(f),1);
+                        noise.squidarray = nan(length(f),1);
                     end
-                    smax = 4*obj.Kb*T0^2*G.*abs(sI).^2;
-                    
-                    sfaser = 0;%21/(2*pi^2)*((6.626e-34)^2/(1.602e-19)^2)*(10e-9)*P0/R0^2/(2.25e-8)/(1.38e-23*T0);%%%eq22 faser
-                    sext = (18.5e-12*abs(sI)).^2;
-                    
-                    NEP_tfn = sqrt(stfn)./abs(sI);
-                    NEP_ssh = sqrt(ssh)./abs(sI);
-                    NEP_tes = sqrt(stes)./abs(sI);
-                    Res_tfn = 2.35/sqrt(trapz(f,1./NEP_tfn.^2))/2/1.609e-19;
-                    Res_ssh = 2.35/sqrt(trapz(f,1./NEP_ssh.^2))/2/1.609e-19;
-                    Res_tes = 2.35/sqrt(trapz(f,1./NEP_tes.^2))/2/1.609e-19;
-                    Res_tfn_tes = 2.35/sqrt(trapz(f,1./(NEP_tes.*NEP_tfn)))/2/1.609e-19;
-                    Res_tfn_ssh = 2.35/sqrt(trapz(f,1./(NEP_ssh.*NEP_tfn)))/2/1.609e-19;
-                    Res_ssh_tes = 2.35/sqrt(trapz(f,1./(NEP_tes.*NEP_ssh)))/2/1.609e-19;
-                    
-                    NEP = sqrt(stfn+ssh+stes)./abs(sI);
-                    Res = 2.35/sqrt(trapz(f,1./NEP.^2))/2/1.609e-19;%resoluciÃ³n en eV. Tesis Wouter (2.37).
-                    
-                    %stes = stes*M^2;
-                    i_ph = sqrt(stfn);
-                    i_jo = sqrt(stes);
-                    if ~isreal(i_jo)
-                        i_jo = zeros(1,length(f));
-                    end
-                    i_sh = sqrt(ssh);
-                    %G*5e-8
-                    %(n*TES.K*Ts.^n)*5e-6
-                    %i_temp = (n*TES.K*Ts.^n)*0e-6*abs(sI);%%%ruido en Tbath.(5e-4 = 200uK, 5e-5 = 20uK, 5e-6 = 2uK)
-                    
-                    noise.f = f;
-                    noise.ph = i_ph;
-                    noise.jo = i_jo;
-                    noise.sh = i_sh;
-                    noise.sum = sqrt(stfn+stes+ssh);%noise.sum = i_ph+i_jo+i_sh;
-                    noise.sI = abs(sI);
-                    
-                    noise.NEP = NEP;
-                    noise.max = sqrt(smax);
-                    noise.Res = Res;%noise.tbath = i_temp;
-                    noise.Res_tfn = Res_tfn;
-                    noise.Res_ssh = Res_ssh;
-                    noise.Res_tes = Res_tes;
-                    noise.Res_tfn_tes = Res_tfn_tes;
-                    noise.Res_tfn_ssh = Res_tfn_ssh;
-                    noise.Res_ssh_tes = Res_ssh_tes;
-                    noise.squid = Nsquid;
-                    noise.squidarray = Nsquid.*ones(1,length(f));
                 otherwise
                     warndlg('no valid model',obj.version);
                     noise = [];
@@ -733,6 +751,95 @@ classdef TES_ElectrThermModel
             end            
         end
         
+        function Plot(obj,fNoise,SigNoise,auxnoise,OP,ax)
+            
+            switch obj.tipo{obj.Selected_tipo}
+                case 'current'
+                                                            
+                    loglog(ax,fNoise,SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                    hold(ax,'on');
+                    grid(ax,'on')
+                    loglog(ax,fNoise,obj.NoiseFiltering(SigNoise),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                    % Añadir color al tramo de señal
+                    % utilizado para el ajuste
+                    
+                    if obj.bool_Mph == 0
+                        totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
+                    else
+                        Mexph = OP.Mph;
+                        if isnan(Mexph)
+                            Mexph = 0;
+                        end
+                        totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+                    end
+                    if ~obj.bool_components
+                        loglog(ax,auxnoise.f,totnoise*1e12,'b','LineWidth',3,'DisplayName','Total Simulation Noise');
+                        h = findobj(ax,'Color','b');
+                    else                        
+                        loglog(ax,auxnoise.f,auxnoise.jo*1e12,'DisplayName','Johnson','LineWidth',3);
+                        loglog(ax,auxnoise.f,auxnoise.ph*1e12,'DisplayName','Phonon','LineWidth',3);
+                        loglog(ax,auxnoise.f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',3);
+                        loglog(ax,auxnoise.f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',3);
+                        loglog(ax,auxnoise.f,totnoise*1e12,'b','DisplayName','Total','LineWidth',3);
+                    end
+                    ylabel(ax,'pA/Hz^{0.5}');
+                case 'nep'
+                    
+%                     sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise(:,1));
+%                     squid = ppval(spline(auxnoise.f,auxnoise.squidarray),fNoise(:,1));
+                    sIaux = auxnoise.sI;
+                    squid =auxnoise.squidarray;
+                    NEP = real(sqrt((SigNoise*1e-12).^2-squid.^2)./sIaux);
+                    
+                    loglog(ax,fNoise,(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(ax,'on'),grid(ax,'on'),
+                    loglog(ax,fNoise,obj.NoiseFiltering(NEP*1e18),'.-k','DisplayName','Exp Filtered Noise');hold(ax,'on'),grid(ax,'on'),
+                    if obj.bool_Mph == 0
+                        totNEP = auxnoise.NEP;
+                    else
+                        totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
+                    end
+                    if ~obj.bool_components
+                        loglog(ax,auxnoise.f,totNEP*1e18,'b','DisplayName','Total Simulation Noise','LineWidth',3);hold(ax,'on');grid(ax,'on');
+                        h = findobj(ax,'Color','b');
+                    else                        
+                        loglog(ax,auxnoise.f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson','LineWidth',3);
+                        loglog(ax,auxnoise.f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon','LineWidth',3);
+                        loglog(ax,auxnoise.f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',3);
+                        loglog(ax,auxnoise.f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',3);
+                        loglog(ax,auxnoise.f,totNEP*1e18,'b','DisplayName','Total','LineWidth',3);
+                    end
+                    ylabel(ax,'aW/Hz^{0.5}');
+            end
+            axis(ax,[1e1 1e5 2 1e3])
+            xlabel(ax,'\nu (Hz)','FontSize',12,'FontWeight','bold')
+            title(ax,strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
+            axis(ax,'tight');
+            axes(ax);
+            ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
+            rc = rectangle('Position', [obj.Noise_LowFreq(1) ax_frame(3) diff(obj.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255);
+            rc2 = rectangle('Position', [obj.Noise_HighFreq(1) ax_frame(3) diff(obj.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255);
+            
+            if abs(OP.Z0-OP.Zinf) < obj.Z0_Zinf_Thrs
+                set(get(findobj(ax,'type','axes'),'title'),'Color','r');
+            end
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            
+            %%%%Pruebas sobre la cotribución de cada frecuencia a la
+            %%%%Resolucion.
+            if obj.Selected_tipo == 2 % nep
+                %                         if strcmpi(obj.NoiseOpt,'nep')
+                RESJ = sqrt(2*log(2)./trapz(fNoise,1./totNEP.^2));
+                disp(num2str(RESJ));
+                semilogx(ax,fNoise(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(fNoise))))/1.609e-19);
+                hold(ax,'on');
+                grid(ax,'on');
+                %                                     RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
+                %                                     disp(num2str(RESJ2));
+                semilogx(ax,fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise))))/1.609e-19,'r')
+            end
+        end
     end
     
     

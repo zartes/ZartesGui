@@ -63,6 +63,7 @@ classdef TES_BasalNoises
             obj.fNoise = noisedata{1}(:,1);            
             obj.SigNoise = TES.V2I(noisedata{1}(:,2)*1e12);
             
+            
         end
         
         function  [f,N,obj] = NnoiseModel(obj,TES,Tbath,Ttes)
@@ -73,11 +74,12 @@ classdef TES_BasalNoises
             % Modelo de ruido en estado normal teórico
             RL = TES.circuit.Rsh.Value+TES.circuit.Rpar.Value;
             RTES = TES.circuit.Rn.Value;
-            if size(TES.circuit.Nsquid.Value,1) == 1                
-                f = logspace(0,6);
-            else
-                f = obj.fNoise;
-            end
+            f = logspace(1,5,321);
+%             if size(TES.circuit.Nsquid.Value,1) == 1                
+%                 f = logspace(0,6);
+%             else
+%                 f = obj.fNoise;
+%             end
             
             w = 2*pi*f;
             Zcirc = RL+RTES+1i*w*TES.circuit.L.Value;% impedancia del circuito.

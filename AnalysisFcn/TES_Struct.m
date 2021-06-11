@@ -4,6 +4,7 @@ classdef TES_Struct
     
     properties
         circuit;
+        circuitNoise;
         TFS;
         TFN;
         NoiseS;
@@ -47,8 +48,10 @@ classdef TES_Struct
         function obj = Constructor(obj)
             % Function to generate the class with default values
             
+            obj.circuitNoise = TES_ElectricalNoise; % Nuevo!!
             obj.circuit = TES_Circuit;
             obj.circuit = obj.circuit.Constructor;
+            obj.circuit = obj.circuit.Update(obj.circuitNoise);
             obj.TFS = TES_TFS;
             obj.TFN = TES_TFS;
             obj.NoiseS = TES_BasalNoises;
@@ -1536,95 +1539,100 @@ classdef TES_Struct
                                 end
                                 SigNoise = eval(['obj.P' StrCond{iP} '(ind_Tbath).SigNoise{ind(j)};']);
                                 fNoise = eval(['obj.P' StrCond{iP} '(ind_Tbath).fNoise{ind(j)};']);
-                                
-                                f = logspace(0,5,1000);
+                                                                                                
+                                f = logspace(1,5,321)';
+                                if length(fNoise) ~= length(f)
+                                    SigNoise = spline(fNoise,SigNoise,f); % Todos los ruidos a 321 puntos
+                                    fNoise = f;
+                                end
                                 auxnoise = obj.ElectrThermalModel.noisesim(obj,OP,M,f,StrCond{iP});
                                 
+                                obj.ElectrThermalModel.Plot(fNoise,SigNoise,auxnoise,OP,hs(i));
                                 
-                                switch obj.ElectrThermalModel.tipo{obj.ElectrThermalModel.Selected_tipo}
-                                    case 'current'
-                                        
-                                        loglog(hs(i),fNoise(:,1),SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                                        loglog(hs(i),fNoise(:,1),obj.ElectrThermalModel.NoiseFiltering(SigNoise),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-                                        % Añadir color al tramo de señal
-                                        % utilizado para el ajuste
-                                                                                                                        
-                                        if obj.ElectrThermalModel.bool_Mph == 0
-                                            totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
-                                        else
-                                            Mexph = OP.Mph;
-                                            totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
-                                        end
-                                        if ~obj.ElectrThermalModel.bool_components
-                                            loglog(hs(i),auxnoise.f,totnoise*1e12,'b','LineWidth',3,'DisplayName','Total Simulation Noise');
-                                            h = findobj(hs(i),'Color','b');
-                                        else
-                                            %                                     loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
-                                            loglog(hs(i),auxnoise.f,auxnoise.jo*1e12,'DisplayName','Johnson','LineWidth',3);
-                                            loglog(hs(i),auxnoise.f,auxnoise.ph*1e12,'DisplayName','Phonon','LineWidth',3);
-                                            loglog(hs(i),auxnoise.f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',3);
-                                            loglog(hs(i),auxnoise.f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',3);
-                                            loglog(hs(i),auxnoise.f,totnoise*1e12,'b','DisplayName','Total','LineWidth',3);
-                                            %                                     legend(hs(i),'Experimental','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
-                                            %                                     legend(hs(i),'off');
-                                            %                                     h = findobj(hs,'displayname','total');
-                                        end
-                                    case 'nep'
-                                        sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise(:,1));
-                                        squid = ppval(spline(auxnoise.f,auxnoise.squidarray),fNoise(:,1));
-                                        NEP = real(sqrt((SigNoise*1e-12).^2-squid.^2)./sIaux);
-                                        
-                                        loglog(hs(i),fNoise(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(hs(i),'on'),grid(hs(i),'on'),
-                                        loglog(hs(i),fNoise(:,1),obj.ElectrThermalModel.NoiseFiltering(NEP*1e18),'.-k','DisplayName','Exp Filtered Noise');hold(hs(i),'on'),grid(hs(i),'on'),
-                                        if obj.ElectrThermalModel.bool_Mph == 0
-                                            totNEP = auxnoise.NEP;
-                                        else
-                                            totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
-                                        end
-                                        if ~obj.ElectrThermalModel.bool_components
-                                            loglog(hs(i),auxnoise.f,totNEP*1e18,'b','DisplayName','Total Simulation Noise','LineWidth',3);hold(hs(i),'on');grid(hs(i),'on');
-                                            h = findobj(hs(i),'Color','b');
-                                        else
-                                            %                                     loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
-                                            loglog(hs(i),auxnoise.f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson','LineWidth',3);
-                                            loglog(hs(i),auxnoise.f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon','LineWidth',3);
-                                            loglog(hs(i),auxnoise.f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',3);
-                                            loglog(hs(i),auxnoise.f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',3);
-                                            loglog(hs(i),auxnoise.f,totNEP*1e18,'b','DisplayName','Total','LineWidth',3);
-                                            %                                     legend(hs(i),'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
-                                            %                                     legend(hs(i),'off');
-                                            %                                     h = findobj(hs(i),'displayname','total');
-                                        end
-                                end
-                                axis(hs(i),[1e1 1e5 2 1e3])
-                                title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
-                                
-                                axes(hs(i));
-                                ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
-                                %                     delete(ax);
-                                rc = rectangle('Position', [obj.ElectrThermalModel.Noise_LowFreq(1) ax_frame(3) diff(obj.ElectrThermalModel.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255);
-                                rc2 = rectangle('Position', [obj.ElectrThermalModel.Noise_HighFreq(1) ax_frame(3) diff(obj.ElectrThermalModel.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255);
-                                
-                                if abs(OP.Z0-OP.Zinf) < obj.ElectrThermalModel.Z0_Zinf_Thrs
-                                    set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
-                                end
-                                
-                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                
-                                
-                                %%%%Pruebas sobre la cotribución de cada frecuencia a la
-                                %%%%Resolucion.
-                                if obj.ElectrThermalModel.Selected_tipo == 2 % nep
-                                    %                         if strcmpi(obj.NoiseOpt,'nep')
-                                    RESJ = sqrt(2*log(2)./trapz(f,1./totNEP.^2));
-                                    disp(num2str(RESJ));
-                                    semilogx(hs(i),f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19);
-                                    hold(hs(i),'on');
-                                    grid(hs(i),'on');
-%                                     RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
-%                                     disp(num2str(RESJ2));
-                                    semilogx(hs(i),fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise(:,1)))))/1.609e-19,'r')
-                                end
+%                                 switch obj.ElectrThermalModel.tipo{obj.ElectrThermalModel.Selected_tipo}
+%                                     case 'current'
+%                                         
+%                                         loglog(hs(i),fNoise(:,1),SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+%                                         loglog(hs(i),fNoise(:,1),obj.ElectrThermalModel.NoiseFiltering(SigNoise),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+%                                         % Añadir color al tramo de señal
+%                                         % utilizado para el ajuste
+%                                                                                                                         
+%                                         if obj.ElectrThermalModel.bool_Mph == 0
+%                                             totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
+%                                         else
+%                                             Mexph = OP.Mph;
+%                                             totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+%                                         end
+%                                         if ~obj.ElectrThermalModel.bool_components
+%                                             loglog(hs(i),auxnoise.f,totnoise*1e12,'b','LineWidth',3,'DisplayName','Total Simulation Noise');
+%                                             h = findobj(hs(i),'Color','b');
+%                                         else
+%                                             %                                     loglog(hs(i),f,auxnoise.jo*1e12,f,auxnoise.ph*1e12,f,auxnoise.sh*1e12,f,totnoise*1e12);
+%                                             loglog(hs(i),auxnoise.f,auxnoise.jo*1e12,'DisplayName','Johnson','LineWidth',3);
+%                                             loglog(hs(i),auxnoise.f,auxnoise.ph*1e12,'DisplayName','Phonon','LineWidth',3);
+%                                             loglog(hs(i),auxnoise.f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',3);
+%                                             loglog(hs(i),auxnoise.f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',3);
+%                                             loglog(hs(i),auxnoise.f,totnoise*1e12,'b','DisplayName','Total','LineWidth',3);
+%                                             %                                     legend(hs(i),'Experimental','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
+%                                             %                                     legend(hs(i),'off');
+%                                             %                                     h = findobj(hs,'displayname','total');
+%                                         end
+%                                     case 'nep'
+%                                         sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise(:,1));
+%                                         squid = ppval(spline(auxnoise.f,auxnoise.squidarray),fNoise(:,1));
+%                                         NEP = real(sqrt((SigNoise*1e-12).^2-squid.^2)./sIaux);
+%                                         
+%                                         loglog(hs(i),fNoise(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(hs(i),'on'),grid(hs(i),'on'),
+%                                         loglog(hs(i),fNoise(:,1),obj.ElectrThermalModel.NoiseFiltering(NEP*1e18),'.-k','DisplayName','Exp Filtered Noise');hold(hs(i),'on'),grid(hs(i),'on'),
+%                                         if obj.ElectrThermalModel.bool_Mph == 0
+%                                             totNEP = auxnoise.NEP;
+%                                         else
+%                                             totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
+%                                         end
+%                                         if ~obj.ElectrThermalModel.bool_components
+%                                             loglog(hs(i),auxnoise.f,totNEP*1e18,'b','DisplayName','Total Simulation Noise','LineWidth',3);hold(hs(i),'on');grid(hs(i),'on');
+%                                             h = findobj(hs(i),'Color','b');
+%                                         else
+%                                             %                                     loglog(hs(i),f,auxnoise.jo*1e18./auxnoise.sI,f,auxnoise.ph*1e18./auxnoise.sI,f,auxnoise.sh*1e18./auxnoise.sI,f,(totNEP*1e18));
+%                                             loglog(hs(i),auxnoise.f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson','LineWidth',3);
+%                                             loglog(hs(i),auxnoise.f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon','LineWidth',3);
+%                                             loglog(hs(i),auxnoise.f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',3);
+%                                             loglog(hs(i),auxnoise.f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',3);
+%                                             loglog(hs(i),auxnoise.f,totNEP*1e18,'b','DisplayName','Total','LineWidth',3);
+%                                             %                                     legend(hs(i),'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Total');
+%                                             %                                     legend(hs(i),'off');
+%                                             %                                     h = findobj(hs(i),'displayname','total');
+%                                         end
+%                                 end
+%                                 axis(hs(i),[1e1 1e5 2 1e3])
+%                                 title(hs(i),strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
+%                                 
+%                                 axes(hs(i));
+%                                 ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
+%                                 %                     delete(ax);
+%                                 rc = rectangle('Position', [obj.ElectrThermalModel.Noise_LowFreq(1) ax_frame(3) diff(obj.ElectrThermalModel.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255);
+%                                 rc2 = rectangle('Position', [obj.ElectrThermalModel.Noise_HighFreq(1) ax_frame(3) diff(obj.ElectrThermalModel.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255);
+%                                 
+%                                 if abs(OP.Z0-OP.Zinf) < obj.ElectrThermalModel.Z0_Zinf_Thrs
+%                                     set(get(findobj(hs(i),'type','axes'),'title'),'Color','r');
+%                                 end
+%                                 
+%                                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                 
+%                                 
+%                                 %%%%Pruebas sobre la cotribución de cada frecuencia a la
+%                                 %%%%Resolucion.
+%                                 if obj.ElectrThermalModel.Selected_tipo == 2 % nep
+%                                     %                         if strcmpi(obj.NoiseOpt,'nep')
+%                                     RESJ = sqrt(2*log(2)./trapz(f,1./totNEP.^2));
+%                                     disp(num2str(RESJ));
+%                                     semilogx(hs(i),f(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(f))))/1.609e-19);
+%                                     hold(hs(i),'on');
+%                                     grid(hs(i),'on');
+% %                                     RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
+% %                                     disp(num2str(RESJ2));
+%                                     semilogx(hs(i),fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise(:,1)))))/1.609e-19,'r')
+%                                 end
                             end
                             j = j+1;
                         end
