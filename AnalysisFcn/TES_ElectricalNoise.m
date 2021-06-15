@@ -17,10 +17,10 @@ classdef TES_ElectricalNoise
             % Function to check visually the class values
             
             h = figure('Visible','off','Tag','TES_Noise_Opt');
-            waitfor(ElectNoiseViewer(TES,[],obj));
-            Noise_Opt = guidata(h);
-            if ~isempty(Noise_Opt)
-                obj = obj.Update(Noise_Opt);
+            waitfor(ElectNoiseViewer(TES,h));
+            ElectNoise_Opt = guidata(h);
+            if ~isempty(ElectNoise_Opt)
+                obj = obj.Update(ElectNoise_Opt);
             end
         end
         

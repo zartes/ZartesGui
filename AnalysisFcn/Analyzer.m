@@ -503,6 +503,9 @@ switch src.Label
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
                 
     case 'Circuit Noise'
+        
+        handles.Session{handles.TES_ID}.TES.circuitNoise.View(handles.Session{handles.TES_ID}.TES);
+        
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
@@ -1551,7 +1554,7 @@ StrEnable = {'on';'off'};
 % StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';...
 %     'IV-Curves';'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';...
 %     'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';'Save TES Data';'Options'};
-StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';...
+StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';'Circuit Noise';...
     'IV-Curves';'Import IV-Curves';...
     'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';'Save TES Data';'Options'};
 for i = 1:length(StrLabel_On)

@@ -22,7 +22,7 @@ function varargout = ElectNoiseViewer(varargin)
 
 % Edit the above text to modify the response to help ElectNoiseViewer
 
-% Last Modified by GUIDE v2.5 09-Jun-2021 10:36:47
+% Last Modified by GUIDE v2.5 15-Jun-2021 09:41:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -58,7 +58,7 @@ handles.output = hObject;
 handles.output = hObject;
 handles.varargin = varargin;
 position = get(handles.figure1,'Position');
-set(handles.figure1,'Color',[200 200 200]/255,'Position',...
+set(handles.figure1,'Color',[0 0.2 0.5],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
@@ -69,6 +69,7 @@ set(handles.figure1,'Name',['Electrical Noise Identification    ---   ' handles.
 InicialConf(handles.varargin{1}.circuitNoise,handles);
 habilitar(hObject);
 handles.circuitNoise = handles.varargin{1}.circuitNoise;
+handles.h = handles.varargin{2};
 % Update handles structure
 guidata(hObject, handles);
 
@@ -211,8 +212,8 @@ function ModelView_Callback(hObject, eventdata, handles)
 
 figure;
 loglog(logspace(1,5,321),handles.circuitNoise.Array);
-xlabel();
-ylabel();
+xlabel('Freq (Hz)');
+ylabel('pA/{Hz}^(1/2)');
 
 
 function ModelSingleValue_Callback(hObject, eventdata, handles)
@@ -349,3 +350,29 @@ function ModelSingle_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of ModelSingle
 habilitar(hObject)
+
+
+% --- Executes on button press in Save.
+function Save_Callback(hObject, eventdata, handles)
+% hObject    handle to Save (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+set(handles.h,'UserData',handles.circuitNoise);
+
+delete(hObject);
+% --- Executes on button press in Cancel.
+function Cancel_Callback(hObject, eventdata, handles)
+% hObject    handle to Cancel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+delete(hObject);
+% --- Executes during object deletion, before destroying properties.
+function figure1_DeleteFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+delete(hObject);
+
