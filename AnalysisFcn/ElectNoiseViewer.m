@@ -69,6 +69,36 @@ set(handles.figure1,'Name',['Electrical Noise Identification    ---   ' handles.
 InicialConf(handles.varargin{1}.circuitNoise,handles);
 habilitar(hObject);
 handles.circuitNoise = handles.varargin{1}.circuitNoise;
+
+% Update guide with the current parameters
+if ~handles.circuitNoise.ModelBased
+    if isempty(handles.circuitNoise.Array)
+        handles.ManualSingle.Value = 1;
+        ManualSingle_Callback(handles.ManualSingle,[],handles);
+        set(handles.ElectValue,'String',num2str(handles.circuitNoise.Value*1e12));
+        set(handles.View,'Enable','off');
+    else
+        handles.ManualArray.Value = 1;
+        ManualArray_Callback(handles.ManualArray,[],handles);
+        set(handles.LoadedFile,'String',handles.circuitNoise.File);
+        set(handles.View,'Enable','on');
+    end
+else
+    handles.ModelBased.Value = 1;
+    ModelBased_Callback(handles.ModelBased,[],handles);
+    if isempty(handles.ModelArray.Value)
+        handles.ModelSingle.Value = 1;
+        ModelSingle_Callback(handles.ModelSingle,[],handles);
+        set(handles.ModelSingleValue,'String',num2str(handles.circuitNoise.Value*1e12));
+        set(handles.View,'Enable','off');
+    else
+        handles.ModelArray.Value = 1;
+        ModelArray_Callback(handles.ModelArray,[],handles);
+        set(handles.LoadedModelFile,'String',handles.circuitNoise.File);
+        set(handles.ModelView,'Enable','on');
+    end
+end
+
 handles.h = handles.varargin{2};
 % Update handles structure
 guidata(hObject, handles);
@@ -97,7 +127,7 @@ function ElectValue_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of ElectValue as text
 %        str2double(get(hObject,'String')) returns contents of ElectValue as a double
-num = str2double(get(hObject,'String'));
+num = str2double(get(hObject,'String'))*1e-12;
 if ~isnumeric(num)
     warndlg('Incorrect number value',handles.VersionStr);
     return;
@@ -137,10 +167,11 @@ function FromFile_Callback(hObject, eventdata, handles)
     fNoise = Data(:,1);
     SigNoise = Data(:,2);
 
-    f = logspace(1,5,321);
+    f = logspace(1,5,321)';
     
     SigNoise = spline(fNoise,SigNoise,f);
-    handles.circuitNoise.Array = SigNoise;
+    SigNoise = handles.varargin{1}.V2I(SigNoise);
+    handles.circuitNoise.Array = SigNoise*1e12;
     handles.circuitNoise.File = [pathname filesep filename];
     handles.circuitNoise.Selected_Tipo = 1;
     handles.circuitNoise.Value = [];
@@ -159,8 +190,8 @@ function View_Callback(hObject, eventdata, handles)
 
 figure;
 loglog(logspace(1,5,321),handles.circuitNoise.Array);
-xlabel();
-ylabel();
+xlabel('Freq (Hz)');
+ylabel('Amplitude (pA/{Hz}^{1/2})');
 
 % --- Executes on button press in ModelFromFile.
 function ModelFromFile_Callback(hObject, eventdata, handles)
@@ -181,7 +212,7 @@ Noise = TES_BasalNoises;
     fig = figure('Visible','off');
     Noise = Noise.NoisefromFile([pathname filesep filename],fig,handles.varargin{1});
     
-    reply = inputdlg('Introduce a Tbath (mK) value',1,'50');
+    reply = inputdlg('Introduce a Tbath (mK) value',handles.VersionStr,[1 50],{'50'});
 %     reply = input('Introduce a Tbath value','50mK');
     if isempty(reply)
         warndlg('No Tbath value selected',handles.VersionStr);
@@ -213,7 +244,7 @@ function ModelView_Callback(hObject, eventdata, handles)
 figure;
 loglog(logspace(1,5,321),handles.circuitNoise.Array);
 xlabel('Freq (Hz)');
-ylabel('pA/{Hz}^(1/2)');
+ylabel('Amplitude (A/{Hz}^{1/2})');
 
 
 function ModelSingleValue_Callback(hObject, eventdata, handles)
@@ -226,8 +257,11 @@ function ModelSingleValue_Callback(hObject, eventdata, handles)
 
 
 % Elegir entre media, mediana, algun valor de un percentil...etc.
+
 handles.ElectricalNoise.ModelBased = 1;
 guidata(hObject,handles);
+
+
 % --- Executes during object creation, after setting all properties.
 function ModelSingleValue_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to ModelSingleValue (see GCBO)
@@ -359,14 +393,14 @@ function Save_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 set(handles.h,'UserData',handles.circuitNoise);
 
-delete(hObject);
+close(handles.figure1);
 % --- Executes on button press in Cancel.
 function Cancel_Callback(hObject, eventdata, handles)
 % hObject    handle to Cancel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-delete(hObject);
+close(handles.figure1);
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
 % hObject    handle to figure1 (see GCBO)

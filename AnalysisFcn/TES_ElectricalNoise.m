@@ -18,7 +18,7 @@ classdef TES_ElectricalNoise
             
             h = figure('Visible','off','Tag','TES_Noise_Opt');
             waitfor(ElectNoiseViewer(TES,h));
-            ElectNoise_Opt = guidata(h);
+            ElectNoise_Opt = h.UserData;
             if ~isempty(ElectNoise_Opt)
                 obj = obj.Update(ElectNoise_Opt);
             end

@@ -129,6 +129,8 @@ classdef TES_ElectrThermModel
                 ztes = ztes(fS >= FreqRange(1) & fS <= FreqRange(2));
                 fS = fS(fS >= FreqRange(1) & fS <= FreqRange(2));                
             end
+            
+                        
             Zinf = real(ztes(end));
             Z0 = real(ztes(1));
             [~,indfS] = min(imag(ztes));
@@ -152,16 +154,48 @@ classdef TES_ElectrThermModel
                     d2 = 0.1;
                     p0 = [Zinf Z0 tau0 tau1 tau2 d1 d2];%%%p0 for 3 block model.   % 7 parameters                                        
             end
+%             RZtes = real(ztes);
+%             IZtes = imag(ztes);
+%             [minIZtes, ind] = min(IZtes);
+%             FirstIZtes = IZtes(1:ind);
+%             LastIZtes = IZtes(ind+1:end);
+%             FirstRZtes = RZtes(1:ind);
+%             LastRZtes = RZtes(ind+1:end);
+%             FirstfS = fS(1:ind);
+%             LastfS = fS(ind+1:end);
+%                         
+%             NewFirstIztes = linspace(FirstIZtes(1),FirstIZtes(end),321);
+%             NewFirstRztes = interp1(FirstIZtes,FirstRZtes,NewFirstIztes);
+%             
+%             NewFirstfS = interp1(FirstRZtes,FirstfS,NewFirstRztes);
+%             
+%             NewLastIztes = linspace(LastIZtes(1),LastIZtes(end),321);
+%             NewLastRztes = interp1(LastIZtes,LastRZtes,NewLastIztes);
+%             NewLastfS = interp1(LastRZtes,LastfS,NewLastRztes);
+%             
+%             Rztes = [NewFirstRztes'; NewLastRztes'];
+%             Iztes = [NewFirstIztes'; NewLastIztes'];
+%             fS_new = [NewFirstfS'; NewLastfS'];
+%             fS_2 = linspace(fS(1),fS(end),642)';
+            indOK = find(imag(ztes)<= 0);
+            fS = fS(indOK);
+            ztes = ztes(indOK);
+
+
             [p,aux1,aux2,aux3,out,lambda,jacob] = lsqcurvefit(@obj.fitZ,p0,fS,...
                 [real(ztes) imag(ztes)],[],[],opts);%#ok<ASGLU> %%%uncomment for real parameters.
+%             [p,aux1,aux2,aux3,out,lambda,jacob] = lsqcurvefit(@obj.fitZ,p0,fS_new,...
+%                 [Rztes Iztes],[],[],opts);%#ok<ASGLU> %%%uncomment for real parameters.
             MSE = (aux2'*aux2)/(length(fS)-length(p)); %#ok<NASGU>
             ci = nlparci(p,aux2,'jacobian',jacob);
             CI = (ci(:,2)-ci(:,1))';  
             p_CI = [p; CI];
             param = obj.GetModelParameters(TES,p_CI,IV,Ib,CondStr);
             fZ = obj.fitZ(p,fS);
+%             fZ = obj.fitZ(p,fS_new);
             ERP = sum(abs(abs(ztes-fZ(:,1)+1i*fZ(:,2))./abs(ztes)))/length(ztes);
             R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),ztes,'NRMSE');
+%             R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),Rztes + 1i*Iztes,'NRMSE');
             
         end
         
@@ -441,6 +475,10 @@ classdef TES_ElectrThermModel
                 end
                   
                 ydata = ydata(findx);
+                % Proteccion contra ceros
+                indceros = find(ydata == 0);
+                ydata(indceros) = [];
+                xdata(indceros) = [];
                                 
                                 
                 if isempty(findx)||sum(ydata == inf)
@@ -448,7 +486,7 @@ classdef TES_ElectrThermModel
                     Mph = NaN;
                 else %TES,M,f,OP,CondStr)
                     opts = optimset('Display','off');
-                    maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata,ydata,[],[],opts);   
+                    maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[2 2],xdata,ydata,[],[],opts);   
 %                     ans = obj.fitjohnson(TES,[0 0],xdata,OP,CondStr);
 %                     figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
                     M = maux(2);
@@ -538,8 +576,13 @@ classdef TES_ElectrThermModel
 % %                 f = logspace(1,6);
 %             end
             if abs(OP.Z0-OP.Zinf) < obj.Z0_Zinf_Thrs
-                I0 = (Rs/RL)*OP.ibias;
+%                 I0 = (Rs/RL)*OP.ibias;
+                I0 = sqrt(OP.P0/OP.R0);
             end
+%             if C < 0
+%                 C = 1e-15;
+%             end
+                
             tau = C/G;
             taueff = tau/(1+beta*L0);
             tauI = tau/(1-L0);
@@ -592,8 +635,17 @@ classdef TES_ElectrThermModel
                         NEP_tes = sqrt(stes)./abs(sI);
                         Res_tfn = 2.35/sqrt(trapz(f,1./NEP_tfn.^2))/2/1.609e-19;
                         Res_ssh = 2.35/sqrt(trapz(f,1./NEP_ssh.^2))/2/1.609e-19;
-                        Res_tes = 2.35/sqrt(trapz(f,1./NEP_tes.^2))/2/1.609e-19;
-                        Res_tfn_tes = 2.35/sqrt(trapz(f,1./(NEP_tes.*NEP_tfn)))/2/1.609e-19;
+                        
+                        try
+                            Res_tes = 2.35/sqrt(trapz(f,1./NEP_tes.^2))/2/1.609e-19;
+                            Res_tfn_tes = 2.35/sqrt(trapz(f,1./(NEP_tes.*NEP_tfn)))/2/1.609e-19;
+                        catch
+                            stes = zeros(length(f),1);
+                            NEP_tes = sqrt(stes)./abs(sI);
+                            Res_tes = 2.35/sqrt(trapz(f,1./NEP_tes.^2))/2/1.609e-19;
+                            Res_tfn_tes = 2.35/sqrt(trapz(f,1./(NEP_tes.*NEP_tfn)))/2/1.609e-19;
+                        end
+                        
                         Res_tfn_ssh = 2.35/sqrt(trapz(f,1./(NEP_ssh.*NEP_tfn)))/2/1.609e-19;
                         Res_ssh_tes = 2.35/sqrt(trapz(f,1./(NEP_tes.*NEP_ssh)))/2/1.609e-19;
                         
@@ -628,7 +680,7 @@ classdef TES_ElectrThermModel
                         noise.Res_tfn_ssh = Res_tfn_ssh;
                         noise.Res_ssh_tes = Res_ssh_tes;
                         noise.squid = Nsquid;
-                        noise.squidarray = Nsquid.*ones(1,length(f));
+                        noise.squidarray = Nsquid.*ones(length(f),1);
                     catch
                         noise.f = f;
                         noise.ph = nan(length(f),1);
@@ -770,7 +822,8 @@ classdef TES_ElectrThermModel
                         if isnan(Mexph)
                             Mexph = 0;
                         end
-                        totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+                        totnoise = sqrt((auxnoise.ph.^2.*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+%                         totnoise = sqrt(auxnoise.ph.^2+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
                     end
                     if ~obj.bool_components
                         loglog(ax,auxnoise.f,totnoise*1e12,'b','LineWidth',3,'DisplayName','Total Simulation Noise');
@@ -788,6 +841,9 @@ classdef TES_ElectrThermModel
 %                     sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise(:,1));
 %                     squid = ppval(spline(auxnoise.f,auxnoise.squidarray),fNoise(:,1));
                     sIaux = auxnoise.sI;
+                    if length(auxnoise.squidarray) ~= length(auxnoise.sI)
+                        auxnoise.squidarray = auxnoise.squidarray';
+                    end
                     squid =auxnoise.squidarray;
                     NEP = real(sqrt((SigNoise*1e-12).^2-squid.^2)./sIaux);
                     
@@ -796,7 +852,12 @@ classdef TES_ElectrThermModel
                     if obj.bool_Mph == 0
                         totNEP = auxnoise.NEP;
                     else
-                        totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
+                        Mexph = OP.Mph;
+                        if isnan(Mexph)
+                            Mexph = 0;
+                        end
+                        totNEP = sqrt((auxnoise.ph.^2.*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2)./auxnoise.sI;
+%                         totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
                     end
                     if ~obj.bool_components
                         loglog(ax,auxnoise.f,totNEP*1e18,'b','DisplayName','Total Simulation Noise','LineWidth',3);hold(ax,'on');grid(ax,'on');
@@ -830,14 +891,14 @@ classdef TES_ElectrThermModel
             %%%%Resolucion.
             if obj.Selected_tipo == 2 % nep
                 %                         if strcmpi(obj.NoiseOpt,'nep')
-                RESJ = sqrt(2*log(2)./trapz(fNoise,1./totNEP.^2));
-                disp(num2str(RESJ));
-                semilogx(ax,fNoise(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(fNoise))))/1.609e-19);
-                hold(ax,'on');
-                grid(ax,'on');
-                %                                     RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
-                %                                     disp(num2str(RESJ2));
-                semilogx(ax,fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise))))/1.609e-19,'r')
+%                 RESJ = sqrt(2*log(2)./trapz(fNoise,1./totNEP.^2));
+%                 disp(num2str(RESJ));
+%                 semilogx(ax,fNoise(1:end-1),sqrt((2*log(2)./cumsum((1./totNEP(1:end-1).^2).*diff(fNoise))))/1.609e-19);
+%                 hold(ax,'on');
+%                 grid(ax,'on');
+%                 %                                     RESJ2 = sqrt(2*log(2)./trapz(fNoise(:,1),1./NEP.^2));
+%                 %                                     disp(num2str(RESJ2));
+%                 semilogx(ax,fNoise(1:end-1),sqrt((2*log(2)./cumsum(1./NEP(1:end-1).^2.*diff(fNoise))))/1.609e-19,'r')
             end
         end
     end
