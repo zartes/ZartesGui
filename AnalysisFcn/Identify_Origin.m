@@ -179,7 +179,7 @@ switch str
         
         
 %         [RES, SimRes, M, Mph, fNoise, SigNoise] = TES.ElectrThermalModel.fitNoise(TES,FileName, Data{8});
-        f = logspace(1,5,321);
+        f = logspace(1,5,321)';
         if length(fNoise) ~= length(f)
             SigNoise = spline(fNoise,SigNoise,f); % Todos los ruidos a 321 puntos
             fNoise = f;

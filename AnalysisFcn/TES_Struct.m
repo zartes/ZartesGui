@@ -2441,17 +2441,39 @@ classdef TES_Struct
             CircProp = properties(obj.circuit);
             clear DataCell;
             ind = find(cellfun(@(s) ~isempty(strfind('CurrOffset', s)), CircProp)==1);
-            inds = [1:6 ind];
+            inds = [1:5 ind];
             DataCell(1,1:3) = {'Parametros','Valores','Unidades'};
             for i = 1:1:length(inds) 
                 DataCell(i,1:3) = {CircProp{inds(i)}, num2str(eval(['obj.circuit.' CircProp{inds(i)} '.Value'])),...
                     eval(['obj.circuit.' CircProp{inds(i)} '.Units'])};
-            end
+            end            
             [NoRows,NoCols]=size(DataCell);
+            
+            
+            
+            CircProp = properties(obj.circuit);
             %create table with data from DataCell
             Style = 'Cita';
             WordText(ActXWord,'',Style,[0,1]);%enter after text
             WordCreateTable(ActXWord,NoRows,NoCols,DataCell,[1 1]);%enter before table
+            
+            Style='Título 2';
+            TextString='Circuit Noise';
+            WordText(ActXWord,TextString,Style,[0,1]);%enter after text
+            Style='Normal';                        
+            
+            if obj.circuitNoise.ModelBased
+                TextString= 'Model Based';
+                WordText(ActXWord,TextString,Style,[0,1]);%enter after text
+            end
+            if ~isempty(obj.circuitNoise.Array)
+                TextString= ['Value: ' num2str(obj.circuitNoise.Value) 'A/Hz^{0.5}'];
+                WordText(ActXWord,TextString,Style,[0,1]);%enter after text
+            else
+                TextString= ['Array from file: ' obj.circuitNoise.File];
+                WordText(ActXWord,TextString,Style,[0,1]);%enter after text
+            end
+            
             
             Style = 'Título 2';
             WordText(ActXWord,'',Style,[0,1]);%enter after text
@@ -2787,34 +2809,38 @@ classdef TES_Struct
             end
             
             if obj.Report.TF_Normal
-                [obj.TFN, fig] = obj.TFN.PlotTF;
-                Style='normal';
-                WordText(ActXWord,'',Style,[0,1]);
-                print(fig,'-dmeta');
-                invoke(ActXWord.Selection,'Paste');
-                ActXWord.Selection.TypeParagraph;
-                close(fig);
-                pause(0.3)
-                clear fig;
-                Style='Cita';
-                TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Normal, archivo: ' obj.TFN.file];
-                WordText(ActXWord,TextString,Style,[0,1]);
-                FigNum = FigNum+1;
+                if ~isempty(obj.TFN.file)
+                    [obj.TFN, fig] = obj.TFN.PlotTF;
+                    Style='normal';
+                    WordText(ActXWord,'',Style,[0,1]);
+                    print(fig,'-dmeta');
+                    invoke(ActXWord.Selection,'Paste');
+                    ActXWord.Selection.TypeParagraph;
+                    close(fig);
+                    pause(0.3)
+                    clear fig;
+                    Style='Cita';
+                    TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Normal, archivo: ' obj.TFN.file];
+                    WordText(ActXWord,TextString,Style,[0,1]);
+                    FigNum = FigNum+1;
+                end
             end
             if obj.Report.TF_Super
-                [obj.TFS, fig] = obj.TFS.PlotTF;
-                Style='normal';
-                WordText(ActXWord,'',Style,[0,1]);
-                print(fig,'-dmeta');
-                invoke(ActXWord.Selection,'Paste');
-                ActXWord.Selection.TypeParagraph;
-                close(fig);
-                pause(0.3)
-                clear fig;
-                Style='Cita';
-                TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Superconductor, archivo: ' obj.TFS.file];
-                WordText(ActXWord,TextString,Style,[0,1]);
-                FigNum = FigNum+1;
+                if ~isempty(obj.TFS.file)
+                    [obj.TFS, fig] = obj.TFS.PlotTF;
+                    Style='normal';
+                    WordText(ActXWord,'',Style,[0,1]);
+                    print(fig,'-dmeta');
+                    invoke(ActXWord.Selection,'Paste');
+                    ActXWord.Selection.TypeParagraph;
+                    close(fig);
+                    pause(0.3)
+                    clear fig;
+                    Style='Cita';
+                    TextString = ['Fig. ' num2str(FigNum) '. Función de transferencia en estado Superconductor, archivo: ' obj.TFS.file];
+                    WordText(ActXWord,TextString,Style,[0,1]);
+                    FigNum = FigNum+1;
+                end
             end
             
             if obj.Report.FitZset
@@ -3009,22 +3035,24 @@ classdef TES_Struct
             
             if obj.Report.Noise_Normal
                 try
-                    fig = figure;
-                    [obj.NoiseN, fig] = obj.NoiseN.Plot(fig,obj,'Normal');
-                    Style='normal';
-                    WordText(ActXWord,'',Style,[0,1]);
-                    set(fig.Children,'FontUnits','Normalized','Box','on');
-                    set(fig, 'Position', get(0, 'Screensize'));
-                    print(fig,'-dmeta');
-                    invoke(ActXWord.Selection,'Paste');
-                    ActXWord.Selection.TypeParagraph;
-                    close(fig);
-                    pause(0.3)
-                    clear fig;
-                    Style='Cita';
-                    TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Normal, archivo: ' obj.NoiseN.fileNoise];
-                    WordText(ActXWord,TextString,Style,[0,1]);
-                    FigNum = FigNum+1;
+                    if ~isempty(obj.NoiseN.fileNoise)
+                        fig = figure;
+                        [obj.NoiseN, fig] = obj.NoiseN.Plot(fig,obj,'Normal');
+                        Style='normal';
+                        WordText(ActXWord,'',Style,[0,1]);
+                        set(fig.Children,'FontUnits','Normalized','Box','on');
+                        set(fig, 'Position', get(0, 'Screensize'));
+                        print(fig,'-dmeta');
+                        invoke(ActXWord.Selection,'Paste');
+                        ActXWord.Selection.TypeParagraph;
+                        close(fig);
+                        pause(0.3)
+                        clear fig;
+                        Style='Cita';
+                        TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Normal, archivo: ' obj.NoiseN.fileNoise];
+                        WordText(ActXWord,TextString,Style,[0,1]);
+                        FigNum = FigNum+1;
+                    end
                 catch
                     close(fig);
                 end
@@ -3032,22 +3060,24 @@ classdef TES_Struct
             end
             if obj.Report.Noise_Super
                 try
-                    fig = figure;
-                    [obj.NoiseS, fig] = obj.NoiseS.Plot(fig,obj,'Superconductor');
-                    Style='normal';
-                    WordText(ActXWord,'',Style,[0,1]);
-                    set(fig.Children,'FontUnits','Normalized');
-                    set(fig, 'Position', get(0, 'Screensize'));
-                    print(fig,'-dmeta');
-                    invoke(ActXWord.Selection,'Paste');
-                    ActXWord.Selection.TypeParagraph;
-                    close(fig);
-                    pause(0.3)
-                    clear fig;
-                    Style='Cita';
-                    TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Superconductor, archivo: ' obj.NoiseS.fileNoise];
-                    WordText(ActXWord,TextString,Style,[0,1]);
-                    FigNum = FigNum+1;
+                    if ~isempty(obj.NoiseS.fileNoise)
+                        fig = figure;
+                        [obj.NoiseS, fig] = obj.NoiseS.Plot(fig,obj,'Superconductor');
+                        Style='normal';
+                        WordText(ActXWord,'',Style,[0,1]);
+                        set(fig.Children,'FontUnits','Normalized');
+                        set(fig, 'Position', get(0, 'Screensize'));
+                        print(fig,'-dmeta');
+                        invoke(ActXWord.Selection,'Paste');
+                        ActXWord.Selection.TypeParagraph;
+                        close(fig);
+                        pause(0.3)
+                        clear fig;
+                        Style='Cita';
+                        TextString = ['Fig. ' num2str(FigNum) '. Ruido en estado Superconductor, archivo: ' obj.NoiseS.fileNoise];
+                        WordText(ActXWord,TextString,Style,[0,1]);
+                        FigNum = FigNum+1;
+                    end
                 catch
                     close(fig);
                 end
@@ -3127,7 +3157,7 @@ classdef TES_Struct
                 Style='normal';
                 WordText(ActXWord,'',Style,[0,1]);
                 
-                hdfig = findobj('Tag','Analyzer','Name',obj.version);
+                hdfig = findobj('Tag','Analyzer','Name',['TES Characterization Data Analyzer   ---   '  obj.version]);
                 hd = guidata(hdfig);
                 if ~isempty(hd.Session{hd.TES_ID}.ZTDB.RTs4p)
                 

@@ -177,9 +177,12 @@ classdef TES_ElectrThermModel
 %             Iztes = [NewFirstIztes'; NewLastIztes'];
 %             fS_new = [NewFirstfS'; NewLastfS'];
 %             fS_2 = linspace(fS(1),fS(end),642)';
-            indOK = find(imag(ztes)<= 0);
-            fS = fS(indOK);
-            ztes = ztes(indOK);
+
+            % Prueba de ajuste de las z(w) solo teniendo en cuenta la parte
+            % negativa de la parte imaginaria de z(w).
+%             indOK = find(imag(ztes)<= 0);
+%             fS = fS(indOK);
+%             ztes = ztes(indOK);
 
 
             [p,aux1,aux2,aux3,out,lambda,jacob] = lsqcurvefit(@obj.fitZ,p0,fS,...
@@ -418,7 +421,7 @@ classdef TES_ElectrThermModel
             
             SigNoise = TES.V2I(noisedata{1}(:,2)*1e12);
             OP = TES.setTESOPfromIb(Ib,IV,param,CondStr);
-%             f = logspace(0,5,1000);
+            
             f = logspace(1,5,321)';
             M = 0;
             
@@ -475,6 +478,7 @@ classdef TES_ElectrThermModel
                 end
                   
                 ydata = ydata(findx);
+                
                 % Proteccion contra ceros
                 indceros = find(ydata == 0);
                 ydata(indceros) = [];
@@ -486,7 +490,8 @@ classdef TES_ElectrThermModel
                     Mph = NaN;
                 else %TES,M,f,OP,CondStr)
                     opts = optimset('Display','off');
-                    maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[2 2],xdata,ydata,[],[],opts);   
+%                     OP.C = 1.8075e-14;
+                    maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[1 1],xdata,ydata,[],[],opts);   
 %                     ans = obj.fitjohnson(TES,[0 0],xdata,OP,CondStr);
 %                     figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
                     M = maux(2);
@@ -558,30 +563,15 @@ classdef TES_ElectrThermModel
             end           
             
             L0 = P0*alfa/(G*T0);
-            %             n = obj.TES.n;
             n = eval(['TES.TESThermal' CondStr '.n.Value;']);
             
-            %             if isfield(TES.circuit,'Nsquid')
-            %                 Nsquid = TES.circuit.Nsquid.Value;
-            %             else
-            %                 Nsquid = 3e-12;
-            %             end
             
             Nsquid = TES.circuit.Nsquid.Value;
-%             if size(Nsquid,1) ~= 1
-%                 f = TES.NoiseN.fNoise;
-% %                 f = logspace(0,5,1000);
-%             else
-%                 f = logspace(0,5,1000);
-% %                 f = logspace(1,6);
-%             end
+            
             if abs(OP.Z0-OP.Zinf) < obj.Z0_Zinf_Thrs
 %                 I0 = (Rs/RL)*OP.ibias;
                 I0 = sqrt(OP.P0/OP.R0);
             end
-%             if C < 0
-%                 C = 1e-15;
-%             end
                 
             tau = C/G;
             taueff = tau/(1+beta*L0);
@@ -589,8 +579,7 @@ classdef TES_ElectrThermModel
             tau_el = L/(RL+R0*(1+bI));
             
             if nargin < 3
-                M = 0;
-                
+                M = 0;                
             end
             
             switch obj.Noise_Models{obj.Selected_Noise_Models}
@@ -877,8 +866,8 @@ classdef TES_ElectrThermModel
             axis(ax,'tight');
             axes(ax);
             ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
-            rc = rectangle('Position', [obj.Noise_LowFreq(1) ax_frame(3) diff(obj.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255);
-            rc2 = rectangle('Position', [obj.Noise_HighFreq(1) ax_frame(3) diff(obj.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255);
+            rc = rectangle('Position', [obj.Noise_LowFreq(1) ax_frame(3) diff(obj.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255,'ButtonDownFcn',@rctgle);
+            rc2 = rectangle('Position', [obj.Noise_HighFreq(1) ax_frame(3) diff(obj.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255,'ButtonDownFcn',@rctgle);
             
             if abs(OP.Z0-OP.Zinf) < obj.Z0_Zinf_Thrs
                 set(get(findobj(ax,'type','axes'),'title'),'Color','r');

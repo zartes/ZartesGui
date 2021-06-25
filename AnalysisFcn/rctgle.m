@@ -20,6 +20,8 @@ end
 
 function ActionFcn(src,evnt)
 
+a = findobj('Tag','Analyzer');
+handles = guidata(a(1));
 str = get(src,'Label');
 
 Data = get(src,'UserData');
@@ -27,27 +29,38 @@ Data = get(src,'UserData');
 switch str
     case 'Low Freq Band'
         pos = get(Data,'Position');
+        
         prompt = {'Low Frequency band Onset','Low Frequency band Offset'};
         name = 'Low Frequency Band';
         numlines = 1;
-        defaultanswer = {num2str(pos(1)),num2str(pos(1)+pos(3))};
+        defaultanswer = {num2str(handles.Session{handles.TES_ID}.TES.ElectrThermalModel.Noise_LowFreq(1)),...
+            num2str(handles.Session{handles.TES_ID}.TES.ElectrThermalModel.Noise_LowFreq(2))};
  
         answer = inputdlg(prompt,name,numlines,defaultanswer);
-        lowfreq(1) = str2double(answer{1});
-        lowfreq(2) = str2double(answer{2});                
-        set(Data,'Position', [lowfreq(1) pos(2) diff(lowfreq) pos(4)]);
+        if ~isempty(answer)
+            lowfreq(1) = str2double(answer{1});
+            lowfreq(2) = str2double(answer{2});
+            set(Data,'Position', [lowfreq(1) pos(2) diff(lowfreq) pos(4)]);
+        else
+            return;
+        end
         
     case 'High Freq Band'        
         pos = get(Data,'Position');
         prompt = {'High Frequency band Onset','High Frequency band Offset'};
         name = 'High Frequency Band';
         numlines = 1;
-        defaultanswer = {num2str(pos(1)),num2str(pos(1)+pos(3))};
+        defaultanswer = {num2str(handles.Session{handles.TES_ID}.TES.ElectrThermalModel.Noise_HighFreq(1)),...
+            num2str(handles.Session{handles.TES_ID}.TES.ElectrThermalModel.Noise_HighFreq(2))};     
  
         answer = inputdlg(prompt,name,numlines,defaultanswer);
-        Highfreq(1) = str2double(answer{1});
-        Highfreq(2) = str2double(answer{2});                
-        set(Data,'Position', [Highfreq(1) pos(2) diff(Highfreq) pos(4)]);
+        if ~isempty(answer)
+            Highfreq(1) = str2double(answer{1});
+            Highfreq(2) = str2double(answer{2});
+            set(Data,'Position', [Highfreq(1) pos(2) diff(Highfreq) pos(4)]);
+        else
+            return;
+        end
     otherwise
         
 end
