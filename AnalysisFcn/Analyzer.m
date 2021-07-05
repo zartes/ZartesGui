@@ -512,11 +512,12 @@ switch src.Label
     case 'Circuit Noise'
         
         handles.Session{handles.TES_ID}.TES.circuitNoise = handles.Session{handles.TES_ID}.TES.circuitNoise.View(handles.Session{handles.TES_ID}.TES);
-        if isempty(handles.Session{handles.TES_ID}.TES.circuitNoise.Array)
-            handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.circuitNoise.Value;
-        else
-            handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.circuitNoise.Array;
-        end
+        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(handles.Session{handles.TES_ID}.TES.circuitNoise);
+%         if isempty(handles.Session{handles.TES_ID}.TES.circuitNoise.Array)
+%             handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.circuitNoise.Value;
+%         else
+%             handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.circuitNoise.Array;
+%         end
         
 %         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);

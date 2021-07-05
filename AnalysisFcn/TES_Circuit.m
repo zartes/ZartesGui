@@ -68,9 +68,11 @@ classdef TES_Circuit
         function obj = Update(obj,data)
             % Function to update the class values
             if isa(data,'TES_ElectricalNoise')
-                if ~isempty(data.Value )                    
-                    obj.Nsquid.Value = data.Value;
-                else
+                if data.Selected_Tipo == 1
+                    if ~isempty(data.Value)                    
+                        obj.Nsquid.Value = data.Value;
+                    end
+                elseif data.Selected_Tipo == 2                
                     obj.Nsquid.Value = data.Array;
                 end
             else            

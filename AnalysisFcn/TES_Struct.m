@@ -2259,7 +2259,8 @@ classdef TES_Struct
                 plot(h(2),xiv(indx1),b_eff(indx1),'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,'DisplayName',['IV - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK - ' RngLabel]);
                 plot(h(2),xz(indx2),Zb_eff(indx2),'LineStyle','-.','LineWidth',2,'Marker','.','MarkerSize',15,'DisplayName',['Z - ' num2str(Tbath(i)*1e3,'%1.1f') ' mK']);
                 xlim(h(2),[xiv_min 0.95]);
-%                 set(h(2),'YScale','log')
+                
+                set(h(2),'YScale','log')
 %                 ylim(h(2),[-5 5]);
                 
 %                 legend(h(2),'IV','Z');

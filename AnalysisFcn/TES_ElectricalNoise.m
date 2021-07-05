@@ -7,6 +7,7 @@ classdef TES_ElectricalNoise
         Selected_Tipo = 1;
         Value = 3e-12;
         Array = [];
+        NoFiltArray = [];
         Freq = logspace(1,5,321);
         File;  
         ModelBased = 0;
@@ -21,6 +22,7 @@ classdef TES_ElectricalNoise
             ElectNoise_Opt = h.UserData;
             if ~isempty(ElectNoise_Opt)
                 obj = obj.Update(ElectNoise_Opt);
+                TES.circuit = TES.circuit.Update(ElectNoise_Opt);
             end
         end
         
