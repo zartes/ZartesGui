@@ -3,7 +3,7 @@ classdef TES_ElectrThermModel
     %   This class contains options for Z(W) analysis
     
     properties              
-        Zw_Models = {'1TB';'2TB (Hanging)';'2TB (Intermediate)'} % One Single Thermal Block, Two Thermal Blocks
+        Zw_Models = {'1TB';'2TB (Hanging)';'2TB (Intermediate)';'2TB (Parallel)';'3TB_2H';'3TB_IH'} % One Single Thermal Block, Two Thermal Blocks
         Selected_Zw_Models = 1;
         Options = {'No restriction';'Fixing C'};
         Selected_Options = 1;
@@ -46,14 +46,18 @@ classdef TES_ElectrThermModel
         
         function obj = Constructor(obj)
             switch obj.Zw_Models{obj.Selected_Zw_Models}
-                case obj.Zw_Models{1}
+                case obj.Zw_Models{1} %'1TB'
                     obj.StrModelPar = {'Zinf';'Z0';'taueff'};          % 3 parameters
-                case obj.Zw_Models{2}
+                case obj.Zw_Models{2} %'2TB (Hanging)'
                     obj.StrModelPar = {'Zinf';'Z0';'taueff';'ca0';'tauA'};
-                case obj.Zw_Models{3}
+                case obj.Zw_Models{3} %'2TB (Intermediate)'
                     obj.StrModelPar = {'Zinf';'Z0';'taueff';'ca0';'tauA'};
-                case obj.Zw_Models{4}
-                    obj.StrModelPar = {'Zinf';'Z0';'taueff';'tau1';'tau2';'d1';'d2'};                    
+                case obj.Zw_Models{4} %'2TB (Parallel)'
+                    obj.StrModelPar = {'Zinf';'Z0';'taueff';'tau1';'tau2';'d1';'d2'};  
+                case obj.Zw_Models{5} %'3TB_2H'
+                    
+                case obj.Zw_Models{6} %'3TB_IH'
+                    
             end
         end
         
