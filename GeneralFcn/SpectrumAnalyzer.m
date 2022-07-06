@@ -15,7 +15,7 @@ classdef SpectrumAnalyzer
             % Function to generate the class with default values
             
             obj.PrimaryAddress = 11;
-            obj.BoardIndex = 1;
+            obj.BoardIndex = 0;
             obj.ID = 'HP3562A';
             obj.Config.SSine = {'AUTO 0';'SSIN';'LGSW';'RES 20P/DC';'SF 1Hz';'FRS 5Dec';...
                 'SWUP';'SRLV 100mV';'C2AC 0';'FRQR';'VTRM';'VHZ';'NYQT'};

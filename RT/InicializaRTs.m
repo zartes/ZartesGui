@@ -18,7 +18,7 @@ function [avs_Device] = InicializaRTs(Channel,Rango,Excitacion)
 
 
 if nargin < 1
-    msgbox('Input parameters: Channel, Rango, Excitacion must be provided','ZarTES v4.0');
+    msgbox('Input parameters: Channel, Rango, Excitacion must be provided','ZarTES v1.0');
     avs_Device = [];
 %     vi = [];
     return;
@@ -33,5 +33,6 @@ avs_Device = avs_Device.Initialize;
 avs_Device = avs_Device.ChangeRango(Rango);
 avs_Device = avs_Device.ChangeExcitacion(Excitacion);
 avs_Device = avs_Device.ChangeChannel(Channel);
+
 
 

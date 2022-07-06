@@ -218,7 +218,7 @@ Conf.Temps.File = S.Config.Temps.File.Text;
 
 Conf.FieldScan.On = str2double(S.Config.FieldScan.On.Text);
 Conf.FieldScan.Rn = str2double(S.Config.FieldScan.Rn.Text);
-Conf.FieldScan.BVvalue = str2double(strsplit(S.Config.FieldScan.BVvalues.Text,' '));
+Conf.FieldScan.BVvalues = str2double(strsplit(S.Config.FieldScan.BVvalues.Text,' '));
 
 Conf.BFieldIC.On = str2double(S.Config.BFieldIC.On.Text);
 Conf.BFieldIC.BVvalue = str2double(strsplit(S.Config.BFieldIC.BVvalues.Text,' '));
@@ -1677,7 +1677,7 @@ function DSA_TF_Zw_Conf_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 waitfor(Conf_Setup(hObject,handles.DSA_TF_Zw_Menu.Value,handles));
 handles.SetupTES = guidata(handles.SetupTES.SetupTES);
-DSA_TF_Zw_Menu_Callback(handles.DSA_TF_Zw_Menu,[],handles);
+% DSA_TF_Zw_Menu_Callback(handles.DSA_TF_Zw_Menu,[],handles);
 guidata(hObject,handles);
 
 % --- Executes on selection change in DSA_TF_Zw_Menu.

@@ -1,0 +1,12 @@
+
+Programa de medida de RT
+
+- Actualmente el AVS se inicializa para promediar 10 medidas cada vez que lee.
+- He cambiado el bucle de medida con el AVS
+- Ahora el usuario decide cuantos ciclos de medida de temperatura quiere realizar para obtener un dato del AVS.
+- Si el usuario decide usar un ciclo (el programa produce tantos datos de lectura del AVS (en función del average del AVS
+que por defecto en este programa es de 10 medidas) como le de tiempo antes de que la temperatura cambie (asumiendo que cambiará aunque sea muy poco).
+- Si el usuario decide usar más de un ciclo, el programa tomará para cada medida de temperatura todos los datos que pueda.
+- En ambas configuraciones se registran los valores promedio de R y T y sus std y se pintarán en gráficas con error en ambos ejes 
+(esto esta por validar, porque en la versión 2015 de matlab no esta implementado en la función errorbar)
+he utilizado la función herrorbar (horizontal errorbar) para solventarlo pero no estoy muy convencido de su uso (matlabcentral).

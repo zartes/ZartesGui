@@ -20,6 +20,7 @@ classdef SimpleClient < WebSocketClient
         
         function onTextMessage(obj,message)
             % This function simply displays the message received
+            save('Message','message');
             fprintf('Message received:\n%s\n',message);
         end
         

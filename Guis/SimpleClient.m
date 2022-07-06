@@ -40,3 +40,4 @@ classdef SimpleClient < WebSocketClient
         end
     end
 end
+

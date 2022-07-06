@@ -10,9 +10,9 @@ classdef BlueFors
         HeaterRead_url;
         HeaterNum = 4;
         Heater;
-        P = 0.0001;
-        I = 0.2;
-        D = 150;
+        P = 0.01;
+        I = 50;
+        D = 0;
         SetPt = 0;
     end    
     
@@ -26,31 +26,85 @@ classdef BlueFors
         end
         
         function Temp = ReadTemp(obj)
-            msg = webread(obj.Mixing_url);
-            while msg.channel_nr ~= obj.MixingChannel
+            try
                 msg = webread(obj.Mixing_url);
+                while msg.channel_nr ~= obj.MixingChannel
+                    msg = webread(obj.Mixing_url);
+                end
+                while ~strcmp(msg.status,'OK')
+                    msg = webread(obj.Mixing_url);
+                end
+                Temp = msg.temperature;
+            catch me
+                msg = webread(obj.Mixing_url);
+                while msg.channel_nr ~= obj.MixingChannel
+                    msg = webread(obj.Mixing_url);
+                end
+                while ~strcmp(msg.status,'OK')
+                    msg = webread(obj.Mixing_url);
+                end
+                Temp = msg.temperature;
             end
-            Temp = msg.temperature;
         end
         
         function Power = ReadPower(obj)
-            msg = webread(obj.HeaterRead_url);
-            Power = msg.data(4).power;
+            try
+                msg = webread(obj.HeaterRead_url);
+                while ~strcmp(msg.status,'OK')
+                    msg = webread(obj.HeaterRead_url);
+                end
+                Power = msg.data(4).power;
+            catch me
+                msg = webread(obj.HeaterRead_url);
+                while ~strcmp(msg.status,'OK')
+                    msg = webread(obj.HeaterRead_url);
+                end
+                Power = msg.data(4).power;
+            end
         end
         
         function MaxPower = ReadMaxPower(obj)
-            msg = webread(obj.HeaterRead_url);
-            MaxPower = msg.data(4).max_power;
+            try
+                msg = webread(obj.HeaterRead_url);
+                while ~strcmp(msg.status,'OK')
+                    msg = webread(obj.HeaterRead_url);
+                end
+                MaxPower = msg.data(4).max_power;
+            catch
+                msg = webread(obj.HeaterRead_url);
+                while ~strcmp(msg.status,'OK')
+                    msg = webread(obj.HeaterRead_url);
+                end
+                MaxPower = msg.data(4).max_power;
+            end
         end
         
         function SetPoint = ReadSetPoint(obj)
-            msg = webread(obj.HeaterRead_url);
-            SetPoint = msg.data(4).setpoint;
+            try
+                msg = webread(obj.HeaterRead_url);
+                while ~strcmp(msg.status,'OK')
+                    msg = webread(obj.HeaterRead_url);
+                end
+                SetPoint = msg.data(4).setpoint;
+            catch me
+                msg = webread(obj.HeaterRead_url);
+                while ~strcmp(msg.status,'OK')
+                    msg = webread(obj.HeaterRead_url);
+                end
+                SetPoint = msg.data(4).setpoint;
+            end
         end
         
         function PID_mode = ReadPIDStatus(obj)
-            msg = webread(obj.HeaterRead_url);
-            PID_mode = msg.data(4).pid_mode;
+            try
+                msg = webread(obj.HeaterRead_url);
+                while ~strcmp(msg.status,'OK')
+                    msg = webread(obj.HeaterRead_url);
+                end
+                PID_mode = msg.data(4).pid_mode;
+            catch me
+                disp(me);
+            end
         end
         
         function SetTemp(obj,T)

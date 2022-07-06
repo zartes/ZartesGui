@@ -59,64 +59,6 @@ set(handles.SetupTES,'Position',...
     [0.05 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');  % ,'Color',[0 120 180]/255
 
-
-
-try
-    % Connection to Labview program for controlling mix chamber temperature
-    
-    %     e = actxserver('LabVIEW.Application');
-    %     vipath = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\IGHSUBS.LLB\IGHFrontPanel.vi';
-    %     handles.vi_IGHFrontPanel = invoke(e,'GetVIReference',vipath);
-    %     vipath3 = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\KELVPNLS.LLB\KelvPromptForT.vi';
-    %     handles.vi_PromptForT = invoke(e,'GetVIReference',vipath3);
-    %     vipath5 = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\IGHSUBS.LLB\IGHChangeSettings.vi';
-    %     handles.vi_IGHChangeSettings = invoke(e,'GetVIReference',vipath5);
-    %
-    %     %     handles.vi.Run(1);
-    %     T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
-    
-    % Connection to BlueFors program for controlling mix chamber temperature
-    handles.BF = BlueFors;
-    handles.BF = handles.BF.Constructor;      
-    
-    % Pasar a modo manual del BlueFors
-    PID_mode = handles.BF.ReadPIDStatus;
-    if PID_mode
-        handles.BF.SetTempControl(0); %Manual
-    end
-    pause(1);
-    
-    T_MC = handles.BF.ReadTemp;
-    handles.MCTemp.String = num2str(T_MC);
-    
-    
-    
-    
-    Period = 15;
-    handles.timer = timer(...
-        'ExecutionMode', 'fixedRate', ...       % Run timer repeatedly
-        'Period', Period, ...                        % Initial period is 1 sec.
-        'TimerFcn', {@update_Temp_display},'UserData',handles,'Name','TEStimer');
-    
-    handles.timer_T = timer(...
-        'ExecutionMode', 'fixedRate', ...       % Run timer repeatedly
-        'Period', Period, ...                        % Initial period is 1 sec.
-        'TimerFcn', {@update_Temp_Color},'UserData',handles,'Name','T_TEStimer');
-    %     guidata(handles.timer,handles);
-    start(handles.timer);    
-    
-    Period = 5;
-    handles.Control_timer = timer(...
-        'ExecutionMode', 'fixedRate', ...       % Run timer repeatedly
-        'Period', Period, ...                        % Initial period is 1 sec.
-        'TimerFcn', {@Control_Temp},'UserData',handles,'Name','ControlT');
-    start(handles.Control_timer);  
-    
-catch
-    
-end
-
-
 % Set correct paths (addition)
 handles.CurrentPath = pwd;
 handles.MainDir = handles.CurrentPath(1:find(handles.CurrentPath == filesep, 1, 'last' ));
@@ -126,6 +68,56 @@ for i = 3:length(handles.d) % Los dos primeros son '.' y '..'
         addpath([handles.MainDir handles.d(i).name])
     end
 end
+
+%% Conexión con el BlueFors
+% DEVICE_IP = 'localhost';
+% TIMEOUT = 10;
+handles.BF = BlueFors;
+handles.BF = handles.BF.Constructor;
+
+
+% Connection to Labview program for controlling mix chamber temperature
+% try
+%     e = actxserver('LabVIEW.Application');
+%     vipath = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\IGHSUBS.LLB\IGHFrontPanel.vi';
+%     handles.vi_IGHFrontPanel = invoke(e,'GetVIReference',vipath);
+%     vipath3 = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\KELVPNLS.LLB\KelvPromptForT.vi';
+%     handles.vi_PromptForT = invoke(e,'GetVIReference',vipath3);
+%     vipath5 = 'C:\Users\Athena\Desktop\Software\2014_Oxford TES\IGHSUBS.LLB\IGHChangeSettings.vi';
+%     handles.vi_IGHChangeSettings = invoke(e,'GetVIReference',vipath5);
+
+
+
+try
+    %     handles.vi.Run(1);
+    % Lectura de temperatura de la mixing chamber con BlueFors
+    T_MC = handles.BF.ReadTemp;
+    
+    handles.MCTemp.String = num2str(T_MC);
+%     T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+%     handles.MCTemp.String = num2str(T_MC);
+    
+    Period = 15;
+    handles.timer = timer(...
+        'ExecutionMode', 'fixedRate', ...       % Run timer repeatedly
+        'Period', Period, ...                        % Initial period is 1 sec.
+        'TimerFcn', {@update_Temp_display},'UserData',handles,'Name','TEStimer');
+    % Actualizados para BlueFors
+    
+    handles.timer_T = timer(...
+        'ExecutionMode', 'fixedRate', ...       % Run timer repeatedly
+        'Period', Period, ...                        % Initial period is 1 sec.
+        'TimerFcn', {@update_Temp_Color},'UserData',handles,'Name','T_TEStimer');
+    % Actualizados para BlueFors
+    
+    start(handles.timer);        
+    
+catch
+    
+end
+
+
+
 
 % Initializacion of active or disable elements
 % Green color - Active
@@ -147,8 +139,8 @@ handles.FileDir = [];
 % Estimation of Current Generator Source Offset (I-V curves)
 handles.DataFitN = [];
 handles.DataFitS = [];
-handles.OffsetX = [];
-handles.OffsetY = [];
+handles.OffsetX = 0;
+handles.OffsetY = 0;
 
 handles.Datos = [];
 handles.DSA_TF_Data = [];
@@ -283,6 +275,8 @@ set(handles.SetupTES,'Visible','on');
 handles.VersionStr = 'ZarTES v1.0';
 waitfor(warndlg('Please, check the following circuit values',handles.VersionStr));
 Obj_Properties(handles.Menu_Circuit);
+
+waitfor(warndlg('Disable all channels and heaters except channel 6 and heaters 3 and 4 from Blueforce Controllers web ',handles.VersionStr));
 guidata(hObject,handles);
 
 
@@ -791,10 +785,35 @@ else
         handles.Multi_Read.Value = 1;
         Multi_Read_Callback(handles.Multi_Read,[],handles);
         
+        
+        % Vamos a meter campo para forzar el estado normal
+        Valor_max = str2double(get(handles.CurSource_I,'String')); % Valor 5mA
+        MultVal = get(handles.CurSource_I_Units,'Value');
+        Out_old = handles.CurSource_OnOff.Value;
+        
+        set(handles.CurSource_I_Units,'Value',1); %Unidades A
+        set(handles.CurSource_I,'String','0.005'); % Valor 5mA
+        
+        handles.CurSource_Set_I.Value = 1;
+        CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+        handles.CurSource_OnOff.Value = 1;
+        CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+        pause(1);
+        set(handles.CurSource_I_Units,'Value',MultVal); %Unidades A
+        set(handles.CurSource_I,'String',num2str(Valor_max)); % Valor 5mA
+        handles.CurSource_Set_I.Value = 1;
+        CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+        handles.CurSource_OnOff.Value = Out_old;
+        CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+        %
+        
+        
         hObject.UserData = [];
         handles.Actions_Str.String = 'Electronic Magnicon: TES in Normal State';
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        
         
         pause(0.6);
         hObject.BackgroundColor = handles.Disable_Color;
@@ -820,11 +839,20 @@ else
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
-        handles.Squid.ResetClossedLoop;
-        handles.Actions_Str.String = 'Electronic Magnicon: Closed Loop Reset';
-        Actions_Str_Callback(handles.Actions_Str,[],handles);
-        handles.Multi_Read.Value = 1;
-        Multi_Read_Callback(handles.Multi_Read,[],handles);
+        CheckValue = 10;
+        while CheckValue > 5
+            
+            handles.Squid.ResetClossedLoop;
+            handles.Actions_Str.String = 'Electronic Magnicon: Closed Loop Reset';
+            Actions_Str_Callback(handles.Actions_Str,[],handles);
+            handles.Multi_Read.Value = 1;
+            Multi_Read_Callback(handles.Multi_Read,[],handles);
+            
+            %Checking Reset Loop
+            CheckValue = abs(str2double(get(handles.Multi_Value,'String')));
+        end
+            
+            
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         pause(0.6);
@@ -1476,129 +1504,133 @@ else
             
             % I-V correction by forzing zero crossing
             try
-            j = size(Data,2);
-            switch j
-                case 2
-                    IVmeasure.ibias = Data(:,2)*1e-6;
-                    if Data(1,1) == 0
-                        IVmeasure.vout = Data(:,4)-Data(1,4);
-                    else
-                        IVmeasure.vout = Data(:,4)-Data(end,4);
-                    end
-                case 4
-                    IVmeasure.ibias = Data(:,2)*1e-6;
-                    if Data(1,2) == 0
-                        IVmeasure.vout = Data(:,4)-Data(1,4);
-                    else
-                        IVmeasure.vout = Data(:,4)-Data(end,4);
-                    end
-            end
-            val = polyfit(IVmeasure.ibias(1:3),IVmeasure.vout(1:3),1); % First points avoided
-            mN = val(1);
-            val = polyfit(IVmeasure.ibias(end-2:end),IVmeasure.vout(end-2:end),1);
-            mS = val(1);
-            
-            waitfor(msgbox(['IV curve estimated parameters: mN = '...
-                num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)'],hangles.VersionStr));
-            
-            ButtonName = questdlg(['Do you want to update mN value extracted from IV curve: mN = ' num2str(mN)], ...
-                handles.VersionStr, ...
-                'Yes', 'No', 'Yes');
-            switch ButtonName
-                case 'Yes'
-                    handles.Circuit.mN.Value = mN;
-%                     handles.Circuit.Rn.Value = Rn;
-            end
-            ButtonName = questdlg(['Do you want to update mS value extracted from IV curve: mS = ' num2str(mS)], ...
-                handles.VersionStr, ...
-                'Yes', 'No', 'Yes');
-            switch ButtonName
-                case 'Yes'
-                    handles.Circuit.mS.Value = mS;
-%                     handles.Circuit.Rpar.Value = Rpar;
-            end
-            
-            ButtonName = questdlg('Do you want to update Rn and Rpar value extracted from IV curve?', ...
-                handles.VersionStr, ...
-                'Yes', 'No', 'Yes');
-            switch ButtonName
-                case 'Yes'
-                    Rpar = (handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mS*handles.Circuit.invMin.Value)-1)*handles.Circuit.Rsh.Value;
-                    Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-Rpar);
-                    handles.Circuit.Rpar.Value = Rpar;
-                    handles.Circuit.Rn.Value = Rn;
-%                     handles.Circuit.Rpar.Value = Rpar;
-            end                                              
-            handles.Menu_Circuit.UserData = handles.Circuit;
-            Obj_Properties(handles.Menu_Circuit);
-            TESDATA.circuit = TES_Circuit;
-            TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
-            IVCurveSet = TES_IVCurveSet;
-            IVCurveSet = IVCurveSet.Update(IVmeasure);
-            TESDATA.TESThermal.n.Value = [];
-            TESDATA.TESParam.Rn.Value = Rn;
-            TESDATA.TESParam.Rpar.Value = Rpar;
-            
-            handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
-            handles.IVset.Tbath = handles.BF.ReadTemp('M/C');
-%             handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
-            
-            set([handles.SQ_SetRnBias handles.SQ_Rn],'Enable','on')
-            
-%             ButtonName = questdlg(['Do you want to update Circuit values from the ones extracted from IV curve: mN = '...
-%                 num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)], ...
-%                 handles.VersionStr, ...
-%                 'Yes', 'No', 'Yes');
-%             switch ButtonName
-%                 case 'Yes'
-%                     handles.Circuit.mN.Value = mN;
-%                     handles.Circuit.mS.Value = mS;
-%                     handles.Circuit.Rpar.Value = Rpar;
-%                     handles.Circuit.Rn.Value = Rn;
-%                     handles.Menu_Circuit.UserData = handles.Circuit;
-%                     Obj_Properties(handles.Menu_Circuit);
-%                     TESDATA.circuit = TES_Circuit;
-%                     TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
-%                     IVCurveSet = TES_IVCurveSet;
-%                     IVCurveSet = IVCurveSet.Update(IVmeasure);
-%                     TESDATA.TESThermal.n.Value = [];
-%                     TESDATA.TESParam.Rn.Value = Rn;
-%                     TESDATA.TESParam.Rpar.Value = Rpar;
-%                     
-%                     handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
-%                     handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
-%                     
-%                     
-%             end % switch                        
-            
+                j = size(Data,2);
+                switch j
+                    case 2
+                        IVmeasure.ibias = Data(:,2)*1e-6;
+                        if Data(1,1) == 0
+                            IVmeasure.vout = Data(:,4)-Data(1,4);
+                        else
+                            IVmeasure.vout = Data(:,4)-Data(end,4);
+                        end
+                    case 4
+                        IVmeasure.ibias = Data(:,2)*1e-6;
+                        if Data(1,2) == 0
+                            IVmeasure.vout = Data(:,4)-Data(1,4);
+                        else
+                            IVmeasure.vout = Data(:,4)-Data(end,4);
+                        end
+                end
+                val = polyfit(IVmeasure.ibias(1:3),IVmeasure.vout(1:3),1); % First points avoided
+                mN = val(1);
+                val = polyfit(IVmeasure.ibias(end-2:end),IVmeasure.vout(end-2:end),1);
+                mS = val(1);
+                
+                %             waitfor(msgbox(['IV curve estimated parameters: mN = '...
+                %                 num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)'],handles.VersionStr));
+                %
+                ButtonName = questdlg(['Do you want to update mN value extracted from IV curve: mN = ' num2str(mN)], ...
+                    handles.VersionStr, ...
+                    'Yes', 'No', 'Yes');
+                switch ButtonName
+                    case 'Yes'
+                        handles.Circuit.mN.Value = mN;
+                        %                     handles.Circuit.Rn.Value = Rn;
+                end
+                ButtonName = questdlg(['Do you want to update mS value extracted from IV curve: mS = ' num2str(mS)], ...
+                    handles.VersionStr, ...
+                    'Yes', 'No', 'Yes');
+                switch ButtonName
+                    case 'Yes'
+                        handles.Circuit.mS.Value = mS;
+                        %                     handles.Circuit.Rpar.Value = Rpar;
+                end
+                
+                ButtonName = questdlg('Do you want to update Rn and Rpar value extracted from IV curve?', ...
+                    handles.VersionStr, ...
+                    'Yes', 'No', 'Yes');
+                switch ButtonName
+                    case 'Yes'
+                        Rpar = (handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mS*handles.Circuit.invMin.Value)-1)*handles.Circuit.Rsh.Value;
+                        Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/(mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-Rpar);
+                        handles.Circuit.Rpar.Value = Rpar;
+                        handles.Circuit.Rn.Value = Rn;
+                        TESDATA.TESParam.Rn.Value = Rn;
+                        TESDATA.TESParam.Rpar.Value = Rpar;
+                        %                     handles.Circuit.Rpar.Value = Rpar;
+                    otherwise
+                        TESDATA.TESParam.Rn.Value = handles.Circuit.Rn.Value;
+                        TESDATA.TESParam.Rpar.Value = handles.Circuit.Rpar.Value;
+                end
+                handles.Menu_Circuit.UserData = handles.Circuit;
+                Obj_Properties(handles.Menu_Circuit);
+                TESDATA.circuit = TES_Circuit;
+                TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
+                IVCurveSet = TES_IVCurveSet;
+                IVCurveSet = IVCurveSet.Update(IVmeasure);
+                TESDATA.TESThermal.n.Value = [];
+                
+                
+                handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
+                handles.IVset.Tbath = BlueForsT(handles);
+%                 handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+                
+                set([handles.SQ_SetRnBias handles.SQ_Rn],'Enable','on')
+                
+                %             ButtonName = questdlg(['Do you want to update Circuit values from the ones extracted from IV curve: mN = '...
+                %                 num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)], ...
+                %                 handles.VersionStr, ...
+                %                 'Yes', 'No', 'Yes');
+                %             switch ButtonName
+                %                 case 'Yes'
+                %                     handles.Circuit.mN.Value = mN;
+                %                     handles.Circuit.mS.Value = mS;
+                %                     handles.Circuit.Rpar.Value = Rpar;
+                %                     handles.Circuit.Rn.Value = Rn;
+                %                     handles.Menu_Circuit.UserData = handles.Circuit;
+                %                     Obj_Properties(handles.Menu_Circuit);
+                %                     TESDATA.circuit = TES_Circuit;
+                %                     TESDATA.circuit = TESDATA.circuit.Update(handles.Circuit);
+                %                     IVCurveSet = TES_IVCurveSet;
+                %                     IVCurveSet = IVCurveSet.Update(IVmeasure);
+                %                     TESDATA.TESThermal.n.Value = [];
+                %                     TESDATA.TESParam.Rn.Value = Rn;
+                %                     TESDATA.TESParam.Rpar.Value = Rpar;
+                %
+                %                     handles.IVset = IVCurveSet.GetIVTES(TESDATA.circuit,TESDATA.TESParam,TESDATA.TESThermal);
+                %                     handles.IVset.Tbath = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+                %
+                %
+                %             end % switch
+                
+                
+                ButtonName = questdlg('Do you want to store the IV-Curve for further analysis?',handles.VersionStr,...
+                    'Yes','No','Yes');
+                switch ButtonName
+                    case 'Yes'
+                        TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
+                        if mode(sign(Ibias{1})) < 0
+                            filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_n_matlab'];
+                        else
+                            filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_p_matlab'];
+                        end
                         
-            ButtonName = questdlg('Do you want to store the IV-Curve for further analysis?',handles.VersionStr,...
-                'Yes','No','Yes');
-            switch ButtonName
-                case 'Yes'
-                    TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
-                    if mode(sign(Ibias{1})) < 0
-                        filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_n_matlab'];
-                    else
-                        filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_p_matlab'];
-                    end
-                    
-                    [filename, pathname] = uiputfile( ...
-                        {[filename '.txt']}, ...
-                        'Save as');
-                    if ~isequal(pathname,0)
-                        Data(:,4) = Data(:,4)-Data(end,4);
-                        save([pathname filename],'Data','-ascii')
-                    end
-                    
-                otherwise
-%                     if isempty(handles.IVset)
-%                         handles.SQ_Rn.Enable = 'off';
-%                     end
-                    break;
-            end
-            
-            
+                        [filename, pathname] = uiputfile( ...
+                            {[filename '.txt']}, ...
+                            'Save as');
+                        if ~isequal(pathname,0)
+                            Data(:,4) = Data(:,4)-Data(end,4);
+                            save([pathname filename],'Data','-ascii')
+                        end
+                        
+                    otherwise
+                        %                     if isempty(handles.IVset)
+                        %                         handles.SQ_Rn.Enable = 'off';
+                        %                     end
+                        break;
+                end
+                
+                
             end
             
             guidata(hObject,handles);
@@ -4233,15 +4265,19 @@ end
 function update_Temp_display(src,evnt)
 
 handles = src.UserData;
+% Actualizado a lectura de temperatura con el BlueFors
 T_MC = handles.BF.ReadTemp;
-% T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+
 handles.MCTemp.String = num2str(T_MC);
+% T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
+% handles.MCTemp.String = num2str(T_MC);
 
 
 function update_Temp_Color(src,evnt)
 
 handles = src.UserData;
-T_MC = handles.BF.ReadTemp;
+
+T_MC = str2double(handles.MCTemp.String);
 % T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
 Set_Pt = str2double(handles.SetPt.String);
 
@@ -4254,34 +4290,6 @@ try
 catch
     handles.Temp_Color.BackgroundColor = RGB(1,:);
 end
-
-
-function Control_Temp(src,evnt)
-
-handles = src.UserData;
-
-T_MC = handles.BF.ReadTemp;
-SetTemp = handles.BF.ReadSetPoint;
-
-Error = zeros(2,1);
-% La potencia de inicio se actualiza con la que tiene el heater al
-% comienzo
-Power = handles.BF.ReadPower;
-sumError = Power*I/P;
-
-% calculo de la potencia a suministrar
-Error = [SetTemp-T_MC; Error(1:end-1)];
-sumError = sumError + Error(1);
-SetPower = max(P*(Error(1) + (1/I)*sumError + D*diff(Error([2 1]))),0);
-
-handles.BF.SetPower(SetPower);
-
-
-
-
-
-
-
 
 
 function SetPt_Callback(hObject, eventdata, handles)
@@ -4307,7 +4315,8 @@ else
         end
     end
 end
-handles.BF.SetTemp(SetPt);
+
+% Instrucciones de control de T con Oxford Device
 % handles.vi_IGHFrontPanel.FPState = 4;
 % pause(0.1)
 % handles.vi_IGHFrontPanel.FPState = 1;
@@ -4328,9 +4337,15 @@ handles.BF.SetTemp(SetPt);
 % while strcmp(handles.vi_PromptForT.FPState,'eClosed')
 %     pause(0.1);
 % end
-% stop(handles.timer_T);
-% start(handles.timer_T);
-% waitfor(msgbox('Temperature was sucessfully set',handles.VersionStr));
+
+% Instrucciones de control de T con BlueFors
+% handles.Heater
+% SetPt Must be in mK
+handles.BF.SetTemp(SetPt);
+
+stop(handles.timer_T);
+start(handles.timer_T);
+waitfor(msgbox('Temperature was sucessfully set',handles.VersionStr));
 
 guidata(hObject,handles);
 
@@ -4403,3 +4418,12 @@ function SQ_PhiBStr_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+% function Temp = BlueForsT(handles)
+% % Lectura de temperatura de la mixing chamber con BlueFors
+%     msg = webread(handles.Temp_url);
+%     while msg.channel_nr ~= 6
+%         msg = webread(handles.Temp_url);
+%     end
+%     Temp = msg.temperature;
+

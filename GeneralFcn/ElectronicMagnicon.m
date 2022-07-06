@@ -121,9 +121,11 @@ classdef ElectronicMagnicon
             
             out = 'FAIL';
             while strcmp(out,'FAIL')
-                mag_setAMP_CH(obj);
-                out = mag_setFLL_CH(obj);
-                pause(0.2);
+                for i = 1:3
+                    mag_setAMP_CH(obj);
+                    out = mag_setFLL_CH(obj);
+                    pause(0.2);
+                end                
             end
         end
         

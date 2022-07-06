@@ -2,6 +2,12 @@ function Start_Automatic_Acquisition(handles, SetupTES, Conf)
 
 % Falta añadir los parametros de delay heredados del SetupTESControlers. 
 
+% SetupTES.AutoPwr = timer(...
+%     'ExecutionMode', 'fixedRate', ...       % Run timer repeatedly
+%     'Period', 3, ...                        % Initial period is 1 sec.
+%     'TimerFcn', {@auto_power},'UserData',{handles},'Name','TEStimer');
+
+
 handles.Enfriada_dir = uigetdir(pwd, 'Select a path for storing acquisition data');
 if ~ischar(handles.Enfriada_dir)
     return;
@@ -174,7 +180,7 @@ NNoiseHP = Conf.TF.Noise.DSA.On*(length(Conf.TF.Zw.rpp)+length(Conf.TF.Zw.rpn));
 NNoisePXI = Conf.TF.Noise.PXI.On*(length(Conf.TF.Zw.rpp)+length(Conf.TF.Zw.rpn));
 TimeToFinish = TimeToFinish + ((1.5*60)*(NNoiseHP)+15*NNoisePXI)*NNoises;
 
-msgbox(['Expected time to finish: ' datestr(datenum(datestr(TimeAtStart))+seconds(TimeToFinish))],SetupTES.VersionStr);
+waitfor(msgbox(['Expected time to finish: ' datestr(datenum(datestr(TimeAtStart))+seconds(TimeToFinish))],SetupTES.VersionStr));
 
 for NSummary = 1:size(Conf.Summary,1)          
     clear IVsetP IVsetN;
@@ -287,7 +293,7 @@ for NSummary = 1:size(Conf.Summary,1)
         if ~isempty(Conf.TF.Zw.rpp)
             [~,IZvalues.P] = BuildIbiasFromRp(IVsetP,Conf.TF.Zw.rpp);                        
 %             IZvalues.P(IZvalues.P > 500) = 500;
-            IZvalues.P = IZvalues.P - SetupTES.OffsetX*1e6;
+            IZvalues.P = IZvalues.P + SetupTES.OffsetX*1e6;
             clear rpp;
             rpp = Conf.TF.Zw.rpp;
             rpp(IZvalues.P < 0) = [];
@@ -311,7 +317,7 @@ for NSummary = 1:size(Conf.Summary,1)
         
         if ~isempty(Conf.TF.Zw.rpn)
             [~,IZvalues.N] = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
-            IZvalues.N = IZvalues.N - SetupTES.OffsetX*1e6;
+            IZvalues.N = IZvalues.N + SetupTES.OffsetX*1e6;
 %             IZvalues.N(IZvalues.N < -500) = -500;
             clear rpn;
             rpn = Conf.TF.Zw.rpn;
@@ -384,9 +390,8 @@ end
 % Ponemos la temperatura a la que dejamos la mixing
 
 FinalT = str2double(handles.FinalMCT.String);
-
-SetupTES.BF.SetTemp(FinalT);
-
+AjustarTemperatura(FinalT,Conf,SetupTES,handles)
+% Instrucciones para el control de temperatura con Oxford
 % SetupTES.vi_IGHFrontPanel.FPState = 4;
 % pause(0.1)
 % SetupTES.vi_IGHFrontPanel.FPState = 1;
@@ -407,14 +412,28 @@ SetupTES.BF.SetTemp(FinalT);
 % while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
 %     pause(0.1);
 % end
-% stop(SetupTES.timer_T);
-% start(SetupTES.timer_T);
+
+% Instrucciones para el control de temperatura con BlueFors
+SetupTES.BF.SetTemp(FinalT);
+
+stop(SetupTES.timer_T);
+start(SetupTES.timer_T);
 msgbox('Acquisition complete!',SetupTES.VersionStr)
 
 
 function AjustarTemperatura(Temp,Conf,SetupTES,handles)
 
-SetupTES.BF.SetTemp(Temp);
+SetupTES.BF = BlueFors;
+SetupTES.BF = SetupTES.BF.Constructor;
+% stop(SetupTES.AutoPwr);
+stop(SetupTES.timer_T);
+start(SetupTES.timer_T);
+
+% set(SetupTES.AutoPwr,'UserData',{Temp,SetupTES,[0 0]});
+% stop(SetupTES.AutoPwr);
+% start(SetupTES.AutoPwr);
+
+% Instrucciones para control de Temperatura Oxford
 % SetupTES.vi_IGHFrontPanel.FPState = 4;
 % pause(0.1)
 % SetupTES.vi_IGHFrontPanel.FPState = 1;
@@ -435,30 +454,64 @@ SetupTES.BF.SetTemp(Temp);
 % while strcmp(SetupTES.vi_PromptForT.FPState,'eClosed')
 %     pause(0.1);
 % end
-% stop(SetupTES.timer_T);
-% start(SetupTES.timer_T);
+% SetupTES.BF = BlueFors;
+% SetupTES.BF = SetupTES.BF.Constructor;
+% SetupTES.BF.SetMaxPower(1e-3);
+% MaxPower = SetupTES.BF.ReadMaxPower;
+
+% Instrucciones para control de temperatura con BlueFors
+% SetupTES.BF.SetTemp(Temp);
+% % Pasar a modo manual del BlueFors
+% PID_mode = SetupTES.BF.ReadPIDStatus;
+% if PID_mode
+%     SetupTES.BF.SetTempControl(0); %Manual
+% end
+% ErrorPID = zeros(2,1);
+% % La potencia de inicio se actualiza con la que tiene el heater al
+% % comienzo
+% SetupTES.BF = BlueFors;
+% SetupTES.BF = SetupTES.BF.Constructor;
+
+% Power = SetupTES.BF.ReadPower;
+% sumError = Power*SetupTES.BF.I/SetupTES.BF.P;
+% SetupTES.BF.SetTempControl(0);
+    
+        
+        
+
 
 set(SetupTES.SetPt,'String',num2str(Temp));
+% Actualizamos el valor de la temperatura de referencia en el BF
+SetupTES.BF.SetTemp(Temp);
 
 RGB = [linspace(120,255,100)' sort(linspace(50,170,100),'descend')' 50*ones(100,1)]./255;
-tic;
+% tic;
+
 h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
-t  = toc;
-tfin = 120;
-while tfin-t > 0
-    if ishandle(h)
-        mins = floor((tfin-t)/60);
-        secs = ((tfin-t)/60-floor((tfin-t)/60))*60;
-        if mins ~= 0
-            waitbar(t/tfin,h,[num2str(mins,'%1.0f') ' min ' num2str(secs,'%1.0f') ' s remaining for safety']);
-        else
-            waitbar(t/tfin,h,[num2str(secs,'%1.0f') ' s remaining for safety']);
-        end
-    end
-    pause(0.5);
-    t  = toc;
-end
-Np = 39;
+pause(0.1);
+% t  = toc;
+
+% while SetupTES.BF.ReadSetPoint-SetupTES.BF.ReadTemp < 50e-6
+%      
+% end
+
+
+
+% tfin = 120;
+% while tfin-t > 0
+%     if ishandle(h)
+%         mins = floor((tfin-t)/60);
+%         secs = ((tfin-t)/60-floor((tfin-t)/60))*60;
+%         if mins ~= 0
+%             waitbar(t/tfin,h,[num2str(mins,'%1.0f') ' min ' num2str(secs,'%1.0f') ' s remaining for safety']);
+%         else
+%             waitbar(t/tfin,h,[num2str(secs,'%1.0f') ' s remaining for safety']);
+%         end
+%     end
+%     pause(0.5);
+%     t  = toc;
+% end
+Np = 50;
 Error = nan(Np,1);
 c = true;
 j = 1;
@@ -466,67 +519,93 @@ while c
     T_MC = SetupTES.BF.ReadTemp;
 %     T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
     Set_Pt = str2double(SetupTES.SetPt.String);
-    
+%     SetupTES.BF.SetTemp(Set_Pt);
     %% Gestion del error de temperatura
     Error(j) = abs(T_MC-Set_Pt);
     SetupTES.Error_Measured.String = Error(j);
-    disp(Error);
+%     disp(Error);
     try
         SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
     catch
         SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
     end
-    if (mean(Error)) < 0.00015 && j > Np  % Error es 0.0001 K
-        c = false;
-    else
-        if mean(Error) < 0.00015 % Cuando la temperatura alcanza un valor con un error relativo menor al 0.2%
-            %             h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
-            pause(1);
-            tfin = 300;
-            tic;
-            waitbar(0/tfin,h,'5 mins remaining for safety');
-            t  = toc;
-            while tfin-t > 0
-                T_MC = SetupTES.BF.ReadTemp;
-%                 T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
-                Set_Pt = str2double(SetupTES.SetPt.String);
-                
-                %% Gestion del error de temperatura
-                Error(j) =abs( T_MC-Set_Pt);
-%                 disp(Error);
-                SetupTES.Error_Measured.String = Error(j);
-                try
-                    SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
-                catch
-                    SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
-                end
-                if mean(Error) < 0.0001
-                    if ishandle(h)
-                        close(h);
-                    end
-                    break;
-                end
-                if ishandle(h)
-                    mins = floor((tfin-t)/60);
-                    secs = ((tfin-t)/60-floor((tfin-t)/60))*60;
-                    if mins ~= 0
-                        waitbar(t/tfin,h,[num2str(mins,'%1.0f') ' min ' num2str(secs,'%1.0f') ' s remaining for safety']);
-                    else
-                        waitbar(t/tfin,h,[num2str(secs,'%1.0f') ' s remaining for safety']);
-                    end
-                end
-                %                 pause(60*5);
-                pause(0.5);
-                t  = toc;
-            end
-            c = false;
+    while nanmean(Error) > 0.00005    % Error es 0.0001 K
+%         nanmean(Error);
+        T_MC = SetupTES.BF.ReadTemp;
+%         ErrorPID = [Set_Pt-T_MC; ErrorPID(1:end-1)];
+%         sumError = sumError + ErrorPID(1);
+%         SetPower = min(max(abs(SetupTES.BF.P*(ErrorPID(1) +...
+%         (1/SetupTES.BF.I)*sumError +...
+%         SetupTES.BF.D*diff(ErrorPID([2 1])))),0),SetupTES.BF.ReadMaxPower);
+%         SetupTES.BF.SetPower(SetPower);
+        pause(1)
+        j = max(mod(j+1,Np+1),1);
+        if ishandle(h)
+            waitbar(j/Np+1,h,['SetPt: ' num2str(Set_Pt) ' - M/C: ' num2str(T_MC) ' ; Relative Error(%): ' num2str(mean(Error)*100)]);
         end
-        pause(0.5);
+        Error(j) =abs(T_MC-Set_Pt);
     end
-    j = max(mod(j+1,20),1);
-    if ishandle(h)
-        waitbar(j/20,h,['SetPt: ' num2str(Set_Pt) ' - M/C: ' num2str(T_MC)]);
-    end
+    c = false;
+%     while (mean(Error) < 0.0005 && j > Np) % Cuando la temperatura alcanza un valor con un error relativo menor al 0.2%
+%             %             h = waitbar(0,'Setting Mixing Chamber Temperature','WindowStyle','Modal','Name',SetupTES.VersionStr);
+%             ErrorPID = [SetupTES.BF.ReadSetPoint-SetupTES.BF.ReadTemp; ErrorPID(1:end-1)];
+%                 sumError = sumError + ErrorPID(1);
+%                 SetPower = min(max(abs(SetupTES.BF.P*(ErrorPID(1) +...
+%                     (1/SetupTES.BF.I)*sumError +...
+%                     SetupTES.BF.D*diff(ErrorPID([2 1])))),0),SetupTES.BF.ReadMaxPower);
+%                 SetupTES.BF.SetPower(SetPower);
+%                 pause(5);
+%                 
+%                 %% Gestion del error de temperatura
+%                 Error(j) =abs(T_MC-Set_Pt);
+%                 SetupTES.Error_Measured.String = Error(j);
+%                 try
+%                     SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
+%                 catch
+%                     SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
+%                 end
+%                 j = max(mod(j+1,Np+1),1);
+%                 if ishandle(h)
+%                     waitbar(j/Np+1,h,['SetPt: ' num2str(Set_Pt) ' - M/C: ' num2str(T_MC) ' ; Relative Error(%): ' num2str(mean(Error)*100)]);
+%                 end
+%                 
+%     end
+%     c = false;
+    
+%             tfin = 300;
+%             tic;
+%             waitbar(0/tfin,h,'5 mins remaining for safety');
+%             t  = toc;
+%             while tfin-t > 0
+%                 T_MC = SetupTES.BF.ReadTemp;
+% %                 T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
+%                 Set_Pt = str2double(SetupTES.SetPt.String);
+%                 
+%                 
+% %                 disp(Error);
+%                 
+%                 
+%                 
+%                 
+%                 
+%                 if ishandle(h)
+%                     mins = floor((tfin-t)/60);
+%                     secs = ((tfin-t)/60-floor((tfin-t)/60))*60;
+%                     if mins ~= 0
+%                         waitbar(t/tfin,h,[num2str(mins,'%1.0f') ' min ' num2str(secs,'%1.0f') ' s remaining for safety']);
+%                     else
+%                         waitbar(t/tfin,h,[num2str(secs,'%1.0f') ' s remaining for safety']);
+%                     end
+%                 end
+%                 %                 pause(60*5);
+%                 pause(0.5);
+%                 t  = toc;
+%             end
+%             c = false;
+%         end
+%         pause(0.5);
+%     end
+    
     pause(0.2);
 end
 pause(0.2);
@@ -747,15 +826,15 @@ SetupTEScontrolers('Grid_Plot_Callback',SetupTES.Grid_Plot,[],guidata(SetupTES.G
 if Conf.IVcurves.Manual.On
     Ibvalues = Conf.IVcurves.Manual.Values;  % Ibvalues.p y Ibvalues.n
 elseif Conf.IVcurves.SmartRange.On
-    Ibvalues.p = 800;
-    Ibvalues.n = -800;
+    Ibvalues.p = 500;
+    Ibvalues.n = -500;
     
 end
 
 ThresIbias = 0.1; % la curva de IV llegará en caso positivo a -0.1 uA
 
 IB = 1;
-RepMax = 3;
+RepMax = 10;
 RepIt = 1;
 while IB < 3 % Positive 1, Negative 2
     
@@ -865,9 +944,9 @@ while IB < 3 % Positive 1, Negative 2
                 
                 if abs(slope_curr - nanmean(slope)) > 20*abs(nanstd(slope))
                     if slope_curr < 0
-                        Res = 1;
+                        Res = 3;
                     else
-                        Res = max(Res_Orig*0.5,1);
+                        Res = max(Res_Orig*0.5,3);
                     end
                 else
                     Res = Res_Orig;
@@ -940,16 +1019,14 @@ while IB < 3 % Positive 1, Negative 2
     IVmeasure.ibias = C;
     IVmeasure.vout = IVmeasure.vout(IA);
     % Busqueda de saltos de Squid para repetir la curva I-V
-    pk = findpeaks(abs(IVmeasure.vout./IVmeasure.ibias),'Threshold',0.2);
+    pk = findpeaks(abs(diff(IVmeasure.vout))/max(abs(diff(IVmeasure.vout))),'Threshold',0.3);
+%     pk = findpeaks(abs(diff(IVmeasure.vout)./diff(IVmeasure.ibias)),'Threshold',10000);
     if length(pk) > 1
         RepIt = RepIt+1;
         % Se repite como máximo 3 veces
         if RepIt < RepMax
             continue;
         end
-    else
-        IB = IB+1;
-        RepIt = 1;
     end
     file = strcat(num2str(Temp*1e3,'%1.1f'),'mK','_Rf',num2str(SetupTES.Circuit.Rf.Value*1e-3),'K_',dire,'_',pol,'_matlab.txt');
     save([handles.IVs_Dir file],'data','-ascii');
@@ -961,9 +1038,12 @@ while IB < 3 % Positive 1, Negative 2
     IVmeasure.ibias = IVmeasure.ibias-SetupTES.OffsetX;
     % Después se busca la recta de la parte normal y se corrige el valor de
     % la ordenada en el origen
-    p = polyfit(IVmeasure.ibias(1:5),IVmeasure.vout,1);
+    p = polyfit(IVmeasure.ibias(1:5),IVmeasure.vout(1:5),1);
     IVmeasure.vout = IVmeasure.vout-p(2); 
-    
+    clear data;
+    data(:,2) = IVmeasure.ibias*1e6;
+    data(:,4) = IVmeasure.vout;
+    save([handles.IVs_Dir file '+'],'data','-ascii');
     % Importante que el TES_Circuit se haya actualizado con los valores de
     % Rf, mN, mS, Rpar, Rn
     
@@ -995,6 +1075,8 @@ while IB < 3 % Positive 1, Negative 2
         IVsetP.range = [Ibvalues.n 0];
     end
     clear IVmeasure;
+    IB = IB+1;
+    RepIt = 1;
 end
 
 function OptField = FieldScan(Temp,Conf,SetupTES,handles)
@@ -1684,7 +1766,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
         
         pause(0.2);
         
-        Itxt = SetupTES.SQ_realIbias.String;
+        Itxt = num2str(str2double(SetupTES.SQ_realIbias.String)-SetupTES.OffsetX*1e6);
         catch
             continue;
         end
@@ -1698,7 +1780,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
                         if handles.DSA_Input_Amp_Units.Value ~= 4
                             handles.DSA_Input_Amp_Units.Value = 2;  % mV
                             IbvaluesConf('DSA_Input_Amp_Callback',handles.DSA_Input_Amp,[],handles);
-                            Amp = round(str2double(handles.DSA_Input_Amp.String));
+                            Amp = abs(round(str2double(handles.DSA_Input_Amp.String)));
                         else
                             Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)/100));
                         end
@@ -1711,7 +1793,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
                         if handles.DSA_Input_Amp_Units.Value ~= 4
                             handles.DSA_Input_Amp_Units.Value = 2;  % mV
                             IbvaluesConf('DSA_Input_Amp_Callback',handles.DSA_Input_Amp,[],handles);
-                            Amp = round(str2double(handles.DSA_Input_Amp.String));
+                            Amp = abs(round(str2double(handles.DSA_Input_Amp.String)));
                         else
                             Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)/100));
                         end
@@ -1721,7 +1803,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
                         if handles.DSA_Input_Amp_Units.Value ~= 4
                             handles.DSA_Input_Amp_Units.Value = 2;  % mV
                             IbvaluesConf('DSA_Input_Amp_Callback',handles.DSA_Input_Amp,[],handles);
-                            Amp = round(str2double(handles.DSA_Input_Amp.String));
+                            Amp = abs(round(str2double(handles.DSA_Input_Amp.String)));
                         else
                             Amp = abs(round(IZvalues(i)*1e1*str2double(handles.DSA_Input_Amp.String)/100));
                         end
@@ -1758,7 +1840,7 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
                     excitacion = abs(round(IZvalues(i)*1e1*str2double(handles.PXI_Input_Amp.String)/100));
                 else
                     handles.PXI_Input_Amp_Units.Value = 2;
-                    excitacion = round(str2double(handles.PXI_Input_Amp.String));
+                    excitacion = abs(round(str2double(handles.PXI_Input_Amp.String)));
                 end
                 
                 SetupTES.DSA.SourceOn;
@@ -1767,20 +1849,20 @@ if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
                 clear data;
                 [data, ~] = SetupTES.PXI.Get_Wave_Form;
                 
-                sk = skewness(data);
-                while abs(sk(3)) > SetupTES.PXI.Options.Skewness
-                    [data,~] = SetupTES.PXI.Get_Wave_Form;
-                    sk = skewness(data);
-                end
+%                 sk = skewness(data);
+%                 while abs(sk(3)) > SetupTES.PXI.Options.Skewness
+%                     [data,~] = SetupTES.PXI.Get_Wave_Form;
+%                     sk = skewness(data);
+%                 end
                 [txy,freqs] = tfestimate(data(:,2),data(:,3),[],[],2^14,SetupTES.PXI.ConfStructs.Horizontal.SR);%%%,[],[],128,ConfStructs.Horizontal.SR);%%%,[],[],128,ConfStructs.Horizontal.SR
                 n_avg = SetupTES.PXI.Options.NAvg;
                 for i = 1:n_avg-1
                     [data,~] = SetupTES.PXI.Get_Wave_Form;
-                    sk = skewness(data);
-                    while abs(sk(3)) > SetupTES.PXI.Options.Skewness
-                        [data,~] = SetupTES.PXI.Get_Wave_Form;
-                        sk = skewness(data);
-                    end
+%                     sk = skewness(data);
+%                     while abs(sk(3)) > SetupTES.PXI.Options.Skewness
+%                         [data,~] = SetupTES.PXI.Get_Wave_Form;
+%                         sk = skewness(data);
+%                     end
                     aux = tfestimate(data(:,2),data(:,3),[],[],2^14,SetupTES.PXI.ConfStructs.Horizontal.SR);%%%,[],[],128,ConfStructs.Horizontal.SR);%%%,[],[],128,ConfStructs.Horizontal.SR
                     txy = txy+aux;
                 end
@@ -1851,8 +1933,8 @@ if Conf.TF.Noise.DSA.On || Conf.TF.Noise.PXI.On
     
     SetupTES.DSA = SetupTES.DSA.NoiseMode;
     % Calibracion del HP
-    SetupTES.DSA.Calibration;
-    pause(4);
+%     SetupTES.DSA.Calibration;
+%     pause(4);
     for i = 1:length(IZvalues)
         
         % Ponemos el TES en estado normal
@@ -1887,7 +1969,8 @@ if Conf.TF.Noise.DSA.On || Conf.TF.Noise.PXI.On
         SetupTES.SQ_Rn_Ibias.String = SetupTES.SQ_Ibias.String;
         
         pause(0.2);
-        Itxt = SetupTES.SQ_realIbias.String;
+%         Itxt = SetupTES.SQ_realIbias.String;
+        Itxt = num2str(str2double(SetupTES.SQ_realIbias.String)-SetupTES.OffsetX*1e6);
         catch
             continue;
         end
@@ -1946,11 +2029,11 @@ if Conf.TF.Noise.DSA.On || Conf.TF.Noise.PXI.On
                 clear data;
                 [data, ~] = SetupTES.PXI.Get_Wave_Form;
                 
-                sk = skewness(data);
-                while abs(sk(3)) > SetupTES.PXI.Options.Skewness
-                    [data,~] = SetupTES.PXI.Get_Wave_Form;
-                    sk = skewness(data);
-                end
+%                 sk = skewness(data);
+%                 while abs(sk(3)) > SetupTES.PXI.Options.Skewness
+%                     [data,~] = SetupTES.PXI.Get_Wave_Form;
+%                     sk = skewness(data);
+%                 end
                 [psd,freq] = PSD(data);
                 clear datos;
                 datos(:,1) = freq;
@@ -2040,3 +2123,94 @@ for i = 1:length(IZvalues)
 end
 
 
+function auto_power(src,evnt)
+Data = src.UserData;
+SetPt = Data{1};
+SetupTES = Data{2};
+Error = Data{3};
+SetupTES.BF.SetTemp(SetPt);
+% Se comprueba la temperatura de la mixing
+T_MC = str2double(get(SetupTES.MCTemp,'String'));
+
+% Error = zeros(2,1);
+
+% La potencia de inicio se actualiza con la que tiene el heater al
+% comienzo
+% Power = handles.BF.ReadPower;
+Power = SetupTES.BF.ReadPower;
+sumError = Power*SetupTES.BF.I/SetupTES.BF.P;
+% calculo de la potencia a suministrar
+Error = [SetPt-T_MC; Error(1:end-1)];
+SetupTES.PIDError = Error;
+sumError = sumError + Error(1);
+SetPower = min(max(abs(SetupTES.BF.P*(Error(1) +...
+    (1/SetupTES.BF.I)*sumError +...
+    SetupTES.BF.D*diff(Error([2 1])))),0),SetupTES.BF.ReadMaxPower);
+Data{3} = Error;
+SetupTES.BF.SetPower(SetPower);
+set(SetupTES.AutoPwr,'UserData',Data);
+pause(0.2)
+% guidata(SetupTES.AutoPwr,Data);
+
+% SetupTES.BF = BlueFors;
+% SetupTES.BF = SetupTES.BF.Constructor;
+% SetupTES.BF.SetMaxPower(1e-3);
+% MaxPower = SetupTES.BF.ReadMaxPower;
+% 
+% % Instrucciones para control de temperatura con BlueFors
+% SetupTES.BF.SetTemp(Temp);
+% % Pasar a modo manual del BlueFors
+% PID_mode = SetupTES.BF.ReadPIDStatus;
+% if PID_mode
+%     SetupTES.BF.SetTempControl(0); %Manual
+% end
+% ErrorPID = zeros(2,1);
+% % La potencia de inicio se actualiza con la que tiene el heater al
+% % comienzo
+% 
+% 
+% Power = SetupTES.BF.ReadPower;
+% sumError = Power*SetupTES.BF.I/SetupTES.BF.P;
+% SetupTES.BF.SetTempControl(0);
+%            
+%         
+% Np = 100;
+% Error = nan(Np,1);
+% c = true;
+% j = 1;
+% while c
+%     T_MC = SetupTES.BF.ReadTemp;
+% %     T_MC = SetupTES.vi_IGHFrontPanel.GetControlValue('M/C');
+%     Set_Pt = str2double(SetupTES.SetPt.String);
+% %     SetupTES.BF.SetTemp(Set_Pt);
+%     %% Gestion del error de temperatura
+%     Error(j) = abs(T_MC-Set_Pt);
+%     SetupTES.Error_Measured.String = Error(j);
+% %     disp(Error);
+%     try
+%         SetupTES.Temp_Color.BackgroundColor = RGB(min(ceil(Error(j)),100),:);
+%     catch
+%         SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
+%     end
+%     while isnan(mean(Error)) || ((nanmean(Error)) > 0.0005)    % Error es 0.0001 K
+%         T_MC = SetupTES.BF.ReadTemp;
+%         ErrorPID = [Set_Pt-T_MC; ErrorPID(1:end-1)];
+%         sumError = sumError + ErrorPID(1);
+%         SetPower = min(max(abs(SetupTES.BF.P*(ErrorPID(1) +...
+%         (1/SetupTES.BF.I)*sumError +...
+%         SetupTES.BF.D*diff(ErrorPID([2 1])))),0),MaxPower);
+%         SetupTES.BF.SetPower(SetPower);
+%         pause(0.5)
+%         j = max(mod(j+1,Np+1),1);
+%         if ishandle(h)
+%             waitbar(j/Np+1,h,['SetPt: ' num2str(Set_Pt) ' - M/C: ' num2str(T_MC) ' ; Relative Error(%): ' num2str(nanmean(Error)*100)]);
+%         end
+%         Error(j) =abs(T_MC-Set_Pt);
+%     end
+%     c = false;
+%     pause(0.2);
+% end
+% pause(0.2);
+% if ishandle(h)
+%     close(h);
+% end
