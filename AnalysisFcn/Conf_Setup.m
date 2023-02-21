@@ -60,7 +60,7 @@ set(handles.figure1,'Color',[0 0.2 0.5],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','ButtonDownFcn',{@ExportData});
 
-handles.versionStr = 'ZarTES v4.0';
+handles.versionStr = 'ZarTES v3.0';
 
 switch varargin{1}.Tag
     case 'Squid_Pulse_Input_Conf'
@@ -206,14 +206,12 @@ switch varargin{1}.Tag
         set([handles.Add handles.Remove handles.Options],'Visible','off');
         handles.Table.ColumnName = {'Parameter';'Value';'Units'};
         handles.Table.ColumnEditable = [false true false];
-        CircProp = properties(handles.varargin{3}.circuit);  
-        ind = find(cellfun(@(s) ~isempty(strfind('CurrOffset', s)), CircProp)==1);
-        inds = [1:5 ind];
+        CircProp = properties(handles.varargin{3}.circuit);
 %         TESUnits = {'Ohm';'Ohm';'uA/phi';'uA/phi';'H';'pA/Hz^{0.5}'};
-        handles.Table.Data(1:6,1) = CircProp(inds);
+        handles.Table.Data(1:6,1) = CircProp(1:6);
         for i = 1:6
-            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{inds(i)} '.Value']);
-            handles.Table.Data{i,3} = eval(['handles.varargin{3}.circuit.' CircProp{inds(i)} '.Units']);
+            handles.Table.Data{i,2} = eval(['handles.varargin{3}.circuit.' CircProp{i} '.Value']);
+            handles.Table.Data{i,3} = eval(['handles.varargin{3}.circuit.' CircProp{i} '.Units']);
         end
     case 'TES_ThermalParam'
         set(handles.figure1,'Name',['TES Operating Point - ' handles.varargin{1}.Name]);
@@ -222,8 +220,7 @@ switch varargin{1}.Tag
         handles.Table.ColumnEditable = [false false false];
         TESProp = properties(handles.varargin{3});
 %         TESUnits = {'adim';'adim';'W/K^n';'W/K^n';'K';'K';'W/K';'W/K';'W/K'};
-        handles.Table.Data(1:length(TESProp)-1,1) = TESProp(1:end-1);
-        handles.Table.Data(length(TESProp),1) = {['%' TESProp{end}]};
+        handles.Table.Data(1:length(TESProp),1) = TESProp;
         for i = 1:length(TESProp)
             handles.Table.Data{i,2} = eval(['handles.varargin{3}.' TESProp{i} '.Value']);
             handles.Table.Data{i,3} = eval(['handles.varargin{3}.' TESProp{i} '.Units']);
@@ -590,14 +587,12 @@ switch handles.varargin{1}.Tag
         switch ButtonName
             case 'Save'
                 CircProp = properties(handles.varargin{3}.circuit);
-                ind = find(cellfun(@(s) ~isempty(strfind('CurrOffset', s)), CircProp)==1);
-                inds = [1:5 ind];
-                for i = 1:length(inds)
+                for i = 1:length(CircProp)
                     try
                         if ~ischar(handles.Table.Data{i,2})
-                            eval(['NewCircuit.' CircProp{inds(i)} ' = handles.Table.Data{i,2};']);
+                            eval(['NewCircuit.' CircProp{i} ' = handles.Table.Data{i,2};']);
                         else
-                            eval(['NewCircuit.' CircProp{inds(i)} ' = str2double(handles.Table.Data{i,2});']);
+                            eval(['NewCircuit.' CircProp{i} ' = str2double(handles.Table.Data{i,2});']);
                         end
                     catch
                     end
@@ -649,25 +644,12 @@ switch handles.varargin{1}.Tag
                 end
             elseif ischar(handles.Table.Data{1,i}) 
                 List = eval(['handles.varargin{3}.' handles.Table.ColumnName{i}]);
-                [s, s1] = strtok(handles.Table.Data{1,i});
-                if ~isnan(str2double(s))&&~isnan(str2double(s1))
-                    eval(['NewOPT.' handles.Table.ColumnName{i} ' = [str2double(s) str2double(s1)];']);
-                else
-                    try
-                        ind = strfind(List,handles.Table.Data{1,i});
-                        Index = find(not(cellfun('isempty',ind)));
-                        if length(Index) > 1
-                            for id = 1:length(Index)
-                                if isequal(List{Index(id)},handles.Table.Data{1,i})
-                                    Index = Index(id);
-                                    break;
-                                end
-                            end
-                        end
-                        eval(['NewOPT.Selected_' handles.Table.ColumnName{i} ' = Index;']);
-                    catch
-                        eval(['NewOPT.' handles.Table.ColumnName{i} ' = List;']);
-                    end
+                try
+                    ind = strfind(List,handles.Table.Data{1,i});
+                    Index = find(not(cellfun('isempty',ind)));
+                    eval(['NewOPT.Selected_' handles.Table.ColumnName{i} ' = Index;']);
+                catch
+                    eval(['NewOPT.' handles.Table.ColumnName{i} ' = List;']);
                 end
             else
                 eval(['NewOPT.' handles.Table.ColumnName{i} ' = handles.Table.Data{1,i};']);

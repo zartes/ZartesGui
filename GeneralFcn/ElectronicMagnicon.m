@@ -22,7 +22,7 @@ classdef ElectronicMagnicon
         function obj = Constructor(obj)
             % Function to generate the class with default values
             
-            obj.COM = 'COM5';
+            obj.COM = 'COM4';
             obj.baudrate = 57600;
             obj.databits = 7;
             obj.parity = 'even';

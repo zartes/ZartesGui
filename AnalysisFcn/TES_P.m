@@ -22,7 +22,7 @@ classdef TES_P
     end
     
     properties (Access = private)
-        version = 'ZarTES v4.1';
+        version = 'ZarTES v3.0';
     end
     
     methods

@@ -61,8 +61,8 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','Toolbar','figure');
 
-handles.VersionStr = 'ZarTES v4.2';
-set(handles.Analyzer,'Name',['TES Characterization Data Analyzer   ---   '  handles.VersionStr]);
+handles.VersionStr = 'ZarTES v3.0';
+set(handles.Analyzer,'Name',handles.VersionStr);
 
 handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
 handles.DataBaseName = 'ZarTESDB';
@@ -102,9 +102,9 @@ MenuTES.SubMenu_1{IndMenu,1} = {[]};
 MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'Superconductor State';'Normal State';'Z(w)-Noise Analysis';'Critical Currents';'Field Scan'};
 % MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,1} = {[]};
-MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'TES Parameters';'Circuit Values';'Circuit Noise'};
+MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'TES Parameters';'Circuit Values'};
 % MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
-MenuTES.SubMenu_2{IndMenu,3} = {'Import IV-Curves';'Center IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
+MenuTES.SubMenu_2{IndMenu,3} = {'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
 MenuTES.SubMenu_2{IndMenu,4} = {'Load TF in Superconductor State (TFS)';'Check TFS';'Load Noise in Superconductor State';'Check Superconductor State Noise'};
 MenuTES.SubMenu_2{IndMenu,5} = {'Load TF in Normal State (TFN)';'Check TFN';'Load Noise in Normal State';'Check Normal State Noise'};
 MenuTES.SubMenu_2{IndMenu,6} = {'Z(w) Derived L';'Fit Z(w)-Noise to ElectroThermal Model'};
@@ -368,20 +368,14 @@ switch src.Label
                     load([pathname filename],'circuit');
                 case 'circuit.mat'
                     load([pathname filename],'circuit');
+                    
+                    % Robustecer para buscar la variable circuit  
+                otherwise
+                    a = load([pathname filename],'circuit*');
+                    circuit = eval(['a.' char(fieldnames(a))]);
             end
             handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
             handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
-            
-            handles.Session{handles.TES_ID}.TES.circuitNoise = handles.Session{handles.TES_ID}.TES.circuitNoise.View(handles.Session{handles.TES_ID}.TES);
-            
-            if isempty(handles.Session{handles.TES_ID}.TES.circuitNoise.Array)
-                handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.circuitNoise.Value;
-            else
-                handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.circuitNoise.Array;
-            end
-            
-%             handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
-            
         else
             warndlg('Caution! Circuit parameters were not loaded, check it manually',handles.VersionStr);
         end
@@ -508,20 +502,6 @@ switch src.Label
     case 'Circuit Values'
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
-                
-    case 'Circuit Noise'
-        
-        handles.Session{handles.TES_ID}.TES.circuitNoise = handles.Session{handles.TES_ID}.TES.circuitNoise.View(handles.Session{handles.TES_ID}.TES);
-        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(handles.Session{handles.TES_ID}.TES.circuitNoise);
-%         if isempty(handles.Session{handles.TES_ID}.TES.circuitNoise.Array)
-%             handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.circuitNoise.Value;
-%         else
-%             handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.circuitNoise.Array;
-%         end
-        
-%         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
-        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
-        
     case 'Update Circuit Parameters (Slope IV-Curves)'
         fig = handles.Analyzer;
         indAxes = findobj(fig,'Type','Axes','Tag','Analyzer');
@@ -540,45 +520,25 @@ switch src.Label
         end
         handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESP.circuit);
         handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.Update(IVsetP);
-%         handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.Update(TESP.TESParamP);
+        handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.Update(TESP.TESParamP);
         
-%         handles.Session{handles.TES_ID}.TES.IVsetN(1).CorrectionMethod = handles.Session{handles.TES_ID}.TES.IVsetP(1).CorrectionMethod;
-        [IVsetN, ~, TESN] = handles.Session{handles.TES_ID}.TES.IVsetN.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath, TempLims);
+        handles.Session{handles.TES_ID}.TES.IVsetN(1).CorrectionMethod = handles.Session{handles.TES_ID}.TES.IVsetP(1).CorrectionMethod;
+        [IVsetN, TempLims, TESN] = handles.Session{handles.TES_ID}.TES.IVsetN.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath, TempLims);
         handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESN.circuit);
         handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Update(IVsetN);
-%         handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.Update(TESN.TESParamN);
-        
-        
-%         figure(fig.hObject);
-%         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckIVCurvesVisually(fig);
+        handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.Update(TESN.TESParamN);
+        fig.hObject = handles.Analyzer;
+        indAxes = findobj(fig.hObject,'Type','Axes');
+        delete(indAxes);
+        figure(fig.hObject);
+        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckIVCurvesVisually(fig);
         
 %         [handles.Session{handles.TES_ID}.TES.TESP.mN, handles.Session{handles.TES_ID}.TES.TESP.mS] = handles.Session{handles.TES_ID}.TES.IVs_Slopes(handles.Session{handles.TES_ID}.TES.IVsetP);
 %         [handles.Session{handles.TES_ID}.TES.TESN.mN, handles.Session{handles.TES_ID}.TES.TESN.mS] = handles.Session{handles.TES_ID}.TES.IVs_Slopes(handles.Session{handles.TES_ID}.TES.IVsetN);
 %         [obj.TESN.mN, obj.TESN.mS] = obj.IVs_Slopes(IVsetN,fig);
                 
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
-        
-    case 'Center IV-Curves'
-        
-        [handles.Session{handles.TES_ID}.TES.IVsetP,TESP, UserCancel] = handles.Session{handles.TES_ID}.TES.IVsetP.IV_correction_methods(handles.Session{handles.TES_ID}.TES);
-        if UserCancel
-            return;
-        end
-        handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.Update(TESP.TESParamP);
-        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESP.circuit);
-        
-        [handles.Session{handles.TES_ID}.TES.IVsetN,TESN] = handles.Session{handles.TES_ID}.TES.IVsetN.IV_correction_methods(handles.Session{handles.TES_ID}.TES);
-        handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.Update(TESN.TESParamN);
-        
-        figure(handles.Analyzer)
-        fig.hObject = handles.Analyzer;
-        indAxes = findobj(fig.hObject,'Type','Axes');
-        delete(indAxes);
-        handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckIVCurvesVisually(fig);
-        Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
-        
     case 'Check IV-Curves'
-%         figure(handles.Analyzer)
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
         delete(indAxes);
@@ -684,19 +644,8 @@ switch src.Label
             handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.Constructor;
         end
         handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.NoisefromFile(FileName,fig,handles.Session{handles.TES_ID}.TES);
-        
-        
         handles.Session{handles.TES_ID}.TES.NoiseN = handles.Session{handles.TES_ID}.TES.NoiseN.Plot(fig,handles.Session{handles.TES_ID}.TES,'Normal');
-        ButtonName = questdlg('Do you want to assign loaded normal noise to electrical noise?', ...
-            'Analyzer', ...
-            'No', 'Yes', 'No');
-        switch ButtonName
-            case 'Yes'
-                handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.NoiseN.SigNoise*1e-12;
-            case 'No'
-                handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = 3e-12;
-            otherwise
-        end % switch
+        
         
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
@@ -1158,9 +1107,6 @@ switch src.Label
                         TbathNums = unique([[handles.Session{i}.TES.PP.Tbath] ...
                             [handles.Session{i}.TES.PN.Tbath]]);
                         Tbath = intersect(TbathNums,Tbath_ref);
-                        if isempty(Tbath)
-                            continue;
-                        end
                         SessionName = handles.Session{i}.Tag;
                         SessionName(SessionName == '_') = ' ';
                         handles.Session{i}.TES.PlotTESData(data.param1,Rn,Tbath,handles.Analyzer);
@@ -1523,7 +1469,7 @@ switch src.Label
 %         figure(fig);
         
         axtext = subplot(2,3,1,'Visible','off');
-        text(0,0.6,'Software developed by Juan Bolea for QMAD INMA-CSIC-UNIZAR.');
+        text(0,0.6,'Software developed by Juan Bolea for QMAD ICMA-CSIC.');
         text(0,0.3,['Last update: ' d.date]);
         text(0,0,['Current version: ' handles.VersionStr]);
         
@@ -1545,12 +1491,8 @@ switch src.Label
             ax2.Visible = 'off';
         end
         axes(ax3);
-        data = imread('INMALogo.jpg');
-%         data(data == 0) = 255;
+        data = imread('ICMA-CSIC.jpg');
         image(data)
-        
-%         data = imread('ICMA-CSIC.jpg');
-%         image(data)
         ax3.Visible = 'off';
         fig.Position = [0.35 0.35 0.3 0.22];
         fig.Visible = 'on';
@@ -1567,7 +1509,7 @@ StrEnable = {'on';'off'};
 % StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';...
 %     'IV-Curves';'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';...
 %     'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';'Save TES Data';'Options'};
-StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';'Circuit Noise';...
+StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';...
     'IV-Curves';'Import IV-Curves';...
     'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';'Save TES Data';'Options'};
 for i = 1:length(StrLabel_On)
@@ -1579,11 +1521,8 @@ end
 %   Si hay algun campo vacío (Update from IV curves)
 % TES_IVCurveSet (IVsetP o IVsetN)
 %   Si están vacios (Import IV curves)
-
-
-
 if Session.TES.IVsetP.Filled || Session.TES.IVsetN.Filled
-    StrLabel_On = {'Center IV-Curves';'Check IV-Curves';'Fit P vs. T';...
+    StrLabel_On = {'Check IV-Curves';'Fit P vs. T';...
         'Superconductor State';'Load TF in Superconductor State (TFS)';'Check TFS';'Load Noise in Superconductor State';'Check Superconductor State Noise';...
         'Normal State';'Load TF in Normal State (TFN)';'Check TFN';'Load Noise in Normal State';'Check Normal State Noise'};
     for i = 1:length(StrLabel_On)
@@ -1591,23 +1530,9 @@ if Session.TES.IVsetP.Filled || Session.TES.IVsetN.Filled
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
-    StrLabel_Off = {'Center IV-Curves';'Check IV-Curves';'Fit P vs. T';...
+    StrLabel_Off = {'Check IV-Curves';'Fit P vs. T';...
         'Superconductor State';'Load TF in Superconductor State (TFS)';'Check TFS';'Load Noise in Superconductor State';'Check Superconductor State Noise';...
         'Normal State';'Load TF in Normal State (TFN)';'Check TFN';'Load Noise in Normal State';'Check Normal State Noise'};
-    for i = 1:length(StrLabel_Off)
-        h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
-        h.Enable = StrEnable{(~TES_ID+1)+1};
-    end
-end
-
-if Session.TES.IVsetP.Filled_Imported || Session.TES.IVsetN.Filled_Imported
-    StrLabel_On = {'Center IV-Curves'};
-    for i = 1:length(StrLabel_On)
-        h = findobj(fig,'Label',StrLabel_On{i},'Tag','Analyzer');
-        h.Enable = StrEnable{(~TES_ID+1)};
-    end
-else
-    StrLabel_Off = {'Center IV-Curves'};
     for i = 1:length(StrLabel_Off)
         h = findobj(fig,'Label',StrLabel_Off{i},'Tag','Analyzer');
         h.Enable = StrEnable{(~TES_ID+1)+1};
