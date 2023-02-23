@@ -1,53 +1,46 @@
-MATLAB Compiler
+Analyzer Executable
 
 1. Prerequisites for Deployment 
 
-. Verify the MATLAB Runtime is installed and ensure you    
-  have installed version 9.2 (R2017a).   
-
-. If the MATLAB Runtime is not installed, do the following:
-  (1) enter
+Verify that MATLAB Runtime(R2022b) is installed.
+If not, you can run the MATLAB Runtime installer.
+To find its location, enter
   
-      >>mcrinstaller
+    >>mcrinstaller
       
-      at MATLAB prompt. The MCRINSTALLER command displays the 
-      location of the MATLAB Runtime installer.
+at the MATLAB prompt.
+NOTE: You will need administrator rights to run the MATLAB Runtime installer. 
 
-  (2) run the MATLAB Runtime installer.
+Alternatively, download and install the Windows version of the MATLAB Runtime for R2022b 
+from the following link on the MathWorks website:
 
-Or download the Windows 64-bit version of the MATLAB Runtime for R2017a 
-from the MathWorks Web site by navigating to
-
-   http://www.mathworks.com/products/compiler/mcr/index.html
-   
+    https://www.mathworks.com/products/compiler/mcr/index.html
    
 For more information about the MATLAB Runtime and the MATLAB Runtime installer, see 
-Package and Distribute in the MATLAB Compiler documentation  
-in the MathWorks Documentation Center.    
-
-
-NOTE: You will need administrator rights to run MCRInstaller. 
-
+"Distribute Applications" in the MATLAB Compiler documentation  
+in the MathWorks Documentation Center.
 
 2. Files to Deploy and Package
 
-Files to package for Standalone 
+Files to Package for Standalone 
 ================================
 -Analyzer.exe
 -MCRInstaller.exe 
-   -if end users are unable to download the MATLAB Runtime using the above  
-    link, include it when building your component by clicking 
-    the "Runtime downloaded from web" link in the Deployment Tool
+    Note: if end users are unable to download the MATLAB Runtime using the
+    instructions in the previous section, include it when building your 
+    component by clicking the "Runtime included in package" link in the
+    Deployment Tool.
 -This readme file 
+
+
 
 3. Definitions
 
-For information on deployment terminology, go to 
-http://www.mathworks.com/help. Select MATLAB Compiler >   
-Getting Started > About Application Deployment > 
-Deployment Product Terms in the MathWorks Documentation 
+For information on deployment terminology, go to
+https://www.mathworks.com/help and select MATLAB Compiler >
+Getting Started > About Application Deployment >
+Deployment Product Terms in the MathWorks Documentation
 Center.
-
 
 
 

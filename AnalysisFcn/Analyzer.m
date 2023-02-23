@@ -64,7 +64,8 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
 handles.VersionStr = 'ZarTES v4.2';
 set(handles.Analyzer,'Name',['TES Characterization Data Analyzer   ---   '  handles.VersionStr]);
 
-handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
+handles.DataBasePath = 'C:\Users\jbolea\Documents\GitHub\ZartesGui\DataBase\';
+% handles.DataBasePath = 'G:\Unidades compartidas\X-IFU\Software\ZarTES_DataBase\';
 handles.DataBaseName = 'ZarTESDB';
 
 %%% Cargar la última version
@@ -197,7 +198,10 @@ varargout{1} = handles.output;
 a_str = {'New Figure';'Open File';'Save Figure';'Link Plot'};
 for i = 1:length(a_str)
     eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
-    a.Visible = 'off';
+    try
+        a.Visible = 'off';
+    catch
+end
 end
 
 set(handles.Analyzer,'Visible','on');
@@ -368,6 +372,10 @@ switch src.Label
                     load([pathname filename],'circuit');
                 case 'circuit.mat'
                     load([pathname filename],'circuit');
+                    % Robustecer para buscar la variable circuit  
+                otherwise
+                    a = load([pathname filename],'circuit*');
+                    circuit = eval(['a.' char(fieldnames(a))]);
             end
             handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(circuit);
             handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;

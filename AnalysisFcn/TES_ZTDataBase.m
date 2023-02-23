@@ -21,7 +21,7 @@ classdef TES_ZTDataBase
         Comments;
     end
     properties (Access = private)
-        version = 'ZarTES v4.0';
+        version = 'ZarTES v4.2';
     end
     
     methods
