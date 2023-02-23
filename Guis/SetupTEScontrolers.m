@@ -397,12 +397,15 @@ fig.Visible = 'on';
 
 function mN_from_file(src,evnt)
 handles = guidata(src);
+filename = 0;
+pathname = 0;
 [filename, pathname] = uigetfile( ...
     {'*.txt', 'txt file '; ...
     '*.*',                   'All Files (*.*)'}, ...
     'Pick a I-V Curve file only Normal values ');
 if isequal(filename,0) || isequal(pathname,0)
     disp('User pressed cancel')
+    return;
 else
     disp(['User selected ', fullfile(pathname, filename)])
 end
@@ -453,12 +456,15 @@ guidata(src.Parent.Parent,handles);
 
 function mS_from_file(src,evnt)
 handles = guidata(src);
+filename = 0;
+pathname = 0;
 [filename, pathname] = uigetfile( ...
     {'*.txt', 'txt file '; ...
     '*.*',                   'All Files (*.*)'}, ...
     'Pick a I-V Curve only Superconductor values ');
 if isequal(filename,0) || isequal(pathname,0)
     disp('User pressed cancel')
+    return;
 else
     disp(['User selected ', fullfile(pathname, filename)])
 end
@@ -1557,6 +1563,34 @@ else
                         handles.Circuit.Rn.Value = Rn;
                         TESDATA.TESParam.Rn.Value = Rn;
                         TESDATA.TESParam.Rpar.Value = Rpar;
+                        
+                        
+                        ButtonName1 = questdlg('Do you want to store the IV-Curve for further analysis?',handles.VersionStr,...
+                            'Yes','No','Yes');
+                        switch ButtonName1
+                            case 'Yes'
+                                TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
+                                if mode(sign(Ibias{1})) < 0
+                                    filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_n_matlab'];
+                                else
+                                    filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_p_matlab'];
+                                end
+                                
+                                [filename, pathname] = uiputfile( ...
+                                    {[filename '.txt']}, ...
+                                    'Save as');
+                                if ~isequal(pathname,0)
+                                    Data(:,4) = Data(:,4)-Data(end,4);
+                                    save([pathname filename],'Data','-ascii')
+                                end
+                                
+                            otherwise
+                                %                     if isempty(handles.IVset)
+                                %                         handles.SQ_Rn.Enable = 'off';
+                                %                     end
+                                break;
+                        end
+                        
                         %                     handles.Circuit.Rpar.Value = Rpar;
                     otherwise
                         TESDATA.TESParam.Rn.Value = handles.Circuit.Rn.Value;
@@ -1604,31 +1638,7 @@ else
                 %             end % switch
                 
                 
-                ButtonName = questdlg('Do you want to store the IV-Curve for further analysis?',handles.VersionStr,...
-                    'Yes','No','Yes');
-                switch ButtonName
-                    case 'Yes'
-                        TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
-                        if mode(sign(Ibias{1})) < 0
-                            filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_n_matlab'];
-                        else
-                            filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_p_matlab'];
-                        end
-                        
-                        [filename, pathname] = uiputfile( ...
-                            {[filename '.txt']}, ...
-                            'Save as');
-                        if ~isequal(pathname,0)
-                            Data(:,4) = Data(:,4)-Data(end,4);
-                            save([pathname filename],'Data','-ascii')
-                        end
-                        
-                    otherwise
-                        %                     if isempty(handles.IVset)
-                        %                         handles.SQ_Rn.Enable = 'off';
-                        %                     end
-                        break;
-                end
+                
                 
                 
             end
@@ -3900,7 +3910,7 @@ elseif handles.FilePlot.Value
             DataName = handles.FileName{handles.List_Files.Value-1};
             if ~isempty(strfind(DataName,'mK_Rf'))
                 handles.Draw_Select.Value = 1;
-            elseif ~isempty(strfind(DataName,'TF_'))
+            elseif ~isempty(strfind(DataName,'TF'))
                 handles.Draw_Select.Value = 2;
             elseif ~isempty(strfind(upper(DataName),'NOISE'))
                 handles.Draw_Select.Value = 3;
@@ -4147,13 +4157,13 @@ if handles.FilePlot.Value
                     if ~isempty(strfind(handles.FileName{i},'mK_Rf'))
                         handles.LoadData.IVs{i} = Data;
                         handles.Draw_Select.Value = 1;
-                    elseif ~isempty(strfind(handles.FileName{i},'TF_'))
+                    elseif ~isempty(strfind(handles.FileName{i},'TF'))
                         handles.LoadData.TF{i} = Data;
                         handles.Draw_Select.Value = 2;
-                    elseif ~isempty(strfind(upper(handles.FileName{i}),'_NOISE'))
+                    elseif ~isempty(strfind(upper(handles.FileName{i}),'NOISE'))
                         handles.LoadData.Noise{i} = Data;
                         handles.Draw_Select.Value = 3;
-                    elseif ~isempty(strfind(upper(handles.FileName{i}),'_PULSO'))
+                    elseif ~isempty(strfind(upper(handles.FileName{i}),'PULSO'))
                         handles.LoadData.Pulse{i} = Data;
                         handles.Draw_Select.Value = 4;
                     end
@@ -4168,13 +4178,13 @@ if handles.FilePlot.Value
                 if ~isempty(strfind(handles.FileName,'mK_Rf'))
                     handles.LoadData.IVs = Data;
                     handles.Draw_Select.Value = 1;
-                elseif ~isempty(strfind(handles.FileName,'TF_'))
+                elseif ~isempty(strfind(handles.FileName,'TF'))
                     handles.LoadData.TF = Data;
                     handles.Draw_Select.Value = 2;
-                elseif ~isempty(strfind(upper(handles.FileName),'_NOISE'))
+                elseif ~isempty(strfind(upper(handles.FileName),'NOISE'))
                     handles.LoadData.Noise = Data;
                     handles.Draw_Select.Value = 3;
-                elseif ~isempty(strfind(upper(handles.FileName),'_PULSO'))
+                elseif ~isempty(strfind(upper(handles.FileName),'PULSO'))
                     handles.LoadData.Pulse = Data;
                     handles.Draw_Select.Value = 4;
                 end
@@ -4308,7 +4318,7 @@ if isnan(SetPt)||isinf(SetPt)
     return;
 else
     if SetPt > 500*1e-3 % Por encima de 120mK
-        ButtonName = questdlg('Set Pt above 120 mK, are you sure to continue?',handles.VersionStr,'Yes','No','No');
+        ButtonName = questdlg('Set Pt above 500 mK, are you sure to continue?',handles.VersionStr,'Yes','No','No');
         switch ButtonName
             case 'No'
                 return;

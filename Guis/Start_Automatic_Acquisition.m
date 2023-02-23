@@ -202,6 +202,9 @@ for NSummary = 1:size(Conf.Summary,1)
     end
     
     Temp = Conf.Summary{NSummary,1};    
+    if ischar(Temp)
+        Temp = str2double(Temp);
+    end
     AjustarTemperatura(Temp,Conf,SetupTES,handles)
     
     %%
@@ -389,7 +392,7 @@ end
 
 % Ponemos la temperatura a la que dejamos la mixing
 
-FinalT = str2double(handles.FinalMCT.String);
+FinalT = str2double(handles.FinalMCT.String)*1e-3; % mK 
 AjustarTemperatura(FinalT,Conf,SetupTES,handles)
 % Instrucciones para el control de temperatura con Oxford
 % SetupTES.vi_IGHFrontPanel.FPState = 4;
@@ -529,7 +532,7 @@ while c
     catch
         SetupTES.Temp_Color.BackgroundColor = RGB(1,:);
     end
-    while nanmean(Error) > 0.00005    % Error es 0.0001 K
+    while nanmean(Error) > 0.25*T_MC/100  %0.00005    % Error es 0.0001 K
 %         nanmean(Error);
         T_MC = SetupTES.BF.ReadTemp;
 %         ErrorPID = [Set_Pt-T_MC; ErrorPID(1:end-1)];
@@ -1028,7 +1031,11 @@ while IB < 3 % Positive 1, Negative 2
             continue;
         end
     end
-    file = strcat(num2str(Temp*1e3,'%1.1f'),'mK','_Rf',num2str(SetupTES.Circuit.Rf.Value*1e-3),'K_',dire,'_',pol,'_matlab.txt');
+    if ischar(Temp)
+        file = strcat(num2str(str2double(Temp)*1e3),'mK','_Rf',num2str(SetupTES.Circuit.Rf.Value*1e-3),'K_',dire,'_',pol,'_matlab.txt');
+    else
+        file = strcat(num2str(Temp*1e3),'mK','_Rf',num2str(SetupTES.Circuit.Rf.Value*1e-3),'K_',dire,'_',pol,'_matlab.txt');
+    end
     save([handles.IVs_Dir file],'data','-ascii');
     
 %     data(:,4) = IVmeasure.vout-IVmeasure.vout(end);  % Centramos la IV en 0,0.
