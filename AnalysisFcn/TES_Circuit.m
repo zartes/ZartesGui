@@ -16,6 +16,7 @@ classdef TES_Circuit
         Rn = PhysicalMeasurement;  % (%)
         mS = PhysicalMeasurement;  % Ohm
         mN = PhysicalMeasurement;  % Ohm
+        CurrOffset = PhysicalMeasurement;
     end
     
     
@@ -36,6 +37,8 @@ classdef TES_Circuit
             obj.L.Units = 'H';
             obj.Nsquid.Value = 3e-12;
             obj.Nsquid.Units = 'A/Hz^{0.5}';
+            obj.CurrOffset.Value = 0;
+            obj.CurrOffset.Units = 'A';
             
             obj.Rpar.Value = 2.035e-05;
             obj.Rpar.Units = 'Ohm';
@@ -45,6 +48,7 @@ classdef TES_Circuit
             obj.mS.Units = 'V/uA';
             obj.mN.Value = 650.7;
             obj.mN.Units = 'V/uA';
+            
         end
         
         function ok = Filled(obj)
@@ -63,28 +67,36 @@ classdef TES_Circuit
         
         function obj = Update(obj,data)
             % Function to update the class values
-            
-            FN = properties(obj);
-            if nargin == 2
-                fieldNames = fieldnames(data);
-                for i = 1:length(fieldNames)
-                    if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
-                        if isa(data,'Circuit')
-                            eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
-                        else
-                            try
-                                eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);                                
-                            catch
-                                if strcmp(fieldNames{i},'squid')
-                                    eval(['obj.Nsquid.Value = data.' fieldNames{i} ';']);
-                                else
-                                    eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} ';']);
+            if isa(data,'TES_ElectricalNoise')
+                if data.Selected_Tipo == 1
+                    if ~isempty(data.Value)                    
+                        obj.Nsquid.Value = data.Value;
+                    end
+                elseif data.Selected_Tipo == 2                
+                    obj.Nsquid.Value = data.Array;
+                end
+            else            
+                FN = properties(obj);
+                if nargin == 2
+                    fieldNames = fieldnames(data);
+                    for i = 1:length(fieldNames)
+                        if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
+                            if isa(data,'Circuit')
+                                eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
+                            else
+                                try
+                                    eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
+                                catch
+                                    if strcmp(fieldNames{i},'squid')
+                                        eval(['obj.Nsquid.Value = data.' fieldNames{i} ';']);
+                                    else
+                                        eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} ';']);
+                                    end
                                 end
                             end
                         end
                     end
                 end
-                
             end
         end
         

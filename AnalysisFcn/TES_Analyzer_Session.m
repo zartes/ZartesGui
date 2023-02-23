@@ -25,9 +25,10 @@ classdef TES_Analyzer_Session
                 obj.Path = pathname;
                 answer = inputdlg({'Insert a Nick name for the TES'},hd.VersionStr,[1 50],{' '});               
                 if ~isempty(answer)
-                    answer{1} = filename;
+                    obj.NickName = answer{1};
                 else
                     answer{1} = 'Default';
+                    obj.NickName = 'Default';
                 end
                 obj.Tag = answer{1};
                 tes = load(fullfile(obj.Path, obj.File));

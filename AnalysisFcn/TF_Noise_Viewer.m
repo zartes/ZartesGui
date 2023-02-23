@@ -61,8 +61,8 @@ set(handles.figure1,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
-handles.VersionStr = 'ZarTES v3.0';
-set(handles.figure1,'Name',handles.VersionStr);
+handles.VersionStr = handles.varargin{1}.version; %'ZarTES v4.1';
+set(handles.figure1,'Name',['Z(w) and Noise Viewer    ---   ' handles.VersionStr]);
 % Updating the popup menu
 
 
@@ -298,6 +298,7 @@ end
 
 function PlotTF_Noise(src,evnt,handles)
 
+warning off;
 contents = cellstr(get(handles.TBath_popup,'String'));
 Str = contents{get(handles.TBath_popup,'Value')};
 
@@ -339,6 +340,7 @@ if ~isempty(strfind(FileName,'PXI_TF'))
 else
     Ib = sscanf(FileName,'TF_%fuA.txt')*1e-6;
 end
+Ib = Ib - handles.varargin{1}.circuit.CurrOffset.Value;
 eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,IV,handles.varargin{1}.P' StrCond '(ind_Tbath).p,''' StrCond ''');']);
 
 data{1} = eval(['handles.varargin{1}.P' StrCond '(ind_Tbath)']);
@@ -395,6 +397,7 @@ eval(['FileName = filesNoise' StrCond '{handles.Files_Ind};']);
 FileName = FileName(find(FileName == filesep,1,'last')+1:end);
 
 Ib = sscanf(FileName,strcat(handles.varargin{1}.NoiseOpt.NoiseBaseName(2:end-1),'_%fuA.txt'))*1e-6; %%%HP_noise para ZTES18.!!!
+Ib = Ib - handles.varargin{1}.circuit.CurrOffset.Value;
 eval(['OP = handles.varargin{1}.setTESOPfromIb(Ib,IV,handles.varargin{1}.P' StrCond '(ind_Tbath).p,''' StrCond ''');']);
 if handles.varargin{1}.ElectrThermalModel.bool_Mjo == 1
 %     M = OP.M;
@@ -402,88 +405,101 @@ if handles.varargin{1}.ElectrThermalModel.bool_Mjo == 1
 else
     M = 0;
 end
-f = logspace(0,5,1000);
+f = logspace(1,5,321)';
 % auxnoise = obj.noisesim(OP,M,f);
+if length(fNoise{handles.Files_Ind}(:,1)) ~= length(f)
+    SigNoise{handles.Files_Ind} = spline(fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},f); % Todos los ruidos a 321 puntos
+    fNoise{handles.Files_Ind} = f;
+end
+                                
 auxnoise = handles.varargin{1}.ElectrThermalModel.noisesim(handles.varargin{1},OP,M,f,StrCond);
 
-switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThermalModel.Selected_tipo}
-    case 'current'
-        
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'.-r','DisplayName','Experimental Noise'); 
-        hold(hs1,'on');
-        grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(SigNoise{handles.Files_Ind},handles.varargin{1}.ElectrThermalModel.DataMedFilt),...
-            '.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
-        
-        if handles.varargin{1}.ElectrThermalModel.bool_Mph == 0
-            totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
-        else
-            Mexph = OP.Mph;
-            totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
-        end
-        
-        if ~handles.varargin{1}.ElectrThermalModel.bool_components
-            loglog(hs1,f,totnoise*1e12,'b','DisplayName','Total Simulation Noise','LineWidth',3);
-            h = findobj(hs1,'Color','b');
-        else
-            loglog(hs1,f,auxnoise.jo*1e12,'DisplayName','Johnson','LineWidth',3);
-            loglog(hs1,f,auxnoise.ph*1e12,'DisplayName','Phonon','LineWidth',3);
-            loglog(hs1,f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',3);
-            loglog(hs1,f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',3);
-            loglog(hs1,f,totnoise*1e12,'b','DisplayName','Total','LineWidth',3);
-%             
-%             legend(hs1,'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Squid','Total');            
-%             h = findobj(hs1,'DisplayName','Total');
-        end
-        ylabel(hs1,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold')
-        
-    case 'nep'
-        
-        sIaux = ppval(spline(f,auxnoise.sI),fNoise{handles.Files_Ind}(:,1));
-        NEP = real(sqrt(((SigNoise{handles.Files_Ind}*1e-12).^2-auxnoise.squid.^2))./sIaux);
-        
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'.-r','DisplayName','Experimental Noise'),hold(hs1,'on'),grid(hs1,'on'),
-        loglog(hs1,fNoise{handles.Files_Ind}(:,1),medfilt1(NEP*1e18,handles.varargin{1}.ElectrThermalModel.DataMedFilt),'.-k',...
-            'DisplayName','Exp Filtered Noise');
-        hold(hs1,'on');
-        grid(hs1,'on');
-        if handles.varargin{1}.ElectrThermalModel.bool_Mph == 0
-            totNEP = auxnoise.NEP;
-        else
-            totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
-        end
-        if ~handles.varargin{1}.ElectrThermalModel.bool_components
-            loglog(hs1,f,totNEP*1e18,'b','DisplayName','Total Simulation Noise','LineWidth',3);hold(hs1,'on');grid(hs1,'on');
-            h = findobj(hs1,'Color','b');
-        else
-            loglog(hs1,f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson','LineWidth',3);
-            loglog(hs1,f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon','LineWidth',3);
-            loglog(hs1,f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',3);
-            loglog(hs1,f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',3);
-            loglog(hs1,f,totNEP*1e18,'b','DisplayName','Total','LineWidth',3);
-%             legend(hs1,'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Squid','Total');
-%             legend(hs1,'off');
-%             h = findobj(hs1,'DisplayName','Total');
-        end
-        ylabel(hs1,'aW/Hz^{0.5}','FontSize',12,'FontWeight','bold')
-end
-xlabel(hs1,'\nu (Hz)','FontSize',12,'FontWeight','bold')
-axis(hs1,[1e1 1e5 2 1e3])%% axis([1e1 1e5 1 1e4])
-try
-    set(h(1),'LineWidth',3);
-catch
-end
-set(hs1,'FontSize',11,'FontWeight','bold');
-set(hs1,'LineWidth',2)
-set(hs1,'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-')
-set(hs1,'XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'})
-title(hs1,strcat(num2str(nearest(r0*100),'%3.0f'),'%Rn'),'FontSize',12);
-% title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
-%         OP.Z0,OP.Zinf
-%debug
-if abs(OP.Z0-OP.Zinf) < handles.varargin{1}.ElectrThermalModel.Z0_Zinf_Thrs
-    set(get(findobj(hs1,'type','axes'),'title'),'Color','r');
-end
+handles.varargin{1}.ElectrThermalModel.Plot(fNoise{handles.Files_Ind},SigNoise{handles.Files_Ind},auxnoise,OP,hs1);
+
+% switch handles.varargin{1}.ElectrThermalModel.tipo{handles.varargin{1}.ElectrThermalModel.Selected_tipo}
+%     case 'current'
+%         
+%         loglog(hs1,fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},'color',[0 0.447 0.741],...
+%             'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise'); 
+%         hold(hs1,'on');
+%         grid(hs1,'on');%%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+%         loglog(hs1,fNoise{handles.Files_Ind}(:,1),handles.varargin{1}.ElectrThermalModel.NoiseFiltering(SigNoise{handles.Files_Ind}),...
+%             '.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+%         
+%         if handles.varargin{1}.ElectrThermalModel.bool_Mph == 0
+%             totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
+%         else
+%             Mexph = OP.Mph;
+%             totnoise = sqrt((auxnoise.ph.^2*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+%         end
+%         
+%         if ~handles.varargin{1}.ElectrThermalModel.bool_components
+%             loglog(hs1,auxnoise.f,totnoise*1e12,'-r','DisplayName','Total Simulation Noise','LineWidth',2);
+%             h = findobj(hs1,'Color','r');
+%         else
+%             loglog(hs1,auxnoise.f,auxnoise.jo*1e12,'DisplayName','Johnson','LineWidth',0.5);
+%             loglog(hs1,auxnoise.f,auxnoise.ph*1e12,'DisplayName','Phonon','LineWidth',0.5);
+%             loglog(hs1,auxnoise.f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',0.5);
+%             loglog(hs1,auxnoise.f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',0.5);
+%             loglog(hs1,auxnoise.f,totnoise*1e12,'-r','DisplayName','Total','LineWidth',2);
+% %             
+% %             legend(hs1,'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Squid','Total');            
+% %             h = findobj(hs1,'DisplayName','Total');
+%         end
+%         ylabel(hs1,'pA/Hz^{0.5}','FontSize',12,'FontWeight','bold')
+%         
+%     case 'nep'
+%         
+%         sIaux = ppval(spline(auxnoise.f,auxnoise.sI),fNoise{handles.Files_Ind}(:,1));
+%         squidarray = ppval(spline(auxnoise.f,auxnoise.squidarray),fNoise{handles.Files_Ind}(:,1));
+%         NEP = real(sqrt(((SigNoise{handles.Files_Ind}*1e-12).^2-squidarray.^2))./sIaux);
+%         
+%         loglog(hs1,fNoise{handles.Files_Ind}(:,1),(NEP*1e18),'color',[0 0.447 0.741],...
+%             'markerfacecolor',[0 0.447 0.741],'DisplayName','Experimental Noise'),hold(hs1,'on'),grid(hs1,'on'),
+%         loglog(hs1,fNoise{handles.Files_Ind}(:,1),handles.varargin{1}.ElectrThermalModel.NoiseFiltering(NEP*1e18),'.-k',...
+%             'DisplayName','Exp Filtered Noise');
+%         hold(hs1,'on');
+%         grid(hs1,'on');
+%         if handles.varargin{1}.ElectrThermalModel.bool_Mph == 0
+%             totNEP = auxnoise.NEP;
+%         else
+%             totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
+%         end
+%         if ~handles.varargin{1}.ElectrThermalModel.bool_components
+%             loglog(hs1,auxnoise.f,totNEP*1e18,'-r','DisplayName','Total Simulation Noise','LineWidth',2);hold(hs1,'on');grid(hs1,'on');
+%             h = findobj(hs1,'Color','r');
+%         else
+%             loglog(hs1,auxnoise.f,auxnoise.jo*1e18./auxnoise.sI,'DisplayName','Johnson','LineWidth',0.5);
+%             loglog(hs1,auxnoise.f,auxnoise.ph*1e18./auxnoise.sI,'DisplayName','Phonon','LineWidth',0.5);
+%             loglog(hs1,auxnoise.f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',0.5);
+%             loglog(hs1,auxnoise.f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',0.5);
+%             loglog(hs1,auxnoise.f,totNEP*1e18,'-r','DisplayName','Total','LineWidth',2);
+% %             legend(hs1,'Experimental Noise','Exp Filtered Noise','Johnson','Phonon','Shunt','Squid','Total');
+% %             legend(hs1,'off');
+% %             h = findobj(hs1,'DisplayName','Total');
+%         end
+%         ylabel(hs1,'aW/Hz^{0.5}','FontSize',12,'FontWeight','bold')
+% end
+% xlabel(hs1,'\nu (Hz)','FontSize',12,'FontWeight','bold')
+% axis(hs1,[1e1 1e5 2 1e3])%% axis([1e1 1e5 1 1e4])
+% try
+%     set(h(1),'LineWidth',0.5);
+% catch
+% end
+% set(hs1,'FontSize',11,'FontWeight','bold');
+% set(hs1,'LineWidth',2)
+% set(hs1,'XMinorGrid','off','YMinorGrid','off','GridLineStyle','-')
+% set(hs1,'XTick',[10 100 1000 1e4 1e5],'XTickLabel',{'10' '10^2' '10^3' '10^4' '10^5'})
+% title(hs1,strcat(num2str(nearest(r0*100),'%3.0f'),'%Rn'),'FontSize',12);
+% % title(hs1,strcat(num2str(nearest(OP.r0*100),'%3.2f'),'%Rn'),'FontSize',12);
+% %         OP.Z0,OP.Zinf
+% %debug
+% if abs(OP.Z0-OP.Zinf) < handles.varargin{1}.ElectrThermalModel.Z0_Zinf_Thrs
+%     set(get(findobj(hs1,'type','axes'),'title'),'Color','r');
+% end
+
+
+
 hold(hs1,'off');
 if src == handles.figure1||src == handles.TBath_popup
     clear FilesStr;
@@ -495,6 +511,12 @@ if src == handles.figure1||src == handles.TBath_popup
 end
 set(handles.Noise_axes,'ButtonDownFcn',{@HandleBoolComp},'UserData',handles.varargin{1});
 axis(handles.Noise_axes,'tight');
+% axes(hs1);
+% ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
+% %                     delete(ax);
+% rc = rectangle('Position', [handles.varargin{1}.ElectrThermalModel.Noise_LowFreq(1) ax_frame(3) diff(handles.varargin{1}.ElectrThermalModel.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255);
+% rc2 = rectangle('Position', [handles.varargin{1}.ElectrThermalModel.Noise_HighFreq(1) ax_frame(3) diff(handles.varargin{1}.ElectrThermalModel.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255);
+
 guidata(src,handles);
     
 
