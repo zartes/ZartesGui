@@ -47,14 +47,27 @@ classdef TES_Gset
             FN = properties(obj);
             if nargin == 2
                 fieldNames = fieldnames(data);
+                AlterStr = {'Errn';'ErrK';'Tc'};
                 for i = 1:length(fieldNames)
                     if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
                         for j = 1:size(data,2)
                             eval(['obj(j).' fieldNames{i} ' = data(j).' fieldNames{i} ';']);
                         end
                     end
-                end
-                
+                    if ~isempty(cell2mat(strfind(AlterStr,fieldNames{i})))
+                        for j = 1:size(data,2)
+                            if strcmp(AlterStr{1},fieldNames{i}) % Errn
+                                eval(['obj(j).n_CI = data(j).' fieldNames{i} ';']);
+                            end
+                            if strcmp(AlterStr{2},fieldNames{i}) % Errn
+                                eval(['obj(j).K_CI = data(j).' fieldNames{i} ';']);
+                            end
+                            if strcmp(AlterStr{3},fieldNames{i}) % Errn
+                                eval(['obj(j).T_fit = data(j).' fieldNames{i} ';']);
+                            end
+                        end
+                    end
+                end                                
             end
         end
         
@@ -62,9 +75,11 @@ classdef TES_Gset
             % Function to check whether the class is filled or empty (all
             % fields must be filled to be considered as filled, except for ERP)
             
+            
+
             FN = properties(obj);
-            StrNo = {'ERP'};
-            for i = 1:length(FN)
+            StrNo = {'ERP';'R2';'Tbath';'Paux';'Paux_fit';'opt';'T_fit_CI';'G_CI'};
+            for i = 1:length(FN)                
                 if isempty(cell2mat(strfind(StrNo,FN{i})))
                     if isempty(eval(['obj.' FN{i}]))
                         ok = 0;  % Empty field

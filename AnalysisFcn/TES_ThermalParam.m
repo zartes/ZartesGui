@@ -43,9 +43,10 @@ classdef TES_ThermalParam
                     if ~isempty(cell2mat(strfind(FN,fieldNames{i})))
                         eval(['obj.' fieldNames{i} '.Value = data.' fieldNames{i} '.Value;']);
                     end
-                end
-                
+                end                
             end
+
+
         end
         
         function ok = Filled(obj)
@@ -54,6 +55,7 @@ classdef TES_ThermalParam
             
             FN = properties(obj);
             for i = 1:length(FN)
+                StrNo = {'ERP';'R2';'Tbath';'Paux';'Paux_fit';'opt';'T_fit_CI';'G_CI'}; %;'Errn';'ErrK';'ci';'model';'Rn';'Ttes';'Gtes';'CN'};
                 if isempty(eval(['obj.' FN{i} '.Value']))
                     ok = 0;  % Empty field
                     return;

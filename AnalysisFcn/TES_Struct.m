@@ -451,8 +451,13 @@ classdef TES_Struct
                         eval(['obj.Gset' StrRange{k} '(jj).Paux_fit = obj.PvTModel.fitP(fit,XDATA);']);
                         %                             eval(['obj.Gset' StrRange{k} '(jj).Paux_fit = obj.fitP(fit,XDATA,obj.TESP.T_fit,model);']);
                         
-                        plot(ax,Tbath,obj.PvTModel.fitP(fit,XDATA),'LineStyle','-','Color',c(jj,:),'LineWidth',1,'DisplayName',IVTESset(i).file,...
-                            'ButtonDownFcn',{@Identify_Origin_PT},'UserData',{k;jj;i;obj},'Visible','off');
+                        try
+                            plot(ax,Tbath,obj.PvTModel.fitP(fit,XDATA),'LineStyle','-','Color',c(jj,:),'LineWidth',1,'DisplayName',IVTESset(i).file,...
+                                'ButtonDownFcn',{@Identify_Origin_PT},'UserData',{k;jj;i;obj},'Visible','off');
+                        catch
+                            plot(ax,Tbath,obj.PvTModel.fitP(fit,XDATA),'LineStyle','-','Color',c(jj,:),'LineWidth',1,'DisplayName','',...
+                                'ButtonDownFcn',[],'UserData',{k;jj;i;obj},'Visible','off');
+                        end
                         
                         if obj.PvTModel.Selected_Models == 1
                             
@@ -688,8 +693,13 @@ classdef TES_Struct
                     end
                     eval(['X' StrRange{k} '= X;']);
                 else
-                    XP = opt(1);
-                    XN = opt(2);
+                    try
+                        XP = opt(1);
+                        XN = opt(2);
+                    catch
+                        XP = 0.7;
+                        XN = 0.7;
+                    end
                 end
                 eval(['ind_rp = find(rp' StrRange{k} ' >= X' StrRange{k} ',1);']) %#ok<NASGU>
                                              
@@ -697,8 +707,11 @@ classdef TES_Struct
                 for i = 1:length(StrField)
                     eval(['val = [obj.Gset' StrRange{k} '.' StrField{i} ']*' TESmult{i} ';']);
                     eval(['obj.TESThermal' StrRange{k} '.' StrField{i} '.Value = val(ind_rp);']);
-                    eval(['val_CI = [obj.Gset' StrRange{k} '.' StrField{i} '_CI]*' TESmult{i} ';']);
-                    eval(['obj.TESThermal' StrRange{k} '.' StrField{i} '_CI.Value = val_CI(ind_rp);']);
+                    try
+                        eval(['val_CI = [obj.Gset' StrRange{k} '.' StrField{i} '_CI]*' TESmult{i} ';']);                    
+                        eval(['obj.TESThermal' StrRange{k} '.' StrField{i} '_CI.Value = val_CI(ind_rp);']);
+                    catch
+                    end                     
                     
                     eval(['plot(h(i),obj.Gset' StrRange{k} '(ind_rp).rp,val(ind_rp),''.-'','...
                         '''Color'',''none'',''MarkerFaceColor'',''g'',''MarkerEdgeColor'',''g'','...

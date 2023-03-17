@@ -64,7 +64,7 @@ classdef TES_IVCurveSet
             % fields must be filled to be considered as filled, except for ttes, rp2, aIV, and bIV)
             
             FN = properties(obj);
-            StrNo = {'ttes';'rp2';'aIV';'bIV'};
+            StrNo = {'ttes';'rp2';'aIV';'bIV';'file';'IVsetPath';'CorrectionMethod'};
             for i = 1:length(FN)
                 if isempty(cell2mat(strfind(StrNo,FN{i})))
                     if isempty(eval(['obj.' FN{i}]))
@@ -759,8 +759,13 @@ classdef TES_IVCurveSet
                     if ~isfield(fig,'subplots')
                         h(1) = subplot(2,2,1);
                     end
-                    h_ib(j) = plot(h(1),Ibias*1e6,Vout,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
+                    try
+                        h_ib(j) = plot(h(1),Ibias*1e6,Vout,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
+                            'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
+                    catch
+                        h_ib(j) = plot(h(1),Ibias*1e6,Vout,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
+                            'ButtonDownFcn',[],'Tag','','Color',color);
+                    end
                     grid(h(1),'on'),hold(h(1),'on');
                     xlim(h(1),[min(0,sign(Ibias(1))*500) 500]) %%%Podemos controlar apariencia con esto. 300->500
                     xlabel(h(1),'Ibias(\muA)','FontWeight','bold');ylabel(h(1),'Vout(V)','FontWeight','bold');
@@ -771,8 +776,14 @@ classdef TES_IVCurveSet
                     if ~isfield(fig,'subplots')
                         h(3) = subplot(2,2,3);
                     end
-                    h_ites(j) = plot(h(3),obj(i).vtes*1e6,obj(i).ites*1e6,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
+                    try
+                        h_ites(j) = plot(h(3),obj(i).vtes*1e6,obj(i).ites*1e6,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
+                            'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
+                    catch
+                        h_ites(j) = plot(h(3),obj(i).vtes*1e6,obj(i).ites*1e6,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
+                            'ButtonDownFcn',[],'Tag','','Color',color);
+                    end
+
                     grid(h(3),'on'),hold(h(3),'on');
                     xlim(h(3),[min(0,sign(Ibias(1))*.5) .5])
                     xlabel(h(3),'V_{TES}(\muV)','FontWeight','bold');ylabel(h(3),'Ites(\muA)','FontWeight','bold');
@@ -783,8 +794,13 @@ classdef TES_IVCurveSet
                     if ~isfield(fig,'subplots')
                         h(2) = subplot(2,2,2);
                     end
-                    h_ptes(j) = plot(h(2),obj(i).vtes*1e6,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
+                    try
+                        h_ptes(j) = plot(h(2),obj(i).vtes*1e6,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
+                            'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
+                    catch
+                        h_ptes(j) = plot(h(2),obj(i).vtes*1e6,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
+                            'ButtonDownFcn',[],'Tag','','Color',color);
+                    end
                     grid(h(2),'on'),hold(h(2),'on');
                     xlim(h(2),[min(0,sign(Ibias(1))*1.0) 1.0])%%%Podemos controlar apariencia con esto. 0.5->1.0
                     xlabel(h(2),'V_{TES}(\muV)','FontWeight','bold');ylabel(h(2),'Ptes(pW)','FontWeight','bold');
@@ -795,8 +811,13 @@ classdef TES_IVCurveSet
                     if ~isfield(fig,'subplots')
                         h(4) = subplot(2,2,4);
                     end
-                    h_rtes(j) = plot(h(4),obj(i).rtes,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
-                        'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
+                    try
+                        h_rtes(j) = plot(h(4),obj(i).rtes,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
+                            'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
+                    catch
+                        h_rtes(j) = plot(h(4),obj(i).rtes,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
+                            'ButtonDownFcn',[],'Tag','','Color',color);
+                    end
                     grid(h(4),'on'),hold(h(4),'on');
                     xlim(h(4),[0 1]), ylim(h(4),[0 20]);
                     xlabel(h(4),'R_{TES}/R_n','FontWeight','bold');ylabel(h(4),'Ptes(pW)','FontWeight','bold');

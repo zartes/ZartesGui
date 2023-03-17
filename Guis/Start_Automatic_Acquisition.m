@@ -12,10 +12,16 @@ handles.Enfriada_dir = uigetdir(pwd, 'Select a path for storing acquisition data
 if ~ischar(handles.Enfriada_dir)
     return;
 end
+meses = {'Enero';'Febrero';'Marzo';'Abril';'Mayo';'Junio';'Julio';'Agosto';'Septiembre';'Octubre';'Noviembre';'Diciembre'};
 SlashInd = strfind(handles.Enfriada_dir,filesep);
-YearStr = handles.Enfriada_dir(SlashInd(end-1)+1:SlashInd(end)-1);
-MonthStr = handles.Enfriada_dir(SlashInd(end)+1:end);
-ExcelEnfriada = ['Summary_' YearStr '_' MonthStr '.xls'];
+
+% YearStr = handles.Enfriada_dir(SlashInd(end-1)+1:SlashInd(end)-1);
+% MonthStr = handles.Enfriada_dir(SlashInd(end)+1:end);
+
+YearStr = num2str(year(date));  % Matlab 2022 recomienda YearStr = num2str(year(datetime('today'));
+MonthStr = meses{month(date)};
+StrChannel = handles.Enfriada_dir(SlashInd(end)+1:end);
+ExcelEnfriada = ['Summary_' YearStr '_' MonthStr '_' StrChannel '.xls'];
 
 % Guardamos la configuracion en un .mat o en xml
 

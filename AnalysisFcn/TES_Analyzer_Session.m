@@ -57,7 +57,7 @@ classdef TES_Analyzer_Session
                 else
                     ZTES = eval(['tes.' FN{1} ';']);
                     
-                    FieldStr = {'TES';'circuit';'IVset';'IVsetN';'Gset';'GsetN';'IC';'FieldScan';'P';'PN'};
+                    FieldStr = {'TES';'circuit';'IVset';'IVsetN';'Gset';'GsetN';'P';'PN'};
                     FieldNewStr = {'TES';'circuit';'IVsetP';'IVsetN';'GsetP';'GsetN';'PP';'PN'};
                     
                     obj.TES = TES_Struct;
@@ -69,11 +69,23 @@ classdef TES_Analyzer_Session
                         catch
                         end
                     end
-                    obj.TES.IVsetP.IVsetPath = ZTES.datadir;
-                    obj.TES.IVsetN.IVsetPath = ZTES.datadir;
-%                     obj.TES.Save([FN{1} '_Compatible.mat']);
-                    msgbox({['Analysis corresponding to: ' ZTES.datadir];...
-                        'Converting to new struct, some menus may not work properly.'},'ZarTES v2.2');
+
+                    % Update ThermalParam from struct
+                    obj.TES.TESThermalP.n.Value = ZTES.TES.n;
+                    obj.TES.TESThermalP.n_CI.Value = ZTES.TES.Errn;
+                    obj.TES.TESThermalP.K.Value = ZTES.TES.K;
+                    obj.TES.TESThermalP.K_CI.Value = ZTES.TES.ErrK;
+                    obj.TES.TESThermalP.T_fit.Value = ZTES.TES.Tc;
+                    obj.TES.TESThermalP.G.Value = ZTES.TES.G;
+                    obj.TES.TESThermalP.G100.Value = ZTES.TES.G100;
+                    obj.TES.TESThermalP.Rn.Value = ZTES.TES.rp;
+
+
+%                     obj.TES.IVsetP.IVsetPath = ZTES.analizeOptions.datadir;
+%                     obj.TES.IVsetN.IVsetPath = ZTES.analizeOptions.datadir;
+% %                     obj.TES.Save([FN{1} '_Compatible.mat']);
+%                     msgbox({['Analysis corresponding to: ' ZTES.datadir];...
+%                         'Converting to new struct, some menus may not work properly.'},'ZarTES v2.2');
                 end
             end
         end
