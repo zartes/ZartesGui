@@ -11,7 +11,7 @@ classdef TES_FieldScan
     end
     
     properties (Access = private)
-        version = 'ZarTES v4.2';
+        version = 'ZarTES v4.3';
     end
     
     methods
