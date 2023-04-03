@@ -3,6 +3,7 @@ function GraphicErrors(src,evnt)
 % Last update: 14/11/2018
 fig = src.Parent;
 h = findobj(fig,'Type','Line');
+Tag = [];
 TempStr = [];
 j = 1;
 for i = 1:length(h)
@@ -13,14 +14,14 @@ for i = 1:length(h)
 end
 cmenu = uicontextmenu('Visible','on');
 if ~isempty(Tag)
-TempStr = unique(Tag);
-
-
-c0 = uimenu(cmenu,'Label','Show');
-for i = 1:length(TempStr)
-    c0_1(i) = uimenu(c0,'Label',TempStr{i},'Callback',{@Handle_Errors});
-end
-c0_1(i+1) = uimenu(c0,'Label','All','Callback',{@Handle_Errors});
+    TempStr = unique(Tag);
+    
+    
+    c0 = uimenu(cmenu,'Label','Show');
+    for i = 1:length(TempStr)
+        c0_1(i) = uimenu(c0,'Label',TempStr{i},'Callback',{@Handle_Errors});
+    end
+    c0_1(i+1) = uimenu(c0,'Label','All','Callback',{@Handle_Errors});
 end
 
 he = findobj(src,'Type','ErrorBar','-and','Visible','on');
@@ -108,7 +109,7 @@ jn = [];
 jf = [];
 jteo = [];
 for i = 1:length(h)
-    Tag = [h(i).DisplayName];    
+    Tag = [h(i).DisplayName];
     if ~isempty(strfind(Tag,[TempStr '-PosIbias']))
         jp = [jp i] ;
     end
@@ -127,7 +128,7 @@ hn = h(jn);
 hf = h(jf);
 hteo = h(jteo);
 for i = 1:length(hteo)
-     set(get(get(hteo(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+    set(get(get(hteo(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
 end
 % Positive Ibias Error bars
 he = findobj('Type','ErrorBar');
@@ -161,9 +162,9 @@ switch str
             end
             try
                 set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
-            end            
+            end
         end
-    
+        
     case 'Hide error bars'
         try
             set([hpe; hne; hfe],'Visible','off');
@@ -188,8 +189,8 @@ switch str
                 end
             end
         end
-
-
+        
+        
     case 'Hide Filtered Data'
         try
             set([hf; hfe],'Visible','off');
@@ -259,7 +260,7 @@ switch str
                 param.rp = rp(IndxGood);
                 param.C_fixed = ones(1,length(param.rp))*sum((gammas.*rhoAs).*...
                     ([handles.Session{handles.TES_ID}.TES.TESDim.hMo.Value handles.Session{handles.TES_ID}.TES.TESDim.hAu.Value].*...
-                    handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(2)).*handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit.Value);
+                    handles.Session{handles.TES_ID}.TES.TESDim.width.Value*handles.Session{handles.TES_ID}.TES.TESDim.length.Value).*handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit.Value);
                 
                 taueff = [handles.Session{handles.TES_ID}.TES.PP(i).p(jj(IndxGood)).taueff];
                 P0 = [handles.Session{handles.TES_ID}.TES.PP(i).p(jj(IndxGood)).P0];
@@ -294,7 +295,7 @@ switch str
                 param.rp = rp(IndxGood);
                 param.C_fixed = ones(1,length(param.rp))*sum((gammas.*rhoAs).*...
                     ([handles.Session{handles.TES_ID}.TES.TESDim.hMo.Value handles.Session{handles.TES_ID}.TES.TESDim.hAu.Value].*...
-                    handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(1)*handles.Session{handles.TES_ID}.TES.TESDim.sides.Value(2)).*handles.Session{handles.TES_ID}.TES.TESThermalN.T_fit.Value);
+                    handles.Session{handles.TES_ID}.TES.TESDim.width.Value*handles.Session{handles.TES_ID}.TES.TESDim.length.Value).*handles.Session{handles.TES_ID}.TES.TESThermalN.T_fit.Value);
                 
                 taueff = [handles.Session{handles.TES_ID}.TES.PN(i).p(jj(IndxGood)).taueff];
                 P0 = [handles.Session{handles.TES_ID}.TES.PN(i).p(jj(IndxGood)).P0];
@@ -320,7 +321,7 @@ switch str
                     a = findobj(handles.Analyzer,'DisplayName',[ht(i).DisplayName '_C_Fixed']);
                     if ~isempty(a)
                         a.Visible = 'on';
-                    end 
+                    end
                 end
             end
             set([hp; hn],'Visible','on');
@@ -336,7 +337,7 @@ switch str
             %             set(h,'Visible','on');
             %             for i = 1:length(h)
             %                 set(get(get(h(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
-%             end
+            %             end
         end
         
     case 'Hide Data fixing C value'
@@ -354,7 +355,7 @@ switch str
         prompt={'Enter the new value for R^2 threshold:'};
         name='Change R^2 threshold for filtering data';
         numlines=1;
-        defaultanswer={num2str(handles.Session{handles.TES_ID}.TES.ElectrThermalModel.Zw_R2Thrs)};        
+        defaultanswer={num2str(handles.Session{handles.TES_ID}.TES.ElectrThermalModel.Zw_R2Thrs)};
         answer=inputdlg(prompt,name,numlines,defaultanswer);
         if isempty(answer)
             warndlg('No valid entry or cancel by user',handles.VersionStr);
@@ -403,7 +404,7 @@ switch str
             try
                 set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
             end
-                
+            
         end
 end
 
@@ -429,7 +430,7 @@ data = NaN(max(Nmax),2*length(Nmax));
 iok = 1;
 for i = 1:length(hl)
     LabelStr = [LabelStr 'X_' hl(i).DisplayName '\t' 'Y_' hl(i).DisplayName '\t'];
-    data(1:Nmax(i),iok) = hl(i).XData';    
+    data(1:Nmax(i),iok) = hl(i).XData';
     data(1:Nmax(i),iok+1) = hl(i).YData';
     iok = iok +2;
 end
