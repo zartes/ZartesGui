@@ -133,6 +133,7 @@ classdef TES_IVCurveSet
             hax = findobj('Tag','Raw IV axes');
             if isempty(hfig)
                 fig = figure('Tag','Raw IV Curves','Name','Raw IV Curves');
+                hfig = findobj('Tag','Raw IV Curves');
                 ax1 = axes('Tag','Raw IV axes');
                 xlabel('Ibias (uA)');
                 ylabel('Voltaje (V)');
@@ -193,7 +194,7 @@ classdef TES_IVCurveSet
                 obj(iOK).IVsetPath = path;
                 obj(iOK).good = 1;
                                     
-                plot(ax1,obj(iOK).ibias*1e6,obj(iOK).vout,'DisplayName',[num2str(obj(iOK).Tbath*1e3) ' ' obj(iOK).range])
+%                 plot(ax1,obj(iOK).ibias*1e6,obj(iOK).vout,'DisplayName',[num2str(obj(iOK).Tbath*1e3) ' ' obj(iOK).range])
                 iOK = iOK+1;                                
             end
             pre_Rf = unique(pre_Rf);
@@ -202,6 +203,21 @@ classdef TES_IVCurveSet
             end
             obj = obj.IV_stable;
                             
+
+            set(hfig,'UserData',obj);
+            c = distinguishable_colors(length(obj));
+            color_select = [0.8 0.8 0.8];
+
+            % Pintar todas las gráficas IV
+            for i = 1:length(obj)
+                color = c(i,:);
+                plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range],...
+                    'ButtonDownFcn',{@IVSquidStep},'Tag',obj(i).file,'Color',color,'UserData',obj);
+            end
+            waitfor(msgbox('Before close this window, please select the IV curve you want to correct.',obj(1).version));
+            hfig = findobj('Tag','Raw IV Curves');
+            obj = get(hfig,'UserData');
+
             if ishandle(h)
                 close(h);
             end
@@ -367,6 +383,32 @@ classdef TES_IVCurveSet
                         obj(i).good = 1;
                     end     
 %                     pause;
+
+                case AlgMethdsAvailable{4} %'Remove quantum SQUID step'
+                    c = distinguishable_colors(length(obj));
+                    color_select = [0.8 0.8 0.8];
+                    
+                    % Pintar todas las gráficas IV
+                    for i = 1:length(obj)
+                        color = c(i,:);
+                        hb(i) = plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range],...
+                            'ButtonDownFcn',{@IVSquidStep},'Tag',obj(i).file,'Color',color,'UserData',obj);
+                        if strcmp(obj(i).range,'NegIbias')
+                            hbn(i) = plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range],...
+                                'ButtonDownFcn',{@IVSquidStep},'Tag',obj(i).file,'Color',color,'UserData',obj);
+                        end
+                    end
+                    waitfor(msgbox('Before close this window, please select the IV curve you want to correct.',obj(1).version));
+                    pause();
+                      % Seleccionar la IV que se quiere corregir
+                      % Seleccionar un punto de la IV que se quiere
+                      % corregir y otro de la IV más Normal (mayor temperatura) para obtener un
+                      % valor constante
+                      % Este valor se resta a la parte de la transición a
+                      % la curva IV a corregir.
+                      % Este proceso se puede repetir tantas veces como el
+                      % usuario considere necesario
+
                 otherwise                    
             end
             

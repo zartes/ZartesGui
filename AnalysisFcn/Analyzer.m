@@ -542,6 +542,8 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.Constructor;
         handles.Session{handles.TES_ID}.TES.IVsetN = TES_IVCurveSet;
         handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Constructor(1);
+
+
         [IVsetP, TempLims, TESP] = handles.Session{handles.TES_ID}.TES.IVsetP.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.Path);
         if isempty(TempLims)
             return;
@@ -550,7 +552,11 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES.IVsetP = handles.Session{handles.TES_ID}.TES.IVsetP.Update(IVsetP);
 %         handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.Update(TESP.TESParamP);
         
+
+        
 %         handles.Session{handles.TES_ID}.TES.IVsetN(1).CorrectionMethod = handles.Session{handles.TES_ID}.TES.IVsetP(1).CorrectionMethod;
+
+
         [IVsetN, ~, TESN] = handles.Session{handles.TES_ID}.TES.IVsetN.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath, TempLims);
         handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESN.circuit);
         handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Update(IVsetN);
@@ -565,6 +571,8 @@ switch src.Label
 %         [obj.TESN.mN, obj.TESN.mS] = obj.IVs_Slopes(IVsetN,fig);
                 
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+    
+
         
     case 'Center IV-Curves'
         

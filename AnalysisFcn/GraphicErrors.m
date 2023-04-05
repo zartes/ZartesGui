@@ -3,8 +3,8 @@ function GraphicErrors(src,evnt)
 % Last update: 14/11/2018
 fig = src.Parent;
 h = findobj(fig,'Type','Line');
-Tag = [];
 TempStr = [];
+Tag = [];
 j = 1;
 for i = 1:length(h)
     if ~isempty(strfind(h(i).DisplayName,'mK'))
@@ -15,8 +15,8 @@ end
 cmenu = uicontextmenu('Visible','on');
 if ~isempty(Tag)
     TempStr = unique(Tag);
-    
-    
+
+
     c0 = uimenu(cmenu,'Label','Show');
     for i = 1:length(TempStr)
         c0_1(i) = uimenu(c0,'Label',TempStr{i},'Callback',{@Handle_Errors});
@@ -164,14 +164,14 @@ switch str
                 set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
             end
         end
-        
+
     case 'Hide error bars'
         try
             set([hpe; hne; hfe],'Visible','off');
         end
-        
+
     case 'Show error bars'
-        
+
         try
             if strcmp(hf(1).Visible,'on')
                 set(hfe,'Visible','on');
@@ -189,33 +189,33 @@ switch str
                 end
             end
         end
-        
-        
+
+
     case 'Hide Filtered Data'
         try
             set([hf; hfe],'Visible','off');
         end
-        
+
     case 'Show Filtered Data'
-        
+
         try
             set(hf,'Visible','on');
             if strcmp(hpe(1).Visible,'on')
                 set(hfe,'Visible','on');
             end
         end
-        
-        
+
+
     case 'Hide Negative Ibias Data'
-        
+
         set([hn; hne],'Visible','off');
         for i = 1:length(hn)
             set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
         end
-        
-        
+
+
     case 'Show Negative Ibias Data'
-        
+
         set(hn,'Visible','on');
         for i = 1:length(hpe)
             if strcmp(hpe(i).Visible,'on')
@@ -225,19 +225,19 @@ switch str
         for i = 1:length(hn)
             set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
         end
-        
+
     case 'Show Data fixing C value'
         handles = guidata(src);
-        
+
         h = findobj(handles.Analyzer,'Type','Line','Tag','Fixed');
         if isempty(h)
-            
+
             gammas = [handles.Session{handles.TES_ID}.TES.TESDim.gammaMo.Value handles.Session{handles.TES_ID}.TES.TESDim.gammaAu.Value];
             rhoAs = [handles.Session{handles.TES_ID}.TES.TESDim.rhoMo.Value handles.Session{handles.TES_ID}.TES.TESDim.rhoAu.Value];
             h = flip(findobj(handles.Analyzer,'Type','Axes')); % C tau ai bi
             colors = distinguishable_colors((length(handles.Session{handles.TES_ID}.TES.PP)+length(handles.Session{handles.TES_ID}.TES.PN)));
             ind_color = 1;
-            
+
             for i = 1:length(handles.Session{handles.TES_ID}.TES.PP)
                 T0 = handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit.Value;
                 G0 = handles.Session{handles.TES_ID}.TES.TESThermalP.G.Value;
@@ -245,7 +245,7 @@ switch str
                 NameStr = [TbathStr 'PosIbias-C-Fixed'];
                 k = 1;
                 P = handles.Session{handles.TES_ID}.TES.PP;
-                
+
                 try
                     [rp,jj] = sort([P(i).p.rp]);
                 catch
@@ -256,19 +256,19 @@ switch str
                 end
                 IndxGood = find(cell2mat(P(i).Filtered(jj))== 0);
                 IndxBad = find(cell2mat(P(i).Filtered(jj))== 1);
-                
+
                 param.rp = rp(IndxGood);
                 param.C_fixed = ones(1,length(param.rp))*sum((gammas.*rhoAs).*...
                     ([handles.Session{handles.TES_ID}.TES.TESDim.hMo.Value handles.Session{handles.TES_ID}.TES.TESDim.hAu.Value].*...
                     handles.Session{handles.TES_ID}.TES.TESDim.width.Value*handles.Session{handles.TES_ID}.TES.TESDim.length.Value).*handles.Session{handles.TES_ID}.TES.TESThermalP.T_fit.Value);
-                
+
                 taueff = [handles.Session{handles.TES_ID}.TES.PP(i).p(jj(IndxGood)).taueff];
                 P0 = [handles.Session{handles.TES_ID}.TES.PP(i).p(jj(IndxGood)).P0];
                 tau0 = 2.43*param.C_fixed/G0;
                 L0 = tau0./taueff + 1;
                 param.ai_fixed = L0.*G0.*T0./P0;
-                
-                
+
+
                 plot(h(1),param.rp,2.43*param.C_fixed*1e15,'MarkerFaceColor','none','MarkerEdgeColor',colors(ind_color,:),'Color',colors(ind_color,:),'LineWidth',2,'MarkerSize',10,'DisplayName',NameStr,...
                     'ButtonDownFcn',{@Identify_Origin},'UserData',[{P;i;k;handles.Session{handles.TES_ID}.TES.circuit}],'LineStyle',':','Tag','Fixed');
                 plot(h(3),param.rp,param.ai_fixed,'MarkerFaceColor','none','MarkerEdgeColor',colors(ind_color,:),'Color',colors(ind_color,:),'LineWidth',2,'MarkerSize',10,'DisplayName',NameStr,...
@@ -282,7 +282,7 @@ switch str
                 P = handles.Session{handles.TES_ID}.TES.PN;
                 TbathStr = [num2str(handles.Session{handles.TES_ID}.TES.PN(i).Tbath*1e3) 'mK-']; %mK
                 NameStr = [TbathStr 'NegIbias-C-Fixed'];
-                
+
                 try
                     [rp,jj] = sort([P(i).p.rp]);
                 catch
@@ -296,13 +296,13 @@ switch str
                 param.C_fixed = ones(1,length(param.rp))*sum((gammas.*rhoAs).*...
                     ([handles.Session{handles.TES_ID}.TES.TESDim.hMo.Value handles.Session{handles.TES_ID}.TES.TESDim.hAu.Value].*...
                     handles.Session{handles.TES_ID}.TES.TESDim.width.Value*handles.Session{handles.TES_ID}.TES.TESDim.length.Value).*handles.Session{handles.TES_ID}.TES.TESThermalN.T_fit.Value);
-                
+
                 taueff = [handles.Session{handles.TES_ID}.TES.PN(i).p(jj(IndxGood)).taueff];
                 P0 = [handles.Session{handles.TES_ID}.TES.PN(i).p(jj(IndxGood)).P0];
                 tau0 = 2.43*param.C_fixed/G0;
                 L0 = tau0./taueff + 1;
                 param.ai_fixed = L0.*G0.*T0./P0;
-                
+
                 plot(h(1),param.rp,2.43*param.C_fixed*1e15,'MarkerFaceColor','none','MarkerEdgeColor',[colors(ind_color,:)],'Color',[colors(ind_color,:)],'LineWidth',2,'MarkerSize',10,'DisplayName',NameStr,...
                     'ButtonDownFcn',{@Identify_Origin},'UserData',[{P;i;k;handles.Session{handles.TES_ID}.TES.circuit}],'LineStyle',':','Tag','Fixed');
                 plot(h(3),param.rp,param.ai_fixed,'MarkerFaceColor','none','MarkerEdgeColor',[colors(ind_color,:)],'Color',[colors(ind_color,:)],'LineWidth',2,'MarkerSize',10,'DisplayName',NameStr,...
@@ -332,14 +332,14 @@ switch str
                 try
                     set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
                 end
-                
+
             end
             %             set(h,'Visible','on');
             %             for i = 1:length(h)
             %                 set(get(get(h(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
             %             end
         end
-        
+
     case 'Hide Data fixing C value'
         handles = guidata(src);
         h = findobj(handles.Analyzer,'Type','Line','Visible','on','Tag','Fixed');
@@ -347,10 +347,10 @@ switch str
         for i = 1:length(h)
             set(get(get(h(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
         end
-        
-        
+
+
     case 'Change R^2 threshold'
-        
+
         handles = guidata(src);
         prompt={'Enter the new value for R^2 threshold:'};
         name='Change R^2 threshold for filtering data';
@@ -389,7 +389,7 @@ switch str
         end
         handles.Session{handles.TES_ID}.TES.ElectrThermalModel.Zw_R2Thrs = Zw_R2Thrs;
         guidata(src,handles);
-        
+
     otherwise
         h = [findobj(hndl.Analyzer,'Type','Line'); findobj(hndl.Analyzer,'Type','ErrorBar')];
         set(h,'Visible','off');
@@ -404,7 +404,7 @@ switch str
             try
                 set(get(get(hn(i),'Annotation'),'LegendInformation'),'IconDisplayStyle','on');
             end
-            
+
         end
 end
 
@@ -439,7 +439,7 @@ if ~isempty(he)
         Nmaxe(i) = size(he(i).XData,2);
     end
     datae = NaN(max(Nmaxe),4*length(Nmaxe));
-    
+
     iok = 1;
     for i = 1:length(he)
         LabelStr = [LabelStr 'X_Errorbar' he(i).DisplayName '\t' 'Y_Errorbar' he(i).DisplayName '\t' ...
