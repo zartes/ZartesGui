@@ -61,7 +61,7 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','Toolbar','figure');
 
-handles.VersionStr = 'ZarTES v4.3';
+handles.VersionStr = 'ZarTES v4.4';
 set(handles.Analyzer,'Name',['TES Characterization Data Analyzer   ---   '  handles.VersionStr]);
 
 handles.DataBasePath = 'C:\Users\jbolea\Documents\GitHub\ZartesGui\DataBase\';
@@ -321,21 +321,31 @@ switch src.Label
         Session.ZTDB = Session.ZTDB.Constructor(handles.DataBaseName,handles.DataBasePath);
         
         Indx = find(DataPath(1:end-1) == filesep,3,'last');
+        if Indx < 3
+            YearStr = '';
+            MonthStr = '';
+            RunStr = '';
+        end
         YearStr = DataPath(Indx(1)+1:Indx(2)-1);
         MonthStr = DataPath(Indx(2)+1:Indx(3)-1);
         RunStr = DataPath(Indx(3)+1:end-1);
         
-        % Conectando con la base de datos en busca de algún parámetro para
-        % cargar        
-        Session.ZTDB = Session.ZTDB.UpdateFromExcel(Session);
-        % De aquí pueden salir los valores de Rsh, L, invMf y invMin (Por
-        % ahora no)
-        
-        try                                                                        
-            NickName = [RunStr '_' MonthStr '_' YearStr '_' Session.ZTDB.TES_Idn];            
+        NickName = '';
+        try
+            % Conectando con la base de datos en busca de algún parámetro para
+            % cargar
+            Session.ZTDB = Session.ZTDB.UpdateFromExcel(Session);
+            % De aquí pueden salir los valores de Rsh, L, invMf y invMin (Por
+            % ahora no)
+            
+            try
+                NickName = [RunStr '_' MonthStr '_' YearStr '_' Session.ZTDB.TES_Idn];
+            catch
+                NickName = [RunStr '_' MonthStr '_' YearStr];
+            end
         catch
-            NickName = [RunStr '_' MonthStr '_' YearStr];
         end
+
         
         answer = inputdlg({'Insert a Nick name for the TES'},handles.VersionStr,[1 50],{NickName});
         if isempty(answer)

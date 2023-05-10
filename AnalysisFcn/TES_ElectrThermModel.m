@@ -39,7 +39,7 @@ classdef TES_ElectrThermModel
         
     end
     properties (Access = private)
-        version = 'ZarTES v4.3';
+        version = 'ZarTES v4.4';
     end
     
     methods

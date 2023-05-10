@@ -36,7 +36,7 @@ classdef TES_Struct
         
         Kb = 1.38e-23;
         Report;
-        version = 'ZarTES v4.3';
+        version = 'ZarTES v4.4';
     end
 %     
 %     properties (Access = private)

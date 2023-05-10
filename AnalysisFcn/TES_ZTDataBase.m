@@ -75,10 +75,18 @@ classdef TES_ZTDataBase
             obj.Colddown_Date = alltext{2,4};
             
             [~, ~, alltext] = xlsread([Session.Path(1:find(Session.Path(1:end-1) == filesep,1,'last')) filesep d(1).name],2);
-            
-            RawIndx = str2double(strtok(RunStr,'RUN'))+1;
-            obj.BFieldCond = [num2str(alltext{RawIndx,2}) '/' num2str(alltext{RawIndx,3})];  
-            obj.Comments = alltext{RawIndx,4};
+            try
+                RawIndx = find(not(cellfun('isempty',strfind(alltext(:,1),RunStr))));
+                
+                %             RawIndx = str2double(strtok(RunStr,'RUN'))+1;
+                obj.BFieldCond = [num2str(alltext{RawIndx,2}) '/' num2str(alltext{RawIndx,3})];
+                obj.Comments = alltext{RawIndx,4};
+            catch
+            end
+
+%             RawIndx = str2double(strtok(RunStr,'RUN'))+1;
+%             obj.BFieldCond = [num2str(alltext{RawIndx,2}) '/' num2str(alltext{RawIndx,3})];  
+%             obj.Comments = alltext{RawIndx,4};
         end
         
         function [obj, Session] = Update(obj,Session)

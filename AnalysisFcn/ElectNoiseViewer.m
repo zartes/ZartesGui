@@ -62,7 +62,7 @@ set(handles.figure1,'Color',[0 0.2 0.5],'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized');
 
-handles.VersionStr = handles.varargin{1}.version; %'ZarTES v4.1';
+handles.VersionStr = handles.varargin{1}.version; 
 set(handles.figure1,'Name',['Electrical Noise Identification    ---   ' handles.VersionStr]);
 
 
