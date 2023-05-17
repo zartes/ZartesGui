@@ -381,7 +381,9 @@ switch src.Label
                 case 'sesion.mat'
                     load([pathname filename],'circuit');
                 case 'circuit.mat'
-                    load([pathname filename],'circuit');
+                    a = load([pathname filename],'circuit*');
+                    circuit = eval(['a.' char(fieldnames(a))]);
+%                     load([pathname filename],'circuit');
                     % Robustecer para buscar la variable circuit  
                 otherwise
                     a = load([pathname filename],'circuit*');
