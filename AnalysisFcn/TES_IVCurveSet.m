@@ -179,8 +179,14 @@ classdef TES_IVCurveSet
                         Dvout = data(:,4);
                     case 4
                         Dibias = data(:,2)*1e-6;
-                        Dvout = data(:,4);                        
-                end             
+                        Dvout = data(:,4);
+                end
+                
+                [Dibias, Id] = unique(Dibias);
+                Dvout = Dvout(Id);
+                [~, I] = sort(abs(Dibias),'descend');
+                Dibias = Dibias(I);
+                Dvout = Dvout(I);
                 
                 if strfind(fileN{iOK},'_down_p_')
                     obj(iOK).range = 'PosIbias';
@@ -421,9 +427,25 @@ classdef TES_IVCurveSet
                 otherwise
                     StrRange = {'*'};
             end
-            eval(['TES.TESParam' upper(StrRange{1}) '.mN.Value = mN;']);
-            eval(['TES.TESParam' upper(StrRange{1}) '.mS.Value = mS;']);
-            eval(['TES.TESParam' upper(StrRange{1}) ' = RnRparCalc(TES.TESParam' upper(StrRange{1}) ',TES.circuit);']);
+            % pregunta si se quiere actualizar el valor de mN
+            ButtonName = questdlg('Do you want to update mS, mN, Rpar and Rn from IV data?', ...
+                obj(1).version, ...
+                'No', 'Yes', 'No');
+            switch ButtonName
+                case 'No'
+                    eval(['TES.TESParam' upper(StrRange{1}) '.mN.Value = TES.circuit.mN.Value;']);
+                    eval(['TES.TESParam' upper(StrRange{1}) '.mS.Value = TES.circuit.mS.Value;']);
+                    eval(['TES.TESParam' upper(StrRange{1}) '.Rpar.Value = TES.circuit.Rpar.Value;']);
+                    eval(['TES.TESParam' upper(StrRange{1}) '.Rn.Value = TES.circuit.Rn.Value;']);
+                case 'Yes'
+                    eval(['TES.TESParam' upper(StrRange{1}) '.mN.Value = mN;']);
+                    eval(['TES.TESParam' upper(StrRange{1}) '.mS.Value = mS;']);
+                    eval(['TES.TESParam' upper(StrRange{1}) ' = RnRparCalc(TES.TESParam' upper(StrRange{1}) ',TES.circuit);']);
+                    
+                    
+            end % switch
+            
+            
             eval(['obj = obj.GetIVTES(TES.circuit,TES.TESParam' upper(StrRange{1}) ',TES.TESThermal' upper(StrRange{1}) ');']);
         end        
         
@@ -512,10 +534,14 @@ classdef TES_IVCurveSet
             if ~isempty(XS)
                 try
                     indPS = find(abs((pend-XS)*100/XS) < 5); % 5 porciento de error relativo
-                    dataPS = vout([indPS; indPS(end)+1]);
-                    dataXPS = ibias([indPS; indPS(end)+1]);
+                    
+%                     dataPS = vout([indPS(end-50); indPS(end)+1]);
+%                     dataXPS = ibias([indPS(end-50); indPS(end)+1]);
+                    
+                    dataPS = vout(end-2:end);
+                    dataXPS = ibias(end-2:end);
                     PS = polyfit(dataXPS,dataPS,1);
-                    SLine = polyval(PS,Xdata);
+                    SLine = polyval(PS,dataXPS);
                     DataFit.SLine = SLine;
                     DataFit.PS = PS;
                     SlopeS = 1/PS(1);

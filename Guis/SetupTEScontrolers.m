@@ -420,15 +420,34 @@ data = importdata([pathname filesep filename]);
 if isstruct(data)
     data = data.data;
 end
+
+
 j = size(data,2);
 switch j
     case 2
-        Dibias = (data(:,1)-data(end,1))*1e-6;
-        Dvout = data(:,4);
+        IV.ibias = data(:,2)*1e-6;
+        if data(1,1) == 0
+            IV.vout = data(:,4)-data(1,4);
+        else
+            IV.vout = data(:,4)-data(end,4);
+        end
     case 4
-        Dibias = data(:,2)*1e-6;
-        Dvout = data(:,4);
+        IV.ibias = data(:,2)*1e-6;
+        if data(1,2) == 0
+            IV.vout = data(:,4)-data(1,4);
+        else
+            IV.vout = data(:,4)-data(end,4);
+        end
 end
+[IV.ibias, Id] = unique(IV.ibias);
+IV.vout = IV.vout(Id);
+[~, I] = sort(abs(IV.ibias),'descend');
+IV.ibias = IV.ibias(I);
+IV.vout = IV.vout(I);
+
+val = polyfit(IV.ibias(1:3),IV.vout(1:3),1); % First points avoided
+mN = val(1);
+
 IV.ibias = Dibias;
 IV.vout = Dvout;
 IV.file = filename;
@@ -437,8 +456,9 @@ IV.IVsetPath = pathname;
 IV.CorrectionMethod = 'Respect to Normal Curve';
 IV.good = 1;
 
-[DataFit,Xcros,Ycros,SlopeN,SlopeS] = IV.IV_estimation_mN_mS(IV.ibias,IV.vout);
-mN = 1/SlopeN;
+
+% [DataFit,Xcros,Ycros,SlopeN,SlopeS] = IV.IV_estimation_mN_mS(IV.ibias,IV.vout);
+% mN = 1/SlopeN;
 % Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/...
 %     (mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-handles.Circuit.Rpar.Value);
 % mN = 8;
@@ -479,15 +499,45 @@ data = importdata([pathname filesep filename]);
 if isstruct(data)
     data = data.data;
 end
+
 j = size(data,2);
 switch j
     case 2
-        Dibias = (data(:,1)-data(end,1))*1e-6;
-        Dvout = data(:,4);
+        IV.ibias = data(:,2)*1e-6;
+        if data(1,1) == 0
+            IV.vout = data(:,4)-data(1,4);
+        else
+            IV.vout = data(:,4)-data(end,4);
+        end
     case 4
-        Dibias = data(:,2)*1e-6;
-        Dvout = data(:,4);
+        IV.ibias = data(:,2)*1e-6;
+        if data(1,2) == 0
+            IV.vout = data(:,4)-data(1,4);
+        else
+            IV.vout = data(:,4)-data(end,4);
+        end
 end
+[IV.ibias, Id] = unique(IV.ibias);
+IV.vout = IV.vout(Id);
+[~, I] = sort(abs(IV.ibias),'descend');
+IV.ibias = IV.ibias(I);
+IV.vout = IV.vout(I);
+% val = polyfit(IV.ibias(1:3),IV.vout(1:3),1); % First points avoided
+% mN = val(1);
+val = polyfit(IV.ibias(end-2:end),IV.vout(end-2:end),1);
+mS = val(1);
+
+% j = size(data,2);
+% switch j
+%     case 2
+%         Dibias = (data(:,1)-data(end,1))*1e-6;
+%         Dvout = data(:,4)-data(end,4);
+%     case 4
+%         Dibias = data(:,2)*1e-6;
+%         Dvout = data(:,4)-data(end,4);
+% end
+
+
 IV.ibias = Dibias;
 IV.vout = Dvout;
 IV.file = filename;
@@ -496,8 +546,8 @@ IV.IVsetPath = pathname;
 IV.CorrectionMethod = 'Respect to Normal Curve';
 IV.good = 1;
 
-[DataFit,Xcros,Ycros,SlopeN,SlopeS] = IV.IV_estimation_mN_mS(IV.ibias,IV.vout);
-mS = 1/SlopeS;
+% [DataFit,Xcros,Ycros,SlopeN,SlopeS] = IV.IV_estimation_mN_mS(IV.ibias,IV.vout);
+% mS = 1/SlopeS;
 % Rn = (handles.Circuit.Rsh.Value*handles.Circuit.Rf.Value*handles.Circuit.invMf.Value/...
 %     (mN*handles.Circuit.invMin.Value)-handles.Circuit.Rsh.Value-handles.Circuit.Rpar.Value);
 % mN = 8;
