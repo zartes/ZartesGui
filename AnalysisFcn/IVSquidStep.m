@@ -31,6 +31,8 @@ switch sel_typ
                 {@ActionFcn},'UserData',data);
             uimenu(c1,'Label','Transition stage correction','Callback',...
                 {@ActionFcn},'UserData',data);
+            uimenu(c1,'Label','SQUID Step Manually correction','Callback',...
+                {@ActionFcn},'UserData',data);
             
         catch
         end
@@ -94,6 +96,27 @@ switch str
             Normal_shift = UserData.IVset(UserData.NumFile+1).vout(1)+bM; 
             UserData.IVset(UserData.NumFile).vout = [Trans.vout-Trans.vout(1)+Normal_shift; Supercond.vout];
         end
+    case 'SQUID Step Manually correction'
+        waitfor(msgbox('Zoom in before close this window around SQUID step.',''));
+        [XOffset, YOffset] = ginput(1);
+
+        % figure,plot(UserData.IVset(UserData.NumFile).ibias,UserData.IVset(UserData.NumFile).vout),hold on,
+        % Busqueda del punto de conflicto
+        [~, c] = min(abs(UserData.IVset(UserData.NumFile).ibias-XOffset*1e-6));
+        
+        intv = (c-10:min(c+10,length(UserData.IVset(UserData.NumFile).vout))); %muestras (10 antes y 10 despues del punto crítico)
+
+        [val, c1] = max(diff(UserData.IVset(UserData.NumFile).vout(intv)));
+        MedianVal = median(diff(UserData.IVset(UserData.NumFile).vout(intv)));
+        indxc1 = c1+intv(1);
+        % plot(UserData.IVset(UserData.NumFile).ibias(c),UserData.IVset(UserData.NumFile).vout(c),'*r')
+        % plot(UserData.IVset(UserData.NumFile).ibias(indxc1),UserData.IVset(UserData.NumFile).vout(indxc1),'*r')
+        % 
+        UserData.IVset(UserData.NumFile).vout =[UserData.IVset(UserData.NumFile).vout(1:indxc1-1); UserData.IVset(UserData.NumFile).vout(indxc1:end)-val];
+        % plot(UserData.IVset(UserData.NumFile).ibias,vout,'*r')
+        % UserData.IVset(UserData.NumFile).ibias =UserData.IVset(UserData.NumFile).ibias(indxc1:end)-val;
+        
+
 
     otherwise
 

@@ -329,6 +329,10 @@ classdef TES_IVCurveSet
                         obj(i).vout = obj(i).vout-obj(i).vout(ind);
                         % Todas las curvas IV se suponen BUENAS
                         obj(i).good = 1;
+                        plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                        if strcmp(obj(i).range,'NegIbias')
+                            plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                        end                        
                         
 %                         % Se estiman las pendientes en función de los
 %                         % últimos y primeros 5 puntos.
