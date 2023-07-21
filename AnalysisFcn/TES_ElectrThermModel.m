@@ -20,9 +20,9 @@ classdef TES_ElectrThermModel
         
         tipo = {'current';'nep'};               % current, nep
         Selected_tipo = 1;
-        bool_components = 0;             % 0,1
-        bool_Mjo = 0;                        % Jonson noise 0,1
-        bool_Mph = 0;                        % Phonon noise 0,1        
+        bool_components = 1;             % 0,1
+        bool_Mjo = 1;                        % Jonson noise 0,1
+        bool_Mph = 1;                        % Phonon noise 0,1        
         Noise_BaseName = {'HP';'PXI'};   % \HP_noise*, \PXI_noise*
         Selected_NoiseBaseName = 1;
         Noise_Models = {'irwin';'2TB (Hanging)';'2TB (Intermediate)';'wouter'};           % irwin, wouter

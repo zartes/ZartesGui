@@ -555,6 +555,10 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES.IVsetN = TES_IVCurveSet;
         handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Constructor(1);
 
+        
+        % En este punto se tiene que preguntar al usuario de dónde quiere
+        % cargar el set de curvas IV (de los archivos originales o de una
+        % estructura.
 
         [IVsetP, TempLims, TESP] = handles.Session{handles.TES_ID}.TES.IVsetP.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.Path);
         if isempty(TempLims)

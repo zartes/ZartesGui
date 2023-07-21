@@ -23,15 +23,15 @@ elseif ~any([1 2]-s.SourceCH == 0) % Only channels 1 and 2 are available
 end
 % Cambio momentaneo
 
-if s.SourceCH == 1
-    it = [2 s.SourceCH];
-else
-    it = [1 s.SourceCH];
-end
-for i = 1:2    
+% if s.SourceCH == 1
+%     it = [2 s.SourceCH];
+% else
+%     it = [1 s.SourceCH];
+% end
+% for i = 1:2    
     % str=sprintf('%s%s%s','<0',ch,'b01');
     % str = ['<0' num2str(s.SourceCH) 'b01'];
-    str = ['<0' num2str(it(i)) 'b01'];
+    str = ['<0' num2str(s.SourceCH) 'b01'];
     chk = mod(sum(double(str)),256);
     str = sprintf('%s%02X\r',str,chk);
     out = query(s.ObjHandle,str,'%s','%s');
@@ -41,4 +41,4 @@ for i = 1:2
     else
         out = 'FAIL';
     end
-end
+% end

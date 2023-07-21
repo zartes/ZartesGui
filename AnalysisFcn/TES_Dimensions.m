@@ -55,7 +55,7 @@ classdef TES_Dimensions
             obj.rhoAu.Value = 0.0983;
             obj.rhoAu.Units = 'mole/cm^3';
             
-            obj.Abs_thick.Value = 25e-6;
+            
             obj.Abs_thick.Units = {'m'};
             obj.Abs_width.Value = 25e-6;
             obj.Abs_width.Units = 'm';
@@ -65,6 +65,7 @@ classdef TES_Dimensions
             obj.Abs_hBi.Units = 'm';
             obj.Abs_hAu.Value = 50e-6;
             obj.Abs_hAu.Units = 'm';
+            obj.Abs_thick.Value = obj.Abs_hAu.Value + obj.Abs_hBi.Value;
             obj.Abs_gammaBi.Value = 0.008e3;
             obj.Abs_gammaBi.Units = 'J/moleK^2';
             obj.Abs_gammaAu.Value = 0.729e3;
@@ -150,6 +151,7 @@ classdef TES_Dimensions
                             obj.Abs_length.Value = str2double(answer{2});
                             obj.Abs_hBi.Value = str2double(answer{3});
                             obj.Abs_hAu.Value = str2double(answer{4});
+                            obj.Abs_thick.Value = obj.Abs_hAu.Value + obj.Abs_hBi.Value;
                         end
                     otherwise
                         
@@ -172,6 +174,7 @@ classdef TES_Dimensions
                     obj.Abs_length.Value = str2double(answer{2});
                     obj.Abs_hBi.Value = str2double(answer{3});
                     obj.Abs_hAu.Value = str2double(answer{4});
+                    obj.Abs_thick.Value = obj.Abs_hAu.Value + obj.Abs_hBi.Value;
                 end
             end
             if obj.Membrane_bool == 0

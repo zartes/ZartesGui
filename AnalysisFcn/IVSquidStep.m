@@ -56,7 +56,7 @@ y = UserData.IVset(UserData.NumFile).vout;
 
 diffy = diff(y);
 thresholdy = prctile(abs(diffy),100);
-Ind = find(round(abs(diffy)*1e5) == round(thresholdy*1e5))+1;
+Ind = find(round(abs(diffy)*1e5) == round(thresholdy*1e5));
 Trans.ibias = x(1:Ind);
 Trans.vout = y(1:Ind);
 Supercond.ibias = x(Ind+1:end);
@@ -84,8 +84,17 @@ switch str
     case 'IV Vertical Shift'
         UserData.IVset(UserData.NumFile).vout = [Trans.vout; Supercond.vout]-Squid_shift;
 
-    case 'Superconductor stage correction'                
-        UserData.IVset(UserData.NumFile).vout = [Trans.vout; Supercond.vout-Squid_shift];
+    case 'Superconductor stage correction'                        
+        derVout = abs(diff(UserData.IVset(UserData.NumFile).vout));       
+        thSup = 10*max([mean(abs(derVout(end-4:end-1))); mean(abs(derVout(2:4)))]);%                
+        indx = find(derVout > thSup)+1;
+        
+        if length(indx) > 1
+            [~, ind_c] = max(abs(UserData.IVset(UserData.NumFile).vout(indx)));             
+            UserData.IVset(UserData.NumFile).vout = [Trans.vout; Supercond.vout-Squid_shift];
+            UserData.IVset(UserData.NumFile).vout(indx(ind_c)) = [];
+            UserData.IVset(UserData.NumFile).ibias(indx(ind_c)) = [];
+        end
         
     case 'Transition stage correction'
         bM = nanmedian(diff(b));
@@ -97,22 +106,78 @@ switch str
             UserData.IVset(UserData.NumFile).vout = [Trans.vout-Trans.vout(1)+Normal_shift; Supercond.vout];
         end
     case 'SQUID Step Manually correction'
-        waitfor(msgbox('Zoom in before close this window around SQUID step.',''));
-        [XOffset, YOffset] = ginput(1);
+%         waitfor(msgbox('Zoom in before close this window around SQUID step.',''));
+%         [XOffset, YOffset] = ginput(1);
 
+        
+        derVout = abs(diff(UserData.IVset(UserData.NumFile).vout));       
+        thSup = 1.1*max([mean(abs(derVout(end-4:end-1))); mean(abs(derVout(2:4)))]);
+%         thSup = 1.05*max();
+        % Busqueda de pendientes grandes
+        indx = find(derVout > thSup);
+        
+        % Comprobación de vecinos próximos
+        % Añado la protección en caso de estar ante una curva "normal"
+        if indx(1)-1 == 0
+            % Actualizamos el umbral con los primeros puntos
+            thSup = 1.1*max(abs(derVout(1:3)));
+            % Busqueda de pendientes grandes
+            indx = find(derVout > thSup);
+        end
+        ind_ok = [];
+        for i = 1:length(indx)
+            
+            % Comprobamos que el punto tiene mayor pendiente que las partes
+            % primera y última (normal y superconductora)
+            if derVout(indx(i)) > 1.1*thSup
+                if (derVout(indx(i)-1) < 1.1*thSup)&&(derVout(indx(i)+1) < 1.1*thSup) % A izquierdas
+                    ind_ok = [ind_ok indx(i)-1 indx(i)+1];
+                end                
+            end
+            % Si el anterior o el posterior tienen una pendiente menor que
+            % el umbral de la pendiente superconductora son puntos que hay
+            % que eliminar/corregir
+            if derVout(indx(i)-1) < 0.95*thSup % A izquierdas
+                ind_ok = [ind_ok indx(i)-1];                
+            end            
+            if derVout(indx(i)+1) < 0.95*thSup  % A derechas
+                    ind_ok = [ind_ok indx(i)+1];
+            end
+        end
+        
+        
+        % Los saltos de Squid se producen de forma rápida en pocas muestras
+        % comprobamos por pares si la distancia entre ellos no es mucha
+        for i = 1:floor(length(ind_ok)/2)
+            
+            chk = (ind_ok(2*(i-1)+1)-ind_ok(2*(i-1)+2))<4;
+            if chk == 1
+                % los que están cerca deberían de tener variaciones pequeñas de
+                % amplitud
+                yy = spline(UserData.IVset(UserData.NumFile).ibias(ind_ok(1)-3:ind_ok(1)),...
+                    UserData.IVset(UserData.NumFile).vout(ind_ok(1)-3:ind_ok(1)),...
+                    UserData.IVset(UserData.NumFile).ibias(ind_ok(1):ind_ok(2)));
+                
+                offset = UserData.IVset(UserData.NumFile).vout(ind_ok(2))-yy(end);
+                UserData.IVset(UserData.NumFile).vout(ind_ok(1):ind_ok(2))=yy;
+                UserData.IVset(UserData.NumFile).vout(ind_ok(2)+1:end) = UserData.IVset(UserData.NumFile).vout(ind_ok(2)+1:end)-offset;
+            end
+            
+        end
         % figure,plot(UserData.IVset(UserData.NumFile).ibias,UserData.IVset(UserData.NumFile).vout),hold on,
         % Busqueda del punto de conflicto
-        [~, c] = min(abs(UserData.IVset(UserData.NumFile).ibias-XOffset*1e-6));
-        
-        intv = (c-10:min(c+10,length(UserData.IVset(UserData.NumFile).vout))); %muestras (10 antes y 10 despues del punto crÃ­tico)
-
-        [val, c1] = max(diff(UserData.IVset(UserData.NumFile).vout(intv)));
-        MedianVal = median(diff(UserData.IVset(UserData.NumFile).vout(intv)));
-        indxc1 = c1+intv(1);
-        % plot(UserData.IVset(UserData.NumFile).ibias(c),UserData.IVset(UserData.NumFile).vout(c),'*r')
-        % plot(UserData.IVset(UserData.NumFile).ibias(indxc1),UserData.IVset(UserData.NumFile).vout(indxc1),'*r')
-        % 
-        UserData.IVset(UserData.NumFile).vout =[UserData.IVset(UserData.NumFile).vout(1:indxc1-1); UserData.IVset(UserData.NumFile).vout(indxc1:end)-val];
+%         [~, c] = min(abs(UserData.IVset(UserData.NumFile).ibias-XOffset*1e-6));
+%         
+%         intv = (c-3:min(c+3,length(UserData.IVset(UserData.NumFile).vout))); %muestras (10 antes y 10 despues del punto crÃ­tico)
+% 
+%         [val, c1] = max(abs(diff(UserData.IVset(UserData.NumFile).vout(intv))));
+%         MedianVal = median(abs(diff(UserData.IVset(UserData.NumFile).vout(intv))));
+%         val = UserData.IVset(UserData.NumFile).vout(intv(c1));
+%         indxc1 = c1+intv(1);
+%         % plot(UserData.IVset(UserData.NumFile).ibias(c),UserData.IVset(UserData.NumFile).vout(c),'*r')
+%         % plot(UserData.IVset(UserData.NumFile).ibias(indxc1),UserData.IVset(UserData.NumFile).vout(indxc1),'*r')
+%         % 
+%         UserData.IVset(UserData.NumFile).vout =[UserData.IVset(UserData.NumFile).vout(1:indxc1-1); UserData.IVset(UserData.NumFile).vout(indxc1:end)-val];
         % plot(UserData.IVset(UserData.NumFile).ibias,vout,'*r')
         % UserData.IVset(UserData.NumFile).ibias =UserData.IVset(UserData.NumFile).ibias(indxc1:end)-val;
         
@@ -123,7 +188,7 @@ switch str
 end
 % Cambiamos de color la curva IV que va a ser modificada
 
-IVchange = findobj('Tag',src.Parent.Text);  % Problemas de identificaciÃ³n si hay otras figuras abiertas!!!!! 'Tag','Raw IV axes'
+IVchange = UserData.src;  % Problemas de identificaciÃ³n si hay otras figuras abiertas!!!!! 'Tag','Raw IV axes'
 color = IVchange.Color;
 IVchange.Color = [0.8 0.8 0.8];
 IVchange.Tag = '';

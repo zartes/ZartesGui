@@ -96,113 +96,162 @@ classdef TES_IVCurveSet
         
         
         function [obj, pre_Rf] = ImportFullIV(obj,path,fileN)
-            % Function to import I-V curves from files
             
-            if ~exist('path','var')
-                [fileN,path] = uigetfile('C:\Documents and Settings\Usuario\Escritorio\Datos\2016\Noviembre\IVs\*.txt','','multiselect','on');
-            elseif ~exist('fileN','var')
-                [fileN,path] = uigetfile([path '\*.txt'],'','multiselect','on');
-            end
-            if isempty(path)
-                waitfor(msgbox('Cancelled by user',obj.version));
-                pre_Rf = [];
-                return;
-            end
-            T = strcat(path,fileN);
-            if ~iscell(T)
-                [ii,~] = size(T);
-                T2 = {[]};
-                for i = 1:ii
-                    T2{i} = T(i,:);
-                end
-                T=T2;
-            end
-            if ~iscell(fileN)
-                [ii,~] = size(fileN);
-                file2 = {[]};
-                for i = 1:ii
-                    file2{i} = fileN(i,:);
-                end
-                fileN = file2;
-            end
-            h = waitbar(0,'Please wait...','Name',[obj.version ' - Loading IV curves']);
-            pause(0.05);
+            ButtonName = questdlg('Import IV curve set from?', ...
+                obj.version, ...
+                'Folder', 'Structure', 'Folder');
+            switch ButtonName
+                case 'Structure'
+                    [fileN,path] = uigetfile([path '\*.mat']);
+                    if isempty(path)
+                        waitfor(msgbox('Cancelled by user',obj.version));
+                        pre_Rf = [];
+                        return;
+                    end
+                    data = load([path fileN]);
+                    fld = fieldnames(data); % sólo se acepta 1
+                    data = eval(['data. ' fld{1}]);
+                    
+                    obj = Update(obj,data);
+                    % Presuponemos que tendrá que añadirse el archivo de
+                    % origen y la carpeta de la que proceden (necesario
+                    % para saber qué Rf se ha utilizado)
+                    % También es necesario añadir el rango (pos o neg)
+                    pre_Rf = 10000;
+                    
+                    hfig = findobj('Tag','Raw IV Curves');
+                    hax = findobj('Tag','Raw IV axes');
+                    if isempty(hfig)
+                        fig = figure('Tag','Raw IV Curves','Name','Corrected IV Curves');
+                        hfig = findobj('Tag','Raw IV Curves');
+                        ax1 = axes('Tag','Raw IV axes');
+                        xlabel('Ibias (uA)');
+                        ylabel('Voltaje (V)');
+                        hold(ax1,'on');
+                        grid(ax1,'on');
+                    else
+                        fig = hfig;
+                        ax1 = hax;
+                        grid(ax1,'on');
+                        xlabel('Ibias (uA)');
+                        ylabel('Voltaje (V)');
+                    end
+                    
+                otherwise
+               
+            
+                    
+                    
+                    % Function to import I-V curves from files
+                    if ~exist('path','var')
+                        [fileN,path] = uigetfile('C:\Documents and Settings\Usuario\Escritorio\Datos\2016\Noviembre\IVs\*.txt','','multiselect','on');
+                    elseif ~exist('fileN','var')
+                        [fileN,path] = uigetfile([path '\*.txt'],'','multiselect','on');
+                    end
+                    if isempty(path)
+                        waitfor(msgbox('Cancelled by user',obj.version));
+                        pre_Rf = [];
+                        return;
+                    end
+                    T = strcat(path,fileN);
+                    if ~iscell(T)
+                        [ii,~] = size(T);
+                        T2 = {[]};
+                        for i = 1:ii
+                            T2{i} = T(i,:);
+                        end
+                        T=T2;
+                    end
+                    if ~iscell(fileN)
+                        [ii,~] = size(fileN);
+                        file2 = {[]};
+                        for i = 1:ii
+                            file2{i} = fileN(i,:);
+                        end
+                        fileN = file2;
+                    end
+                    h = waitbar(0,'Please wait...','Name',[obj.version ' - Loading IV curves']);
+                    pause(0.05);
+                    
+                    
+                    hfig = findobj('Tag','Raw IV Curves');
+                    hax = findobj('Tag','Raw IV axes');
+                    if isempty(hfig)
+                        fig = figure('Tag','Raw IV Curves','Name','Raw IV Curves');
+                        hfig = findobj('Tag','Raw IV Curves');
+                        ax1 = axes('Tag','Raw IV axes');
+                        xlabel('Ibias (uA)');
+                        ylabel('Voltaje (V)');
+                        hold(ax1,'on');
+                        grid(ax1,'on');
+                    else
+                        fig = hfig;
+                        ax1 = hax;
+                        grid(ax1,'on');
+                        xlabel('Ibias (uA)');
+                        ylabel('Voltaje (V)');
+                    end
+                    
+                    
+                    iOK = 1;
+                    for i = 1:length(T)
+                        file_upd = fileN{iOK};
+                        file_upd(file_upd == '_') = ' ';
+                        waitbar(iOK/length(T),h,file_upd)
+                        if isempty(strfind(fileN{iOK},'matlab.txt'))
+                            continue;
+                        end
+                        try
+                            data = importdata(T{i});
+                        catch
+                            data = fopen(T{i});
+                            continue;
+                        end
+                        ind_i = strfind(fileN{iOK},'mK_Rf');
+                        ind_f = strfind(fileN{iOK},'K_down_');
+                        if isempty(ind_f)
+                            ind_f = strfind(fileN{iOK},'K_up_');
+                        end
+                        pre_Rf(i) = str2double(fileN{iOK}(ind_i+5:ind_f-1))*1000;
+                        
+                        if isstruct(data)
+                            data = data.data;
+                        end
+                        j = size(data,2);
+                        switch j
+                            case 2
+                                Dibias = (data(:,1))*1e-6;
+                                Dvout = data(:,4);
+                            case 4
+                                Dibias = data(:,2)*1e-6;
+                                Dvout = data(:,4);
+                        end
+                        
+                        [Dibias, Id] = unique(Dibias);
+                        Dvout = Dvout(Id);
+                        [~, I] = sort(abs(Dibias),'descend');
+                        Dibias = Dibias(I);
+                        Dvout = Dvout(I);
+                        
+                        if strfind(fileN{iOK},'_down_p_')
+                            obj(iOK).range = 'PosIbias';
+                        else
+                            obj(iOK).range = 'NegIbias';
+                        end
+                        obj(iOK).ibias = Dibias;
+                        obj(iOK).vout = Dvout;
+                        obj(iOK).file = fileN{iOK};
+                        obj(iOK).Tbath = sscanf(char(regexp(fileN{iOK},'\d+.?\d+mK*','match')),'%fmK')*1e-3;
+                        obj(iOK).IVsetPath = path;
+                        obj(iOK).good = 1;
+                        
+                        %                 plot(ax1,obj(iOK).ibias*1e6,obj(iOK).vout,'DisplayName',[num2str(obj(iOK).Tbath*1e3) ' ' obj(iOK).range])
+                        iOK = iOK+1;
+                    end
+                    
+            end % switch
             
             
-            hfig = findobj('Tag','Raw IV Curves');
-            hax = findobj('Tag','Raw IV axes');
-            if isempty(hfig)
-                fig = figure('Tag','Raw IV Curves','Name','Raw IV Curves');
-                hfig = findobj('Tag','Raw IV Curves');
-                ax1 = axes('Tag','Raw IV axes');
-                xlabel('Ibias (uA)');
-                ylabel('Voltaje (V)');
-                hold(ax1,'on');
-                grid(ax1,'on');
-            else
-                fig = hfig;
-                ax1 = hax;
-                grid(ax1,'on');
-                xlabel('Ibias (uA)');
-                ylabel('Voltaje (V)');
-            end      
-            
-            
-            iOK = 1;
-            for i = 1:length(T)
-                file_upd = fileN{iOK};
-                file_upd(file_upd == '_') = ' ';
-                waitbar(iOK/length(T),h,file_upd)
-                if isempty(strfind(fileN{iOK},'matlab.txt'))
-                    continue;
-                end
-                try
-                    data = importdata(T{i});
-                catch
-                    data = fopen(T{i});
-                    continue;
-                end      
-                ind_i = strfind(fileN{iOK},'mK_Rf');
-                ind_f = strfind(fileN{iOK},'K_down_');
-                if isempty(ind_f)
-                    ind_f = strfind(fileN{iOK},'K_up_');
-                end
-                pre_Rf(i) = str2double(fileN{iOK}(ind_i+5:ind_f-1))*1000;
-                
-                if isstruct(data)
-                    data = data.data;
-                end          
-                j = size(data,2);
-                switch j
-                    case 2
-                        Dibias = (data(:,1))*1e-6;
-                        Dvout = data(:,4);
-                    case 4
-                        Dibias = data(:,2)*1e-6;
-                        Dvout = data(:,4);
-                end
-                
-                [Dibias, Id] = unique(Dibias);
-                Dvout = Dvout(Id);
-                [~, I] = sort(abs(Dibias),'descend');
-                Dibias = Dibias(I);
-                Dvout = Dvout(I);
-                
-                if strfind(fileN{iOK},'_down_p_')
-                    obj(iOK).range = 'PosIbias';
-                else
-                    obj(iOK).range = 'NegIbias';
-                end
-                obj(iOK).ibias = Dibias;
-                obj(iOK).vout = Dvout;
-                obj(iOK).file = fileN{iOK};
-                obj(iOK).Tbath = sscanf(char(regexp(fileN{iOK},'\d+.?\d+mK*','match')),'%fmK')*1e-3;
-                obj(iOK).IVsetPath = path;
-                obj(iOK).good = 1;
-                                    
-%                 plot(ax1,obj(iOK).ibias*1e6,obj(iOK).vout,'DisplayName',[num2str(obj(iOK).Tbath*1e3) ' ' obj(iOK).range])
-                iOK = iOK+1;                                
-            end
             pre_Rf = unique(pre_Rf);
             if length(pre_Rf) > 1
                 warndlg('Unconsistency on Rf values, please check it out',obj.version);
@@ -227,6 +276,7 @@ classdef TES_IVCurveSet
             if ishandle(h)
                 close(h);
             end
+            
         end
         
         function obj = IV_stable(obj)

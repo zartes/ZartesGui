@@ -2527,7 +2527,7 @@ if ~isempty(value)&&~isnan(value)
     if value < 0
         set(hObject,'String','0');
     end
-    if value > 1
+    if value > 1000 % en mK
         set(hObject,'String','0');
     end        
 else

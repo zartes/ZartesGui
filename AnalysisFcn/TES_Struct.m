@@ -261,6 +261,7 @@ classdef TES_Struct
                     clear SetIbias;
                     SetIbias{1} = [];
                     perc = [];
+                    ind_wng = [];
                     for i = 1:length(IVTESset)
                         if ~IVTESset(i).good
                             continue;
@@ -291,7 +292,8 @@ classdef TES_Struct
                         
                         
                         ind = find(IVTESset(i).rtes > obj.rtesLB & IVTESset(i).rtes < obj.rtesUB);%%%algunas IVs fallan.
-                        if isempty(ind)
+                        if isempty(ind)||length(ind)<2
+                            ind_wng = [ind_wng; i];
                             continue;
                         end
                         Paux(kj) = ppval(spline(IVTESset(i).rtes(ind),IVTESset(i).ptes(ind)),perc(i)); %#ok<AGROW>
@@ -313,6 +315,13 @@ classdef TES_Struct
                                 plot(ax(axInd(1),1),IVTESset(i).ibias(indP),IVTESset(i).vout(indP),'Marker','o','MarkerEdgeColor','b','Visible','off','DisplayName',['%Rn: ' num2str(perc(i))]);
                         end
                         
+                    end
+                    if ~isempty(ind_wng)
+                        warntxt = ['Not processed IV curves of ' IVTESset(ind_wng(1)).range ' range: '];
+                        for wn = 1:length(ind_wng)
+                            warntxt = [warntxt num2str(IVTESset(ind_wng(1)).Tbath) ' mK; ' ];
+                        end
+                        waitfor(warndlg(warntxt , obj.version));
                     end
                     
                     XDATA = Tbath;
@@ -1304,6 +1313,13 @@ classdef TES_Struct
                 sides = [obj.TESDim.width.Value obj.TESDim.length.Value];
                 hMo = obj.TESDim.hMo.Value;
                 hAu = obj.TESDim.hAu.Value;
+                % Añadir la contribución del absorbente
+                gammas_abs = [obj.TESDim.Abs_gammaBi.Value obj.TESDim.Abs_gammaAu.Value];
+                rhoAs_abs = [obj.TESDim.Abs_rhoBi.Value obj.TESDim.Abs_rhoAu.Value];                
+                sides_abs = [obj.TESDim.Abs_width.Value obj.TESDim.Abs_length.Value];
+                hBi_abs = obj.TESDim.Abs_hBi.Value;
+                hAu_abs = obj.TESDim.Abs_hAu.Value;
+                
                 
                 rpaux = 0.1:0.01:0.9;
             end
@@ -1437,6 +1453,9 @@ classdef TES_Struct
                     set(h([2 4]),'YScale','log');
                     if ~isempty(obj.TESDim.width.Value)
                         CN = sum((gammas.*rhoAs).*([hMo hAu].*sides(1)*sides(2)).*eval(['obj.TESThermal' StrRange{k} '.T_fit.Value'])); %%%calculo de cada contribucion por separado.                        
+                        if obj.TESDim.Abs_bool
+                            CN = CN + sum((gammas_abs.*rhoAs_abs).*([hBi_abs hAu_abs].*sides_abs(1)*sides_abs(2)).*eval(['obj.TESThermal' StrRange{k} '.T_fit.Value'])); %%%calculo de cada contribucion por separado.                       
+                        end
                         teo(1) = plot(h(1),rpaux,CN*1e15*ones(1,length(rpaux)),'-.r','LineWidth',1,'DisplayName','{C_{LB}}^{teo}');
                         set(get(get(teo(1),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         teo(2) = plot(h(1),rpaux,2.43*CN*1e15*ones(1,length(rpaux)),'-.r','LineWidth',1,'DisplayName','{C_{UB}}^{teo}');
@@ -2423,7 +2442,7 @@ classdef TES_Struct
             
             
             if obj.TESDim.Abs_bool
-                WordText(ActXWord,['Absorbente de ' num2str(obj.TESDim.Abs_thick.Value*1e6) ' µm grosor'],Style,[0,1]);%no enter...
+                WordText(ActXWord,['Absorbente de ' num2str(obj.TESDim.Abs_length.Value*1e6) 'x' num2str(obj.TESDim.Abs_width.Value*1e6) ' µm de tamaño'],Style,[0,1]);%no enter...
                     
                 WordText(ActXWord,['Absorbente de Au/Bi de ' num2str(obj.TESDim.Abs_hAu.Value*1e6)...
                     ' x ' num2str(obj.TESDim.Abs_hBi.Value*1e6) ' µm.'],Style,[0,1]);%no enter
