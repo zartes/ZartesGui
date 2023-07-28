@@ -105,7 +105,7 @@ MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'Superc
 MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'TES Parameters';'Circuit Values';'Circuit Noise'};
 % MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
-MenuTES.SubMenu_2{IndMenu,3} = {'Import IV-Curves';'Center IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
+MenuTES.SubMenu_2{IndMenu,3} = {'Import IV-Curves';'Center IV-Curves';'Check IV-Curves';'Save IV-Curve Set';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
 MenuTES.SubMenu_2{IndMenu,4} = {'Load TF in Superconductor State (TFS)';'Check TFS';'Load Noise in Superconductor State';'Check Superconductor State Noise'};
 MenuTES.SubMenu_2{IndMenu,5} = {'Load TF in Normal State (TFN)';'Check TFN';'Load Noise in Normal State';'Check Normal State Noise'};
 MenuTES.SubMenu_2{IndMenu,6} = {'Z(w) Derived L';'Fit Z(w)-Noise to ElectroThermal Model'};
@@ -616,6 +616,35 @@ switch src.Label
         delete(indAxes);
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckIVCurvesVisually(fig);
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+    case 'Save IV-Curve Set'
+        % Transformar la clase IVset a una estructura
+        fldnames = {'ibias';'vout';'Rtes';'rtes';'ites';'vtes';'ptes';'good';'Tbath'};
+        for j = 1:size(handles.Session{handles.TES_ID}.TES.IVsetP,2)
+            for i = 1:length(fldnames)
+                eval(['IVsetCorrected(j).' fldnames{i} '= handles.Session{handles.TES_ID}.TES.IVsetP(j).' fldnames{i} ';']);                
+            end
+        end
+        [filename, pathname] = uiputfile([handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath '*.mat'], 'Save Positive IV-Curve Set');
+        if isequal(filename,0) || isequal(pathname,0)
+            warndlg('User pressed cancel')        
+            return;
+        end
+        
+        save(fullfile(pathname, filename),'IVsetCorrected');
+        
+        for j = 1:size(handles.Session{handles.TES_ID}.TES.IVsetN,2)
+            for i = 1:length(fldnames)
+                eval(['IVsetCorrectedN(j).' fldnames{i} '= handles.Session{handles.TES_ID}.TES.IVsetN(j).' fldnames{i} ';']);
+            end
+        end
+        [filename, pathname] = uiputfile([handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath '*.mat'], 'Save Negative IV-Curve Set');
+        if isequal(filename,0) || isequal(pathname,0)
+            warndlg('User pressed cancel')        
+            return;
+        end
+        save(fullfile(pathname, filename),'IVsetCorrectedN');
+       
+        
     case 'Fit P vs. T'
         fig.hObject = handles.Analyzer;
         indAxes = findobj(fig.hObject,'Type','Axes');
@@ -1615,7 +1644,7 @@ end
 
 
 if Session.TES.IVsetP.Filled || Session.TES.IVsetN.Filled
-    StrLabel_On = {'Center IV-Curves';'Check IV-Curves';'Fit P vs. T';...
+    StrLabel_On = {'Center IV-Curves';'Check IV-Curves';'Save IV-Curve Set';'Fit P vs. T';...
         'Superconductor State';'Load TF in Superconductor State (TFS)';'Check TFS';'Load Noise in Superconductor State';'Check Superconductor State Noise';...
         'Normal State';'Load TF in Normal State (TFN)';'Check TFN';'Load Noise in Normal State';'Check Normal State Noise'};
     for i = 1:length(StrLabel_On)
@@ -1623,7 +1652,7 @@ if Session.TES.IVsetP.Filled || Session.TES.IVsetN.Filled
         h.Enable = StrEnable{(~TES_ID+1)};
     end
 else
-    StrLabel_Off = {'Center IV-Curves';'Check IV-Curves';'Fit P vs. T';...
+    StrLabel_Off = {'Center IV-Curves';'Check IV-Curves';'Save IV-Curve Set';'Fit P vs. T';...
         'Superconductor State';'Load TF in Superconductor State (TFS)';'Check TFS';'Load Noise in Superconductor State';'Check Superconductor State Noise';...
         'Normal State';'Load TF in Normal State (TFN)';'Check TFN';'Load Noise in Normal State';'Check Normal State Noise'};
     for i = 1:length(StrLabel_Off)

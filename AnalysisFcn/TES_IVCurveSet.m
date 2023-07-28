@@ -117,7 +117,19 @@ classdef TES_IVCurveSet
                     % origen y la carpeta de la que proceden (necesario
                     % para saber qué Rf se ha utilizado)
                     % También es necesario añadir el rango (pos o neg)
+                    switch obj(1).range
+                        case 'PosIbias'
+                            RangeStr = 'p';
+                        case 'NegIbias'
+                            RangeStr = 'n';
+                    end
+                    h = [];
                     pre_Rf = 10000;
+                    for i = 1:size(obj,2)                                                
+                        obj(i).file = [num2str(obj(i).Tbath*1e3,'%.1f') 'mK_Rf10K_down_' RangeStr '_matlab'];                        
+                        obj(i).IVsetPath = path;                        
+                    end
+                    
                     
                     hfig = findobj('Tag','Raw IV Curves');
                     hax = findobj('Tag','Raw IV axes');
