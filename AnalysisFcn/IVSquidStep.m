@@ -139,9 +139,11 @@ switch str
             % que eliminar/corregir
             if derVout(indx(i)-1) < 0.95*thSup % A izquierdas
                 ind_ok = [ind_ok indx(i)-1];                
-            end            
-            if derVout(indx(i)+1) < 0.95*thSup  % A derechas
+            end        
+            try
+                if derVout(indx(i)+1) < 0.95*thSup  % A derechas
                     ind_ok = [ind_ok indx(i)+1];
+                end
             end
         end
         

@@ -96,6 +96,7 @@ function Lauch_Analysis_Callback(hObject, eventdata, handles)
 d = pwd;
 addpath([pwd filesep 'AnalysisFcn']);
 addpath([pwd filesep 'Guis']);
+addpath([pwd filesep 'GeneralFcn']);
 run([d filesep 'AnalysisFcn' filesep 'Analyzer']);
 
 %Añadir el path de AnalysisFcn
