@@ -88,6 +88,10 @@ handles.VersionNum = dvNum;
 % handles.VersionPath = [fileparts(mfilename('fullpath')) filesep handles.VersionStr(end-3:end)];
 %% Añadir la última version
 % addpath(handles.VersionPath);
+indx = strfind(fileparts(mfilename('fullpath')),'\');
+NameStr = fileparts(mfilename('fullpath'));
+addpath([NameStr(1:indx(end)) 'GeneralFcn'])
+
 
 handles.TES_ID = 0;
 handles.NewTES = {[]};
@@ -521,7 +525,9 @@ switch src.Label
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
     case 'TES Parameters'
+        handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.RnRparCalc(handles.Session{handles.TES_ID}.TES.circuit);
         handles.Session{handles.TES_ID}.TES.TESParamP.CheckValues('Positive Ibias');
+        handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.RnRparCalc(handles.Session{handles.TES_ID}.TES.circuit);        
         handles.Session{handles.TES_ID}.TES.TESParamN.CheckValues('Negative Ibias');
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
@@ -1628,7 +1634,7 @@ StrEnable = {'on';'off'};
 % StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';...
 %     'IV-Curves';'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';...
 %     'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';'Save TES Data';'Options'};
-StrLabel_On = {'TES Device';'TES Dimensions';'Circuit Values';'Circuit Noise';...
+StrLabel_On = {'TES Device';'TES Dimensions';'TES Parameters';'Circuit Values';'Circuit Noise';...
     'IV-Curves';'Import IV-Curves';...
     'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';'Save TES Data';'Options'};
 for i = 1:length(StrLabel_On)

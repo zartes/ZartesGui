@@ -33,7 +33,15 @@ switch sel_typ
                 {@ActionFcn},'UserData',data);
             uimenu(c1,'Label','SQUID Step Manually correction','Callback',...
                 {@ActionFcn},'UserData',data);
-            
+
+            if data.IVset(data.NumFile).good == 1
+                uimenu(c1,'Label','Remove from set','Callback',...
+                    {@ActionFcn},'UserData',data,'Separator','on');
+            else
+                uimenu(c1,'Label','Restore to set','Callback',...
+                    {@ActionFcn},'UserData',data,'Separator','on');
+            end
+
         catch
         end
         
@@ -183,23 +191,34 @@ switch str
         % plot(UserData.IVset(UserData.NumFile).ibias,vout,'*r')
         % UserData.IVset(UserData.NumFile).ibias =UserData.IVset(UserData.NumFile).ibias(indxc1:end)-val;
         
+    case 'Remove from set'
+        UserData.IVset(UserData.NumFile).good = 0;
 
+    case 'Restore to set'
+        UserData.IVset(UserData.NumFile).good = 1;
 
     otherwise
 
 end
 % Cambiamos de color la curva IV que va a ser modificada
-
 IVchange = UserData.src;  % Problemas de identificación si hay otras figuras abiertas!!!!! 'Tag','Raw IV axes'
 color = IVchange.Color;
 IVchange.Color = [0.8 0.8 0.8];
 IVchange.Tag = '';
 IVchange.ButtonDownFcn = [];
 guidata(IVchange,IVchange)
+if UserData.IVset(UserData.NumFile).good == 0
+    color = [0.8 0.8 0.8];
+else
+    if strcmp(str,'Restore to set')
+        color = [0 0 1];
+    end
+end
 % Volvemos a pintar la curva IV corregida
-plot(hax,UserData.IVset(UserData.NumFile).ibias*1e6,UserData.IVset(UserData.NumFile).vout,...
-    'DisplayName',[num2str(UserData.IVset(UserData.NumFile).Tbath*1e3) ' ' UserData.IVset(UserData.NumFile).range],...
-                    'ButtonDownFcn',{@IVSquidStep},'Tag',UserData.IVset(UserData.NumFile).file,'Color',color,'UserData',UserData.IVset);
+    plot(hax,UserData.IVset(UserData.NumFile).ibias*1e6,UserData.IVset(UserData.NumFile).vout,...
+        'DisplayName',[num2str(UserData.IVset(UserData.NumFile).Tbath*1e3) ' ' UserData.IVset(UserData.NumFile).range],...
+        'ButtonDownFcn',{@IVSquidStep},'Tag',UserData.IVset(UserData.NumFile).file,'Color',color,'UserData',UserData.IVset);
+
 
 IVlines = findobj('Type','Line');
 for i = 1:length(IVlines)

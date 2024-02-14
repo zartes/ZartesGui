@@ -380,22 +380,24 @@ classdef TES_IVCurveSet
                     % En este método, al valor de ibias más cercano al 0 se le fuerza a tener voltaje 0. 
                                                             
                     for i = 1:length(obj)
-                        % Se busca el dato de menor valor de corriente en
-                        % valor absoluto, que este en cero
-                        if strcmp(obj(i).range,'PosIbias')
-                            ind = find(obj(i).ibias >= 0,1,'last');
-                        else
-                            ind = find(obj(i).ibias >= 0,1,'first');
-                        end
-                        % Se resta el valor de voltaje a cero corriente
-                        obj(i).vout = obj(i).vout-obj(i).vout(ind);
-                        % Todas las curvas IV se suponen BUENAS
-                        obj(i).good = 1;
-                        plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
-                        if strcmp(obj(i).range,'NegIbias')
+                        if obj(i).good == 1
+                            % Se busca el dato de menor valor de corriente en
+                            % valor absoluto, que este en cero
+                            if strcmp(obj(i).range,'PosIbias')
+                                ind = find(obj(i).ibias >= 0,1,'last');
+                            else
+                                ind = find(obj(i).ibias >= 0,1,'first');
+                            end
+                            % Se resta el valor de voltaje a cero corriente
+                            obj(i).vout = obj(i).vout-obj(i).vout(ind);
+                            % Todas las curvas IV se suponen BUENAS
+
+
                             plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
-                        end                        
-                        
+                            if strcmp(obj(i).range,'NegIbias')
+                                plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            end
+                        end
 %                         % Se estiman las pendientes en función de los
 %                         % últimos y primeros 5 puntos.
 %                         mN(i) = mean(obj(i).vout(1:5)./obj(i).ibias(1:5));
@@ -416,43 +418,46 @@ classdef TES_IVCurveSet
                     plot(ax1,(datafitN.Xdata-XOffset)*1e6,datafitN.NLine-YOffset,'.g')
                     
                     for i = 1:length(obj)
-                        
-                        % Se corrige el offset de cada curva IV                        
-                        obj(i).ibias = obj(i).ibias-XOffset;
-                        obj(i).vout = obj(i).vout-YOffset;
-                        obj(i).YOffset = YOffset;
-                        
-                        plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
-                        if strcmp(obj(i).range,'NegIbias')
+                        if obj(i).good == 1
+                            % Se corrige el offset de cada curva IV
+                            obj(i).ibias = obj(i).ibias-XOffset;
+                            obj(i).vout = obj(i).vout-YOffset;
+                            obj(i).YOffset = YOffset;
+
                             plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            if strcmp(obj(i).range,'NegIbias')
+                                plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            end
                         end
-                        obj(i).good = 1;
                     end                                                                                          
                     %pause;
                 case AlgMethdsAvailable{3} % 'Set Offset Manually'
                 
-                    for i = 1:length(obj)                                                                        
-                        plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
-                        if strcmp(obj(i).range,'NegIbias')
+                    for i = 1:length(obj)        
+                        if obj(i).good == 1
                             plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
-                        end                        
+                            if strcmp(obj(i).range,'NegIbias')
+                                plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            end
+                        end
                     end    
                     
                     waitfor(msgbox('Zoom in around crossing IV-curves to improve accuracy before close this window.',obj(1).version));
                     [XOffset, YOffset] = ginput(1);
                     TES.circuit.CurrOffset.Value = XOffset*1e-6;
                     cla(ax1)
-                    for i = 1:length(obj)                        
-                        % Se corrige el offset de cada curva IV                        
-                        obj(i).ibias = obj(i).ibias-XOffset*1e-6;
-                        obj(i).vout = obj(i).vout-YOffset;
-                        obj(i).YOffset = YOffset;
-                        
-                        plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
-                        if strcmp(obj(i).range,'NegIbias')
+                    for i = 1:length(obj)       
+                        if obj(i).good == 1
+                            % Se corrige el offset de cada curva IV
+                            obj(i).ibias = obj(i).ibias-XOffset*1e-6;
+                            obj(i).vout = obj(i).vout-YOffset;
+                            obj(i).YOffset = YOffset;
+
                             plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            if strcmp(obj(i).range,'NegIbias')
+                                plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range])
+                            end
                         end
-                        obj(i).good = 1;
                     end     
 %                     pause;
 
@@ -462,12 +467,14 @@ classdef TES_IVCurveSet
                     
                     % Pintar todas las gráficas IV
                     for i = 1:length(obj)
-                        color = c(i,:);
-                        hb(i) = plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range],...
-                            'ButtonDownFcn',{@IVSquidStep},'Tag',obj(i).file,'Color',color,'UserData',obj);
-                        if strcmp(obj(i).range,'NegIbias')
-                            hbn(i) = plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range],...
+                        if obj(i).good == 1
+                            color = c(i,:);
+                            hb(i) = plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range],...
                                 'ButtonDownFcn',{@IVSquidStep},'Tag',obj(i).file,'Color',color,'UserData',obj);
+                            if strcmp(obj(i).range,'NegIbias')
+                                hbn(i) = plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range],...
+                                    'ButtonDownFcn',{@IVSquidStep},'Tag',obj(i).file,'Color',color,'UserData',obj);
+                            end
                         end
                     end
                     waitfor(msgbox('Before close this window, please select the IV curve you want to correct.',obj(1).version));
@@ -878,11 +885,11 @@ classdef TES_IVCurveSet
             
             c = distinguishable_colors(length(obj));
             for i = 1:length(obj)
-                if obj(i).good
+                if obj(i).good == 1
                     color = c(i,:);
-                else
-                    color = [0.8 0.8 0.8];
-                end
+                % else
+                %     color = [0.8 0.8 0.8];
+                % end
                     
                     Ibias = obj(i).ibias;
                     Vout = obj(i).vout;
@@ -966,6 +973,7 @@ classdef TES_IVCurveSet
                     if ~isfield(fig,'subplots')
                         fig.subplots = h;
                     end
+                end
             end
             try
                 axis(h,'tight');

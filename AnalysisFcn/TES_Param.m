@@ -73,10 +73,9 @@ classdef TES_Param
             % Function to compute Rn and Rpar trough the values of the
             % circuit.
             
-            
-          
-            obj.Rpar.Value = (circuit.Rf.Value*circuit.invMf.Value/(obj.mS.Value*circuit.invMin.Value)-1)*circuit.Rsh.Value;
-            obj.Rn.Value = (circuit.Rsh.Value*circuit.Rf.Value*circuit.invMf.Value/(obj.mN.Value*circuit.invMin.Value)-circuit.Rsh.Value-obj.Rpar.Value);
+                      
+            obj.Rpar.Value = (circuit.Rf.Value*circuit.invMf.Value/(circuit.mS.Value*circuit.invMin.Value)-1)*circuit.Rsh.Value;
+            obj.Rn.Value = (circuit.Rsh.Value*circuit.Rf.Value*circuit.invMf.Value/(circuit.mN.Value*circuit.invMin.Value)-circuit.Rsh.Value-circuit.Rpar.Value);
             
         end
         
