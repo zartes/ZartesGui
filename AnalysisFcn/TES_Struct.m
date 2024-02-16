@@ -409,7 +409,7 @@ classdef TES_Struct
                                 ptes = IVTESset(i).ptes(ind);
                                 ites = IVTESset(i).ites(ind);
                                 [rtes,IA,IC] = unique(rtes,'stable');
-                                if length(IA)
+                                if length(IA) == 1                                    
                                     continue;
                                 end
                                 ptes = ptes(IA);
