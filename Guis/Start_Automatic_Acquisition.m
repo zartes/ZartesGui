@@ -843,7 +843,7 @@ end
 ThresIbias = 0.1; % la curva de IV llegará en caso positivo a -0.1 uA
 
 IB = 1;
-RepMax = 10;
+RepMax = 5;
 RepIt = 1;
 while IB < 3 % Positive 1, Negative 2
     

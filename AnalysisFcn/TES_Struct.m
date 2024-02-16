@@ -409,6 +409,9 @@ classdef TES_Struct
                                 ptes = IVTESset(i).ptes(ind);
                                 ites = IVTESset(i).ites(ind);
                                 [rtes,IA,IC] = unique(rtes,'stable');
+                                if length(IA)
+                                    continue;
+                                end
                                 ptes = ptes(IA);
                                 ites = ites(IA);
                                 Paux(kj) = ppval(spline(rtes,ptes),eval(['perc' StrRange{k} '(jj)'])); %#ok<AGROW>
