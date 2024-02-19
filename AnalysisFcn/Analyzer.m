@@ -525,9 +525,13 @@ switch src.Label
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
     case 'TES Parameters'
-        handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.RnRparCalc(handles.Session{handles.TES_ID}.TES.circuit);
+        if isempty(handles.Session{handles.TES_ID}.TES.TESParamP.Rn.Value)
+            handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.RnRparCalc(handles.Session{handles.TES_ID}.TES.circuit);
+        end
         handles.Session{handles.TES_ID}.TES.TESParamP.CheckValues('Positive Ibias');
-        handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.RnRparCalc(handles.Session{handles.TES_ID}.TES.circuit);        
+        if isempty(handles.Session{handles.TES_ID}.TES.TESParamN.Rn.Value)
+            handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.RnRparCalc(handles.Session{handles.TES_ID}.TES.circuit);        
+        end
         handles.Session{handles.TES_ID}.TES.TESParamN.CheckValues('Negative Ibias');
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
@@ -582,6 +586,13 @@ switch src.Label
         [IVsetN, ~, TESN] = handles.Session{handles.TES_ID}.TES.IVsetN.ImportFromFiles(handles.Session{handles.TES_ID}.TES,handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath, TempLims);
         handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESN.circuit);
         handles.Session{handles.TES_ID}.TES.IVsetN = handles.Session{handles.TES_ID}.TES.IVsetN.Update(IVsetN);
+        if isempty(handles.Session{handles.TES_ID}.TES.TESParamP.Rn.Value)
+            handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.RnRparCalc(handles.Session{handles.TES_ID}.TES.circuit);
+        end
+        if isempty(handles.Session{handles.TES_ID}.TES.TESParamN.Rn.Value)
+            handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.RnRparCalc(handles.Session{handles.TES_ID}.TES.circuit);
+        end
+        
 %         handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.Update(TESN.TESParamN);
         
         
@@ -602,11 +613,15 @@ switch src.Label
         if UserCancel
             return;
         end
-        handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.Update(TESP.TESParamP);
-        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESP.circuit);
+        handles.Session{handles.TES_ID}.TES.TESParamP = handles.Session{handles.TES_ID}.TES.TESParamP.Update(TESP.TESParamP);        
         
         [handles.Session{handles.TES_ID}.TES.IVsetN,TESN] = handles.Session{handles.TES_ID}.TES.IVsetN.IV_correction_methods(handles.Session{handles.TES_ID}.TES);
+        if UserCancel
+            return;
+        end
         handles.Session{handles.TES_ID}.TES.TESParamN = handles.Session{handles.TES_ID}.TES.TESParamN.Update(TESN.TESParamN);
+
+        handles.Session{handles.TES_ID}.TES.circuit = handles.Session{handles.TES_ID}.TES.circuit.Update(TESP.circuit);
         
         figure(handles.Analyzer)
         fig.hObject = handles.Analyzer;
@@ -643,7 +658,7 @@ switch src.Label
                 eval(['IVsetCorrectedN(j).' fldnames{i} '= handles.Session{handles.TES_ID}.TES.IVsetN(j).' fldnames{i} ';']);
             end
         end
-        [filename, pathname] = uiputfile([handles.Session{handles.TES_ID}.TES.IVsetP(1).IVsetPath '*.mat'], 'Save Negative IV-Curve Set');
+        [filename, pathname] = uiputfile([handles.Session{handles.TES_ID}.TES.IVsetN(1).IVsetPath '*.mat'], 'Save Negative IV-Curve Set');
         if isequal(filename,0) || isequal(pathname,0)
             warndlg('User pressed cancel')        
             return;

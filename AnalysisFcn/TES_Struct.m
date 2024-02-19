@@ -339,6 +339,10 @@ classdef TES_Struct
                     Gaux = obj.PvTModel.GetGfromFit(fit_CI');
                     ERP = sum(abs(abs(Paux*1e12-obj.PvTModel.fitP(fit,XDATA))./abs(Paux*1e12)))/length(Paux*1e12);
                     R2 = goodnessOfFit(obj.PvTModel.fitP(fit,XDATA)', Paux'*1e12,'NRMSE');
+                    [vd, dat] = version;
+                    if year(dat)>=2020
+                        R2 = 1-R2;
+                    end
 %                     R = corrcoef([obj.fitP(fit,XDATA,model)' Paux'*1e12]);
 %                     R2 = R(1,2)^2;
                     eval(['obj.Gset' StrRange{k} '.rp = perc;']);
@@ -446,7 +450,11 @@ classdef TES_Struct
                         Gaux(jj) = obj.PvTModel.GetGfromFit(fit_CI');%#ok<AGROW,
                         ERP = sum(abs(abs(Paux*1e12-obj.PvTModel.fitP(fit,XDATA))./abs(Paux*1e12)))/length(Paux*1e12);
                         R2 = goodnessOfFit(obj.PvTModel.fitP(fit,XDATA)', Paux'*1e12,'NRMSE');
-                        
+                        [vd, dat] = version;
+                        if year(dat)>=2020
+                            R2 = 1-R2;
+                        end
+
                         eval(['obj.Gset' StrRange{k} '(jj).n = Gaux(jj).n;']);
                         eval(['obj.Gset' StrRange{k} '(jj).n_CI = Gaux(jj).n_CI;']);
                         eval(['obj.Gset' StrRange{k} '(jj).K = Gaux(jj).K*1e-12;']);

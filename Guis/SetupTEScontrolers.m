@@ -1620,10 +1620,17 @@ else
                         switch ButtonName1
                             case 'Yes'
                                 TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
-                                if mode(sign(Ibias{1})) < 0
-                                    filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_n_matlab'];
+                                
+                                if handles.Circuit.Rf.Value == 10000
+                                    RfStr = [num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') 'K'];
                                 else
-                                    filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') '_down_p_matlab'];
+                                    RfStr = num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f');
+                                end
+                               
+                                if mode(sign(Ibias{1})) < 0
+                                    filename = [TMC ,'mK_Rf' RfStr '_down_n_matlab'];
+                                else
+                                    filename = [TMC ,'mK_Rf' RfStr '_down_p_matlab'];
                                 end
                                 
                                 [filename, pathname] = uiputfile( ...

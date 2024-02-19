@@ -1056,7 +1056,7 @@ while IB < 3 % Positive 1, Negative 2
     clear data;
     data(:,2) = IVmeasure.ibias*1e6;
     data(:,4) = IVmeasure.vout;
-    save([handles.IVs_Dir file '+'],'data','-ascii');
+%     save([handles.IVs_Dir file '+'],'data','-ascii');
     % Importante que el TES_Circuit se haya actualizado con los valores de
     % Rf, mN, mS, Rpar, Rn
     

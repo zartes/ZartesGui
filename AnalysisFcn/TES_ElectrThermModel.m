@@ -201,7 +201,12 @@ classdef TES_ElectrThermModel
             fZ = obj.fitZ(p,fS);
 %             fZ = obj.fitZ(p,fS_new);
             ERP = sum(abs(abs(ztes-fZ(:,1)+1i*fZ(:,2))./abs(ztes)))/length(ztes);
+                        
             R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),ztes,'NRMSE');
+            [vd, dat] = version;
+            if year(dat)>=2020
+                R2 = 1-R2;
+            end
 %             R2 = goodnessOfFit(fZ(:,1)+1i*fZ(:,2),Rztes + 1i*Iztes,'NRMSE');
             
         end
@@ -239,7 +244,7 @@ classdef TES_ElectrThermModel
             
 %             
             
-            IVmeasure.vout = IVmeasure.vout+1000;  % Sumo 1000 para que toda la curva IV
+%             IVmeasure.vout = IVmeasure.vout+1000;  % Sumo 1000 para que toda la curva IV
             %sea positiva siempre, que no haya cambios de signo para que los splines no devuelvan valores extraños
             % Luego se restan los 1000.
             [iaux,ii] = unique(IVmeasure.ibias,'stable');
@@ -247,8 +252,10 @@ classdef TES_ElectrThermModel
             [m,i3] = min(diff(vaux)./diff(iaux)); %#ok<ASGLU>
             
             Vout = ppval(spline(iaux(1:i3),vaux(1:i3)),Ib);
+%             Vout = ppval(spline(iaux(i3:end),vaux(i3:end)),Ib);
             IVaux.ibias = Ib;
-            IVaux.vout = Vout-1000;
+%             IVaux.vout = Vout-1000;
+            IVaux.vout = Vout;
             IVaux.Tbath = IVmeasure.Tbath;
             
             F = TES.circuit.invMin.Value/(TES.circuit.invMf.Value*TES.circuit.Rf.Value);%36.51e-6;

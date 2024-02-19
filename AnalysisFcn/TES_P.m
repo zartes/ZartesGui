@@ -113,7 +113,7 @@ classdef TES_P
                         for k = 1:length(StrNo)
                             if isequal(FN{i},StrNo{k})
                                 if isempty(eval(['obj(j).p.' FN{i}]))
-                                    ok(j) = 1;  % Empty field
+                                    ok(j) = 0;  % Empty field
                                     continue;
                                 else
                                     ok(j) = 1;

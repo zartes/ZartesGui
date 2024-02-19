@@ -277,9 +277,11 @@ classdef TES_IVCurveSet
 
             % Pintar todas las gráficas IV
             for i = 1:length(obj)
+                if obj(i).good == 1
                 color = c(i,:);
                 plot(ax1,obj(i).ibias*1e6,obj(i).vout,'DisplayName',[num2str(obj(i).Tbath*1e3) ' ' obj(i).range],...
                     'ButtonDownFcn',{@IVSquidStep},'Tag',obj(i).file,'Color',color,'UserData',obj);
+                end
             end
             waitfor(msgbox('Before close this window, please select the IV curve you want to correct.',obj(1).version));
             hfig = findobj('Tag','Raw IV Curves');
@@ -300,7 +302,7 @@ classdef TES_IVCurveSet
                 % menor a mayor
                 IndMas = find(sign(obj(i).ibias) ~= -1);
                 IndMenos = find(sign(obj(i).ibias) == -1);
-                if strcmp(obj(i).range,'PosIbias')
+                if strcmp(obj(1).range,'PosIbias')
                     [~, Imas] = sort(obj(i).ibias(IndMas),'descend');
                     try
                         [~, Imenos] = sort(obj(i).ibias(IndMenos),'descend');

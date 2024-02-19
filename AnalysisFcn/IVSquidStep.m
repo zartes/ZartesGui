@@ -164,9 +164,14 @@ switch str
             if chk == 1
                 % los que están cerca deberían de tener variaciones pequeñas de
                 % amplitud
-                yy = spline(UserData.IVset(UserData.NumFile).ibias(ind_ok(1)-3:ind_ok(1)),...
-                    UserData.IVset(UserData.NumFile).vout(ind_ok(1)-3:ind_ok(1)),...
-                    UserData.IVset(UserData.NumFile).ibias(ind_ok(1):ind_ok(2)));
+                try
+                    yy = spline(UserData.IVset(UserData.NumFile).ibias(ind_ok(1)-3:ind_ok(1)),...
+                        UserData.IVset(UserData.NumFile).vout(ind_ok(1)-3:ind_ok(1)),...
+                        UserData.IVset(UserData.NumFile).ibias(ind_ok(1):ind_ok(2)));
+                catch
+                    waitfor(warndlg('Discard IV curve instead of corrected it. SQUID step nearby edge.','Correction'));
+                    return;
+                end
                 
                 offset = UserData.IVset(UserData.NumFile).vout(ind_ok(2))-yy(end);
                 UserData.IVset(UserData.NumFile).vout(ind_ok(1):ind_ok(2))=yy;
