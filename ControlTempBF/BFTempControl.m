@@ -114,6 +114,7 @@ Period = 7;
 % url = 'http://192.168.2.121:5001/heater/update/heater_nr:4,';
 % msg = webread(url)
 PwrInit = handles.BF.ReadPower;
+PwrInit = 0;
 set(handles.PwrManual,'String',num2str(PwrInit));
 
 controlby_Callback(handles.controlby,[],handles);

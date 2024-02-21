@@ -97,6 +97,9 @@ classdef TES_Circuit
                         end
                     end
                 end
+                if isempty(obj.CurrOffset.Value)
+                    obj.CurrOffset.Value = 0;
+                end
             end
         end
         
