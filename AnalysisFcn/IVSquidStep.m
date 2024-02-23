@@ -27,11 +27,11 @@ switch sel_typ
             
             uimenu(c1,'Label','IV Vertical Shift','Callback',...
                 {@ActionFcn},'UserData',data);
-            uimenu(c1,'Label','Superconductor stage correction','Callback',...
+            uimenu(c1,'Label','Superconductivity Stage Correction','Callback',...
                 {@ActionFcn},'UserData',data);
-            uimenu(c1,'Label','Transition stage correction','Callback',...
+            uimenu(c1,'Label','Transition Stage Correction','Callback',...
                 {@ActionFcn},'UserData',data);
-            uimenu(c1,'Label','SQUID Step Manually correction','Callback',...
+            uimenu(c1,'Label','SQUID Step Manually Correction','Callback',...
                 {@ActionFcn},'UserData',data);
 
             if data.IVset(data.NumFile).good == 1
@@ -92,7 +92,7 @@ switch str
     case 'IV Vertical Shift'
         UserData.IVset(UserData.NumFile).vout = [Trans.vout; Supercond.vout]-Squid_shift;
 
-    case 'Superconductor stage correction'                        
+    case 'Superconductivity Stage Correction'                        
         derVout = abs(diff(UserData.IVset(UserData.NumFile).vout));       
         thSup = 10*max([mean(abs(derVout(end-4:end-1))); mean(abs(derVout(2:4)))]);%                
         indx = find(derVout > thSup)+1;
@@ -104,7 +104,7 @@ switch str
             UserData.IVset(UserData.NumFile).ibias(indx(ind_c)) = [];
         end
         
-    case 'Transition stage correction'
+    case 'Transition Stage Correction'
         bM = nanmedian(diff(b));
         if UserData.NumFile == length(UserData.IVset)
             Normal_shift = UserData.IVset(UserData.NumFile-1).vout(1)+bM; 
@@ -113,7 +113,7 @@ switch str
             Normal_shift = UserData.IVset(UserData.NumFile+1).vout(1)+bM; 
             UserData.IVset(UserData.NumFile).vout = [Trans.vout-Trans.vout(1)+Normal_shift; Supercond.vout];
         end
-    case 'SQUID Step Manually correction'
+    case 'SQUID Step Manually Correction'
 %         waitfor(msgbox('Zoom in before close this window around SQUID step.',''));
 %         [XOffset, YOffset] = ginput(1);
 

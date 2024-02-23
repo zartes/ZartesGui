@@ -239,6 +239,21 @@ classdef TES_IVCurveSet
                                 Dvout = data(:,4);
                         end
                         
+                        %% Eliminar los valores de amplitud para ibias == 0
+                        try
+                            Dvout_offset = Dvout(find(Dibias == 0,1));
+                            Dvout = Dvout-Dvout_offset;
+                        catch
+                        end
+
+                        %% Eliminar los valores de Ibias que cruzan al otro rango
+                        try
+                            Dvout(find(Dibias == 0,1)+1:end) = [];
+                            Dibias(find(Dibias == 0,1)+1:end) = [];
+                        catch
+                        end
+
+
                         [Dibias, Id] = unique(Dibias);
                         Dvout = Dvout(Id);
                         [~, I] = sort(abs(Dibias),'descend');

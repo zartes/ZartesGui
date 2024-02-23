@@ -1006,7 +1006,17 @@ while IB < 3 % Positive 1, Negative 2
     data(:,2) = IVmeasure.ibias;
     data(:,4) = IVmeasure.vout;
     
-    
+    %% Remove Amplitude values at null Ibias
+    Dvout_offset = data(find(data(:,2) == 0,1),4);
+    data(:,4) = data(:,4)-Dvout_offset;
+
+    try
+        data((find(data(:,2) == 0,1)+1:end),:) = [];
+   
+    catch
+    end
+
+
     if IBvals(1) > 0
         pol = 'p';
         dire = 'down';
