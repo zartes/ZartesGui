@@ -22,7 +22,7 @@ function varargout = SetupTEScontrolers(varargin)
 
 % Edit the above text to modify the response to help SetupTEScontrolers
 
-% Last Modified by GUIDE v2.5 01-Jun-2020 19:07:03
+% Last Modified by GUIDE v2.5 16-Apr-2024 11:25:36
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -72,6 +72,8 @@ end
 %% Conexión con el BlueFors
 % DEVICE_IP = 'localhost';
 % TIMEOUT = 10;
+
+
 handles.BF = BlueFors;
 handles.BF = handles.BF.Constructor;
 
@@ -181,10 +183,19 @@ handles.PXI.WaveFormInfo;
 handles.PXI.Options;
 
 % Field Source
+try
+    handles.CurSource_Vmax.String = num2str(handles.CurSour.Vmax.Value);
+    IndexC = strfind(cellstr(handles.CurSource_Vmax_Units.String), handles.CurSour.Vmax.Units);
+    handles.CurSource_Vmax_Units.Value = find(not(cellfun('isempty',IndexC)),1);
+catch
+end
+try
+    handles.ILimitValue.String = num2str(handles.CurSour.LNCS_ILimit.Value);
+    IndexC = strfind(cellstr(handles.ILimitUnits.String), handles.CurSour.LNCS_ILimit.Units);
+    handles.ILimitUnits.Value = find(not(cellfun('isempty',IndexC)),1);
+catch
+end
 
-handles.CurSource_Vmax.String = num2str(handles.CurSour.Vmax.Value);
-IndexC = strfind(cellstr(handles.CurSource_Vmax_Units.String), handles.CurSour.Vmax.Units);
-handles.CurSource_Vmax_Units.Value = find(not(cellfun('isempty',IndexC)),1);
 % handles.CurSource_Vmax_Units.Value = find(contains(cellstr(handles.CurSource_Vmax_Units.String),handles.CurSour.Vmax.Units)==1,1);
 
 a_str = {'New Figure';'Open File';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
@@ -197,7 +208,7 @@ end
 pause(0.5);
 
 handles.EnableStr = {'off';'on'};
-handles.DevStr = {'Multi';'Squid';'SpecAnal';'PXI';'CurSour'};
+handles.DevStr = {'Multi';'Squid';'CurSour';'SpecAnal';'PXI'};
 handles.DevStrOn = [1 1 1 1 1];
 
 % Initialize connection of devices
@@ -272,7 +283,7 @@ figure(handles.SetupTES);
 image(data);
 ax.Visible = 'off';
 set(handles.SetupTES,'Visible','on');
-handles.VersionStr = 'ZarTES v1.0';
+handles.VersionStr = 'ZarTES v4.5';
 waitfor(warndlg('Please, check the following circuit values',handles.VersionStr));
 Obj_Properties(handles.Menu_Circuit);
 
@@ -304,7 +315,8 @@ handles.Menu_Offset = uimenu('Parent',handles.menu(1),'Label',...
 
 
 handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
-handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
+% handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'CurrentSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
+handles.HndlStr(:,2) = {'Multimeter';'ElectronicMagnicon';'LNCSource';'SpectrumAnalyzer';'PXI_Acquisition_card'};
 
 % instrreset;
 % Menu is generated here
@@ -646,27 +658,35 @@ if ~isempty(strfind(src.Label,'Initialize')) % Device are checked if they are in
                 handles.Squid = handles.Squid.Initialize;
                 handles.DevStrOn(2) = 1;
             end
+        case 'CurrentSource'
+            if ~isempty(handles.CurSour.ObjHandle)
+                return;
+            else
+                handles.CurSour = handles.CurSour.Initialize;
+                handles.DevStrOn(3) = 1;
+            end
+        case 'LNCSource'
+            if ~isempty(handles.CurSour.ObjHandle)
+                return;
+            else
+                handles.CurSour = handles.CurSour.Initialize;
+                handles.DevStrOn(3) = 1;
+            end
         case 'SpectrumAnalyzer'
             if ~isempty(handles.DS.ObjHandle)
                 return;
             else
                 handles.DSA = handles.DSA.Initialize;
-                handles.DevStrOn(3) = 1;
+                handles.DevStrOn(4) = 1;
             end
         case 'PXI_Acquisition_card'
             if ~isempty(handles.PXI.ObjHandle)
                 return;
             else
                 handles.PXI = handles.PXI.Initialize;
-                handles.DevStrOn(4) = 1;
-            end
-        case 'CurrentSource'
-            if ~isempty(handles.CurSour.ObjHandle)
-                return;
-            else
-                handles.CurSour = handles.CurSour.Initialize;
                 handles.DevStrOn(5) = 1;
             end
+        
             
         otherwise
     end
@@ -826,6 +846,9 @@ else
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Action of the device (including line)
         
+        
+        
+        %% Comprobación del signo del 
         if isequal(eventdata,-1)
             handles.Squid.TES2NormalState(eventdata);
             handles.SQ_Ibias_Units.Value = 3;
@@ -842,26 +865,29 @@ else
         Multi_Read_Callback(handles.Multi_Read,[],handles);
         
         
+        
+        
+        
         % Vamos a meter campo para forzar el estado normal
-        Valor_max = str2double(get(handles.CurSource_I,'String')); % Valor 5mA
-        MultVal = get(handles.CurSource_I_Units,'Value');
-        Out_old = handles.CurSource_OnOff.Value;
-        
-        set(handles.CurSource_I_Units,'Value',1); %Unidades A
-        set(handles.CurSource_I,'String','0.005'); % Valor 5mA
-        
-        handles.CurSource_Set_I.Value = 1;
-        CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-        handles.CurSource_OnOff.Value = 1;
-        CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
-        pause(1);
-        set(handles.CurSource_I_Units,'Value',MultVal); %Unidades A
-        set(handles.CurSource_I,'String',num2str(Valor_max)); % Valor 5mA
-        handles.CurSource_Set_I.Value = 1;
-        CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
-        handles.CurSource_OnOff.Value = Out_old;
-        CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
-        %
+%         Valor_max = str2double(get(handles.CurSource_I,'String')); % Valor 5mA
+%         MultVal = get(handles.CurSource_I_Units,'Value');
+%         Out_old = handles.CurSource_OnOff.Value;
+%         
+%         set(handles.CurSource_I_Units,'Value',1); %Unidades A
+%         set(handles.CurSource_I,'String','0.005'); % Valor 5mA
+%         
+%         handles.CurSource_Set_I.Value = 1;
+%         CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+%         handles.CurSource_OnOff.Value = 1;
+%         CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+%         pause(1);
+%         set(handles.CurSource_I_Units,'Value',MultVal); %Unidades A
+%         set(handles.CurSource_I,'String',num2str(Valor_max)); % Valor 5mA
+%         handles.CurSource_Set_I.Value = 1;
+%         CurSource_Set_I_Callback(handles.CurSource_Set_I,[],handles);
+%         handles.CurSource_OnOff.Value = Out_old;
+%         CurSource_OnOff_Callback(handles.CurSource_OnOff,[],handles);
+%         %
         
         
         hObject.UserData = [];
@@ -877,6 +903,86 @@ else
         hObject.Enable = 'on';
     end
 end
+
+
+function ILimitLNCSValue_Callback(hObject, eventdata, handles)
+% hObject    handle to ILimitLNCSValue (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of ILimitLNCSValue as text
+%        str2double(get(hObject,'String')) returns contents of ILimitLNCSValue as a double
+value = str2double(get(hObject,'String'));
+if ~isempty(value)&&~isnan(value)
+%     if value <= 0
+%         set(hObject,'String','5000');
+%         handles.ILimitLNCSUnits.Value = 1;
+%         ILimitLNCSValue_Callback(hObject, [], handles)
+%     end
+else
+    set(hObject,'String','5000');
+    handles.ILimitLNCSUnits.Value = 1;
+    ILimitLNCSValue_Callback(hObject, [], handles)
+end
+contents = cellstr(handles.ILimitLNCSUnits.String);
+handles.Actions_Str.String = ['Current Source: I Limit max value ' num2str(handles.ILimitLNCSValue.String) ' ' contents{handles.ILimitLNCSUnits.Value}];
+Actions_Str_Callback(handles.Actions_Str,[],handles);
+
+% --- Executes during object creation, after setting all properties.
+function ILimitLNCSValue_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ILimitLNCSValue (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in ILimitLNCSUnits.
+function ILimitLNCSUnits_Callback(hObject, eventdata, handles)
+% hObject    handle to ILimitLNCSUnits (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns ILimitLNCSUnits contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from ILimitLNCSUnits
+I_value = str2double(handles.ILimitLNCSValue.String);
+OldValue = hObject.UserData;
+NewValue = hObject.Value;
+
+switch OldValue-NewValue
+    case -2
+        I_value = I_value/1e-06;
+    case -1
+        I_value = I_value/1e-03;
+    case 0
+        I_value = I_value/1;
+    case 1
+        I_value = I_value/1e03;
+    case 2
+        I_value = I_value/1e06;
+end
+handles.ILimitLNCSValue.String = num2str(I_value);
+hObject.UserData = NewValue;
+contents = cellstr(handles.ILimitLNCSUnits.String);
+handles.Actions_Str.String = ['Current Source: I Limit max value ' num2str(handles.ILimitLNCSValue.String) ' ' contents{handles.ILimitLNCSUnits.Value}];
+Actions_Str_Callback(handles.Actions_Str,[],handles);
+
+% --- Executes during object creation, after setting all properties.
+function ILimitLNCSUnits_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ILimitLNCSUnits (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
 
 % --- Executes on button press in SQ_Reset_Closed_Loop.
 function SQ_Reset_Closed_Loop_Callback(hObject, eventdata, handles)
@@ -2184,7 +2290,7 @@ function Start_FieldRange_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 if isempty(handles.CurSour.ObjHandle)
-    handles.Actions_Str.String = 'Current Source K220 Connection is missed. Check connection and initialize it from the MENU.';
+    handles.Actions_Str.String = 'Current Source Connection is missed. Check connection and initialize it from the MENU.';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
     hObject.Value = 0;
 else
@@ -4493,4 +4599,8 @@ end
 %         msg = webread(handles.Temp_url);
 %     end
 %     Temp = msg.temperature;
+
+
+
+
 

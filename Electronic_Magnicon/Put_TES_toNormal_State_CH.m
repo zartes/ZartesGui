@@ -12,42 +12,51 @@ function out = Put_TES_toNormal_State_CH(mag,signo)
 %
 % Example: out = Put_TES_toNormal_State_CH(mag,1,2)
 %
-% Last update 26/06/2018
+% Last update 16/04/2024
 
 %% Old version 
-%%%%Función para poner el TES en estado Normal aumentando corriente con la
-%%%%LNCS. La Imax es simplemente el signo para ponerlo con corrientes
-%%%%positivas o negativas.
+%%%%Función para poner el TES en estado Normal.  
+%% La fuente LNCS polariza el TES en estado Normal aplicando un campo en la bobina
 %%
 
 % Maximum value of the current to not exceed 
-LNCS_ILimit = 5000; 
+LNCS_ILimit = 5000; % Esto debe ser opcional
 
-mag_ConnectLNCS(mag);
+
+% Ponemos la LNCS a 5000 o -5000
 status = mag_setLNCSImag(mag,signo*LNCS_ILimit);
 if strcmp(status,'FAIL')
     mag_DisconnectLNCS(mag);
     out = 0;
     return;
 end
+
+% Conectamos la salida de la fuenta LNCS
+mag_ConnectLNCS(mag);
     
-mag_setLNCSImag(mag,signo*500);
+% Ponemos la corriente del TES en 500 uA
+mag_setImag_CH(mag,signo*500);
+% Poner a cero la LNCS
+mag_setLNCSImag(mag,0);
+% Desconectamos la fuente LNCS
+mag_DisconnectLNCS(mag);
+
 
 % In the case of using the source in channel 1, it is mandatory to remove
 % the LNCS device. 
 
-hd = findobj('Tag','LNCS_Active');
-if ~isempty(hd)
-    if ~hd.Value
-        mag_setImag_CH(mag,signo*500);
-        mag_setLNCSImag(mag,0);
-        mag_DisconnectLNCS(mag);
-    end
-else
-    mag_setImag_CH(mag,signo*500);
-    mag_setLNCSImag(mag,0);
-    mag_DisconnectLNCS(mag);
-end
+% hd = findobj('Tag','LNCS_Active');
+% if ~isempty(hd)
+%     if ~hd.Value
+%         mag_setImag_CH(mag,signo*500);
+%         mag_setLNCSImag(mag,0);
+%         mag_DisconnectLNCS(mag);
+%     end
+% % else
+% mag_setImag_CH(mag,signo*500);
+% mag_setLNCSImag(mag,0);
+% mag_DisconnectLNCS(mag);
+% end
 
 % No criterion is used here in order to return 1 in all cases. %%%%%%%%%%%%
 out = 1; 

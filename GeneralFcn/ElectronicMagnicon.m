@@ -58,6 +58,7 @@ classdef ElectronicMagnicon
             % magnicon
             
             obj = mag_init(obj);
+            
         end
         
         function obj = Calibration(obj)
@@ -76,7 +77,7 @@ classdef ElectronicMagnicon
             
             out = Put_TES_toNormal_State_CH(obj,Ibias_sign);           
             if out == 0
-                msgbox('Action stopped by user','ZarTES v1.0');
+                msgbox('Action stopped by user','ZarTES v4.5');
                 return;
             end
 %             status = obj.CheckNormalState;% status == 1 Normal State reached % status == 0 Superconductor State
