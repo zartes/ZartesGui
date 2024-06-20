@@ -405,14 +405,14 @@ if handles.varargin{1}.ElectrThermalModel.bool_Mjo == 1
 else
     M = 0;
 end
-f = logspace(1,5,321)';
+f = logspace(0,6,1001)';
 % auxnoise = obj.noisesim(OP,M,f);
-if length(fNoise{handles.Files_Ind}(:,1)) ~= length(f)
-    SigNoise{handles.Files_Ind} = spline(fNoise{handles.Files_Ind}(:,1),SigNoise{handles.Files_Ind},f); % Todos los ruidos a 321 puntos
+if length(fNoise{handles.Files_Ind}) ~= length(f)
+    SigNoise{handles.Files_Ind} = spline(fNoise{handles.Files_Ind},SigNoise{handles.Files_Ind},f); % Todos los ruidos a 321 puntos
     fNoise{handles.Files_Ind} = f;
 end
                                 
-auxnoise = handles.varargin{1}.ElectrThermalModel.noisesim(handles.varargin{1},OP,M,f,StrCond);
+auxnoise = handles.varargin{1}.ElectrThermalModel.noisesim(handles.varargin{1},OP,0,f,StrCond);
 
 handles.varargin{1}.ElectrThermalModel.Plot(fNoise{handles.Files_Ind},SigNoise{handles.Files_Ind},auxnoise,OP,hs1);
 
@@ -510,7 +510,7 @@ if src == handles.figure1||src == handles.TBath_popup
     set(handles.Noise_Name,'String',FilesStr,'Value',1);
 end
 set(handles.Noise_axes,'ButtonDownFcn',{@HandleBoolComp},'UserData',handles.varargin{1});
-axis(handles.Noise_axes,'tight');
+% axis(handles.Noise_axes,'tight');
 % axes(hs1);
 % ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
 % %                     delete(ax);

@@ -179,7 +179,7 @@ switch str
         
         
 %         [RES, SimRes, M, Mph, fNoise, SigNoise] = TES.ElectrThermalModel.fitNoise(TES,FileName, Data{8});
-        f = logspace(1,5,321)';
+        f = logspace(0,6,1001)';
         if length(fNoise) ~= length(f)
             SigNoise = spline(fNoise,SigNoise,f); % Todos los ruidos a 321 puntos
             fNoise = f;
@@ -191,9 +191,9 @@ switch str
         end
         
         if isempty(strfind(Data{3},'Negative Bias'))
-            auxnoise = TES.ElectrThermalModel.noisesim(TES,Data{8},M,f,'P');
+            auxnoise = TES.ElectrThermalModel.noisesim(TES,Data{8},0,f,'P');
         else
-            auxnoise = TES.ElectrThermalModel.noisesim(TES,Data{8},M,f,'N');
+            auxnoise = TES.ElectrThermalModel.noisesim(TES,Data{8},0,f,'N');
         end               
         TES.ElectrThermalModel.Plot(fNoise,SigNoise,auxnoise,Data{8},ax(2))
 %         switch TES.ElectrThermalModel.tipo{TES.ElectrThermalModel.Selected_tipo}

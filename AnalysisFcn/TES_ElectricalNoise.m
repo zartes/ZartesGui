@@ -5,7 +5,7 @@ classdef TES_ElectricalNoise
     properties
         Tipo = {'Manual';'Automatic'};               % current, nep
         Selected_Tipo = 1;
-        Value = 9e-12;
+        Value = 6e-12;
         Array = [];
         NoFiltArray = [];
         Freq = logspace(1,5,321);

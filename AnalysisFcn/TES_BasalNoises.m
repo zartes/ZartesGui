@@ -74,12 +74,13 @@ classdef TES_BasalNoises
             % Modelo de ruido en estado normal teórico
             RL = TES.circuit.Rsh.Value+TES.circuit.Rpar.Value;
             RTES = TES.circuit.Rn.Value;
-            f = logspace(1,5,321)';
-%             if size(TES.circuit.Nsquid.Value,1) == 1                
-%                 f = logspace(0,6);
-%             else
-%                 f = obj.fNoise;
-%             end
+            % f = logspace(0,6,1001)';
+
+            if size(TES.circuit.Nsquid.Value,1) == 1                
+                f = logspace(0,6);
+            else
+                f = obj.fNoise;
+            end
             
             w = 2*pi*f;
             Zcirc = RL+RTES+1i*w*TES.circuit.L.Value;% impedancia del circuito.
@@ -144,7 +145,12 @@ classdef TES_BasalNoises
             RL = TES.circuit.Rsh.Value+TES.circuit.Rpar.Value;
                         
 %             tau = TES.circuit.L.Value/RL;
-            f = logspace(1,5,321)';
+            % f = logspace(0,6,1001);
+            if size(TES.circuit.Nsquid.Value,1) == 1                
+                f = logspace(0,6);
+            else
+                f = obj.fNoise;
+            end
             w = 2*pi*f;
             
             Tc = 0;

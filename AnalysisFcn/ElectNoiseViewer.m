@@ -170,8 +170,9 @@ function FromFile_Callback(hObject, eventdata, handles)
     fNoise = Data(:,1);
     SigNoise = Data(:,2);
 
-    f = logspace(1,5,321)';
-    
+    % f = logspace(1,5,321)';
+    f=logspace(0,6,1001);
+
     SigNoise = spline(fNoise,SigNoise,f);
     SigNoise = handles.varargin{1}.V2I(SigNoise);
     handles.circuitNoise.NoFiltArray = SigNoise;
@@ -197,9 +198,9 @@ function View_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 figure; 
-loglog(logspace(1,5,321),handles.circuitNoise.NoFiltArray,'DisplayName','No Filtered Noise');
+loglog(logspace(0,6,1001),handles.circuitNoise.NoFiltArray,'DisplayName','No Filtered Noise');
 hold on;
-loglog(logspace(1,5,321),handles.circuitNoise.Array,'DisplayName','Filtered Noise');
+loglog(logspace(0,6,1001),handles.circuitNoise.Array,'DisplayName','Filtered Noise');
 xlabel('Freq (Hz)');
 ylabel('Amplitude (A/{Hz}^{1/2})');
 set(gca,'Yscale','log','Xscale','log')
@@ -271,9 +272,9 @@ function ModelView_Callback(hObject, eventdata, handles)
 
 
 figure;
-loglog(logspace(1,5,321),handles.circuitNoise.NoFiltArray*1e-12,'DisplayName','No Filtered Noise');
+loglog(logspace(0,6,1001),handles.circuitNoise.NoFiltArray*1e-12,'DisplayName','No Filtered Noise');
 hold on;
-loglog(logspace(1,5,321),handles.circuitNoise.Array,'DisplayName','Model Based Noise');
+loglog(logspace(0,6,1001),handles.circuitNoise.Array,'DisplayName','Model Based Noise');
 xlabel('Freq (Hz)');
 ylabel('Amplitude (A/{Hz}^{1/2})');
 set(gca,'Yscale','log','Xscale','log')

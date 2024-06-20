@@ -32,7 +32,7 @@ classdef TES_ElectrThermModel
         Kb = 1.38e-23;
         
         FilterMethods = {'nofilt';'medfilt';'minfilt';'minfilt+medfilt';'movingMean';'quantile'};
-        Selected_FilterMethods = 5;
+        Selected_FilterMethods = 2;
         MedFilt = 40;
         MinWindow = 6;
         Perc = 25;
@@ -424,8 +424,7 @@ classdef TES_ElectrThermModel
                 CondStr = 'P';
 %                 OffsetY = TES.IVsetP(1).Offset(1);
                 Ib = Ib - TES.circuit.CurrOffset.Value;
-            end
-            
+            end                                                
             
             noisedata{1} = importdata(FileName);
             fNoise = noisedata{1}(:,1);
@@ -433,91 +432,145 @@ classdef TES_ElectrThermModel
             SigNoise = TES.V2I(noisedata{1}(:,2)*1e12);
             OP = TES.setTESOPfromIb(Ib,IV,param,CondStr);
             
-            f = logspace(1,5,321)';
-            M = 0;
-            
-            if length(fNoise) ~= length(f)
-                SigNoise = spline(fNoise,SigNoise,f); % Todos los ruidos a 321 puntos                
-                fNoise = f;
-            end            
-            
-            SimulatedNoise = obj.noisesim(TES,OP,M,f,CondStr);
-            SimRes = SimulatedNoise.Res;            
-            
-            sIaux = SimulatedNoise.sI;
-%             sIaux = ppval(spline(SimulatedNoise.f,SimulatedNoise.sI),fNoise);
-            NEP = real(sqrt(((SigNoise*1e-12).^2-SimulatedNoise.squid.^2))./sIaux);            
-%             NEP = sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2)./sIaux;
-            NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
-           
-            RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP,1),1),1./NoiseFiltering(obj,NEP).^2))/2/1.609e-19;
-            
-            
-            findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
-            xdata = fNoise(findx); 
-            
-            
-            
-            if isreal(NEP)
-                ydata = NoiseFiltering(obj,NEP*1e18);
-%                 ydata = medfilt1(NEP*1e18,obj.DataMedFilt);
-%                 findx = find(fNoise > max(obj.Noise_LowFreq,1) & fNoise < obj.Noise_HighFreq);
-                if nargin == 5 
-                    fig = figure;
-                    ax  = axes('Parent',fig');
-                    lg = loglog(ax,fNoise,SigNoise);
-                    hold on;
-                    ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
-%                     delete(ax);
-                    axes(ax);
-                    rc = rectangle('Position', [obj.Noise_LowFreq(1) ax_frame(3) diff(obj.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255,'ButtonDownFcn',@rctgle);                                        
-                    rc2 = rectangle('Position', [obj.Noise_HighFreq(1) ax_frame(3) diff(obj.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255,'ButtonDownFcn',@rctgle);                                        
-                    pb = uicontrol('style','toggle',...
-                        'position',[10 10 180 40],...
-                        'fontsize',14,...
-                        'string','Done');
-                    %                     ax = loglog(fNoise,SigNoise);
-                    waitfor(pb,'Value',1);
-                    rc_pos = get(rc,'Position');
-                    rc2_pos = get(rc2,'Position');
-                    close(fig);
-                    obj.Noise_LowFreq(1) = rc_pos(1);
-                    obj.Noise_LowFreq(2) = rc_pos(1)+rc_pos(3);
-                    obj.Noise_HighFreq(1) = rc2_pos(1);
-                    obj.Noise_HighFreq(2) = rc2_pos(1)+rc2_pos(3);
-%                     findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
-                end
-                  
-                ydata = ydata(findx);
+            % f=logspace(1,6,1000)';
+
+
+            f=logspace(0,6,1001);%%%Ojo, la definición de 'f' debe coincidir con la que hay dentro de noisesim!!!
+            noiseIrwin = obj.noisesim(TES,OP,0,f,CondStr);
+            SimRes = noiseIrwin.Res;
+            faux=noisedata{1}(:,1);
+            try
+                sIaux=ppval(spline(f,noiseIrwin.sI),noisedata{1}(:,1));
+                NEP=abs(sqrt(TES.V2I(noisedata{1}(:,2)).^2-noiseIrwin.squid.^2))./abs(sIaux);
+                faux = faux(~isnan(NEP));
+                NEP=NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
                 
-                % Proteccion contra ceros
-                indceros = find(ydata == 0);
-                ydata(indceros) = [];
-                xdata(indceros) = [];
-                                
-                                
-                if isempty(findx)||sum(ydata == inf)
-                    M = NaN;
-                    Mph = NaN;
-                else %TES,M,f,OP,CondStr)
-                    opts = optimset('Display','off');
-%                     OP.C = 1.8075e-14;
-                    maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[1 1],xdata,ydata,[],[],opts);   
-%                     ans = obj.fitjohnson(TES,[0 0],xdata,OP,CondStr);
-%                     figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
-                    M = maux(2);
-                    Mph = maux(1);
-                    if M <= 0
-                        M = NaN;
-                    end
-                    if Mph <= 0
-                        Mph = NaN;
-                    end
+                filtNEP=NoiseFiltering(obj,NEP);
+                RES=2.35/sqrt(trapz(noisedata{1}(1:length(NEP),1),1./filtNEP.^2))/2/1.609e-19;                
+            catch %me da error el 1Z10_62B RUN007,50mK,92uA.
+                RES = NaN;
+            end
+            
+            findx=find((faux>obj.Noise_LowFreq(1) & faux<obj.Noise_LowFreq(2)) | (faux>obj.Noise_HighFreq(1) & faux<obj.Noise_HighFreq(2)));
+            xdata = faux(findx);
+            % xdata=noisedata{1}(findx,1);
+
+
+            if sum(isinf(NEP))==0
+                
+                % ydata=NoiseFiltering(obj,NEP(findx)*1e18);
+                ydata = filtNEP(findx)*1e18;
+                opts = optimset('Display','off','Algorithm','levenberg-marquardt');
+                maux=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:),[],[],opts);
+                % maux=lsqnonlin(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:));
+                % ans = obj.fitjohnson(TES,maux,xdata,OP,CondStr);
+                % figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
+                M=maux(2);
+                Mph=maux(1);
+                if M <= 0
+                    M = 0;
+                end
+                if Mph <= 0
+                    Mph = 0;
                 end
             else
-                M = NaN;
-                Mph = NaN;
-            end                        
+                M=0;
+                Mph=0;
+            end
+            % NEP = abs(sqrt((SigNoise*1e-12).^2-noiseIrwin.squid.^2))./abs(sIaux);
+            % 
+            % loglog(fNoise,(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(ax,'on'),grid(ax,'on'),
+            % loglog(fNoise,NoiseFiltering(obj,NEP*1e18),'.-k','DisplayName','Exp Filtered Noise');hold(ax,'on'),grid(ax,'on'),
+
+
+%             % f = logspace(1,5,321)';
+%             M = 0;
+% 
+%             if length(fNoise) ~= length(f)
+%                 SigNoise = spline(fNoise,SigNoise,f); % Todos los ruidos a 321 puntos                
+%                 fNoise = f;
+%             end            
+% 
+%             SimulatedNoise = obj.noisesim(TES,OP,M,f,CondStr);
+%             SimRes = SimulatedNoise.Res;            
+% 
+%             sIaux = SimulatedNoise.sI;
+%             sIaux=ppval(spline(f,SimulatedNoise.sI),noisedata{1}(:,1));
+% %             sIaux = ppval(spline(SimulatedNoise.f,SimulatedNoise.sI),fNoise);
+%             NEP=real(sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2))./sIaux;
+%             % NEP = (sqrt((SigNoise*1e-12).^2-SimulatedNoise.squid.^2))./sIaux);            
+%             % NEP = real(sqrt(((SigNoise*1e-12).^2-SimulatedNoise.squid.^2))./sIaux);            
+% %             NEP = sqrt(TES.V2I(noisedata{1}(:,2)).^2-SimulatedNoise.squid.^2)./sIaux;
+%             NEP = NEP(~isnan(NEP));%%%Los ruidos con la PXI tienen el ultimo bin en NAN.
+%             NEP2 = NEP(NEP~=0);
+%             FiltNEP = NoiseFiltering(obj,NEP2);
+%             % RES = 2.35/sqrt(trapz(noisedata{1}(1:size(NEP2,1),1),1./NoiseFiltering(obj,NEP2).^2))/2/1.609e-19
+%             RES = 2.35/sqrt(trapz(noisedata{1}(1:size(FiltNEP,1),1),1./FiltNEP.^2))/2/1.609e-19;            
+% 
+%             findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+%             xdata = fNoise(findx);                         
+% 
+%             if isreal(NEP)
+%                 ydata = NoiseFiltering(obj,NEP*1e18);
+%                 % ydata = NEP*1e18;
+% %                 ydata = medfilt1(NEP*1e18,obj.DataMedFilt);
+% %                 findx = find(fNoise > max(obj.Noise_LowFreq,1) & fNoise < obj.Noise_HighFreq);
+%                 if nargin == 5 
+%                     fig = figure;
+%                     ax  = axes('Parent',fig');
+%                     lg = loglog(ax,fNoise,SigNoise);
+%                     hold on;
+%                     ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
+% %                     delete(ax);
+%                     axes(ax);
+%                     rc = rectangle('Position', [obj.Noise_LowFreq(1) ax_frame(3) diff(obj.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255,'ButtonDownFcn',@rctgle);                                        
+%                     rc2 = rectangle('Position', [obj.Noise_HighFreq(1) ax_frame(3) diff(obj.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255,'ButtonDownFcn',@rctgle);                                        
+%                     pb = uicontrol('style','toggle',...
+%                         'position',[10 10 180 40],...
+%                         'fontsize',14,...
+%                         'string','Done');
+%                     %                     ax = loglog(fNoise,SigNoise);
+%                     waitfor(pb,'Value',1);
+%                     rc_pos = get(rc,'Position');
+%                     rc2_pos = get(rc2,'Position');
+%                     close(fig);
+%                     obj.Noise_LowFreq(1) = rc_pos(1);
+%                     obj.Noise_LowFreq(2) = rc_pos(1)+rc_pos(3);
+%                     obj.Noise_HighFreq(1) = rc2_pos(1);
+%                     obj.Noise_HighFreq(2) = rc2_pos(1)+rc2_pos(3);
+% %                     findx = find((fNoise > obj.Noise_LowFreq(1) & fNoise < obj.Noise_LowFreq(2)) | (fNoise > obj.Noise_HighFreq(1) & fNoise < obj.Noise_HighFreq(2)));
+%                 end
+% 
+%                 ydata = ydata(findx);
+% 
+%                 % Proteccion contra ceros
+%                 indceros = find(ydata == 0);
+%                 ydata(indceros) = [];
+%                 xdata(indceros) = [];
+% 
+% 
+%                 if isempty(findx)||sum(ydata == inf)
+%                     M = NaN;
+%                     Mph = NaN;
+%                 else %TES,M,f,OP,CondStr)
+%                     opts = optimset('Display','off');
+% %                     OP.C = 1.8075e-14;
+%                     maux = lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:),[],[],opts);   
+% %                     ans = obj.fitjohnson(TES,maux,xdata,OP,CondStr);
+% %                     figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
+%                     M = maux(2);
+%                     Mph = maux(1);
+%                     if M <= 0
+%                         M = NaN;
+%                     end
+%                     if Mph <= 0
+%                         Mph = NaN;
+%                     end
+%                 end
+%             else
+%                 M = NaN;
+%                 Mph = NaN;
+%             end                        
         end
         
         function noise = noisesim(obj,TES,OP,M,f,CondStr)
@@ -811,19 +864,20 @@ classdef TES_ElectrThermModel
                     loglog(ax,fNoise,SigNoise,'.-r','DisplayName','Experimental Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
                     hold(ax,'on');
                     grid(ax,'on')
-                    loglog(ax,fNoise,obj.NoiseFiltering(SigNoise),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
+                    loglog(ax,fNoise,NoiseFiltering(obj,SigNoise),'.-k','DisplayName','Exp Filtered Noise'); %%%for noise in Current.  Multiplico 1e12 para pA/sqrt(Hz)!Ojo, tb en plotnoise!
                     % Añadir color al tramo de señal
                     % utilizado para el ajuste
                     
                     if obj.bool_Mph == 0
-                        totnoise = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
+                        totnoise_th = sqrt(auxnoise.sum.^2+auxnoise.squidarray.^2);
                     else
                         Mexph = OP.Mph;
                         if isnan(Mexph)
                             Mexph = 0;
                         end
-                        totnoise = sqrt((auxnoise.ph.^2.*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
-%                         totnoise = sqrt(auxnoise.ph.^2+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
+                        % totnoise = sqrt((auxnoise.ph.*(1+OP.Mph^2).^2)+(auxnoise.jo.*(1+OP.M^2).^2)+auxnoise.sh.^2+auxnoise.squidarray.^2);
+                        totnoise = sqrt((auxnoise.ph.^2.*(1+OP.Mph^2))+(auxnoise.jo.^2.*(1+OP.M^2))+auxnoise.sh.^2+auxnoise.squidarray.^2);
+                        totnoise_th = sqrt(auxnoise.ph.^2+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2);
                     end
                     if ~obj.bool_components
                         loglog(ax,auxnoise.f,totnoise*1e12,'b','LineWidth',3,'DisplayName','Total Simulation Noise');
@@ -834,6 +888,7 @@ classdef TES_ElectrThermModel
                         loglog(ax,auxnoise.f,auxnoise.sh*1e12,'DisplayName','Shunt','LineWidth',3);
                         loglog(ax,auxnoise.f,auxnoise.squidarray*1e12,'DisplayName','Squid','LineWidth',3);
                         loglog(ax,auxnoise.f,totnoise*1e12,'b','DisplayName','Total','LineWidth',3);
+                        loglog(ax,auxnoise.f,totnoise_th*1e12,'b','DisplayName','Total th','LineWidth',2);
                     end
                     ylabel(ax,'pA/Hz^{0.5}');
                 case 'nep'
@@ -845,10 +900,11 @@ classdef TES_ElectrThermModel
                         auxnoise.squidarray = auxnoise.squidarray';
                     end
                     squid =auxnoise.squidarray;
-                    NEP = real(sqrt((SigNoise*1e-12).^2-squid.^2)./sIaux);
+                    % NEP=abs(sqrt(TES.V2I(noisedata{1}(:,2)).^2-auxnoise.squid.^2))./abs(sIaux);
+                    NEP = abs(sqrt((SigNoise*1e-12).^2-squid.^2))./abs(sIaux);
                     
                     loglog(ax,fNoise,(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(ax,'on'),grid(ax,'on'),
-                    loglog(ax,fNoise,obj.NoiseFiltering(NEP*1e18),'.-k','DisplayName','Exp Filtered Noise');hold(ax,'on'),grid(ax,'on'),
+                    loglog(ax,fNoise,NoiseFiltering(obj,NEP*1e18),'.-k','DisplayName','Exp Filtered Noise');hold(ax,'on'),grid(ax,'on'),
                     if obj.bool_Mph == 0
                         totNEP = auxnoise.NEP;
                     else
@@ -856,7 +912,11 @@ classdef TES_ElectrThermModel
                         if isnan(Mexph)
                             Mexph = 0;
                         end
-                        totNEP = sqrt((auxnoise.ph.^2.*(1+Mexph^2))+auxnoise.jo.^2+auxnoise.sh.^2+auxnoise.squidarray.^2)./auxnoise.sI;
+                        % totNEP = sqrt((auxnoise.ph*(1+OP.Mph^2)).^2+(auxnoise.jo*(1+OP.M^2)).^2+auxnoise.sh.^2+auxnoise.squidarray.^2)./abs(auxnoise.sI);
+                        % totNEP_th = sqrt((auxnoise.ph.^2)+(auxnoise.jo.^2)+auxnoise.sh.^2+auxnoise.squidarray.^2)./abs(auxnoise.sI);
+%                      
+                        totNEP = sqrt((auxnoise.ph.^2.*(1+OP.Mph^2))+(auxnoise.jo.^2.*(1+OP.M^2))+auxnoise.sh.^2+auxnoise.squidarray.^2)./abs(auxnoise.sI);
+                        totNEP_th = sqrt((auxnoise.ph.^2)+(auxnoise.jo.^2)+auxnoise.sh.^2+auxnoise.squidarray.^2)./abs(auxnoise.sI);
 %                         totNEP = sqrt(auxnoise.max.^2+auxnoise.jo.^2+auxnoise.sh.^2)./auxnoise.sI;%%%Ojo, estamos asumiendo Mph tal que F = 1, no tiene porqué.
                     end
                     if ~obj.bool_components
@@ -868,14 +928,16 @@ classdef TES_ElectrThermModel
                         loglog(ax,auxnoise.f,auxnoise.sh*1e18./auxnoise.sI,'DisplayName','Shunt','LineWidth',3);
                         loglog(ax,auxnoise.f,auxnoise.squidarray*1e18./auxnoise.sI,'DisplayName','Squid','LineWidth',3);
                         loglog(ax,auxnoise.f,totNEP*1e18,'b','DisplayName','Total','LineWidth',3);
+                        loglog(ax,auxnoise.f,totNEP_th*1e18,'b','DisplayName','Total th','LineWidth',2);
                     end
                     ylabel(ax,'aW/Hz^{0.5}');
             end
             axis(ax,[1e1 1e5 2 1e3])
             xlabel(ax,'\nu (Hz)','FontSize',12,'FontWeight','bold')
             title(ax,strcat(num2str(nearest(OP.r0*100),'%3.0f'),'%Rn'),'FontSize',12);
-            axis(ax,'tight');
+            % axis(ax,'tight');
             axes(ax);
+            xlim([1e1 1e5]);
             ax_frame = axis; %axis([XMIN XMAX YMIN YMAX])
             rc = rectangle('Position', [obj.Noise_LowFreq(1) ax_frame(3) diff(obj.Noise_LowFreq) ax_frame(4)],'FaceColor',[253 234 23 127.5]/255,'ButtonDownFcn',@rctgle);
             rc2 = rectangle('Position', [obj.Noise_HighFreq(1) ax_frame(3) diff(obj.Noise_HighFreq) ax_frame(4)],'FaceColor',[214 232 217 127.5]/255,'ButtonDownFcn',@rctgle);

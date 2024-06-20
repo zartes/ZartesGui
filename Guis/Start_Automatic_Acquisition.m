@@ -398,7 +398,7 @@ end
 
 % Ponemos la temperatura a la que dejamos la mixing
 
-FinalT = str2double(handles.FinalMCT.String)*1e-3; % mK 
+FinalT = str2double(handles.FinalMCT.String)*1e-3; % mK (La temperatura se tiene que poner en mK, si ponemos 30mK lo pasará al bluefors como 30*1e-3 = 0.03K) 
 AjustarTemperatura(FinalT,Conf,SetupTES,handles)
 % Instrucciones para el control de temperatura con Oxford
 % SetupTES.vi_IGHFrontPanel.FPState = 4;
