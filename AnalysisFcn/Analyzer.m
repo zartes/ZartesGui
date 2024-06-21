@@ -404,8 +404,14 @@ switch src.Label
                 handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.circuitNoise.Array;
             end
             
+            [~, handles.Session{handles.TES_ID}] = handles.Session{handles.TES_ID}.ZTDB.UpdateTESdimsFromExcel(handles.Session{handles.TES_ID});
 %             handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
-            
+            % Actualiza las dimensiones del TES en caso de que no estén en
+            % la base de datos
+
+
+
+
         else
             warndlg('Caution! Circuit parameters were not loaded, check it manually',handles.VersionStr);
         end

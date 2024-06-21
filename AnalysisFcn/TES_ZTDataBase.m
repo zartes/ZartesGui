@@ -21,7 +21,7 @@ classdef TES_ZTDataBase
         Comments;
     end
     properties (Access = private)
-        version = 'ZarTES v4.3';
+        version = 'ZarTES v4.4';
     end
     
     methods
@@ -72,8 +72,9 @@ classdef TES_ZTDataBase
             obj.TES_Idn = alltext{2,3};
             obj.Squid_Idn = alltext{2,2};
             obj.Colddown_Idn = alltext{2,1};   
-            obj.Colddown_Date = alltext{2,4};
-            
+            obj.Colddown_Date = alltext{2,4};                        
+
+
             [~, ~, alltext] = xlsread([Session.Path(1:find(Session.Path(1:end-1) == filesep,1,'last')) filesep d(1).name],2);
             try
                 RawIndx = find(not(cellfun('isempty',strfind(alltext(:,1),RunStr))));
@@ -87,6 +88,65 @@ classdef TES_ZTDataBase
 %             RawIndx = str2double(strtok(RunStr,'RUN'))+1;
 %             obj.BFieldCond = [num2str(alltext{RawIndx,2}) '/' num2str(alltext{RawIndx,3})];  
 %             obj.Comments = alltext{RawIndx,4};
+        end
+
+
+        function [obj, Session] = UpdateTESdimsFromExcel(obj,Session)
+            Indx = find(Session.Path(1:end-1) == filesep,3,'last');
+            RunStr = Session.Path(Indx(3)+1:end-1);
+            % Enlace con el archivo EXCEL
+            d = dir([Session.Path(1:find(Session.Path(1:end-1) == filesep,1,'last')) 'Summary*.xls']);
+            [~, ~, alltext] = xlsread([Session.Path(1:find(Session.Path(1:end-1) == filesep,1,'last')) filesep d(1).name]);
+
+        
+            LengthIndx = find(ismember(alltext(1,:),'Length'));
+            if ~isempty(LengthIndx)
+                Session.TES.TESDim.length.Value = alltext{2,LengthIndx}*1e-6;
+            end
+
+            WidthIndx = find(ismember(alltext(1,:),'Width'));
+            if ~isempty(WidthIndx)
+                Session.TES.TESDim.width.Value = alltext{2,WidthIndx}*1e-6;
+            end
+
+            bicapaIndx = find(ismember(alltext(1,:),'bicapa'));
+            if ~isempty(bicapaIndx)
+                str = alltext{2,bicapaIndx};
+                str(str == ',') = '.';
+                str = strsplit(str,'/');
+                Session.TES.TESDim.hMo.Value = str2double(str{1})*1e-9;                
+                Session.TES.TESDim.hAu.Value = (str2double(str{2})+str2double(str{3}))*1e-9;                
+            end
+
+            AbsIndx = find(ismember(alltext(1,:),'Absorbente'));
+            if ~isempty(AbsIndx)
+                Session.TES.TESDim.Abs_bool = 1;
+                str = alltext{2,AbsIndx};
+                str(str == ',') = '.';
+                str = strsplit(str,'/');
+                Session.TES.TESDim.Abs_width.Value = str2double(str{1})*1e-6;                
+                Session.TES.TESDim.Abs_length.Value = str2double(str{2})*1e-6;                
+                Session.TES.TESDim.Abs_hAu.Value = str2double(str{3})*1e-6;
+                if length(str) > 3                    
+                    Session.TES.TESDim.Abs_hBi.Value = str2double(str{4})*1e-6;
+                else
+                    Session.TES.TESDim.Abs_hBi.Value = 0;
+                end
+                Session.TES.TESDim.Abs_thick.Value = Session.TES.TESDim.Abs_hAu.Value+Session.TES.TESDim.Abs_hBi.Value;
+            end
+
+            MembIndx = find(ismember(alltext(1,:),'Membrana'));
+            if ~isempty(MembIndx)
+                Session.TES.TESDim.Membrane_bool = 1;
+                str = alltext{2,MembIndx};
+                str(str == ',') = '.';
+                str = strsplit(str,'/');                
+                Session.TES.TESDim.Membrane_width.Value = str2double(str{1})*1e-6;                
+                Session.TES.TESDim.Membrane_length.Value = str2double(str{2})*1e-6;
+                Session.TES.TESDim.Membrane_thick.Value = str2double(str{3})*1e-6;
+            end
+            
+
         end
         
         function [obj, Session] = Update(obj,Session)
