@@ -29,6 +29,7 @@ classdef TES_ElectrThermModel
         Selected_Noise_Models = 1;
         Noise_LowFreq = [2e2 1e3]; % [2e2,1e3]
         Noise_HighFreq = [5e3,1e5]; %10e4; %[5e3,1e5]
+        FitLFHFJoin = 0;
         Kb = 1.38e-23;
         
         FilterMethods = {'nofilt';'medfilt';'minfilt';'minfilt+medfilt';'movingMean';'quantile'};
@@ -451,32 +452,53 @@ classdef TES_ElectrThermModel
                 RES = NaN;
             end
             
-            findx=find((faux>obj.Noise_LowFreq(1) & faux<obj.Noise_LowFreq(2)) | (faux>obj.Noise_HighFreq(1) & faux<obj.Noise_HighFreq(2)));
-            xdata = faux(findx);
-            % xdata=noisedata{1}(findx,1);
-
-
-            if sum(isinf(NEP))==0
-                
-                % ydata=NoiseFiltering(obj,NEP(findx)*1e18);
-                ydata = filtNEP(findx)*1e18;
+            
+            if ~obj.FitLFHFJoin
+                % estrategia a 2 bandas separadas
                 opts = optimset('Display','off','Algorithm','levenberg-marquardt');
-                maux=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:),[],[],opts);
-                % maux=lsqnonlin(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:));
-                % ans = obj.fitjohnson(TES,maux,xdata,OP,CondStr);
-                % figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
-                M=maux(2);
-                Mph=maux(1);
+                findxLF=find((faux>obj.Noise_LowFreq(1) & faux<obj.Noise_LowFreq(2)));
+                xdataLF = faux(findxLF);
+                ydataLF = filtNEP(findxLF)*1e18;
+                maux=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdataLF(:),ydataLF(:),[],[],opts);
+                Mph = maux(1);                
+                findxHF=find((faux>obj.Noise_HighFreq(1) & faux<obj.Noise_HighFreq(2)));
+                xdataHF = faux(findxHF);
+                ydataHF = filtNEP(findxHF)*1e18;
+                maux=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdataHF(:),ydataHF(:),[],[],opts);                
+                M = maux(2);
                 if M <= 0
                     M = 0;
                 end
                 if Mph <= 0
                     Mph = 0;
                 end
+                
             else
-                M=0;
-                Mph=0;
+                findx=find((faux>obj.Noise_LowFreq(1) & faux<obj.Noise_LowFreq(2)) | (faux>obj.Noise_HighFreq(1) & faux<obj.Noise_HighFreq(2)));
+                xdata = faux(findx);            % xdata=noisedata{1}(findx,1);
+                if sum(isinf(NEP))==0
+                    
+                    % ydata=NoiseFiltering(obj,NEP(findx)*1e18);
+                    ydata = filtNEP(findx)*1e18;
+                    opts = optimset('Display','off','Algorithm','levenberg-marquardt');
+                    maux=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:),[],[],opts);
+                    % maux=lsqnonlin(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:));
+                    % ans = obj.fitjohnson(TES,maux,xdata,OP,CondStr);
+                    % figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
+                    M=maux(2);
+                    Mph=maux(1);
+                    if M <= 0
+                        M = 0;
+                    end
+                    if Mph <= 0
+                        Mph = 0;
+                    end
+                else
+                    M=0;
+                    Mph=0;
+                end
             end
+            
             % NEP = abs(sqrt((SigNoise*1e-12).^2-noiseIrwin.squid.^2))./abs(sIaux);
             % 
             % loglog(fNoise,(NEP*1e18),'.-r','DisplayName','Experimental Noise');hold(ax,'on'),grid(ax,'on'),
