@@ -12,7 +12,7 @@ classdef AVSByPass
             if nargin == 1
                 COM='COM9';
             else
-                COM = varargin{2};
+                COM = 'GPIB1::21::INSTR'
             end
             
             %COM='COM9';%puerto serie.

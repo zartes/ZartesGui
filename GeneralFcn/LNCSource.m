@@ -17,7 +17,7 @@ classdef LNCSource
         
         function obj = Constructor(obj)
             % Function to generate the class with default values
-            obj.COM = 'COM4';
+            obj.COM = 'COM3';
             obj.baudrate = 57600;
             obj.databits = 7;
             obj.parity = 'even';
@@ -32,9 +32,9 @@ classdef LNCSource
         end
         
         function [obj] = Initialize(obj)
-            % Function that initialize the values of the source current
+            Function that initialize the values of the source current
             obj = mag_init(obj);
-            if obj.ObjHandle.Status == 'closed'
+            if strcomp(obj.ObjHandle.Status,'closed')
                 obj.ObjHandle = [];
             end
         end
@@ -48,10 +48,10 @@ classdef LNCSource
                 
         function obj = SetIntensity(obj,Ibvalue)
             % Function to set I bias by LNCS (Low Noise Current Source)
-            if strcmpi(Ivalue.Units, 'A')
-                mag_setLNCSImag(obj,Ibvalue);
+            if strcmpi(Ibvalue.Units, 'uA')
+                mag_setLNCSImag(obj,Ibvalue.Value);
             else
-                error('Ivalue units must be A');
+                error('Ivalue units must be uA');
             end            
         end
         

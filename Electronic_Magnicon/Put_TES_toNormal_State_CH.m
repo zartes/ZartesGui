@@ -20,16 +20,10 @@ function out = Put_TES_toNormal_State_CH(mag,signo)
 %%
 
 % Maximum value of the current to not exceed 
-LNCS_ILimit = 5000; % Esto debe ser opcional
+% LNCS_ILimit = 5000; % Esto debe ser opcional
 
 
-% Ponemos la LNCS a 5000 o -5000
-status = mag_setLNCSImag(mag,signo*LNCS_ILimit);
-if strcmp(status,'FAIL')
-    mag_DisconnectLNCS(mag);
-    out = 0;
-    return;
-end
+
 
 % Conectamos la salida de la fuenta LNCS
 mag_ConnectLNCS(mag);

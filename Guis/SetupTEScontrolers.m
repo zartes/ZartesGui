@@ -99,7 +99,7 @@ try
 %     T_MC = handles.vi_IGHFrontPanel.GetControlValue('M/C');
 %     handles.MCTemp.String = num2str(T_MC);
     
-    Period = 15;
+    Period = 7;
     handles.timer = timer(...
         'ExecutionMode', 'fixedRate', ...       % Run timer repeatedly
         'Period', Period, ...                        % Initial period is 1 sec.
@@ -153,8 +153,8 @@ handles.IVset = [];
 
 handles.IVDelay = IV_Delay;
 handles.IVDelay = handles.IVDelay.Constructor;
-handles.IVDelay.OriginalRes = 5;
-handles.IVDelay.MinRes = 1;
+handles.IVDelay.OriginalRes = 10;
+handles.IVDelay.MinRes = 5;
 
 handles.BoptDelay = IV_Delay;
 handles.BoptDelay = handles.BoptDelay.Constructor;
@@ -184,9 +184,9 @@ handles.PXI.Options;
 
 % Field Source
 try
-    handles.CurSource_Vmax.String = num2str(handles.CurSour.Vmax.Value);
-    IndexC = strfind(cellstr(handles.CurSource_Vmax_Units.String), handles.CurSour.Vmax.Units);
-    handles.CurSource_Vmax_Units.Value = find(not(cellfun('isempty',IndexC)),1);
+    % handles.CurSource_Vmax.String = num2str(handles.CurSour.Vmax.Value);
+    % IndexC = strfind(cellstr(handles.CurSource_Vmax_Units.String), handles.CurSour.Vmax.Units);
+    % handles.CurSource_Vmax_Units.Value = find(not(cellfun('isempty',IndexC)),1);
 catch
 end
 try
@@ -201,7 +201,9 @@ end
 a_str = {'New Figure';'Open File';'Link Plot';'Hide Plot Tools';'Show Plot Tools and Dock Figure'};
 for i = 1:length(a_str)
     eval(['a = findall(handles.FigureToolBar,''ToolTipString'',''' a_str{i} ''');']);
-    a.Visible = 'off';
+    if ~isempty(a)
+        a.Visible = 'off';
+    end
 end
 
 
@@ -311,7 +313,10 @@ handles.Menu_RnRpar = uimenu('Parent',handles.menu(1),'Label',...
     'Update Rn and Rpar from (mN, mS)','Callback',{@RnRpar_from_mNmS},'UserData',handles.Circuit);
 handles.Menu_Offset = uimenu('Parent',handles.menu(1),'Label',...
     'Estimate Current Offset','Callback',{@OffsetCurrent},'UserData',handles.Circuit);
-
+handles.Menu_SaveCircuit = uimenu('Parent',handles.menu(1),'Label',...
+    'Save Circuit','Callback',{@SaveCircuit},'UserData',handles.Circuit);
+handles.Menu_LoadCircuit = uimenu('Parent',handles.menu(1),'Label',...
+    'Load Circuit','Callback',{@LoadCircuit},'UserData',handles.Circuit);
 
 
 handles.HndlStr(:,1) = {'Multi';'Squid';'CurSour';'DSA';'PXI'};
@@ -611,6 +616,54 @@ waitfor(msgbox(['Current Offset Point, Ibias = ' num2str(Xcros) ' uA, Vout = ' n
 handles.Menu_Circuit.UserData = handles.Circuit;
 guidata(src.Parent.Parent,handles);
 
+function SaveCircuit(src,evnt)
+handles = guidata(src);
+
+circuit1 = handles.Circuit;
+uisave('circuit1','circuit.mat');
+
+guidata(src.Parent.Parent,handles);
+
+function LoadCircuit(src,evnt)
+handles = guidata(src);
+[filename, pathname] = uigetfile({'sesion*';'circuit*'}, 'Pick a MATLAB file refering to circuit values');
+if ~isequal(filename,0)
+    switch filename
+        case 'sesion.mat'
+            try
+                load([pathname filename],'circuit');
+            catch
+                a = load([pathname filename],'circuit*');
+                circuit = eval(['a.' char(fieldnames(a))]);
+            end
+            
+        case 'circuit.mat'
+%             try
+%                 load([pathname filename],'circuit');
+%             catch
+                a = load([pathname filename],'circuit*');
+                circuit = eval(['a.' char(fieldnames(a))]);
+%             end
+            
+            % Robustecer para buscar la variable circuit
+        otherwise
+            a = load([pathname filename],'circuit*');
+            circuit = eval(['a.' char(fieldnames(a))]);
+    end
+    % try
+        handles.Circuit = handles.Circuit.Update(circuit);
+    % catch
+    %     handles.Circuit = Circuit;
+    %     handles.Circuit = handles.Circuit.Constructor;
+    %     handles.Circuit = handles.Circuit.Update(circuit);
+    % end
+    handles.Menu_Circuit.UserData = handles.Circuit;
+    Obj_Properties(handles.Menu_Circuit)
+else
+    warndlg('Caution! Circuit parameters were not loaded, check it manually',handles.VersionStr);
+end
+
+guidata(src.Parent.Parent,handles);
 
 function ACQ_Ibias(src,evnt)
 
@@ -627,16 +680,25 @@ for i = 1:length(DevicesOn)
     jj = 2;
     for j = 1:size(Mthds,1) %#ok<USENS>
         if isempty(cell2mat(strfind({'Constructor';'Destructor';'Initialize';handles.HndlStr{i,2}},Mthds{j})))
-            eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
+          % try
+              eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
+          % catch
+          % end
             if DevicesOn(i)
                 eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''on'';']);
             else
-                eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''off'';']);
+                % try
+                    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').Enable = ''off'';']);
+                % catch
+                % end
             end
             jj = jj + 1;
         end
     end
-    eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
+    % try
+        eval(['handles.Menu_' handles.HndlStr{i,1} '_sub(' num2str(jj) ').UserData = handles.' handles.HndlStr{i,1} ';']);
+    % catch
+    % end
 end
 
 function Obj_Actions(src,evnt)
@@ -735,6 +797,7 @@ catch
 end
 try
 %     handles.vi.Abort;
+handles.BF.Heater.close;
     stop(handles.timer);
 catch
 end
@@ -847,10 +910,25 @@ else
         % Action of the device (including line)
         
         
-        
-        %% Comprobación del signo del 
-        if isequal(eventdata,-1)
-            handles.Squid.TES2NormalState(eventdata);
+        LNCS_ILimit.Value = str2double(get(handles.ILimitLNCSValue,'String'));
+        switch handles.ILimitLNCSUnits.Value
+            case 1 
+                LNCS_ILimit.Value = LNCS_ILimit.Value*1e6;
+            case 2
+                LNCS_ILimit.Value = LNCS_ILimit.Value*1e3;            
+        end
+        LNCS_ILimit.Units = 'uA';
+        % Ponemos la LNCS a 5000 o -5000
+        handles.CurSour.ObjHandle = handles.Squid.ObjHandle;
+        handles.CurSour.SetIntensity(LNCS_ILimit);
+        % if strcmp(status,'FAIL')
+        %     mag_DisconnectLNCS(mag);
+        %     out = 0;
+        %     return;
+        % end
+        %% Comprobación del signo del
+        if sign(LNCS_ILimit.Value) == -1
+            handles.Squid.TES2NormalState(-1);
             handles.SQ_Ibias_Units.Value = 3;
             handles.SQ_Ibias.String = '-500';
         else
@@ -865,6 +943,26 @@ else
         Multi_Read_Callback(handles.Multi_Read,[],handles);
         
         
+        % Leer si hay campo
+        ILNCS.Value = str2double(get(handles.CurSource_I,'String'));
+        StrUnits = get(handles.CurSource_I_Units,'String');
+        ILNCS.Units = StrUnits{get(handles.CurSource_I_Units,'Value')};
+
+        % Cambiamos a uA
+        switch handles.CurSource_I_Units.Value
+            case 1
+                ILNCS.Value = ILNCS.Value*1e6;
+            case 2
+                ILNCS.Value = ILNCS.Value*1e3;
+        end
+        ILNCS.Units = 'uA';
+        % Abrir o cerrar la LNSC si el output esta seleccionado
+        handles.CurSour.SetIntensity(ILNCS);
+        if handles.CurSource_OnOff.Value
+            handles.Squid.Connect_LNCS;
+        else
+            handles.Squid.Disconnect_LNCS;            
+        end
         
         
         
@@ -1670,24 +1768,59 @@ else
                 switch j
                     case 2
                         IVmeasure.ibias = Data(:,2)*1e-6;
-                        if Data(1,1) == 0
+                        if Data(1,1) == 0                            
                             IVmeasure.vout = Data(:,4)-Data(1,4);
                         else
-                            IVmeasure.vout = Data(:,4)-Data(end,4);
+                            if ~isempty(Ibias{i} == 0)
+                                IVmeasure.vout = Data(:,4)-Data(Ibias{i} == 0,4);
+                            else
+                                IVmeasure.vout = Data(:,4)-Data(end,4);
+                            end
                         end
                     case 4
                         IVmeasure.ibias = Data(:,2)*1e-6;
                         if Data(1,2) == 0
                             IVmeasure.vout = Data(:,4)-Data(1,4);
                         else
-                            IVmeasure.vout = Data(:,4)-Data(end,4);
+                            if ~isempty(Ibias{i} == 0)
+                                IVmeasure.vout = Data(:,4)-Data(Ibias{i} == 0,4);
+                            else
+                                IVmeasure.vout = Data(:,4)-Data(end,4);
+                            end
                         end
                 end
                 val = polyfit(IVmeasure.ibias(1:3),IVmeasure.vout(1:3),1); % First points avoided
                 mN = val(1);
                 val = polyfit(IVmeasure.ibias(end-2:end),IVmeasure.vout(end-2:end),1);
                 mS = val(1);
-                
+
+                ButtonName1 = questdlg('Do you want to store the IV-Curve for further analysis?',handles.VersionStr,...
+                    'Yes','No','Yes');
+                switch ButtonName1
+                    case 'Yes'
+                        TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
+                        if mode(sign(Ibias{1})) < 0
+                            filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') 'K_down_n_matlab'];
+                        else
+                            filename = [TMC ,'mK_Rf' num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') 'K_down_p_matlab'];
+                        end
+
+                        [filename, pathname] = uiputfile( ...
+                            {[filename '.txt']}, ...
+                            'Save as');
+                        if ~isequal(pathname,0)
+                            Data(:,4) = Data(:,4)-Data(end,4);
+                            save([pathname filename],'Data','-ascii')
+                        end
+
+                    otherwise
+                        %                     if isempty(handles.IVset)
+                        %                         handles.SQ_Rn.Enable = 'off';
+                        %                     end
+                        break;
+                end
+
+
                 %             waitfor(msgbox(['IV curve estimated parameters: mN = '...
                 %                 num2str(mN) '; mS = ' num2str(mS) '; Rn = ' num2str(Rn) '; Rpar = ' num2str(Rpar)'],handles.VersionStr));
                 %
@@ -1720,39 +1853,7 @@ else
                         TESDATA.TESParam.Rn.Value = Rn;
                         TESDATA.TESParam.Rpar.Value = Rpar;
                         
-                        
-                        ButtonName1 = questdlg('Do you want to store the IV-Curve for further analysis?',handles.VersionStr,...
-                            'Yes','No','Yes');
-                        switch ButtonName1
-                            case 'Yes'
-                                TMC = num2str(str2double(handles.MCTemp.String)*1e3,'%1.1f');
-                                
-                                if handles.Circuit.Rf.Value == 10000
-                                    RfStr = [num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f') 'K'];
-                                else
-                                    RfStr = num2str(handles.Circuit.Rf.Value*1e-3,'%1.0f');
-                                end
-                               
-                                if mode(sign(Ibias{1})) < 0
-                                    filename = [TMC ,'mK_Rf' RfStr '_down_n_matlab'];
-                                else
-                                    filename = [TMC ,'mK_Rf' RfStr '_down_p_matlab'];
-                                end
-                                
-                                [filename, pathname] = uiputfile( ...
-                                    {[filename '.txt']}, ...
-                                    'Save as');
-                                if ~isequal(pathname,0)
-                                    Data(:,4) = Data(:,4)-Data(end,4);
-                                    save([pathname filename],'Data','-ascii')
-                                end
-                                
-                            otherwise
-                                %                     if isempty(handles.IVset)
-                                %                         handles.SQ_Rn.Enable = 'off';
-                                %                     end
-                                break;
-                        end
+                                               
                         
                         %                     handles.Circuit.Rpar.Value = Rpar;
                     otherwise
@@ -2063,7 +2164,7 @@ else
         I.Value = str2double(handles.CurSource_I.String);
         I.Units = 'A';
         if abs(I.Value) > 0.007 % handles.CurSource.Imax.Value % 5 mA
-            h = msgbox('Current value exceeds security range of 5mA', ...
+            h = msgbox('Current value exceeds security range of 7mA', ...
                 handles.VersionStr);
             tic;
             t = toc;
@@ -2075,9 +2176,19 @@ else
             end
             handles.CurSour = handles.CurSour.SetIntensity(I);
         else
+            switch handles.CurSource_I_Units.Value
+            case 1 
+                I.Value = I.Value*1e6;
+            case 2
+                I.Value = I.Value*1e3;  
+            end
+            I.Units = 'uA';
             handles.CurSour = handles.CurSour.SetIntensity(I);
         end
-        handles.Actions_Str.String = ['Current Source: I value set to ' num2str(I.Value) ' A'];
+        
+            
+        
+        handles.Actions_Str.String = ['Current Source: I value set to ' num2str(I.Value) ' uA'];
         Actions_Str_Callback(handles.Actions_Str,[],handles);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
@@ -2099,7 +2210,7 @@ value = str2double(get(hObject,'String'));
 Units = handles.CurSource_I_Units.Value;
 
 if ~isempty(value)&&~isnan(value)
-    if ((value > 0.005)&&(Units == 1))||((value > 5)&&(Units == 2))||((value > 5000)&&(Units == 3))
+    if ((value > 0.007)&&(Units == 1))||((value > 7)&&(Units == 2))||((value > 7000)&&(Units == 3))
         hObject.String = '0';
         handles.CurSource_I_Units.Value = 2;
         CurSource_I_Callback(hObject, [], handles)
@@ -3306,7 +3417,7 @@ function PXI_TF_Zw_Menu_Callback(hObject, eventdata, handles)
 if hObject.Value == 1
     set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','on');
 else
-    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','on');
+    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','off');
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -3486,19 +3597,53 @@ if hObject.Value
     Actions_Str_Callback(handles.Actions_Str,[],handles);
     
     [data, WfmI] = handles.PXI.Get_Wave_Form;
+    xi = 1;
+    while range(data(:,2)) > 0.005
+        if xi > 20
+            break;
+        end
+        [data, WfmI] = handles.PXI.Get_Wave_Form;
+        xi = xi+1;
+    end
     [psd,freq] = PSD(data);
-    clear datos;
-    datos(:,1) = freq;
-    datos(:,2) = sqrt(psd);
-    n_avg = handles.PXI.Options.NAvg;
+    if xi < 20        
+        clear datos;
+        datos(:,1) = freq;
+        datos(:,2) = sqrt(psd);
+        n_ok = 1;
+    else
+        datos(:,1) = freq;
+        datos(:,2) = zeros(size(data,1),size(data,2));
+        n_ok = 0;
+    end
+    % n_avg = handles.PXI.Options.NAvg;
+    n_avg = 5;
     for jj = 1:n_avg-1%%%Ya hemos adquirido una.
         [data, WfmI] = handles.PXI.Get_Wave_Form;
+        xi = 1;
+        while range(data(:,2)) > 0.005
+            if xi > 20
+                break;
+            end
+            [data, WfmI] = handles.PXI.Get_Wave_Form;
+            xi = xi+1;
+        end
         [psd,freq] = PSD(data);
-        aux(:,1) = freq;
-        aux(:,2) = sqrt(psd);
-        datos(:,2) = datos(:,2)+aux(:,2);
+        if xi < 20
+            aux(:,1) = freq;
+            aux(:,2) = sqrt(psd);
+            datos(:,2) = datos(:,2)+aux(:,2);
+            n_ok = n_ok+1;
+        else
+            if (jj == n_avg-1)&&(n_ok == 0)
+                datos(:,1) = freq;
+                datos(:,2) = sqrt(psd);
+                n_ok = 1;
+            end
+        end
     end
-    datos(:,2) = datos(:,2)/n_avg;
+%     datos(:,2) = datos(:,2)/n_avg;
+    datos(:,2) = datos(:,2)/n_ok;
     handles.PXI_Noise_Data = datos;
     
     if ~isempty(handles.PXI_Noise_Data)

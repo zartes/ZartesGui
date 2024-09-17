@@ -29,7 +29,7 @@ classdef PXI_Acquisition_card
             
             %%% Trigger Configuration
             obj.ConfStructs.Trigger.Source = '1';
-            obj.ConfStructs.Trigger.Type = 1;
+            obj.ConfStructs.Trigger.Type = 6;  %% 1 es edge y 6 es inmediate
             obj.ConfStructs.Trigger.Slope = 0;%%%0:Neg, 1:Pos
             obj.ConfStructs.Trigger.Level = -0.05; %%%%Habrá que resetear el lazo del Squid pq el ch1 se acopla en DC.
             obj.ConfStructs.Trigger.Coupling = 1;%%%DC=1; AC=0;?. '0' da error.
@@ -56,7 +56,7 @@ classdef PXI_Acquisition_card
             obj.Options.TimeOut = 10;
             obj.Options.channelList = '0,1';
             obj.Options.Skewness = 0.5;
-            obj.Options.NAvg = 10;
+            obj.Options.NAvg = 1;
         end % End of Fucntion Constructor
         
         function obj = Initialize(obj)

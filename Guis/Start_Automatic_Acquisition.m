@@ -14,14 +14,16 @@ if ~ischar(handles.Enfriada_dir)
 end
 meses = {'Enero';'Febrero';'Marzo';'Abril';'Mayo';'Junio';'Julio';'Agosto';'Septiembre';'Octubre';'Noviembre';'Diciembre'};
 SlashInd = strfind(handles.Enfriada_dir,filesep);
+YearStr = num2str(year(date));  % Matlab 2022 recomienda YearStr = num2str(year(datetime('today'));
+MonthStr = handles.Enfriada_dir(SlashInd(end-2)+1:SlashInd(end-1)-1);
+% MonthStr = meses{month(date)};
+StrChannel = handles.Enfriada_dir(SlashInd(end)+1:end);
+ExcelEnfriada = ['Summary_' YearStr '_' MonthStr '_' StrChannel '.xls'];
+
 
 % YearStr = handles.Enfriada_dir(SlashInd(end-1)+1:SlashInd(end)-1);
 % MonthStr = handles.Enfriada_dir(SlashInd(end)+1:end);
-
-YearStr = num2str(year(date));  % Matlab 2022 recomienda YearStr = num2str(year(datetime('today'));
-MonthStr = meses{month(date)};
-StrChannel = handles.Enfriada_dir(SlashInd(end)+1:end);
-ExcelEnfriada = ['Summary_' YearStr '_' MonthStr '_' StrChannel '.xls'];
+% ExcelEnfriada = ['Summary_' YearStr '_' MonthStr '.xls'];
 
 % Guardamos la configuracion en un .mat o en xml
 
@@ -38,7 +40,7 @@ dRUN = dir(handles.Enfriada_dir);
 j = 0;
 for i = 1:length(dRUN)
     if dRUN(i).isdir
-        if ~isempty(strfind(upper(dRUN(i).name),'RUN'))
+        if ~isempty(strfind(upper(dRUN(i).name),'RUN0'))
             j = j + 1;
         end
     end
@@ -91,7 +93,7 @@ end
 
 if exist([handles.Enfriada_dir filesep ExcelEnfriada],'file')
     num = xlsread([handles.Enfriada_dir filesep ExcelEnfriada],2);    
-    d = {str2double(a), Conf.BField.P, Conf.BField.N, answer{1}};
+    d = {['RUN' a], Conf.BField.P, Conf.BField.N, answer{1}};
     try
         xlswrite([handles.Enfriada_dir filesep ExcelEnfriada], d, 2,['A' num2str(size(num,1)+2)])
     catch
@@ -113,19 +115,52 @@ else  % Añadir la parte del mergin
     save([handles.AQ_dir filesep 'Conf_Acq_Merge.mat'],'Conf');
 end
 
-circuit1 = TES_Circuit;
-circuit1 = circuit1.Update(SetupTES.Circuit);
-CircuitProps = {'Rsh';'Rf';'invMf';'invMin';'L';'Nsquid';'Rn';'Rpar';'mN';'mS'};
-for i = 1:length(CircuitProps)
-    eval(['circuit.' CircuitProps{i} ' = circuit1.' CircuitProps{i} ';'])
-end
-save([handles.AQ_dir filesep 'circuit.mat'],'circuit');
+% En este punto, te deberia preguntar si quieres utilizar el circuit de las
+% pruebas o
+ButtonName = [];
+ButtonName = questdlg('Do you want to update circuit from file?', ...
+                         SetupTES.VersionStr, ...
+                         'Yes', 'No', 'No');
+   switch ButtonName
+     case 'Yes'
+         [filename, pathname] = uigetfile('*.mat', 'Pick a Circuit file');
+         if isequal(filename,0) || isequal(pathname,0)
+             disp('User pressed cancel')
+             circuit1 = TES_Circuit;
+             circuit1 = circuit1.Constructor;
+             circuit1 = circuit1.Update(SetupTES.Circuit);
+         else
+             a = load([pathname filename],'circuit*');
+             circuit = eval(['a.' char(fieldnames(a))]);             
+         end
+         circuit1 = TES_Circuit;
+         circuit1 = circuit1.Constructor;
+         circuit1 = circuit1.Update(circuit);
+     case 'No'
+         circuit1 = TES_Circuit;
+         circuit1 = circuit1.Constructor;
+         circuit1 = circuit1.Update(SetupTES.Circuit);
+       otherwise
+           circuit1 = TES_Circuit;
+           circuit1 = circuit1.Constructor;
+           circuit1 = circuit1.Update(SetupTES.Circuit);
+   end % switch
+
+
+% CircuitProps = {'Rsh';'Rf';'invMf';'invMin';'L';'Nsquid';'Rn';'Rpar';'mN';'mS'};
+% for i = 1:length(CircuitProps)
+%     eval(['circuit.' CircuitProps{i} ' = circuit1.' CircuitProps{i} ';'])
+% end
+
+save([handles.AQ_dir filesep 'circuit.mat'],'circuit1');
 
 fid = fopen([handles.AQ_dir filesep 'Readme.txt'],'a+');
 fprintf(fid,[answer{1} '\n']);
 fclose(fid);
-   
 
+SetupTES.Circuit = TES_Circuit;
+SetupTES.Circuit = SetupTES.Circuit.Constructor;
+SetupTES.Circuit = SetupTES.Circuit.Update(circuit1);
 
 % Generamos las carpetas donde iran las medidas
 
@@ -157,6 +192,51 @@ for i = 1:length(PathStr)
         end
     end
 end
+
+% En caso de adquirir unicamente Z's y ruidos hay que solicitar al usuario
+% que indique cual es la carpeta en la que se encuentran las IV's
+% necesarias.
+if (~Conf.IVcurves.On)&&(Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On ||... % Solo se genera el directorio si se necesita
+            Conf.TF.Noise.DSA.On || Conf.TF.Noise.PXI.On || Conf.Pulse.PXI.On || Conf.Spectrum.PXI.On)
+    handles.IVs_Dir = uigetdir(handles.AQ_dir,'Pick IV folder');
+    if ~ischar(handles.IVs_Dir)
+        warndlg('IVs Folder not selected. Acquisition aborted',SetupTES.VersionStr);
+        return;
+    end
+    % Comprobamos que las IVs que se necesitan en caso de solo adquirir Zs
+    % o ruidos existan.
+    
+    Index = find(not(cellfun('isempty',strfind(Conf.Summary(:,5),'Yes'))));
+    % Comprobamos la integridad de las IVs necesarias
+    Chk = zeros(length(Index),2);
+    ChText = 'IV missed files from Temps: ';
+    for In = 1:length(Index)
+        Temp = Conf.Summary{Index(In),1};
+        if ischar(Temp)
+            Temp = str2double(Temp);
+        end
+        % IV positiva
+        d1 = dir([handles.IVs_Dir filesep num2str(Temp*1e3,'%i') '*mK_Rf*_p_*.txt']);
+        if ~isempty(d1) % exist([handles.IVs_Dir filesep num2str(Temp*1e3,'%i') 'mK_Rf*_p_*.txt'],'file')
+            Chk(In,1) = 1; % Si existe se marca como uno
+        else
+            ChText = [ChText num2str(Temp*1e3,'%i') 'mK (Positive); '];
+        end
+        % IV negativa
+        d1 = dir([handles.IVs_Dir filesep num2str(Temp*1e3,'%i') '*mK_Rf*_n_*.txt']);
+        if ~isempty(d1) % exist([handles.IVs_Dir filesep num2str(Temp*1e3,'%i') '*mK*_n_*.txt'],'file')
+            Chk(In,2) = 1; % Si existe se marca como uno
+        else
+            ChText = [ChText num2str(Temp*1e3,'%i') 'mK (Negative); '];
+        end
+    end
+    Ind = find(Chk(:,2) == 0, 1); % Buscamos aquellas temperaturas que no tienen la IV necesaria
+    if ~isempty(Ind)
+        waitfor(msgbox(ChText,SetupTES.VersionStr));
+        waitfor(msgbox('New IVs will be measured',SetupTES.VersionStr));
+    end        
+end
+
 
 % Estimacion de las medidas de adquisicion
 TimeAtStart = now;
@@ -253,8 +333,13 @@ for NSummary = 1:size(Conf.Summary,1)
     
     
     if strcmp(Conf.Summary{NSummary,3},'Yes')    % Si se mide o on 
-        handles.Summary_Table.Data{NSummary,3} = 'Running';               
-        [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles);  
+        handles.Summary_Table.Data{NSummary,3} = 'Running';     
+        % Comprueba que existe las IV positiva (y supone que la negativa
+        % tambien existe)
+        % dIVName = dir([handles.IVs_Dir filesep num2str(Temp*1e3,'%i') '*mK*_p_*.txt']);
+        % if isempty(dIVName)
+        [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles);
+        % end
         handles.Summary_Table.Data{NSummary,3} = 'Done'; 
         Conf.Summary{NSummary,3} = 'Done';
     end
@@ -297,16 +382,62 @@ for NSummary = 1:size(Conf.Summary,1)
             end
         end
         
+        
         % Es esencial que hayamos medido al menos una curva IV positiva y
         % otra negativa
         if ~isempty(Conf.TF.Zw.rpp)
-            [~,IZvalues.P] = BuildIbiasFromRp(IVsetP,Conf.TF.Zw.rpp);                        
+            
+            % Si no se mide ninguna IV antes se tiene que buscar que haya y de
+            % la temperatura adecuada.
+            if ~exist('IVsetP','var') % se carga la IV correspondiente a la temperatura elegida si hay.
+                % Carpeta de búsqueda
+                dIVName = dir([handles.IVs_Dir filesep num2str(Temp*1e3,'%i') '*mK*_p_*.txt']);
+                if ~isempty(dIVName)
+                    fid = fopen([handles.IVs_Dir filesep dIVName.name]);
+                    Data = importdata([dIVName.folder filesep dIVName.name]);
+                    fclose(fid);
+                    clear IVmeasure;
+                    IVmeasure.ibias = Data(:,2)*1e-06;
+                    IVmeasure.vout = Data(:,4)-Data(end,4);
+                     % Después se busca la recta de la parte normal y se corrige el valor de
+                    % la ordenada en el origen
+%                     p = polyfit(IVmeasure.ibias(1:5),IVmeasure.vout(1:5),1);
+%                     IVmeasure.vout = IVmeasure.vout-p(2);
+                    IVsetP = TES_IVCurveSet;
+                    IVsetP = IVsetP.Update(IVmeasure);
+                    TESThermal.n.Value = [];
+                    TESParam.Rn.Value = SetupTES.Circuit.Rn.Value;
+                    TESParam.Rpar.Value = SetupTES.Circuit.Rpar.Value;
+                    IVsetP = IVsetP.GetIVTES(SetupTES.Circuit,TESParam,TESThermal);
+                else
+                    [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles);
+                end
+                
+            end
+            
+            [BiasP,IZvalues.P] = BuildIbiasFromRp(IVsetP,Conf.TF.Zw.rpp);
 %             IZvalues.P(IZvalues.P > 500) = 500;
             IZvalues.P = IZvalues.P + SetupTES.OffsetX*1e6;
             clear rpp;
             rpp = Conf.TF.Zw.rpp;
+            
             rpp(IZvalues.P < 0) = [];
+%             BiasP(IZvalues.P < 0) = [];
             IZvalues.P(IZvalues.P < 0) = [];
+                        
+%             rpp(BiasP < 0) = [];
+%             IZvalues.P(BiasP < 0) = []; 
+%             BiasP(BiasP < 0) = [];
+            
+            rpp(abs(IZvalues.P) > 500) = [];
+            IZvalues.P(abs(IZvalues.P) > 500) = [];   
+%             BiasP(abs(BiasP) > 500) = [];
+            
+            rpp(diff(IZvalues.P)>0) = [];
+            IZvalues.P(diff(IZvalues.P)>0) = [];
+           
+%             BiasP(diff(BiasP)>0) = [];
+            
             handles.rpp = rpp;
             
             
@@ -325,13 +456,66 @@ for NSummary = 1:size(Conf.Summary,1)
         end
         
         if ~isempty(Conf.TF.Zw.rpn)
-            [~,IZvalues.N] = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
+            
+            % Si no se mide ninguna IV antes se tiene que buscar que haya y de
+            % la temperatura adecuada.
+            if ~exist('IVsetN','var') % se carga la IV correspondiente a la temperatura elegida si hay.
+                % Carpeta de búsqueda
+                dIVName = dir([handles.IVs_Dir filesep num2str(Temp*1e3,'%i') '*mK*_n_*.txt']);
+                if ~isempty(dIVName)
+                    fid = fopen([handles.IVs_Dir filesep dIVName.name]);
+                    Data = importdata([dIVName.folder filesep dIVName.name]);
+                    fclose(fid);
+                    clear IVmeasure;
+                    clear IVmeasure;
+                    IVmeasure.ibias = Data(:,2)*1e-06;
+                    IVmeasure.vout = Data(:,4)-Data(end,4);
+                    % Después se busca la recta de la parte normal y se corrige el valor de
+                    % la ordenada en el origen
+%                     p = polyfit(IVmeasure.ibias(1:5),IVmeasure.vout(1:5),1);
+%                     IVmeasure.vout = IVmeasure.vout-p(2);
+                    IVsetN = TES_IVCurveSet;
+                    IVsetN = IVsetN.Update(IVmeasure);
+                    TESThermal.n.Value = [];
+                    TESParam.Rn.Value = SetupTES.Circuit.Rn.Value;
+                    TESParam.Rpar.Value = SetupTES.Circuit.Rpar.Value;
+                    IVsetN = IVsetN.GetIVTES(SetupTES.Circuit,TESParam,TESThermal);
+                else
+                    [IVsetP, IVsetN] = Medir_IV(Temp,Conf,SetupTES,handles);
+                end
+                
+            end
+            
+            [BiasN,IZvalues.N] = BuildIbiasFromRp(IVsetN,Conf.TF.Zw.rpn);
             IZvalues.N = IZvalues.N + SetupTES.OffsetX*1e6;
 %             IZvalues.N(IZvalues.N < -500) = -500;
             clear rpn;
             rpn = Conf.TF.Zw.rpn;
+            
             rpn(IZvalues.N > 0) = [];
             IZvalues.N(IZvalues.N > 0) = [];
+            
+            rpn(IZvalues.N < -500) = [];            
+            IZvalues.N(IZvalues.N < -500) = [];   
+            
+            
+            rpn(IZvalues.N > 0) = [];
+            IZvalues.N(IZvalues.N > 0) = [];
+%             IZvalues.N(IZvalues.N > 0) = [];
+                        
+%             rpn(IZvalues.N > 0) = [];
+%             IZvalues.N(IZvalues.N > 0) = []; 
+%             BiasN(BiasN > 0) = [];
+            
+%             rpn(IZvalues.N < 500) = [];
+%             IZvalues.N(IZvalues.N < 500) = [];   
+%             BiasN(BiasN < 500) = [];
+            
+            rpn(diff(IZvalues.N)<0) = [];
+            IZvalues.N(diff(IZvalues.N)<0) = [];
+            
+%             BiasN(diff(BiasN)>0) = [];
+%             
             handles.rpn = rpn;
             
             % Por ahora el campo óptimo es simétrico siempre y a una corriente fija
@@ -798,9 +982,10 @@ for IB = 1:2 % Positive 1, Negative 2
     
 %     file = strcat(num2str(Temp*1e3,'%1.1f'),'mK','_Rf',num2str(SetupTES.Circuit.Rf.Value*1e-3),'K_',dire,'_',pol,'_matlab.txt');
 %     save([handles.IVs_Dir file],'data','-ascii');
-    
-    data(:,4) = IVmeasure.vout-IVmeasure.vout(end);  % Centramos la IV en 0,0.
-    IVmeasure.vout = data(:,4)';
+    [~,indx] = min(abs(IVmeasure.ibias));
+    IVmeasure.vout = IVmeasure.vout-IVmeasure.vout(indx);
+%     data(:,4) = IVmeasure.vout-IVmeasure.vout(end);  % Centramos la IV en 0,0.
+%     IVmeasure.vout = data(:,4)';
     
     TESDATA.circuit = TES_Circuit;
     TESDATA.circuit = TESDATA.circuit.Update(SetupTES.Circuit);
@@ -845,8 +1030,19 @@ ThresIbias = 0.1; % la curva de IV llegará en caso positivo a -0.1 uA
 IB = 1;
 RepMax = 5;
 RepIt = 1;
+d1 = dir([handles.IVs_Dir num2str(Temp*1e3) 'mK_Rf' num2str(SetupTES.Circuit.Rf.Value*1e-3) 'K_down_p_matlab.txt']);
+d2 = dir([handles.IVs_Dir num2str(Temp*1e3) 'mK_Rf' num2str(SetupTES.Circuit.Rf.Value*1e-3) 'K_down_n_matlab.txt']);
+if ~isempty(d1)
+    IB = IB+1;
+end
+
 while IB < 3 % Positive 1, Negative 2
     
+    if IB == 2
+        if ~isempty(d2)
+            continue;
+        end
+    end
     % Por ahora el campo óptimo es simétrico siempre y a una corriente fija
     % para todas las temperaturas.
     
@@ -858,11 +1054,16 @@ while IB < 3 % Positive 1, Negative 2
     end
     SetupTES.CurSource_Set_I.Value = 1;
     SetupTEScontrolers('CurSource_Set_I_Callback',SetupTES.CurSource_Set_I,[],guidata(SetupTES.CurSource_OnOff));
-    SetupTES.CurSource_OnOff.Value = 1;
+    if SetupTES.CurSource_I.String == 0
+        SetupTES.CurSource_OnOff.Value = 0;
+    else
+        SetupTES.CurSource_OnOff.Value = 1;
+    end
     SetupTEScontrolers('CurSource_OnOff_Callback',SetupTES.CurSource_OnOff,[],guidata(SetupTES.CurSource_OnOff));
        
     slope_curr = 0;
     Res_Orig = SetupTES.IVDelay.OriginalRes;
+    MinRes = SetupTES.IVDelay.MinRes;
     Res = Res_Orig;
     if IB == 1
         %             Field = Bfield.p;
@@ -953,9 +1154,9 @@ while IB < 3 % Positive 1, Negative 2
                 
                 if abs(slope_curr - nanmean(slope)) > 20*abs(nanstd(slope))
                     if slope_curr < 0
-                        Res = 3;
+                        Res = MinRes;
                     else
-                        Res = max(Res_Orig*0.5,3);
+                        Res = max(Res_Orig*0.5,MinRes);
                     end
                 else
                     Res = Res_Orig;
@@ -1003,9 +1204,9 @@ while IB < 3 % Positive 1, Negative 2
     
     IVmeasure.Tbath = SetupTES.SetPt.String;
     clear data;
-    data(:,2) = IVmeasure.ibias;
-    data(:,4) = IVmeasure.vout;
-    
+    data(:,2) = IVmeasure.ibias(1:end-1);
+    data(:,4) = IVmeasure.vout(1:end-1);
+    % data(:,4) = data(:,4)-data(end,4); %Se guardan con Ibias = 0 y Vout = 0;
     %% Remove Amplitude values at null Ibias
     Dvout_offset = data(find(data(:,2) == 0,1),4);
     data(:,4) = data(:,4)-Dvout_offset;
@@ -1015,7 +1216,6 @@ while IB < 3 % Positive 1, Negative 2
    
     catch
     end
-
 
     if IBvals(1) > 0
         pol = 'p';
@@ -1037,16 +1237,24 @@ while IB < 3 % Positive 1, Negative 2
     [C,IA,~] = unique(IVmeasure.ibias,'stable');
     IVmeasure.ibias = C;
     IVmeasure.vout = IVmeasure.vout(IA);
+    
+    % Buscar el Ibias a 0 (en concreto el mínimo posible con valor absoluto) y restar el Vout
+    [~,indx] = min(abs(IVmeasure.ibias));
+    IVmeasure.vout = IVmeasure.vout-IVmeasure.vout(indx);
     % Busqueda de saltos de Squid para repetir la curva I-V
-    pk = findpeaks(abs(diff(IVmeasure.vout))/max(abs(diff(IVmeasure.vout))),'Threshold',0.3);
+    pk = findpeaks(abs(diff(IVmeasure.vout))/max(abs(diff(IVmeasure.vout))),'Threshold',0.1);
+    
 %     pk = findpeaks(abs(diff(IVmeasure.vout)./diff(IVmeasure.ibias)),'Threshold',10000);
-    if length(pk) > 1
+    if length(pk) > 1 && Temp < 0.1
         RepIt = RepIt+1;
-        % Se repite como máximo 3 veces
+        % Se repite como máximo 10 veces
         if RepIt < RepMax
             continue;
         end
     end
+    % clear data;
+    % data(:,2) = IVmeasure.ibias;
+    % data(:,4) = IVmeasure.vout;
     if ischar(Temp)
         file = strcat(num2str(str2double(Temp)*1e3),'mK','_Rf',num2str(SetupTES.Circuit.Rf.Value*1e-3),'K_',dire,'_',pol,'_matlab.txt');
     else
@@ -1059,14 +1267,14 @@ while IB < 3 % Positive 1, Negative 2
 
     % Se corrige la I-V primero en el eje X (offset corriente)
     IVmeasure.ibias = IVmeasure.ibias-SetupTES.OffsetX;
-    % Después se busca la recta de la parte normal y se corrige el valor de
-    % la ordenada en el origen
-    p = polyfit(IVmeasure.ibias(1:5),IVmeasure.vout(1:5),1);
-    IVmeasure.vout = IVmeasure.vout-p(2); 
+%     % Después se busca la recta de la parte normal y se corrige el valor de
+%     % la ordenada en el origen
+%     p = polyfit(IVmeasure.ibias(1:5),IVmeasure.vout(1:5),1);
+%     IVmeasure.vout = IVmeasure.vout-p(2); 
     clear data;
     data(:,2) = IVmeasure.ibias*1e6;
     data(:,4) = IVmeasure.vout;
-%     save([handles.IVs_Dir file '+'],'data','-ascii');
+    % save([handles.IVs_Dir file '+'],'data','-ascii');
     % Importante que el TES_Circuit se haya actualizado con los valores de
     % Rf, mN, mS, Rpar, Rn
     
@@ -1750,8 +1958,10 @@ figure(SetupTES.SetupTES)
 if Conf.TF.Zw.DSA.On || Conf.TF.Zw.PXI.On
 %     Conf.TF.Noise.DSA.On
     % Calibracion del HP
-    SetupTES.DSA.Calibration;
-    pause(4);
+    if Conf.TF.Zw.DSA.On 
+        SetupTES.DSA.Calibration;        
+        pause(4);
+    end
     
     for i = 1:length(IZvalues)
         % Ponemos el TES en estado normal
@@ -2045,6 +2255,12 @@ if Conf.TF.Noise.DSA.On || Conf.TF.Noise.PXI.On
                 save([Path file],'datos','-ascii');%salva los datos a fichero.
             end
             if Conf.TF.Noise.PXI.On
+                
+                % Reseteamos el lazo
+                % Reset Closed Loop
+                SetupTES.SQ_Reset_Closed_Loop.Value = 1;
+                SetupTEScontrolers('SQ_Reset_Closed_Loop_Callback',SetupTES.SQ_Reset_Closed_Loop,[],guidata(SetupTES.SQ_Reset_Closed_Loop));
+                
                 
                 SetupTES.PXI.AbortAcquisition;
                 SetupTES.PXI = SetupTES.PXI.Noise_Configuration;

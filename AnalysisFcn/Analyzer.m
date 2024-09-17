@@ -415,7 +415,7 @@ switch src.Label
         else
             warndlg('Caution! Circuit parameters were not loaded, check it manually',handles.VersionStr);
         end
-        guidata(src,handles);
+        guidata(src.Parent,handles);
         %         StrLabel = {'Macro';'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
         if length(handles.Session) > 1
             %             for i = 1:length(StrLabel)

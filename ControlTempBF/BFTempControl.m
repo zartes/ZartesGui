@@ -114,7 +114,12 @@ Period = 7;
 % url = 'http://192.168.2.121:5001/heater/update/heater_nr:4,';
 % msg = webread(url)
 PwrInit = handles.BF.ReadPower;
-PwrInit = 0;
+if PwrInit > handles.BF.ReadMaxPower
+    PwrInit = 0;
+    handles.BF.SetPower(0);
+else
+    % handles.BF.SetPower(PwrInit);
+end
 set(handles.PwrManual,'String',num2str(PwrInit));
 
 controlby_Callback(handles.controlby,[],handles);
@@ -131,6 +136,8 @@ handles.AutoPwr = timer(...
     'Period', Period, ...                        % Initial period is 1 sec.
     'TimerFcn', {@auto_power},'UserData',{handles},'Name','TEStimer');
 % Update handles structure
+
+waitfor(warndlg('Temperature will be set in KELVIN!!! ','BFControler','modal'));
 guidata(hObject, handles);
 
 % UIWAIT makes BFTempControl wait for user response (see UIRESUME)
@@ -154,10 +161,11 @@ function update_Temp_display(src,evnt)
 
 handles = src.UserData;
 T_MC = handles.BF.ReadTemp;
-
-handles.MCTemp.String = num2str(T_MC);
-% fprintf(handles.FileTemp,'%f',T_MC);
-
+if ~isnan(T_MC)
+    handles.MCTemp.String = num2str(T_MC);
+end
+% drawnow;% fprintf(handles.FileTemp,'%f',T_MC);
+ 
 function auto_power(src,evnt)
 Data = src.UserData;
 handles = guidata(Data{1}.figure1);
@@ -165,8 +173,9 @@ handles = guidata(Data{1}.figure1);
 % Power = handles.BF.ReadPower;
 if get(handles.Go2Temp,'BackgroundColor') == handles.Active_Color
     
-    handles.SetPt = handles.BF.ReadSetPoint;
+    % handles.SetPt = handles.BF.ReadSetPoint;
     set(handles.SetPoint,'String',num2str(handles.SetPt));
+    SetPoint_Callback(handles.SetPoint,[],handles);
 %     handles.BF.SetTemp(handles.SetPt);
     % Se comprueba la temperatura de la mixing
 %     frewind(handles.FileTemp);
@@ -186,10 +195,19 @@ if get(handles.Go2Temp,'BackgroundColor') == handles.Active_Color
     handles.E(3) = handles.E(2);
     handles.E(2) = handles.E(1);
 %     disp(handles.U);
-    handles.U(2) = handles.U(1);        
-    SetPower = handles.U(1);          
-    handles.BF.SetPower(SetPower);
-    disp(handles.E(1));
+    handles.U(2) = handles.U(1);      
+    if handles.U(1) > handles.BF.ReadMaxPower
+        disp('Power above recommended value, consider stop the controler!')
+    end
+    disp(handles.U(1));
+    SetPower = min(handles.U(1),handles.BF.ReadMaxPower);   
+    set(handles.PwrManual,'String',num2str(SetPower*1e3));
+    if handles.U(1) >  5
+        disp('Power above 5 mW');
+    else
+        handles.BF.SetPower(SetPower);
+        disp(handles.E(1));
+    end
     
     
 %     Error = handles.PIDError;
@@ -231,6 +249,19 @@ else
 end
 handles.SetPt = value;
 handles.BF.SetTemp(handles.SetPt);
+if value >= 0.06
+    handles.P.String = 0.02;
+    handles.BF.P = 0.02;
+    handles.I.String = 100;
+    handles.BF.I = 100;
+    P_Callback(handles.P,[],handles)
+else
+    handles.BF.P = 0.01;
+    handles.P.String = 0.01;
+    handles.BF.I = 250;
+    handles.I.String = 250;
+    P_Callback(handles.P,[],handles)
+end
 guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
@@ -421,8 +452,10 @@ if PID_mode
 
 end
 
+if strcmp(handles.AutoPwr.Running,'off')
+    start(handles.AutoPwr);
+end
 
-start(handles.AutoPwr);
 
 
 guidata(hObject,handles);
@@ -498,10 +531,10 @@ if ~isempty(value)&&~isnan(value)
 else
     set(hObject,'String','0'); % 1 microvatio
 end
-value = str2double(get(hObject,'String'))*1e-3;
+% value = str2double(get(hObject,'String'))*1e-3;
 
 % De momento esta capado
-handles.BF.SetPower(value);
+% handles.BF.SetPower(value);
 
 guidata(hObject,handles);
 
@@ -535,6 +568,7 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 try
+    handles.BF.Heater.close;
 delete(handles.AutoPwr);
 delete(handles.timer);
 catch

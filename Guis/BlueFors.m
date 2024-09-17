@@ -50,89 +50,58 @@ classdef BlueFors
         function Power = ReadPower(obj)
             try
                 msg = webread(obj.HeaterRead_url);
-                % msg = urlread(obj.HeaterRead_url);
-                % msg=loadjson(msg);
                 while ~strcmp(msg.status,'OK')
                     msg = webread(obj.HeaterRead_url);
-                    % msg = urlread(obj.HeaterRead_url);
-                    % msg=loadjson(msg);
                 end
-                % Power = msg.data{4}.power;%%%!!!
-                Power = msg.data(obj.HeaterNum).power;%%%!!!
+                Power = msg.data(4).power;
             catch me
                 msg = webread(obj.HeaterRead_url);
-                % msg = urlread(obj.HeaterRead_url);
-                % msg=loadjson(msg);
                 while ~strcmp(msg.status,'OK')
                     msg = webread(obj.HeaterRead_url);
-                    % msg = urlread(obj.HeaterRead_url);
-                    % msg=loadjson(msg);
                 end
-                % Power = msg.data{4}.power;%%%!!!
-                Power = msg.data(obj.HeaterNum).power;%%%!!!
+                Power = msg.data(4).power;
             end
         end
         
         function MaxPower = ReadMaxPower(obj)
             try
                 msg = webread(obj.HeaterRead_url);
-                % msg = urlread(obj.HeaterRead_url);
-                % msg=loadjson(msg);
                 while ~strcmp(msg.status,'OK')
                     msg = webread(obj.HeaterRead_url);
-                    % msg = urlread(obj.HeaterRead_url);
-                    % msg=loadjson(msg);
                 end
-                MaxPower = msg.data(obj.HeaterNum).max_power;%%%!!!MaxPower = msg.data{4}.max_power;%%%!!!
+                MaxPower = msg.data(4).max_power;
             catch
                 msg = webread(obj.HeaterRead_url);
-                % msg = urlread(obj.HeaterRead_url);
-                % msg=loadjson(msg);
                 while ~strcmp(msg.status,'OK')
                     msg = webread(obj.HeaterRead_url);
-                    % msg = urlread(obj.HeaterRead_url);
-                    % msg=loadjson(msg);
                 end
-                % msg
-                MaxPower = msg.data(obj.HeaterNum).max_power;%%%!!!   MaxPower = msg.data{4}.max_power;%%%!!!
+                MaxPower = msg.data(4).max_power;
             end
         end
         
         function SetPoint = ReadSetPoint(obj)
             try
                 msg = webread(obj.HeaterRead_url);
-                % msg = urlread(obj.HeaterRead_url);
-                % msg=loadjson(msg);
                 while ~strcmp(msg.status,'OK')
                     msg = webread(obj.HeaterRead_url);
-                    % msg = urlread(obj.HeaterRead_url);
-                    % msg=loadjson(msg);
                 end
-                SetPoint = msg.data(obj.HeaterNum).setpoint;%%%()->{}
+                SetPoint = msg.data(4).setpoint;
             catch me
                 msg = webread(obj.HeaterRead_url);
-                % msg = urlread(obj.HeaterRead_url);
-                % msg=loadjson(msg);
                 while ~strcmp(msg.status,'OK')
                     msg = webread(obj.HeaterRead_url);
-                    % msg = urlread(obj.HeaterRead_url);
-                    % msg=loadjson(msg);
                 end
-                SetPoint = msg.data(obj.HeaterNum).setpoint;%%%!!!
+                SetPoint = msg.data(4).setpoint;
             end
         end
         
         function PID_mode = ReadPIDStatus(obj)
             try
                 msg = webread(obj.HeaterRead_url);
-                % msg = urlread(obj.HeaterRead_url);
-                % msg=loadjson(msg);
                 while ~strcmp(msg.status,'OK')
                     msg = webread(obj.HeaterRead_url);
-                    % msg = urlread(obj.HeaterRead_url);
-                    % msg=loadjson(msg);
                 end
-                PID_mode = msg.data(obj.HeaterNum).pid_mode;%%%!!!
+                PID_mode = msg.data(4).pid_mode;
             catch me
                 disp(me);
             end

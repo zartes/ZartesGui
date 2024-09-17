@@ -386,7 +386,7 @@ function Save_Conf_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-Conf.SourceCh = handles.SQ_Source.Value;
+Conf.SourceCh = handles.SetupTES.SQ_Source.Value;
 
 Conf.Temps.Values = handles.Temp.Values';
 Conf.Temps.File = [handles.TempDir handles.TempName];
@@ -2527,9 +2527,9 @@ if ~isempty(value)&&~isnan(value)
     if value < 0
         set(hObject,'String','0');
     end
-    if value > 1000 % en mK
-        set(hObject,'String','0');
-    end        
+    % if value > 100
+    %     set(hObject,'String','0');
+    % end        
 else
     set(hObject,'String','0');
 end

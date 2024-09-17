@@ -14,8 +14,8 @@ function out = mag_setLNCSImag(s,IuA)
 
 %% Función para fijar valor de Ibias de la LNCS!!!
 
-if abs(IuA) > 10000  % Protection block to ensure current below 5 milliamperes.
-    QuestButton = questdlg('Ibias value above 10000 uA, are you sure to continue?','ZarTes v1.0','Yes','No','No');
+if abs(IuA) > 25000  % Protection block to ensure current below 25 milliamperes.
+    QuestButton = questdlg('Ibias value above 10000 uA, are you sure to continue?','ZarTes v4.5','Yes','No','No');
     switch QuestButton                
         case 'Yes'
         otherwise
