@@ -3,8 +3,9 @@ function pxi_Noise_Configure(pxi)
 
 Confs=pxi_Init_ConfigStructs;
 
-HorizontalConf=Confs.Horizontal;%%%El init ya esta bien
-HorizontalConf.RL=2e5;%%%2e5 para fi=1Hz, RL=2e4 para fi=10Hz.
+HorizontalConf=Confs.Horizontal; %%%El init ya esta bien
+HorizontalConf.RL = 2e5; %%%2e5 para fi=1Hz, RL=2e4 para fi=10Hz.
+HorizontalConf.SR = 2e5;
 pxi_ConfigureHorizontal(pxi,HorizontalConf)
 
 VerticalConf=Confs.Vertical;%%%El init ya esta bien.

@@ -35,7 +35,7 @@ classdef TES_Circuit
             obj.invMin.Units = 'uA/phi';            
             obj.L.Value = 7.7e-08;
             obj.L.Units = 'H';
-            obj.Nsquid.Value = 3e-12;
+            obj.Nsquid.Value = 6e-12;
             obj.Nsquid.Units = 'A/Hz^{0.5}';
             obj.CurrOffset.Value = 0;
             obj.CurrOffset.Units = 'A';

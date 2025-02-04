@@ -99,17 +99,32 @@ classdef TES_ZTDataBase
             [~, ~, alltext] = xlsread([Session.Path(1:find(Session.Path(1:end-1) == filesep,1,'last')) filesep d(1).name]);
 
         
-            LengthIndx = find(ismember(alltext(1,:),'Length'));
+            try
+                LengthIndx = find(ismember(alltext(1,:),'Length'));
+            catch
+                disp('Excel no contains "Length" data');
+                LengthIndx = [];                
+            end
             if ~isempty(LengthIndx)
                 Session.TES.TESDim.length.Value = alltext{2,LengthIndx}*1e-6;
             end
 
+            try
             WidthIndx = find(ismember(alltext(1,:),'Width'));
+            catch
+                disp('Excel no contains "Width" data');
+                WidthIndx = [];  
+            end
             if ~isempty(WidthIndx)
                 Session.TES.TESDim.width.Value = alltext{2,WidthIndx}*1e-6;
             end
 
+            try
             bicapaIndx = find(ismember(alltext(1,:),'bicapa'));
+            catch
+                disp('Excel no contains "bicapa" data');
+                bicapaIndx = [];
+            end
             if ~isempty(bicapaIndx)
                 str = alltext{2,bicapaIndx};
                 str(str == ',') = '.';
@@ -118,7 +133,12 @@ classdef TES_ZTDataBase
                 Session.TES.TESDim.hAu.Value = (str2double(str{2})+str2double(str{3}))*1e-9;                
             end
 
-            AbsIndx = find(ismember(alltext(1,:),'Absorbente'));
+            try
+                AbsIndx = find(ismember(alltext(1,:),'Absorbente'));
+            catch
+                disp('Excel no contains "Absorbente" data');
+                AbsIndx = [];
+            end
             if ~isempty(AbsIndx)
                 Session.TES.TESDim.Abs_bool = 1;
                 str = alltext{2,AbsIndx};
@@ -135,7 +155,12 @@ classdef TES_ZTDataBase
                 Session.TES.TESDim.Abs_thick.Value = Session.TES.TESDim.Abs_hAu.Value+Session.TES.TESDim.Abs_hBi.Value;
             end
 
-            MembIndx = find(ismember(alltext(1,:),'Membrana'));
+            try
+                MembIndx = find(ismember(alltext(1,:),'Membrana'));
+            catch
+                disp('Excel no contains "Membrana" data');
+                MembIndx = [];
+            end
             if ~isempty(MembIndx)
                 Session.TES.TESDim.Membrane_bool = 1;
                 str = alltext{2,MembIndx};

@@ -3306,7 +3306,7 @@ function PXI_TF_Zw_Menu_Callback(hObject, eventdata, handles)
 if hObject.Value == 1
     set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','on');
 else
-    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','on');
+    set([handles.PXI_Input_Amp handles.PXI_Input_Amp_Units],'Enable','off');
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -3485,20 +3485,56 @@ if hObject.Value
     handles.Actions_Str.String = 'PXI Acquisition Card: Noise Mode ON';
     Actions_Str_Callback(handles.Actions_Str,[],handles);
     
-    [data, WfmI] = handles.PXI.Get_Wave_Form;
-    [psd,freq] = PSD(data);
-    clear datos;
-    datos(:,1) = freq;
-    datos(:,2) = sqrt(psd);
-    n_avg = handles.PXI.Options.NAvg;
+
+
+    nopt.SR=2e5;
+    nopt.RL=2e5;
+    nopt.subsampling.bool=0;
+    nopt.subsampling.NpointsDec=100;
+    nopt.boolplot=0;
+
+    n_avg=5; %%%<-Averages para el ruido.
+    rangoTHR = 5e-3;%ojo, definido tb en HPacq.
+    rango = 1e3;
+    %%%Si la salida es estable, la fluctación en la
+    %%%salida es menor de 1mV.
+    rangoindx=1;
+    while rango > rangoTHR %5e-4
+        for i = 1:10
+            [handles.Multi, Vdc] = handles.Multi.Read;  % The output is in Volts.
+            vaux(i) = Vdc.Value;
+        end
+        rango = range(vaux);
+        rangoindx = rangoindx+1;
+        if rangoindx > 25 
+            break;
+        end
+    end
+    %%%%%%%
+    pause(1)
+    aux = handles.PXI.AcquirePSD(nopt);
+    datos = aux;
     for jj = 1:n_avg-1%%%Ya hemos adquirido una.
-        [data, WfmI] = handles.PXI.Get_Wave_Form;
-        [psd,freq] = PSD(data);
-        aux(:,1) = freq;
-        aux(:,2) = sqrt(psd);
+        aux = handles.PXI.AcquirePSD(nopt);
         datos(:,2) = datos(:,2)+aux(:,2);
     end
     datos(:,2) = datos(:,2)/n_avg;
+
+
+    % [data, WfmI] = handles.PXI.Get_Wave_Form;
+    % [psd,freq] = PSD(data);
+    % clear datos;
+    % datos(:,1) = freq;
+    % datos(:,2) = sqrt(psd);
+    % n_avg = handles.PXI.Options.NAvg;
+    % for jj = 1:n_avg-1%%%Ya hemos adquirido una.
+    %     [data, WfmI] = handles.PXI.Get_Wave_Form;
+    %     [psd,freq] = PSD(data);
+    %     aux(:,1) = freq;
+    %     aux(:,2) = sqrt(psd);
+    %     datos(:,2) = datos(:,2)+aux(:,2);
+    % end
+    % datos(:,2) = datos(:,2)/n_avg;
     handles.PXI_Noise_Data = datos;
     
     if ~isempty(handles.PXI_Noise_Data)
