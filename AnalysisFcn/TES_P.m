@@ -156,7 +156,7 @@ classdef TES_P
                             Tbath = str2double(Tbath(1:end-2))*1e-3;
                         end
                         Tbaths = [obj.Tbath];
-                        [~,ind] = intersect(Tbaths,Tbath);
+                        [~,ind] = intersect(floor(Tbaths*1e3),floor(Tbath*1e3));
                         for i = 1:length(ind)
                             rp{i} = [obj(ind(i)).p.rp];
                             val{i} = eval(['[obj(ind(i)).p.' param '];']);

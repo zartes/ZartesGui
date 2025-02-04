@@ -1518,8 +1518,14 @@ classdef TES_Struct
                     ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
                     Tbath = eval(['[obj.P' StrCond{iP} '.Tbath]']);
                 else
-                    for i = 1:length(Tbath)
-                        eval(['ind_TbathN(i) = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
+                    % ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
+                    for i = 1:length(Tbath)                        
+                        % try
+                            eval(['ind_TbathN(i) = find(floor([obj.P' StrCond{iP} '.Tbath]''*1e3) == floor(Tbath(i)*1e3));']);
+                        % catch
+                        %     ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
+                            Tbath = eval(['[obj.P' StrCond{iP} '.Tbath]']);
+                        % end
                     end                                                            
                 end
                 
@@ -1640,7 +1646,8 @@ classdef TES_Struct
                 else
                     for i = 1:length(Tbath)
                         try
-                            eval(['ind_TbathN(i) = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
+                            eval(['ind_TbathN(i) = find(floor([obj.P' StrCond{iP} '.Tbath]''*1e3) == floor(Tbath(i)*1e3));']);
+                            % eval(['ind_TbathN(i) = find(floor([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
                         catch
                             return;
                         end
@@ -1753,7 +1760,8 @@ classdef TES_Struct
                 else
                     for i = 1:length(Tbath)
                         try
-                            eval(['ind_TbathN(i) = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
+                            eval(['ind_TbathN(i) = find(floor([obj.P' StrCond{iP} '.Tbath]''*1e3) == floor(Tbath(i)*1e3));']);
+                            % eval(['ind_TbathN(i) = find([obj.P' StrCond{iP} '.Tbath]'' == Tbath(i));']);
                         catch
                             return;
                         end
@@ -1987,7 +1995,7 @@ classdef TES_Struct
                     colors = distinguishable_colors(length(TbathP)+length(TbathN));
                     ind_color = 1;
                     for k = 1:2
-                        [~,IA,~] = intersect(eval(['[obj.P' StrRange{k} '.Tbath]']),eval(['Tbath' StrRange{k}]));
+                        [~,IA,~] = intersect(floor(eval(['[obj.P' StrRange{k} '.Tbath]'])*1e3),floor(eval(['Tbath' StrRange{k}])*1e3));
                         
                         for i = 1:eval(['length(Tbath' StrRange{k} ')'])
                             try

@@ -303,12 +303,12 @@ contents = cellstr(get(handles.TBath_popup,'String'));
 Str = contents{get(handles.TBath_popup,'Value')};
 
 if ~isempty(strfind(Str,'Positive'))
-    Tbaths{1} = [handles.varargin{1}.PP.Tbath]*1e3;
+    Tbaths{1} = floor([handles.varargin{1}.PP.Tbath]*1e3);
     T_selected = str2double(Str(1:strfind(Str,'mK')-1));
     ind = find(Tbaths{1} == T_selected);
     StrCond = 'P';    
 else
-    Tbaths{2} = [handles.varargin{1}.PN.Tbath]*1e3;
+    Tbaths{2} = floor([handles.varargin{1}.PN.Tbath]*1e3);
     T_selected = str2double(Str(1:strfind(Str,'mK')-1));
     ind = find(Tbaths{2} == T_selected);
     StrCond = 'N';
