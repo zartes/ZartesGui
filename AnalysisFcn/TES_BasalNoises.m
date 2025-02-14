@@ -93,7 +93,7 @@ classdef TES_BasalNoises
             
             if size(TES.circuit.Nsquid.Value,1) == 1
                 %%%superconductor
-                N = sqrt(i_jo.^2+3e-12^2);
+                N = sqrt(i_jo.^2+TES.circuit.Nsquid.Value^2);
             else                
 %                 N = TES.circuit.Nsquid.Value;
                 N = sqrt((obj.SigNoise*1e-12).^2-i_jo.^2);
@@ -155,10 +155,10 @@ classdef TES_BasalNoises
             
             Tc = 0;
             Rtes = 0; %TES estado superconductor.
-            Ttes = max(Tbath,Tc);
+            Ttes = max(Tbath,0.15);
             
             Zcirc = RL+Rtes+1i*w*TES.circuit.L.Value;% impedancia del circuito.
-            v2_sh = 4*TES.ElectrThermalModel.Kb*Tbath*RL; % ruido voltaje Rsh (mas parasita).
+            v2_sh = 4*TES.ElectrThermalModel.Kb*Ttes*RL; % ruido voltaje Rsh (mas parasita).
             v2_tes = 4*TES.ElectrThermalModel.Kb*Ttes*Rtes;%ruido voltaje en el TES en estado superconductor. En realidad es cero, lo pongo así por mantener la misma estructura del ruido en estado normal.
             i_jo = sqrt(v2_sh+v2_tes)./abs(Zcirc);
             

@@ -903,10 +903,20 @@ classdef TES_IVCurveSet
             c = distinguishable_colors(length(obj));
             for i = 1:length(obj)
                 if obj(i).good == 1
+
+                    [val ind] =min(obj(i).ptes);
+                    if obj(i).rtes(ind-1) > 0.2
+                        obj(i).good = 0;
+                    end
+                else
+                    continue;
+                end
+                if obj(i).good == 1
                     color = c(i,:);
-                % else
-                %     color = [0.8 0.8 0.8];
-                % end
+                else
+                    color = [0.8 0.8 0.8];
+                end
+                
                     
                     Ibias = obj(i).ibias;
                     Vout = obj(i).vout;
@@ -968,7 +978,8 @@ classdef TES_IVCurveSet
                     %Curva Ptes-rtes
                     if ~isfield(fig,'subplots')
                         h(4) = subplot(2,2,4);
-                    end
+                    end                    
+                   
                     try
                         h_rtes(j) = plot(h(4),obj(i).rtes,obj(i).ptes*1e12,'.--','DisplayName',[num2str(obj(i).Tbath*1e3) ' mK -' obj(1).range],...
                             'ButtonDownFcn',{@ChangeGoodOpt},'Tag',obj(i).file,'Color',color);
@@ -990,7 +1001,7 @@ classdef TES_IVCurveSet
                     if ~isfield(fig,'subplots')
                         fig.subplots = h;
                     end
-                end
+                % end
             end
             try
                 axis(h,'tight');

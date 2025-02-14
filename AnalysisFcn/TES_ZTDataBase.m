@@ -120,9 +120,9 @@ classdef TES_ZTDataBase
             end
 
             try
-            bicapaIndx = find(ismember(alltext(1,:),'bicapa'));
+            bicapaIndx = find(ismember(alltext(1,:),'Bicapa'));
             catch
-                disp('Excel no contains "bicapa" data');
+                disp('Excel no contains "Bicapa" data');
                 bicapaIndx = [];
             end
             if ~isempty(bicapaIndx)

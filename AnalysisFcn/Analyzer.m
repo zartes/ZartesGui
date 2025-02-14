@@ -409,13 +409,15 @@ switch src.Label
             % Actualiza las dimensiones del TES en caso de que no estén en
             % la base de datos
 
+            % Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
 
+% 
 
 
         else
             warndlg('Caution! Circuit parameters were not loaded, check it manually',handles.VersionStr);
         end
-        guidata(src.Parent,handles);
+        guidata(handles.Analyzer,handles);
         %         StrLabel = {'Macro';'Plot NKGT Sets';'Plot RTs Sets';'Plot ABCT Sets';'Plot TESs Data';'Plot Critical Currents';'Plot Field Scan'};
         if length(handles.Session) > 1
             %             for i = 1:length(StrLabel)
@@ -424,7 +426,7 @@ switch src.Label
             %             end
         end
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
-        
+       
     case 'Re-Analyze Loaded TES'
         str = cellstr(handles.Loaded_TES.String);
         [s1,~] = listdlg('PromptString','Select Loaded TES:',...
