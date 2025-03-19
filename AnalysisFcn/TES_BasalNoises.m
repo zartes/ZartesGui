@@ -84,7 +84,7 @@ classdef TES_BasalNoises
             
             w = 2*pi*f;
             Zcirc = RL+RTES+1i*w*TES.circuit.L.Value;% impedancia del circuito.
-            v2_sh = 4*TES.ElectrThermalModel.Kb*Tbath*RL; % ruido voltaje Rsh (mas parasita).
+            v2_sh = 4*TES.ElectrThermalModel.Kb*max(Tbath,0.15)*RL; % ruido voltaje Rsh (mas parasita).
             v2_tes = 4*TES.ElectrThermalModel.Kb*Ttes*RTES;%ruido voltaje en el TES en estado normal.
 %             i_jo = sqrt((v2_sh+v2_tes)./abs(Zcirc));
             i_jo = sqrt((v2_sh+v2_tes))./abs(Zcirc);
