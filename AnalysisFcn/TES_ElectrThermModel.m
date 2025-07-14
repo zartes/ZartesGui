@@ -40,7 +40,7 @@ classdef TES_ElectrThermModel
         
     end
     properties (Access = private)
-        version = 'ZarTES v4.4';
+        version = 'ZarTES v5.0';
     end
     
     methods
@@ -400,7 +400,7 @@ classdef TES_ElectrThermModel
             end
         end    
                 
-        function [RES, SimRes, M, Mph, fNoise, SigNoise] = fitNoise(obj,TES,FileName, param, chk)
+        function [RES, SimRes, M_CI, Mph_CI, fNoise, SigNoise] = fitNoise(obj,TES,FileName, param, chk)
             % Function for Noise analysis.
             
             indSep = find(FileName == filesep);
@@ -459,19 +459,106 @@ classdef TES_ElectrThermModel
                 findxLF=find((faux>obj.Noise_LowFreq(1) & faux<obj.Noise_LowFreq(2)));
                 xdataLF = faux(findxLF);
                 ydataLF = filtNEP(findxLF)*1e18;
-                maux=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdataLF(:),ydataLF(:),[],[],opts);
-                Mph = maux(1);                
+                % [p,aux1,aux2,aux3,out,lambda,jacob]
+                [maux,~,aux2,~,~,~,jacob]=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdataLF(:),ydataLF(:),[],[],opts);
+                    Mph = maux(1);
+                    if isreal(maux)
+                        if Mph == 0
+                            Mph_CI = [Mph; NaN];
+                        else
+                            % Mph = NaN;
+                            % ci = NaN(2,2);
+                            % CI = (ci(:,2)-ci(:,1))';
+                            % Mph_CI = [Mph; CI(2)];
+                            %
+                            lastwarn(''); %Clear warning memory
+                            alpha = 0.05; %significance level
+                            df = length(aux2) - numel(maux); %degrees of freedom
+                            crit = tinv(1-alpha/2,df);       %critical value
+                            covm = inv(jacob'*jacob) * var(aux2); %covariance matrix
+                            [~, warnId] = lastwarn; %detect if inv threw 'nearly singular' warning.
+                            covmIdx = sub2ind(size(covm),1:size(covm,1),1:size(covm,2));  %indices of the diag of covm
+                            CI = nan(numel(maux),2);
+                            if ~strcmp(warnId, 'MATLAB:nearlySingularMatrix')
+                                CI(:,1) = maux - crit * sqrt(covm(covmIdx));
+                                CI(:,2) = maux + crit * sqrt(covm(covmIdx));
+                            end
+                            CI = (CI(:,2)-CI(:,1))';
+                            if CI(1) > 100
+                                Mph_CI = [Mph; Inf];
+                                if Mph < 1e-3
+                                    Mph = 0;
+                                    Mph_CI = [Mph; NaN];
+                                end
+                            else
+                                Mph_CI = [Mph; CI(1)];
+                            end
+                        end
+                    else
+                        try
+                            ci = nlparci(maux,aux2,'jacobian',jacob);
+                        catch
+                            ci = NaN(2,2);
+                        end
+                        CI = (ci(:,2)-ci(:,1))';
+                        Mph_CI = [Mph; CI(1)];
+                    end
+
+
                 findxHF=find((faux>obj.Noise_HighFreq(1) & faux<obj.Noise_HighFreq(2)));
                 xdataHF = faux(findxHF);
                 ydataHF = filtNEP(findxHF)*1e18;
-                maux=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdataHF(:),ydataHF(:),[],[],opts);                
+                [maux,~,aux2,~,~,~,jacob]=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdataHF(:),ydataHF(:),[],[],opts);                
                 M = maux(2);
-                if M <= 0
-                    M = 0;
+                if isreal(maux)
+                    if M == 0
+                        M_CI = [M; NaN];
+                    else
+                        % M = NaN;
+                        % ci = NaN(2,2);
+                        % CI = (ci(:,2)-ci(:,1))';
+                        % M_CI = [M; CI(2)];
+
+                        lastwarn(''); %Clear warning memory
+                        alpha = 0.05; %significance level
+                        df = length(aux2) - numel(maux); %degrees of freedom
+                        crit = tinv(1-alpha/2,df);       %critical value
+                        covm = inv(jacob'*jacob) * var(aux2); %covariance matrix
+                        [~, warnId] = lastwarn; %detect if inv threw 'nearly singular' warning.
+                        covmIdx = sub2ind(size(covm),1:size(covm,1),1:size(covm,2));  %indices of the diag of covm
+                        CI = nan(numel(maux),2);
+                        if ~strcmp(warnId, 'MATLAB:nearlySingularMatrix')
+                            CI(:,1) = maux - crit * sqrt(covm(covmIdx));
+                            CI(:,2) = maux + crit * sqrt(covm(covmIdx));
+                        end
+                        CI = (CI(:,2)-CI(:,1))';
+                        if CI(2) > 100
+                            M_CI = [M; Inf];
+                            if M < 1e-3
+                                M = 0;
+                                M_CI = [M; NaN];
+                            end
+                        else
+                            M_CI = [M; CI(2)];
+                        end
+                    end
+
+                else
+                    try
+                        ci = nlparci(maux,aux2,'jacobian',jacob);
+                    catch
+                        ci = NaN(2,2);
+                    end
+                    CI = (ci(:,2)-ci(:,1))';
+                    M_CI = [M; CI(2)];
                 end
-                if Mph <= 0
-                    Mph = 0;
-                end
+
+                % if M <= 0
+                %     M = 0;
+                % end
+                % if Mph <= 0
+                %     Mph = 0;
+                % end
                 
             else
                 findx=find((faux>obj.Noise_LowFreq(1) & faux<obj.Noise_LowFreq(2)) | (faux>obj.Noise_HighFreq(1) & faux<obj.Noise_HighFreq(2)));
@@ -481,21 +568,31 @@ classdef TES_ElectrThermModel
                     % ydata=NoiseFiltering(obj,NEP(findx)*1e18);
                     ydata = filtNEP(findx)*1e18;
                     opts = optimset('Display','off','Algorithm','levenberg-marquardt');
-                    maux=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:),[],[],opts);
+                    [maux,~,aux2,~,~,~,jacob]=lsqcurvefit(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:),[],[],opts);
                     % maux=lsqnonlin(@(x,xdata) obj.fitjohnson(TES,x,xdata,OP,CondStr),[0 0],xdata(:),ydata(:));
                     % ans = obj.fitjohnson(TES,maux,xdata,OP,CondStr);
                     % figure,loglog(xdata,ydata),hold on, loglog(xdata,ans);
                     M=maux(2);
                     Mph=maux(1);
-                    if M <= 0
-                        M = 0;
+
+                    try
+                        ci = nlparci(maux,aux2,'jacobian',jacob);
+                    catch
+                        ci = NaN(2,2);
                     end
-                    if Mph <= 0
-                        Mph = 0;
-                    end
+                    CI = (ci(:,2)-ci(:,1))';
+                    Mph_CI = [Mph; CI(1)];
+                    M_CI = [M; CI(2)];
+
+                    % if M <= 0
+                    %     M = 0;
+                    % end
+                    % if Mph <= 0
+                    %     Mph = 0;
+                    % end
                 else
-                    M=0;
-                    Mph=0;
+                    M_CI=[0 0];
+                    Mph_CI=[0 0];
                 end
             end
             

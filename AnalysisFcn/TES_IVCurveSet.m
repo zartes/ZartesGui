@@ -28,7 +28,7 @@ classdef TES_IVCurveSet
     end
     
     properties (Access = private)
-        version = 'ZarTES v4.4';
+        version = 'ZarTES v5.0';
     end
     
     methods

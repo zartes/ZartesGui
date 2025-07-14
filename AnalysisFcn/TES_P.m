@@ -22,7 +22,7 @@ classdef TES_P
     end
     
     properties (Access = private)
-        version = 'ZarTES v4.4';
+        version = 'ZarTES v5.0';
     end
     
     methods
@@ -35,7 +35,7 @@ classdef TES_P
                     case ETModel.Zw_Models{1}  % 1 TB
                         fieldStr = {'rp';'R0';'Z0Zinf';'Z0R0';'L0';'L0_CI';...
                             'ai';'ai_CI';'bi';'bi_CI';'tau0';'tau0_CI';'taueff';'taueff_CI';...
-                            'C';'C_CI';'Zinf';'Zinf_CI';'Z0';'Z0_CI';'ExRes';'ThRes';'M';'Mph'};
+                            'C';'C_CI';'Zinf';'Zinf_CI';'Z0';'Z0_CI';'ExRes';'ThRes';'M';'M_CI';'Mph';'Mph_CI'};
                         for i = 1:length(fieldStr)
                             eval(['obj.p.' fieldStr{i} ' = [];']);
                         end
@@ -44,7 +44,7 @@ classdef TES_P
                         fieldStr = {'rp';'Zinf';'Zinf_CI';'Z0';'Z0_CI';'taueff';'taueff_CI';...
                             'ca0';'ca0_CI';'tauA';'tauA_CI';'L0';'L0_CI';'ai';'ai_CI';...
                             'bi';'bi_CI';'tau0';'tau0_CI';'C';'C_CI';'CA';'CA_CI';...
-                            'GA';'GA_CI';'ExRes';'ThRes';'M';'Mph'};
+                            'GA';'GA_CI';'ExRes';'ThRes';'M';'M_CI';'Mph';'Mph_CI'};
                         for i = 1:length(fieldStr)
                             eval(['obj.p.' fieldStr{i} ' = [];']);
                         end
@@ -57,7 +57,7 @@ classdef TES_P
             else
                 fieldStr = {'rp';'R0';'Z0Zinf';'Z0R0';'L0';'L0_CI';...
                     'ai';'ai_CI';'bi';'bi_CI';'tau0';'tau0_CI';'taueff';'taueff_CI';...
-                    'C';'C_CI';'Zinf';'Zinf_CI';'Z0';'Z0_CI';'ExRes';'ThRes';'M';'Mph'};
+                    'C';'C_CI';'Zinf';'Zinf_CI';'Z0';'Z0_CI';'ExRes';'ThRes';'M';'M_CI';'Mph';'Mph_CI'};
                 for i = 1:length(fieldStr)
                     eval(['obj.p.' fieldStr{i} ' = [];']);
                 end                

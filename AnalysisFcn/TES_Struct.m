@@ -36,7 +36,7 @@ classdef TES_Struct
         
         Kb = 1.38e-23;
         Report;
-        version = 'ZarTES v4.4';
+        version = 'ZarTES v5.0';
     end
 %     
 %     properties (Access = private)
@@ -1078,7 +1078,9 @@ classdef TES_Struct
                                 eval(['obj.P' StrRange{k1} '(iOK).fNoise{jj} = NaN;']);
                                 eval(['obj.P' StrRange{k1} '(iOK).SigNoise{jj} = NaN;']);
                                 eval(['obj.P' StrRange{k1} '(iOK).p(jj).M = NaN;']);
+                                eval(['obj.P' StrRange{k1} '(iOK).p(jj).M_CI = NaN;']);
                                 eval(['obj.P' StrRange{k1} '(iOK).p(jj).Mph = NaN;']);
+                                eval(['obj.P' StrRange{k1} '(iOK).p(jj).Mph_CI = NaN;']);
                                 h_i = h_i+1;
                                 jj = jj+1;
                                 continue;
@@ -1103,8 +1105,10 @@ classdef TES_Struct
                             eval(['obj.P' StrRange{k1} '(iOK).NoiseModel(jj) = {obj.NoiseOpt.NoiseModel};']);
                             eval(['obj.P' StrRange{k1} '(iOK).fNoise{jj} = fNoise;']);
                             eval(['obj.P' StrRange{k1} '(iOK).SigNoise{jj} = SigNoise;']);
-                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).M = M;']);
-                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).Mph = Mph;']);
+                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).M = M(1);']);
+                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).Mph = Mph(1);']);
+                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).M_CI = M(2);']);
+                            eval(['obj.P' StrRange{k1} '(iOK).p(jj).Mph_CI = Mph(2);']);
                             
                         end
                         h_i = h_i+1;
@@ -3066,6 +3070,49 @@ classdef TES_Struct
             end
             
             if obj.Report.ABCTset
+
+                %% En esta parte hay que introducir una tabla con los datos de los parametros electricos al %Rn elegido en los termicos.
+
+                Style='Título 2';
+                TextString='Electrical Parameters';
+                WordText(ActXWord,TextString,Style,[0,1]);%enter after text
+
+                % Creamos unos campos de C, alpha, beta, tau
+                clear DataCell;
+                DataCell(1,1:5) = {'DataSet','C(fJ/K)','alpha','beta','tau(us)'};
+
+                j = 2;
+                for i = 1:length(obj.PP)
+
+                    NameStr = [num2str(obj.PP(i).Tbath*1e3) 'mK_Pos' ];
+                    DataCell(j,1) = {NameStr};
+                    [~,b]=min(abs([obj.PP(i).p.rp]-obj.TESThermalP.Rn.Value));
+                    DataCell(j,2) = {[num2str(obj.PP(i).p(b).C*1e15) ' ± ' num2str(obj.PP(i).p(b).C_CI*1e15)]};
+                    DataCell(j,3) = {[num2str(obj.PP(i).p(b).ai) ' ± ' num2str(obj.PP(i).p(b).ai_CI)]};
+                    DataCell(j,4) = {[num2str(obj.PP(i).p(b).bi) ' ± ' num2str(obj.PP(i).p(b).bi_CI)]};
+                    DataCell(j,5) = {[num2str(obj.PP(i).p(b).taueff*1e6) ' ± ' num2str(obj.PP(i).p(b).taueff_CI*1e6)]};                                        
+                    j = j+1;
+                end                
+                for i = 1:length(obj.PN)
+                    NameStr = [num2str(obj.PN(i).Tbath*1e3) 'mK_Pos' ];
+                    DataCell(j,1) = {NameStr};
+                    [~,b]=min(abs([obj.PN(i).p.rp]-obj.TESThermalN.Rn.Value));
+                    DataCell(j,2) = {[num2str(obj.PN(i).p(b).C*1e15) ' ± ' num2str(obj.PN(i).p(b).C_CI*1e15)]};
+                    DataCell(j,3) = {[num2str(obj.PN(i).p(b).ai) ' ± ' num2str(obj.PN(i).p(b).ai_CI)]};
+                    DataCell(j,4) = {[num2str(obj.PN(i).p(b).bi) ' ± ' num2str(obj.PN(i).p(b).bi_CI)]};
+                    DataCell(j,5) = {[num2str(obj.PN(i).p(b).taueff*1e6) ' ± ' num2str(obj.PN(i).p(b).taueff_CI*1e6)]};   
+                    j = j+1;
+                end
+
+                [NoRows,NoCols]=size(DataCell);
+               
+                % create table with data from DataCell
+                Style = 'Cita';
+                WordText(ActXWord,'',Style,[0,1]);%enter after text
+                WordCreateTable(ActXWord,NoRows,NoCols,DataCell,[1 1]);%enter before table
+
+
+
                 fig.hObject = figure;
                 obj.plotABCT(fig,'on');
                 set(fig.hObject.Children,'FontUnits','Normalized');

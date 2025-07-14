@@ -61,7 +61,7 @@ set(handles.Analyzer,'Color',[200 200 200]/255,'Position',...
     [0.5-position(3)/2 0.5-position(4)/2 position(3) position(4)],...
     'Units','Normalized','Toolbar','figure');
 
-handles.VersionStr = 'ZarTES v4.4';
+handles.VersionStr = 'ZarTES v5.0';
 set(handles.Analyzer,'Name',['TES Characterization Data Analyzer   ---   '  handles.VersionStr]);
 
 handles.DataBasePath = 'C:\Users\jbolea\Documents\GitHub\ZartesGui\DataBase\';
@@ -102,7 +102,7 @@ handles.NewTES_DataPath = {[]};
 %% Generating the uimenus
 IndMenu = 1;
 MenuTES.Label{IndMenu} = {'TES Data'};
-MenuTES.SubMenu{IndMenu} = {'Load TES';'TES Analysis';'Re-Analyze Loaded TES';'Save TES Data'};
+MenuTES.SubMenu{IndMenu} = {'Load TES';'TES Analysis';'Unload TES';'Re-Analyze Loaded TES';'Save TES Data'};
 MenuTES.SubMenu_1{IndMenu,1} = {[]};
 MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'Superconductor State';'Normal State';'Z(w)-Noise Analysis';'Critical Currents';'Field Scan'};
 % MenuTES.SubMenu_2{IndMenu,1} = {[]};
@@ -174,7 +174,7 @@ end
 
 % if handles.TES_ID == 0 then 'off'
 StrEnable = {'on';'off'};
-StrLabel = {'Re-Analyze Loaded TES';'Save TES Data';'Plot';'Macro';'Summary';'TES Device';...
+StrLabel = {'Unload TES';'Re-Analyze Loaded TES';'Save TES Data';'Plot';'Macro';'Summary';'TES Device';...
     'IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)';...
     'Superconductor State';'Normal State';'Critical Currents';'Field Scan';'Z(w)-Noise Analysis';'Options'};
 for i = 1:length(StrLabel)
@@ -290,6 +290,7 @@ switch src.Label
                 h = findobj(handles.Analyzer,'Label','Macro','Tag','Analyzer');
                 h.Enable = 'on';
             end
+            handles.submenu(13).Enable = 'on'; % UnloadTES
         end
         
     case 'Set Data Path'
@@ -310,7 +311,7 @@ switch src.Label
             h(i).Enable = 'off';
         end
         
-        StrLabel = {'TES Data';'Load TES';'TES Analysis';'Set Data Path';'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';...
+        StrLabel = {'TES Data';'Load TES';'TES Analysis';'Unload TES';'Set Data Path';'Critical Currents';'Import Critical Currents';'Field Scan';'Import Field Scan';...
             'Options';'P vs T Model Fitting Options';'Electro Thermal Model Fitting Options';'Report Options';'Help';'Guide';'About'};
         for i = 1:length(StrLabel)
             h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
@@ -427,6 +428,43 @@ switch src.Label
         end
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
        
+    case 'Unload TES'
+        
+        
+        % for i = 1:handles.TES_ID
+        %     ListStr(i) = {handles.Session{i}.Tag};
+        % end
+        ListStr = handles.Loaded_TES.String;
+        ListStr(handles.TES_ID,:) = [];        
+        if isempty(char(ListStr))
+            set([handles.LoadedStr handles.Loaded_TES],'Visible','off');
+            set(handles.Loaded_TES,'String',char(ListStr))
+        else
+            set(handles.LoadedStr,'Visible','on');
+            set(handles.Loaded_TES,'String',char(ListStr),'Value',1,'Visible','on');
+        end        
+        handles.Session(handles.TES_ID) = [];
+        % size(handles.Loaded_TES.String,1)
+        % handles.Loaded_TES.String = 
+        handles.TES_ID = max(size(handles.Loaded_TES.String,1),0);
+
+        % if handles.TES_ID == 0 then 'off'
+        StrEnable = {'on';'off'};
+        StrLabel = {'Unload TES';'Re-Analyze Loaded TES';'Save TES Data';'Plot';'Macro';'Summary';'TES Device';...
+            'IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)';...
+            'Superconductor State';'Normal State';'Critical Currents';'Field Scan';'Z(w)-Noise Analysis';'Options'};
+        for i = 1:length(StrLabel)
+            h = findobj(handles.Analyzer,'Label',StrLabel{i},'Tag','Analyzer');
+            h.Enable = StrEnable{~handles.TES_ID+1};
+        end
+
+        % Update handles structure
+        guidata(handles.Analyzer, handles);
+        try
+            Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
+        catch
+        end
+
     case 'Re-Analyze Loaded TES'
         str = cellstr(handles.Loaded_TES.String);
         [s1,~] = listdlg('PromptString','Select Loaded TES:',...

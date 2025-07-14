@@ -9,7 +9,7 @@ classdef TES_BasalNoises
     end
     
     properties (Access = private)
-        version = 'ZarTES v4.4';
+        version = 'ZarTES v5.0';
     end
     
     methods
@@ -24,7 +24,9 @@ classdef TES_BasalNoises
             obj.ExRes = [];
             obj.ThRes = [];
             obj.M = [];
-            obj.Mph = [];
+            obj.M_CI = [];
+            obj.Mph = [];            
+            obj.Mph_CI = [];
         end                
         
         function ok = Filled(obj)
