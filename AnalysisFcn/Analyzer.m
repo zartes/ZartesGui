@@ -822,7 +822,7 @@ switch src.Label
             case 'Yes'
                 handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = handles.Session{handles.TES_ID}.TES.NoiseN.SigNoise*1e-12;
             case 'No'
-                handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = 3e-12;
+%                 handles.Session{handles.TES_ID}.TES.circuit.Nsquid.Value = 3e-12;
             otherwise
         end % switch
         
