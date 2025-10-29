@@ -543,10 +543,12 @@ classdef TES_Struct
                 
             StrRange = {'P';'N'};
             StrCond = {'Positive';'Negative'};
+            j = 1;
             for k = 1:2
                 indIV = eval(['obj.TESParam' StrRange{k} '.IV_Tc.Value']);
+                
                 for i = 1:length(eval(['obj.IVset' StrRange{k} '']))
-                    if eval(['obj.IVset' StrRange{k} '(i).good'])
+                    if eval(['obj.IVset' StrRange{k} '(i).good'])                       
                         TbathStr = num2str(eval(['obj.IVset' StrRange{k} '(i).Tbath'])*1e3);
                         eval(['plot(ax,obj.IVset' StrRange{k} '(i).ttes,obj.IVset' StrRange{k} '(i).Rtes*1e3,''DisplayName'',''Tbath: ' TbathStr ' mK - ' StrCond{k} ''');'])
                         if i == indIV
@@ -554,12 +556,19 @@ classdef TES_Struct
                             TcStr = num2str(eval(['obj.TESParam' StrRange{k} '.Tc_RT.Value*1e3;']));
                             eval(['plot(ax,obj.IVset' StrRange{k} '(indIV).ttes(ind),obj.IVset' StrRange{k} '(indIV).Rtes(ind)*1e3,'...
                                 '''DisplayName'',''Tc: ' TcStr ' mK - ' StrCond{k} ''',''Marker'',''hexagram'',''MarkerEdgeColor'',''r'',''MarkerFaceColor'',''g'');'])
+                            if k == 1
+                                Tc_Ind(k) = j;                            
+                            else
+                                Tc_Ind(k) = j+1;                            
+                            end
                         end
+                        j = j + 1;
                     end
                 end
             end
             xlabel(ax,'T_{TES} (K)','FontSize',12,'FontWeight','bold');
             ylabel(ax,'R_{TES} (mOhm)','FontSize',12,'FontWeight','bold');
+            set(ax,'ButtonDownFcn',{@DisplayResults},'UserData',Tc_Ind);
             
         end
         
@@ -3395,6 +3404,97 @@ classdef TES_Struct
         
     end
 end
+
+
+
+function DisplayResults(src,evnt)
+
+cmenu = uicontextmenu('Visible','on');
+c1 = uimenu(cmenu,'Label','Export All Graphic Data','Callback',{@ExportGraph},'UserData',src);
+c2 = uimenu(cmenu,'Label','Export Only Tc Derived RT Data','Callback',{@ExportGraph},'UserData',src);
+% c6 = uimenu(cmenu,'Label','Save Graph','Callback',{@SaveGraph},'UserData',src);
+
+set(src,'uicontextmenu',cmenu);
+end
+
+
+function ExportGraph(src,evnt)   
+        
+        
+        h_axes = src.UserData;
+        [FileName, PathName] = uiputfile('.txt', 'Select a file name for storing data');
+        if isequal(FileName,0)||isempty(FileName)
+            return;
+        end
+        file = strcat([PathName FileName]);
+        fid = fopen(file,'a+');
+        hl = findobj(h_axes,'Type','Line','Visible','on');
+        he = findobj(h_axes,'Type','ErrorBar','Visible','on');
+        
+        hl = hl(end:-1:1);
+        Tc_Ind = src.UserData.UserData;
+                
+        
+
+        LabelStr = [];
+        
+        for i = 1:length(hl)
+            Nmax(i) = size(hl(i).XData,2);
+        end
+        data = NaN(max(Nmax),2*length(Nmax));
+        
+        iok = 1;
+        for i = 1:length(hl)
+            if i == Tc_Ind(1)
+                LabelStrTc = ['X_' hl(i).DisplayName '\t' 'Y_' hl(i).DisplayName '\t'];
+                dataTc(1:Nmax(i),iok) = hl(i).XData';
+                dataTc(1:Nmax(i),iok+1) = hl(i).YData';
+            end
+            LabelStr = [LabelStr 'X_' hl(i).DisplayName '\t' 'Y_' hl(i).DisplayName '\t'];
+            
+            data(1:Nmax(i),iok) = hl(i).XData';
+            data(1:Nmax(i),iok+1) = hl(i).YData';
+            iok = iok +2;
+        end
+        if ~isempty(he)
+            for i = 1:length(he)
+                Nmaxe(i) = size(he(i).XData,2);
+            end
+            datae = NaN(max(Nmaxe),4*length(Nmaxe));
+            
+            iok = 1;
+            for i = 1:length(he)
+                LabelStr = [LabelStr 'X_Errorbar' he(i).DisplayName '\t' 'Y_Errorbar' he(i).DisplayName '\t' ...
+                    'Y_PosDelta' he(i).DisplayName '\t' 'Y_NegDelta' he(i).DisplayName '\t'];
+                datae(1:Nmaxe(i),iok) = he(i).XData';
+                datae(1:Nmaxe(i),iok+1) = he(i).YData';
+                datae(1:Nmaxe(i),iok+2) = he(i).YPositiveDelta';
+                datae(1:Nmaxe(i),iok+3) = he(i).YNegativeDelta';
+                iok = iok +4;
+            end
+            data = [data datae];
+        end
+        
+        switch src.Label
+            
+            case 'Export All Graphic Data'
+                fprintf(fid,[LabelStr '\n']);
+                save(file,'data','-ascii','-tabs','-append');
+                fclose(fid);
+                
+            case 'Export Only Tc Derived RT Data'
+                
+                fprintf(fid,[LabelStrTc '\n']);
+                save(file,'dataTc','-ascii','-tabs','-append');
+                fclose(fid);              
+                
+                
+            otherwise
+        end
+        
+end
+
+
 function [actx_word,word_handle]=StartWord(word_file_p)
     % Start an ActiveX session with Word:
     actx_word = actxserver('Word.Application');

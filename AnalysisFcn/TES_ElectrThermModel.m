@@ -436,7 +436,7 @@ classdef TES_ElectrThermModel
             % f=logspace(1,6,1000)';
 
 
-            f=logspace(0,6,1001);%%%Ojo, la definición de 'f' debe coincidir con la que hay dentro de noisesim!!!
+            f=logspace(1,5,1001);%%%Ojo, la definición de 'f' debe coincidir con la que hay dentro de noisesim!!!
             noiseIrwin = obj.noisesim(TES,OP,0,f,CondStr);
             SimRes = noiseIrwin.Res;
             faux=noisedata{1}(:,1);

@@ -405,7 +405,7 @@ if handles.varargin{1}.ElectrThermalModel.bool_Mjo == 1
 else
     M = 0;
 end
-f = logspace(0,6,1001)';
+f = logspace(1,5,1001)';
 % auxnoise = obj.noisesim(OP,M,f);
 if length(fNoise{handles.Files_Ind}) ~= length(f)
     SigNoise{handles.Files_Ind} = spline(fNoise{handles.Files_Ind},SigNoise{handles.Files_Ind},f); % Todos los ruidos a 321 puntos
