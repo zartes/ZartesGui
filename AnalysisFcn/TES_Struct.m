@@ -3447,8 +3447,8 @@ function ExportGraph(src,evnt)
         for i = 1:length(hl)
             if i == Tc_Ind(1)
                 LabelStrTc = ['X_' hl(i).DisplayName '\t' 'Y_' hl(i).DisplayName '\t'];
-                dataTc(1:Nmax(i),iok) = hl(i).XData';
-                dataTc(1:Nmax(i),iok+1) = hl(i).YData';
+                dataTc(1:Nmax(i),1) = hl(i).XData';
+                dataTc(1:Nmax(i),2) = hl(i).YData';
             end
             LabelStr = [LabelStr 'X_' hl(i).DisplayName '\t' 'Y_' hl(i).DisplayName '\t'];
             
