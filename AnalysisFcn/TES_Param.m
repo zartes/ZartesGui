@@ -81,23 +81,45 @@ classdef TES_Param
         
         function obj = Tc_EstimationFromRTs(obj,IVset)
             
-            try
-                Rn50 = obj.Rn.Value/2;
-                T_IVs = NaN(1,length(IVset));
-                for i = 1:length(IVset)
-                    if IVset(i).good
-                        indup = find(IVset(i).Rtes > Rn50, 1);
-                        inddown = find(IVset(i).Rtes < Rn50, 1);
-                        if ~isempty(indup)&&~isempty(inddown)
-                            T_IVs(i) = IVset(i).ttes(inddown(1));
-                        end
-                    end
+%             try
+%                 Rn50 = obj.Rn.Value/2;
+%                 T_IVs = NaN(1,length(IVset));
+%                 for i = 1:length(IVset)
+%                     if IVset(i).good
+%                         indup = find(IVset(i).Rtes > Rn50, 1);
+%                         inddown = find(IVset(i).Rtes < Rn50, 1);
+%                         if ~isempty(indup)&&~isempty(inddown)
+%                             T_IVs(i) = IVset(i).ttes(inddown(1));
+%                         end
+%                     end
+%                 end
+%                 [val, ind] = max(T_IVs);
+%                 obj.Tc_RT.Value = val;
+%                 obj.IV_Tc.Value = ind;
+%             catch
+%             end
+            
+            Rn50 = obj.Rn.Value/2;
+            T_IVs = [];
+            ind = [IVset.good];
+            Ts = [IVset.Tbath];
+            ind = (1:length(ind)).*ind;
+            ind(ind == 0) = [];
+            [val, ix] = max(Ts(ind));
+            indup = find(IVset(ix).Rtes > Rn50, 1);
+            inddown = find(IVset(ix).Rtes < Rn50, 1);
+            if ~isempty(indup)&&~isempty(inddown)
+                try
+                    T_IVs = IVset(ix).ttes(inddown(1));
+                    obj.Tc_RT.Value = T_IVs;
+                    obj.IV_Tc.Value = ix;
+                catch
+                    
+                    obj.Tc_RT.Value = [];
+                    obj.IV_Tc.Value = [];
                 end
-                [val, ind] = max(T_IVs);
-                obj.Tc_RT.Value = val;
-                obj.IV_Tc.Value = ind;
-            catch
             end
+            
         end
     end
 end
