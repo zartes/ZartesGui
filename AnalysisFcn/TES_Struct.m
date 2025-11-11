@@ -26,6 +26,7 @@ classdef TES_Struct
         TESThermalP;
         TESThermalN;
         TESDim;
+        TESTemp;
         JohnsonExcess = [2e2 4.5e4];
         PhononExcess = [1e2 1e3];
         rtesLB = 0.05;
@@ -87,6 +88,7 @@ classdef TES_Struct
             obj.TESDim = TES_Dimensions;
             obj.TESDim = obj.TESDim.Constructor;
             obj.Report = TES_Report;
+            obj.TESTemp = NaN;
         end
         
         function obj = CheckCircuit(obj)
@@ -551,13 +553,14 @@ classdef TES_Struct
                     if eval(['obj.IVset' StrRange{k} '(i).good'])                       
                         TbathStr = num2str(eval(['obj.IVset' StrRange{k} '(i).Tbath'])*1e3);
                         eval(['plot(ax,obj.IVset' StrRange{k} '(i).ttes,obj.IVset' StrRange{k} '(i).Rtes*1e3,''DisplayName'',''Tbath: ' TbathStr ' mK - ' StrCond{k} ''');'])
-                        display(TbathStr)
-                        pause(0.2)
+                        % display(TbathStr)
+                        % pause(0.2)
                         if i == indIV
                             ind = eval(['find(obj.IVset' StrRange{k} '(i).ttes == obj.TESParam' StrRange{k} '.Tc_RT.Value);']);
                             TcStr = num2str(eval(['obj.TESParam' StrRange{k} '.Tc_RT.Value*1e3;']));
                             eval(['plot(ax,obj.IVset' StrRange{k} '(indIV).ttes(ind),obj.IVset' StrRange{k} '(indIV).Rtes(ind)*1e3,'...
                                 '''DisplayName'',''Tc: ' TcStr ' mK - ' StrCond{k} ''',''Marker'',''hexagram'',''MarkerEdgeColor'',''r'',''MarkerFaceColor'',''g'');'])
+                            waitfor(msgbox(['Tc: ' TcStr ' mK - ' StrCond{k} ],'Analyzer Info'));
                             if k == 1                                
                                 Tc_Ind(k) = j;                            
                             else

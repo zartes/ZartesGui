@@ -441,6 +441,7 @@ if ~isempty(he)
     datae = NaN(max(Nmaxe),4*length(Nmaxe));
 
     iok = 1;
+    LabelStr = [];
     for i = 1:length(he)
         LabelStr = [LabelStr 'X_Errorbar' he(i).DisplayName '\t' 'Y_Errorbar' he(i).DisplayName '\t' ...
             'Y_PosDelta' he(i).DisplayName '\t' 'Y_NegDelta' he(i).DisplayName '\t'];
@@ -450,7 +451,7 @@ if ~isempty(he)
         datae(1:Nmaxe(i),iok+3) = he(i).YNegativeDelta';
         iok = iok +4;
     end
-    data = [data datae];
+    data = datae;
 end
 fprintf(fid,[LabelStr '\n']);
 save(file,'data','-ascii','-tabs','-append');

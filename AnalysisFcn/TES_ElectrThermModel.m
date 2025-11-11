@@ -723,6 +723,8 @@ classdef TES_ElectrThermModel
             beta = (R0-Rs)/(R0+Rs);
 %             T0 = eval(['TES.TES' CondStr '.T_fit;']);
             Ts = OP.Tbath;
+
+            % Ts = TES.TESTemp;
             P0 = OP.P0;
             I0 = OP.I0;
             V0 = OP.V0;

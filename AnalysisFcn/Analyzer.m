@@ -107,7 +107,7 @@ MenuTES.SubMenu_1{IndMenu,1} = {[]};
 MenuTES.SubMenu_1{IndMenu,2} = {'Set Data Path';'TES Device';'IV-Curves';'Superconductor State';'Normal State';'Z(w)-Noise Analysis';'Critical Currents';'Field Scan'};
 % MenuTES.SubMenu_2{IndMenu,1} = {[]};
 MenuTES.SubMenu_2{IndMenu,1} = {[]};
-MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'TES Parameters';'Circuit Values';'Circuit Noise'};
+MenuTES.SubMenu_2{IndMenu,2} = {'TES Dimensions';'TES Parameters';'TES Temperature';'Circuit Values';'Circuit Noise'};
 % MenuTES.SubMenu_2{IndMenu,3} = {'Update Circuit Parameters (Slope IV-Curves)';'Import IV-Curves';'Check IV-Curves';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
 MenuTES.SubMenu_2{IndMenu,3} = {'Import IV-Curves';'Center IV-Curves';'Check IV-Curves';'Save IV-Curve Set';'Fit P vs. T';'TES Thermal Parameters vs. %Rn';'TES Thermal Parameter Values';'Get G(T)'};
 MenuTES.SubMenu_2{IndMenu,4} = {'Load TF in Superconductor State (TFS)';'Check TFS';'Load Noise in Superconductor State';'Check Superconductor State Noise'};
@@ -581,6 +581,10 @@ switch src.Label
         handles.Session{handles.TES_ID}.TES.TESParamN.CheckValues('Negative Ibias');
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
         
+    case 'TES Temperature'
+        waitfor(msgbox(['Noise derived TES Temp: ' num2str(handles.Session{handles.TES_ID}.TES.TESTemp*1e3) ' mK'],'Analyzer Info'));
+
+
     case 'Circuit Values'
         handles.Session{handles.TES_ID}.TES = handles.Session{handles.TES_ID}.TES.CheckCircuit;
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
@@ -765,7 +769,9 @@ switch src.Label
             handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Constructor;
         end
         handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.NoisefromFile(FileName,fig,handles.Session{handles.TES_ID}.TES);
-        handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig,handles.Session{handles.TES_ID}.TES,'Superconductor');
+        [handles.Session{handles.TES_ID}.TES.NoiseS, ~, TESTemp] = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig,handles.Session{handles.TES_ID}.TES,'Superconductor');
+        handles.Session{handles.TES_ID}.TES.TESTemp = TESTemp;
+        waitfor(msgbox(['Noise derived TES Temp: ' num2str(handles.Session{handles.TES_ID}.TES.TESTemp*1e3) ' mK'],'Analyzer Info'));
 %         handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig);
         
         Enabling(handles.Session{handles.TES_ID},handles.TES_ID,handles.Analyzer);
@@ -774,7 +780,9 @@ switch src.Label
             fig = handles.Analyzer;
             indAxes = findobj(fig,'Type','Axes');
             delete(indAxes);
-            handles.Session{handles.TES_ID}.TES.NoiseS = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig,handles.Session{handles.TES_ID}.TES,'Superconductor');
+            [handles.Session{handles.TES_ID}.TES.NoiseS, ~, TESTemp] = handles.Session{handles.TES_ID}.TES.NoiseS.Plot(fig,handles.Session{handles.TES_ID}.TES,'Superconductor');
+            handles.Session{handles.TES_ID}.TES.TESTemp = TESTemp;
+            waitfor(msgbox(['Noise derived TES Temp: ' num2str(handles.Session{handles.TES_ID}.TES.TESTemp*1e3) ' mK'],'Analyzer Info'));
         else
             waitfor(msgbox('No file previously loaded',handles.VersionStr));
         end
