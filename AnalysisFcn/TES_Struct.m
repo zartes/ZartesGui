@@ -26,7 +26,8 @@ classdef TES_Struct
         TESThermalP;
         TESThermalN;
         TESDim;
-        TESTemp;
+        SQUIDTemp;
+        ABCTrp;
         JohnsonExcess = [2e2 4.5e4];
         PhononExcess = [1e2 1e3];
         rtesLB = 0.05;
@@ -88,7 +89,8 @@ classdef TES_Struct
             obj.TESDim = TES_Dimensions;
             obj.TESDim = obj.TESDim.Constructor;
             obj.Report = TES_Report;
-            obj.TESTemp = NaN;
+            obj.SQUIDTemp = NaN;
+            obj.ABCTrp = 0.5;
         end
         
         function obj = CheckCircuit(obj)
@@ -336,7 +338,7 @@ classdef TES_Struct
                     [fit,~,aux2,~,~,~,auxJ] = lsqcurvefit(fitfun,obj.PvTModel.X0,XDATA,Paux*1e12,obj.PvTModel.LB,obj.PvTModel.UB,opts);
                     ci = nlparci(fit,aux2,'jacobian',auxJ); %%%confidence intervals.
                     
-                    CI = diff(ci');
+                    CI = diff(ci')/2;
                     fit_CI = [fit; CI];
                     Gaux = obj.PvTModel.GetGfromFit(fit_CI');
                     ERP = sum(abs(abs(Paux*1e12-obj.PvTModel.fitP(fit,XDATA))./abs(Paux*1e12)))/length(Paux*1e12);
@@ -447,7 +449,7 @@ classdef TES_Struct
                         [fit,~,aux2,~,~,~,auxJ] = lsqcurvefit(fitfun,obj.PvTModel.X0,XDATA,Paux*1e12,obj.PvTModel.LB,obj.PvTModel.UB,opts);
                         ci = nlparci(fit,aux2,'jacobian',auxJ); %%%confidence intervals.
                         
-                        CI = diff(ci');
+                        CI = diff(ci')/2;
                         fit_CI = [fit; CI];
                         Gaux(jj) = obj.PvTModel.GetGfromFit(fit_CI');%#ok<AGROW,
                         ERP = sum(abs(abs(Paux*1e12-obj.PvTModel.fitP(fit,XDATA))./abs(Paux*1e12)))/length(Paux*1e12);
@@ -492,7 +494,7 @@ classdef TES_Struct
                             [fit,~,aux2,~,~,~,auxJ] = lsqcurvefit(fitfun,DefaultModel.X0,XDATA,Paux*1e12,DefaultModel.LB,DefaultModel.UB,opts);
                             ci = nlparci(fit,aux2,'jacobian',auxJ); %%%confidence intervals.
                             
-                            CI = diff(ci');
+                            CI = diff(ci')/2;
                             fit_CI = [fit; CI];
                             Gaux2(jj) = DefaultModel.GetGfromFit(fit_CI');%#ok<AGROW,
                             eval(['obj.Gset' StrRange{k} '(jj).K = Gaux2(jj).K*1e-12;']);
@@ -559,7 +561,7 @@ classdef TES_Struct
                             ind = eval(['find(obj.IVset' StrRange{k} '(i).ttes == obj.TESParam' StrRange{k} '.Tc_RT.Value);']);
                             TcStr = num2str(eval(['obj.TESParam' StrRange{k} '.Tc_RT.Value*1e3;']));
                             eval(['plot(ax,obj.IVset' StrRange{k} '(indIV).ttes(ind),obj.IVset' StrRange{k} '(indIV).Rtes(ind)*1e3,'...
-                                '''DisplayName'',''Tc: ' TcStr ' mK - ' StrCond{k} ''',''Marker'',''hexagram'',''MarkerEdgeColor'',''r'',''MarkerFaceColor'',''g'');'])
+                                '''DisplayName'',''Tc: ' TcStr ' mK - ' StrCond{k} ''',''Marker'',''hexagram'',''MarkerEdgeColor'',''r'',''MarkerFaceColor'',''g'',''MarkerSize'',10);'])
                             waitfor(msgbox(['Tc: ' TcStr ' mK - ' StrCond{k} ],'Analyzer Info'));
                             if k == 1                                
                                 Tc_Ind(k) = j;                            
@@ -737,8 +739,14 @@ classdef TES_Struct
                 end
                 eval(['ind_rp = find(rp' StrRange{k} ' >= X' StrRange{k} ',1);']) %#ok<NASGU>
                                              
+                eval(['ind_rp_05 = find(rp' StrRange{k} ' >= 0.5,1);']) %#ok<NASGU>
                
                 for i = 1:length(StrField)
+                    if (i == 2)||(i == 4)  % T_fit y G se toman al 50% de Rn
+                        eval(['ind_rp = find(rp' StrRange{k} ' >= 0.5,1);'])
+                    else % n y K se toman a porcentajes altos
+                        eval(['ind_rp = find(rp' StrRange{k} ' >= X' StrRange{k} ',1);'])
+                    end
                     eval(['val = [obj.Gset' StrRange{k} '.' StrField{i} ']*' TESmult{i} ';']);
                     eval(['obj.TESThermal' StrRange{k} '.' StrField{i} '.Value = val(ind_rp);']);
                     try
@@ -1519,8 +1527,9 @@ classdef TES_Struct
                 set(h,'Visible','on')
                 
             catch
-            end
-            
+            end            
+
+
             
         end
         
@@ -1870,12 +1879,15 @@ classdef TES_Struct
             end
         end
         
-        function fig = PlotTESData(obj,param,Rn,Tbath,fig)
+        function fig = PlotTESData(obj,param,Rn,Tbath,fig,errorOpt)
             % Function to visualize TES data: param vs Tbath, param vs Rn,
             % param1 vs param2
             %             if nargin == 5
             %                 delete([findobj(fig,'Type','Line'); findobj(fig,'Type','ErrorBar'); findobj(fig,'Type','Axes')]);
             %             end
+            if nargin < 6
+                errorOpt = 'off';
+            end
             if ~ischar(param)
                 warndlg('param must be string',handles.version);
                 return;
@@ -1955,7 +1967,7 @@ classdef TES_Struct
                                 ',''DisplayName'',''' StrCond{k} ' Ibias'');']);
                             try
                                 eval(['e = errorbar(ax,Tbath' StrRange{k} ',val' StrRange{k} ',val' StrRange{k} '_CI,''LineStyle'',''-.'',''Marker'',''' StrMarker{k} ''''...
-                                    ',''DisplayName'',''' StrCond{k} ' Ibias'',''Visible'',''off'');']);
+                                    ',''DisplayName'',''' StrCond{k} ' Ibias'',''Visible'',''' errorOpt ''');']);
                                 for ie = 1:length(e)
                                     set(get(get(e(ie),'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                                     set(e(ie),'Color',h(ie).Color);
@@ -2042,7 +2054,7 @@ classdef TES_Struct
                                 if ~strcmp(param,'ExRes')
                                     try
                                         eval(['e = errorbar(ax,rp' StrRange{k} '{i},val' StrRange{k} '{i},val' StrRange{k} '_CI{i},''LineStyle'',''-.'',''Marker'',''o'''...
-                                            ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'',''Clipping'',''off'');']);
+                                            ',''DisplayName'',[''T_{bath}: '' num2str(Tbath' StrRange{k} '(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''' errorOpt ''',''Clipping'',''on'');']);
                                         
                                         set(get(get(e,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                                         
@@ -2151,7 +2163,7 @@ classdef TES_Struct
                                 StrRange{k} '1{i},val' StrRange{k} '1_CI{i}/2,val' StrRange{k}...
                                 '1_CI{i}/2,val' StrRange{k} '2_CI{i}/2,val' StrRange{k} '2_CI{i}/2,''LineStyle'',''none'',''Marker'',''o'''...
                                 ',''DisplayName'',[''T_{bath}: '' num2str(Tbaths' StrRange{k}...
-                                '1(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''off'',''Clipping'',''on'');']);
+                                '1(i)*1e3) '' mK - ' StrCond{k} ' Ibias''],''Visible'',''' errorOpt ''',''Clipping'',''on'');']);
                             set(get(get(e,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
                         catch
                         end
@@ -2420,6 +2432,8 @@ classdef TES_Struct
                 Style,[0,1]);%no enter            
             WordText(ActXWord,['delta_phi = 1/Mf = ' num2str(obj.circuit.invMf.Value) ' µA/phi0'],Style,[0,1]);%no enter            
             WordText(ActXWord,['1/Min = ' num2str(obj.circuit.invMin.Value) ' µA/phi0'],Style,[0,1]);%no enter
+            WordText(ActXWord,['Noise derived Squid Temperature = ' num2str(obj.SQUIDTemp*1e3) ' mK'],Style,[0,1]);%no enter
+            
             
             try                
                 WordText(ActXWord,['Carpeta de datos: ' obj.IVsetP(1).IVsetPath(1:end-4)],Style,[0,1]);%no enter
@@ -2500,11 +2514,18 @@ classdef TES_Struct
             TESProp = properties(obj.TESThermalP);
             clear DataCell;
             DataCell(1,1:4) = {'Parametros','Ibias Positivas','Ibias Negativas','Unidades'};
-            for i = 1:length(TESProp) 
-                DataCell(i+1,1:4) = {TESProp{i}, num2str(eval(['obj.TESThermalP.' TESProp{i} '.Value'])),...
-                    num2str(eval(['obj.TESThermalN.' TESProp{i} '.Value'])), eval(['obj.TESThermalN.' TESProp{i} '.Units'])};
+            j = 1;
+            for i =  [1 2 3 4 10 9 5 6 7 8] % 1:length(TESProp)
+                if j < 7
+                    DataCell(j+1,1:4) = {TESProp{i}, num2str(eval(['obj.TESThermalP.' TESProp{i} '.Value'])),...
+                        num2str(eval(['obj.TESThermalN.' TESProp{i} '.Value'])), eval(['obj.TESThermalN.' TESProp{i} '.Units'])};
+                else
+                    DataCell(j+1,1:4) = {[TESProp{i} '_50%'], num2str(eval(['obj.TESThermalP.' TESProp{i} '.Value'])),...
+                        num2str(eval(['obj.TESThermalN.' TESProp{i} '.Value'])), eval(['obj.TESThermalN.' TESProp{i} '.Units'])};
+                end
+                j = j+1;
             end
-            DataCell{length(TESProp)+1,1} = '%Rn Selected';
+            % DataCell{length(TESProp)+2,1} = '%Rn Selected';
             [NoRows,NoCols]=size(DataCell);
             %create table with data from DataCell
             Style = 'Cita';
@@ -2865,7 +2886,7 @@ classdef TES_Struct
                 prompt = {'Enter the %Rn range:'};
                 name = '%Rn range (0 < %Rn < 1)';
                 numlines = [1 70];
-                defaultanswer = {'0.5:0.05:0.8'};
+                defaultanswer = {'0.1:0.05:0.8'};
                 answer = inputdlg(prompt,name,numlines,defaultanswer);
                 Rn = eval(['[' answer{1} ']']);
 %                 handles.Session{handles.TES_ID}.TES.PlotTFTbathRp(Tbath,Rn);
@@ -2960,7 +2981,7 @@ classdef TES_Struct
                 prompt = {'Enter the %Rn range:'};
                 name = '%Rn range (0 < %Rn < 1)';
                 numlines = [1 70];
-                defaultanswer = {'0.5:0.05:0.8'};
+                defaultanswer = {'0.1:0.05:0.8'};
                 answer = inputdlg(prompt,name,numlines,defaultanswer);
                 Rn = eval(['[' answer{1} ']']);
 %                 handles.Session{handles.TES_ID}.TES.PlotNoiseTbathRp(Tbath,Rn);
@@ -3091,16 +3112,25 @@ classdef TES_Struct
                 TextString='Electrical Parameters';
                 WordText(ActXWord,TextString,Style,[0,1]);%enter after text
 
-                % Creamos unos campos de C, alpha, beta, tau
+                % Creamos unos campos de C, alpha, beta, tau (A un %Rn
+                % elegido por el usuario como punto de operación
                 clear DataCell;
                 DataCell(1,1:5) = {'DataSet','C(fJ/K)','alpha','beta','tau(us)'};
 
+                if ~isfield(obj,'ABCTrp')
+                    ABCTrp = obj.TESThermalP.Rn.Value;
+                else
+                    ABCTrp = obj.ABCTrp;
+                end
                 j = 2;
                 for i = 1:length(obj.PP)
 
                     NameStr = [num2str(obj.PP(i).Tbath*1e3) 'mK_Pos' ];
                     DataCell(j,1) = {NameStr};
-                    [~,b]=min(abs([obj.PP(i).p.rp]-obj.TESThermalP.Rn.Value));
+
+                    % [~,b]=min(abs([obj.PP(i).p.rp]-obj.TESThermalP.Rn.Value));
+                    [~,b]=min(abs([obj.PP(i).p.rp]-ABCTrp));
+
                     DataCell(j,2) = {[num2str(obj.PP(i).p(b).C*1e15) ' ± ' num2str(obj.PP(i).p(b).C_CI*1e15)]};
                     DataCell(j,3) = {[num2str(obj.PP(i).p(b).ai) ' ± ' num2str(obj.PP(i).p(b).ai_CI)]};
                     DataCell(j,4) = {[num2str(obj.PP(i).p(b).bi) ' ± ' num2str(obj.PP(i).p(b).bi_CI)]};
@@ -3110,7 +3140,8 @@ classdef TES_Struct
                 for i = 1:length(obj.PN)
                     NameStr = [num2str(obj.PN(i).Tbath*1e3) 'mK_Pos' ];
                     DataCell(j,1) = {NameStr};
-                    [~,b]=min(abs([obj.PN(i).p.rp]-obj.TESThermalN.Rn.Value));
+                    % [~,b]=min(abs([obj.PN(i).p.rp]-obj.TESThermalN.Rn.Value));
+                    [~,b]=min(abs([obj.PN(i).p.rp]-ABCTrp));
                     DataCell(j,2) = {[num2str(obj.PN(i).p(b).C*1e15) ' ± ' num2str(obj.PN(i).p(b).C_CI*1e15)]};
                     DataCell(j,3) = {[num2str(obj.PN(i).p(b).ai) ' ± ' num2str(obj.PN(i).p(b).ai_CI)]};
                     DataCell(j,4) = {[num2str(obj.PN(i).p(b).bi) ' ± ' num2str(obj.PN(i).p(b).bi_CI)]};
@@ -3124,6 +3155,9 @@ classdef TES_Struct
                 Style = 'Cita';
                 WordText(ActXWord,'',Style,[0,1]);%enter after text
                 WordCreateTable(ActXWord,NoRows,NoCols,DataCell,[1 1]);%enter before table
+                Style='normal';
+                TextString = ['Parámetros eléctricos calculados usando el ' num2str(obj.ABCTrp) ' %Rn'];
+                WordText(ActXWord,TextString,Style,[0,1]);
 
 
 
@@ -3330,8 +3364,8 @@ classdef TES_Struct
                 Style='normal';
                 WordText(ActXWord,'',Style,[0,1]);
                 fig = figure;
-                Tbath = unique([[obj.PP.Tbath] [obj.PN.Tbath]]);
-                obj.PlotTESData('Mph',[],Tbath,fig);
+                Tbath = unique([[obj.PP.Tbath] [obj.PN.Tbath]]); 
+                obj.PlotTESData('Mph',[],Tbath,fig,'on');
                 legend(fig.Children,'show','Location','Northeastoutside');
                 set(fig.Children,'FontUnits','Normalized');
                 set(fig, 'Position', get(0, 'Screensize')); 
@@ -3354,7 +3388,7 @@ classdef TES_Struct
                 WordText(ActXWord,'',Style,[0,1]);
                 fig = figure;
                 Tbath = unique([[obj.PP.Tbath] [obj.PN.Tbath]]);
-                obj.PlotTESData('M',[],Tbath,fig);
+                obj.PlotTESData('M',[],Tbath,fig,'on');
                 legend(fig.Children,'show','Location','Northeastoutside');
                 set(fig.Children,'FontUnits','Normalized');
                 set(fig, 'Position', get(0, 'Screensize')); 
@@ -3437,7 +3471,11 @@ function ExportGraph(src,evnt)
         he = findobj(h_axes,'Type','ErrorBar','Visible','on');
         
         hl = hl(end:-1:1);
-        Tc_Ind = src.UserData.UserData;
+        try
+            Tc_Ind = src.UserData.UserData;
+        catch
+            Tc_Ind = 1;
+        end
                 
         
 

@@ -196,7 +196,7 @@ classdef TES_ElectrThermModel
 %                 [Rztes Iztes],[],[],opts);%#ok<ASGLU> %%%uncomment for real parameters.
             MSE = (aux2'*aux2)/(length(fS)-length(p)); %#ok<NASGU>
             ci = nlparci(p,aux2,'jacobian',jacob);
-            CI = (ci(:,2)-ci(:,1))';  
+            CI = (ci(:,2)-ci(:,1))'/2;  
             p_CI = [p; CI];
             param = obj.GetModelParameters(TES,p_CI,IV,Ib,CondStr);
             fZ = obj.fitZ(p,fS);
@@ -483,7 +483,7 @@ classdef TES_ElectrThermModel
                                 CI(:,1) = maux - crit * sqrt(covm(covmIdx));
                                 CI(:,2) = maux + crit * sqrt(covm(covmIdx));
                             end
-                            CI = (CI(:,2)-CI(:,1))';
+                            CI = (CI(:,2)-CI(:,1))'/2;
                             if CI(1) > 100
                                 Mph_CI = [Mph; Inf];
                                 if Mph < 1e-3
@@ -500,7 +500,7 @@ classdef TES_ElectrThermModel
                         catch
                             ci = NaN(2,2);
                         end
-                        CI = (ci(:,2)-ci(:,1))';
+                        CI = (ci(:,2)-ci(:,1))'/2;
                         Mph_CI = [Mph; CI(1)];
                     end
 
@@ -531,7 +531,7 @@ classdef TES_ElectrThermModel
                             CI(:,1) = maux - crit * sqrt(covm(covmIdx));
                             CI(:,2) = maux + crit * sqrt(covm(covmIdx));
                         end
-                        CI = (CI(:,2)-CI(:,1))';
+                        CI = (CI(:,2)-CI(:,1))'/2;
                         if CI(2) > 100
                             M_CI = [M; Inf];
                             if M < 1e-3
@@ -549,7 +549,7 @@ classdef TES_ElectrThermModel
                     catch
                         ci = NaN(2,2);
                     end
-                    CI = (ci(:,2)-ci(:,1))';
+                    CI = (ci(:,2)-ci(:,1))'/2;
                     M_CI = [M; CI(2)];
                 end
 
@@ -580,7 +580,7 @@ classdef TES_ElectrThermModel
                     catch
                         ci = NaN(2,2);
                     end
-                    CI = (ci(:,2)-ci(:,1))';
+                    CI = (ci(:,2)-ci(:,1))'/2;
                     Mph_CI = [Mph; CI(1)];
                     M_CI = [M; CI(2)];
 
