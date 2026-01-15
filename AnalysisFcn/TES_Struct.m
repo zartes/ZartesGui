@@ -3129,7 +3129,10 @@ classdef TES_Struct
                     DataCell(j,1) = {NameStr};
 
                     % [~,b]=min(abs([obj.PP(i).p.rp]-obj.TESThermalP.Rn.Value));
-                    [~,b]=min(abs([obj.PP(i).p.rp]-ABCTrp));
+                    a = prod([[obj.PP(i).p.rp];~(cell2mat(obj.PP(i).Filtered))]);
+                    a(a == 0) = NaN;
+                    [~,b]=min(abs(a-ABCTrp));
+                    % [~,b]=min(abs([obj.PP(i).p.rp]-ABCTrp));
 
                     DataCell(j,2) = {[num2str(obj.PP(i).p(b).C*1e15) ' ± ' num2str(obj.PP(i).p(b).C_CI*1e15)]};
                     DataCell(j,3) = {[num2str(obj.PP(i).p(b).ai) ' ± ' num2str(obj.PP(i).p(b).ai_CI)]};
@@ -3138,7 +3141,7 @@ classdef TES_Struct
                     j = j+1;
                 end                
                 for i = 1:length(obj.PN)
-                    NameStr = [num2str(obj.PN(i).Tbath*1e3) 'mK_Pos' ];
+                    NameStr = [num2str(obj.PN(i).Tbath*1e3) 'mK_Neg' ];
                     DataCell(j,1) = {NameStr};
                     % [~,b]=min(abs([obj.PN(i).p.rp]-obj.TESThermalN.Rn.Value));
                     [~,b]=min(abs([obj.PN(i).p.rp]-ABCTrp));
