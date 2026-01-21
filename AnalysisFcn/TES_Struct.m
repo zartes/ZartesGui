@@ -3117,10 +3117,11 @@ classdef TES_Struct
                 clear DataCell;
                 DataCell(1,1:5) = {'DataSet','C(fJ/K)','alpha','beta','tau(us)'};
 
-                if ~isfield(obj,'ABCTrp')
-                    ABCTrp = obj.TESThermalP.Rn.Value;
-                else
+                try
                     ABCTrp = obj.ABCTrp;
+                catch
+                    ABCTrp = obj.TESThermalP.Rn.Value;
+                                    
                 end
                 j = 2;
                 for i = 1:length(obj.PP)
@@ -3143,8 +3144,11 @@ classdef TES_Struct
                 for i = 1:length(obj.PN)
                     NameStr = [num2str(obj.PN(i).Tbath*1e3) 'mK_Neg' ];
                     DataCell(j,1) = {NameStr};
+                    a = prod([[obj.PN(i).p.rp];~(cell2mat(obj.PN(i).Filtered))]);
+                    a(a == 0) = NaN;
+                    [~,b]=min(abs(a-ABCTrp));
                     % [~,b]=min(abs([obj.PN(i).p.rp]-obj.TESThermalN.Rn.Value));
-                    [~,b]=min(abs([obj.PN(i).p.rp]-ABCTrp));
+                    % [~,b]=min(abs([obj.PN(i).p.rp]-ABCTrp));
                     DataCell(j,2) = {[num2str(obj.PN(i).p(b).C*1e15) ' ± ' num2str(obj.PN(i).p(b).C_CI*1e15)]};
                     DataCell(j,3) = {[num2str(obj.PN(i).p(b).ai) ' ± ' num2str(obj.PN(i).p(b).ai_CI)]};
                     DataCell(j,4) = {[num2str(obj.PN(i).p(b).bi) ' ± ' num2str(obj.PN(i).p(b).bi_CI)]};
@@ -3159,7 +3163,7 @@ classdef TES_Struct
                 WordText(ActXWord,'',Style,[0,1]);%enter after text
                 WordCreateTable(ActXWord,NoRows,NoCols,DataCell,[1 1]);%enter before table
                 Style='normal';
-                TextString = ['Parámetros eléctricos calculados usando el ' num2str(obj.ABCTrp) ' %Rn'];
+                TextString = ['Parámetros eléctricos calculados usando el ' num2str(ABCTrp) ' %Rn'];
                 WordText(ActXWord,TextString,Style,[0,1]);
 
 
