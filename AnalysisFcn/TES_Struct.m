@@ -1547,11 +1547,15 @@ classdef TES_Struct
                 else
                     % ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
                     for i = 1:length(Tbath)                        
-                        % try
+                         try
                             eval(['ind_TbathN(i) = find(floor([obj.P' StrCond{iP} '.Tbath]''*1e3) == floor(Tbath(i)*1e3));']);
-                        % catch
-                        %     ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
-                            Tbath = eval(['[obj.P' StrCond{iP} '.Tbath]']);
+                         catch
+                             if ~isempty(eval(['[obj.P' StrCond{iP} '.Tbath]']))
+                                 ind_TbathN = 1:length(eval(['[obj.P' StrCond{iP} '.Tbath]']));
+                             end
+                         end
+                        
+%                             Tbath = eval(['[obj.P' StrCond{iP} '.Tbath]']);
                         % end
                     end                                                            
                 end
@@ -1567,7 +1571,9 @@ classdef TES_Struct
                     if ~isempty(Rn)
                         %                     Rn = sort(0.20:0.10:0.8,'descend');  % Example of using
                         eval(['Rp = [obj.P' StrCond{iP} '(ind_Tbath).p.rp];']);
-                        
+                        if isempty(Rp)
+                            return;
+                        end
                         for i = 1:length(Rn)
                             [~,ind(i)] = min(abs(Rp-Rn(i)));
                         end
@@ -2210,6 +2216,9 @@ classdef TES_Struct
                 [m1,Tind] = min(abs([IVset.Tbath]-Tbath(i)));%%%En general Tbath de la IVsest tiene que ser exactamente la misma que la del directorio, pero en algun run he puesto el valor 'real'.(ZTES20)
                 IVstr = IVset(Tind);
                 [m2,Tind] = min(abs([P.Tbath]-Tbath(i)));
+                if isempty(Tind)
+                    return;
+                end
                 p = P(Tind).p;
                 thr = 1;%%%umbral en 1mK de diferencia entre la Tbath pasada y la Tbath más cercana de los datos.
                 if (m1 >= thr || m2 >= thr)
@@ -3221,7 +3230,10 @@ classdef TES_Struct
                 set(fig.hObject.Children,'FontUnits','Normalized');
                 set(fig.hObject, 'Position', get(0, 'Screensize'));                 
                 print(fig.hObject,'-dmeta');
+                try
                 invoke(ActXWord.Selection,'Paste');
+                catch
+                end
                 close(fig.hObject);
                 pause(0.3)
                 ActXWord.Selection.TypeParagraph;
