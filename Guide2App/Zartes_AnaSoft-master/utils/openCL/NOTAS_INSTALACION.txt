@@ -1,0 +1,16 @@
+Descargo un toolkit llamado MatCL desde matlab. Es un wrapper(?) para poder programar con openCL que es la alternativa a CUDA para 
+tarjetas NO NVIDIA. En el PC control tenemos una AMD que podría usarse.
+web: https://es.mathworks.com/matlabcentral/fileexchange/66037-matcl-opencl-wrapper?status=SUCCESS
+Intento ejecutar el examples/test_mul y dice que no hay un compilador. Desde mathworks descargo el recomendado (me tengo que loguear con cpobes).
+Ahora intento compilar el toolkit con compile_windows pero no funciona. No encuentra files. Pregunto a Claude y sugiere buscar en Windows/System32
+y program files/AMD. En el primero encuentro openCL.dll que es una de las librerias que busca, pero tengo que cambiar el nombre a .lib.
+Pero luego busca también includes. Primero me descargo los headers, pero ahí solo hay ficheros .h. Luego me descargo la vesion cpp y ahí ya 
+aparecen .hpp. Pongo la ruta a ese include (parece que tengo que eliminar el espacio entre la I y el path, lo hago también para la L; ver compile_windows.m).
+Aunque funciona, ahora busca también ficherso .h. Los copio a mano desde los otros headers y ahora ya sí funciona!
+Ejecuto el test_mul y se ejecuta bien, aunque los tiempos no parecen mejores con el kernel. Cuál ha usado?(usa el device:1, si pongo device=2 da error.)
+Al ejecutar cl_get_devices encuentra 3.
+Ejecuto img_test y ahora sí parece que el cpu time son 295ms frente a openCL time 6.6ms.
+Estudiar los ejemplos y aprender a usar!
+Esto lo he hecho con matlab2023. Funciona con matlab2015?Si, también, con cputime:274ms(26ms en segunda ejecucion), opencltime:6.8ms(8ms).
+(quiza queda algo en cache que reduce mucho el tiempo cpu al reejecutar que no sucede con la gpu. Aun así sigue siendo más rápido.)
+Parece que el core del código hay que programarlo en C++ y meterlo en un fichero .cl que es el que se pasa a la funcion cl_run_kernel. 

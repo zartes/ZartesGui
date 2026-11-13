@@ -1,0 +1,68 @@
+Listado de archivos de la carpeta GeneralFcn
+
+AVS.m
+ AVS Summary of this class goes here
+    Detailed explanation goes here
+
+    Reference page in Doc Center
+       doc AVS
+
+
+
+Circuit.m
+Class defining a Circuit.
+
+    Reference page in Doc Center
+       doc Circuit
+
+    
+
+CurrentSource.m
+  Class defining a Current Source.
+
+    Reference page in Doc Center
+       doc CurrentSource
+
+
+
+ElectronicMagnicon.m
+  Class of Electronic Magnicon Setup
+
+    Reference page in Doc Center
+       doc ElectronicMagnicon
+
+
+
+Multimeter.m
+  Class defining a multimeter to measure voltage.
+
+    Reference page in Doc Center
+       doc Multimeter
+
+
+
+PXI_Acquisition_card.m
+  Class defining a PXI Acquisition Card.
+
+    Reference page in Doc Center
+       doc PXI_Acquisition_card
+
+
+
+PhysicalMeasurement.m
+  Physical measurement, so it is needed that the numerical value goes
+  along with the description of the units
+
+    Reference page in Doc Center
+       doc PhysicalMeasurement
+
+
+
+SpectrumAnalyzer.m
+  Class defining a Spectrum Analyzer (Dynamic Signal Analyzer)
+
+    Reference page in Doc Center
+       doc SpectrumAnalyzer
+
+
+

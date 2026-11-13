@@ -1,0 +1,19 @@
+Tras comprar e instalar la GPU NVIDIA, la pruebo en matlab y la reconoce. 
+Pregunto a Claude forma de programarla en matlab2015. Me da versiones CPU y GPU
+normal y vectorizada. Le pido también CPU vectorizada. Los tiempos de ejecucion son curiosos:
+-CPU:0.19seg
+-GPU:28seg
+-CPUvect:0.069
+-GPUvect:0.01
+La version GPU paralelizada es 5-6 veces más rápida que la equivalente en CPU, pero la versión naive es 
+enormemente más lenta en la GPU!Esto en matlab2015.
+Claude dice que el matlab2024 los drivers estan mejorados. Me da una opcion tb de GPU2024. Ejecuto lo mismo en m2024 y da error de no encontrar GPUs.
+>> gpuDevice
+Error using gpuDevice (line 26)
+Graphics driver is out of date. Download and install the latest graphics driver for your GPU from NVIDIA.
+(miro en dispositivos y segun windows esta todo actualizado). Instalo la ultima version de web Nvidia y reinicio.
+Ahora sí funciona el testScript. Debe tener algo de cache pq la CPU vectorizada en segunda ejecucion tarda 0.075 (0.13 en 1a).
+GPUvect:0.016 pero GPU2024:0.098.
+Curiosamente el codigo 2024 se ejecuta tb bien en 2015 (reconoce wait y gather.). Los tiempos GPU son sólo marginalmente mejores que los de CPU.
+(Esto para n=1e6). Aumento a n=1e7 y cpu y gpu normal si aumentan x10 pero gpuvect aumenta menos. Ahora sí hay 1 orden de magnitud
+entre CPUvect y GPUvect(0.93, 0.09). Es ya una ganancia apreciable. Cómo aplicar a analisis pulsos, runs, etc?

@@ -1,0 +1,12 @@
+{
+"IVdir":".",
+"IVfilename":"filename.txt",
+"Rperc":15,
+"Ibobina":0,
+"Sampling_Rate":500000,
+"Record_Length":10000,
+"Nbaselines":1024,
+"Npulses":16384,
+"SourceCH":1,
+"Rf":10000
+}

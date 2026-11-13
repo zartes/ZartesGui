@@ -1,0 +1,12 @@
+Moiseev I., Elliptic functions for Matlab and Octave, (2008), GitHub repository, DOI: http://dx.doi.org/10.5281/zenodo.48264
+@misc{elliptic,
+  author = {Moiseev I.},
+  title = {Elliptic functions for Matlab and Octave},
+  year = {2008},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/moiseevigor/elliptic}},
+  commit = {98181c4c0d8992746bcc6bea75740bb11b74b51b},
+  doi = {10.5281/zenodo.48264},
+  url = {http://dx.doi.org/10.5281/zenodo.48264}
+}

@@ -1,0 +1,13 @@
+{"RTs":{
+"CH0":{"name":"Interdigital","size":"?"},
+"CH1":{"name":"4Z2_62_14","size":"40x80"},
+"CH2":{"name":"3Z10_44_14","size":"40x80"},
+"CH3":{"name":"5Z1_37_31","size":"15x15"},
+"CH4":{"name":"4Z4_34_13","size":"40x80"},
+"CH5":{"name":"GAP","size":"bulk"}
+},
+"SQUIDs":{
+"CH1": {"name":"4Z2_62_24","size":"40x80"},
+"CH2": {"name":"4Z4_62_24","size":"40x80"}
+}
+}
